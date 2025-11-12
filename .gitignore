@@ -1,0 +1,30 @@
+﻿# dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-store/
+package-lock.json
+
+# expo / rn
+.expo/
+.expo-shared/
+dist/
+web-build/
+android/
+ios/
+*.keystore
+*.jks
+
+# env / secrets
+.env
+.env.*
+*.local
+
+# mac/win
+.DS_Store
+Thumbs.db
+
+# editor
+.vscode/
+.idea/

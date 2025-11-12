@@ -1,0 +1,42 @@
+{
+  "startTime": 1762546315913,
+  "steps": [
+    {
+      "name": "1. Checking prerequisites",
+      "status": "success",
+      "duration": 403
+    },
+    {
+      "name": "2. Setting up environment",
+      "status": "success",
+      "duration": 3
+    },
+    {
+      "name": "3. Installing dependencies",
+      "status": "success",
+      "duration": 88327
+    },
+    {
+      "name": "4. Verifying dependencies",
+      "status": "success",
+      "duration": 2
+    },
+    {
+      "name": "5. Creating directories",
+      "status": "success",
+      "duration": 2
+    },
+    {
+      "name": "6. Validating configuration",
+      "status": "success",
+      "duration": 3
+    },
+    {
+      "name": "7. Testing Supabase connection",
+      "status": "success",
+      "duration": 2
+    }
+  ],
+  "errors": [],
+  "warnings": []
+}
