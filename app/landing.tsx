@@ -1,4 +1,4 @@
-// app/landing.tsx
+ï»¿// app/landing.tsx
 
 import React, { useEffect, useRef } from 'react';
 import {
@@ -225,7 +225,7 @@ export default function LandingScreen() {
         style={styles.scroll}
         contentContainerStyle={{ paddingBottom: 48 }}
       >
-        {/* HERO – full height */}
+        {/* HERO â€“ full height */}
         <View style={{ minHeight: height }}>
           <Image
             source={{
@@ -328,7 +328,7 @@ export default function LandingScreen() {
           </Animated.View>
         </View>
 
-        {/* ROLE STRIP – image-driven */}
+        {/* ROLE STRIP â€“ image-driven */}
         <Animated.View
           style={[
             styles.rolesSection,
@@ -354,7 +354,7 @@ export default function LandingScreen() {
                 { color: theme.colors.textMuted, fontFamily: theme.fonts.body },
               ]}
             >
-              Product, engineering, data, talent — each track has its own loop,
+              Product, engineering, data, talent â€” each track has its own loop,
               questions and bar.
             </Text>
           </View>

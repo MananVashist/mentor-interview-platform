@@ -1,408 +1,597 @@
 ﻿// app/index.tsx
-// Web landing page – image-driven, concise, RN-web safe
-
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
-  Image,
-  ScrollView,
-  TouchableOpacity,
-  useWindowDimensions,
-  Platform,
   StyleSheet,
+  Image,
+  TouchableOpacity,
+  Platform,
+  useWindowDimensions,
+  Animated,
+  ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useAuthStore } from '@/lib/store';
+import { supabase } from '@/lib/supabase/client';
+
+const CTA_TEAL = '#18a7a7';
 
 export default function LandingPage() {
-  const { width, height } = useWindowDimensions();
   const router = useRouter();
-  const isMobile = width < 768;
+  const { width } = useWindowDimensions();
+  const { profile, setProfile } = useAuthStore();
+  const [checking, setChecking] = useState(true);
+  const isSmall = width < 900;
 
-  // hero image, roles images are all stock / interview-ish
-  const roleCards = [
-    {
-      id: 'pm',
-      title: 'Product Manager',
-      uri: 'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?q=80&w=1400&auto=format&fit=crop',
-    },
-    {
-      id: 'fe',
-      title: 'Frontend Engineer',
-      uri: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?q=80&w=1400&auto=format&fit=crop',
-    },
-    {
-      id: 'be',
-      title: 'Backend Engineer',
-      uri: 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?q=80&w=1400&auto=format&fit=crop',
-    },
-    {
-      id: 'ds',
-      title: 'Data Scientist',
-      uri: 'https://images.unsplash.com/photo-1534759846116-57968a6b8c52?q=80&w=1400&auto=format&fit=crop',
-    },
-    {
-      id: 'ba',
-      title: 'Business Analyst',
-      uri: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1400&auto=format&fit=crop',
-    },
-    {
-      id: 'hr',
-      title: 'HR / Talent',
-      uri: 'https://images.unsplash.com/photo-1554260570-9140fd3b7612?q=80&w=1400&auto=format&fit=crop',
-    },
+  // Eye animation
+  const leftEyeX = React.useRef(new Animated.Value(0)).current;
+  const leftEyeY = React.useRef(new Animated.Value(0)).current;
+  const rightEyeX = React.useRef(new Animated.Value(0)).current;
+  const rightEyeY = React.useRef(new Animated.Value(0)).current;
+
+  // Check if user is already logged in and redirect to appropriate dashboard
+  useEffect(() => {
+    let mounted = true;
+
+    const checkAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session?.user) {
+          // No session, stay on landing page
+          if (mounted) setChecking(false);
+          return;
+        }
+
+        // Has session, check if we have profile in store
+        if (profile?.role) {
+          // Already have profile, route immediately
+          routeToRole(profile.role);
+          return;
+        }
+
+        // Need to load profile from database
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
+
+        if (mounted && profileData) {
+          setProfile(profileData as any);
+          routeToRole(profileData.role);
+        } else {
+          // No profile found, stay on landing
+          if (mounted) setChecking(false);
+        }
+      } catch (error) {
+        console.log('[index] Auth check error:', error);
+        if (mounted) setChecking(false);
+      }
+    };
+
+    checkAuth();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const routeToRole = (role: string | null) => {
+    if (!role) return;
+    
+    switch (role) {
+      case 'candidate':
+        router.replace('/(candidate)');
+        break;
+      case 'mentor':
+        router.replace('/(mentor)');
+        break;
+      case 'admin':
+        router.replace('/(admin)');
+        break;
+      default:
+        setChecking(false);
+        break;
+    }
+  };
+
+  useEffect(() => {
+    const animateEyes = () => {
+      const randomMove = () => {
+        // more twitchy: bigger movement, shorter duration, faster interval
+        const maxMove = 10;
+
+        const makeTwitch = (xVal: Animated.Value, yVal: Animated.Value) => {
+          const toX = (Math.random() - 0.5) * maxMove;
+          const toY = (Math.random() - 0.5) * maxMove;
+          return [
+            Animated.timing(xVal, {
+              toValue: toX,
+              duration: 70,
+              useNativeDriver: true,
+            }),
+            Animated.timing(yVal, {
+              toValue: toY,
+              duration: 70,
+              useNativeDriver: true,
+            }),
+          ];
+        };
+
+        Animated.parallel([
+          ...makeTwitch(leftEyeX, leftEyeY),
+          ...makeTwitch(rightEyeX, rightEyeY),
+        ]).start();
+      };
+
+      randomMove();
+      const interval = setInterval(randomMove, 120); // faster twitch
+      return () => clearInterval(interval);
+    };
+
+    return animateEyes();
+  }, [leftEyeX, leftEyeY, rightEyeX, rightEyeY]);
+
+  const roles = [
+    { icon: '💻', title: 'SDE / Software Engineer', desc: 'Coding, DSA, System Design' },
+    { icon: '⚙️', title: 'Backend Engineer', desc: 'Node, Java, Python, Go' },
+    { icon: '🎨', title: 'Frontend Engineer / React', desc: 'UI/UX, Performance' },
+    { icon: '📊', title: 'Data Analyst / Business Analyst', desc: 'SQL, Excel, Insights' },
+    { icon: '🚀', title: 'Product Manager', desc: 'Strategy, Roadmaps, PRDs' },
+    { icon: '🤖', title: 'Data Scientist / ML Engineer', desc: 'ML, Python, Statistics' },
+    { icon: '👥', title: 'HR / Talent Acquisition', desc: 'Recruiting, Culture Fit' },
   ];
 
-  const goSignIn = () => {
-    router.push('/(auth)/sign-in');
-  };
-  const goSignUp = () => {
-    router.push('/(auth)/sign-up');
-  };
+  // Show loading while checking auth
+  if (checking) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={CTA_TEAL} />
+        <Text style={styles.loadingText}>Loading...</Text>
+      </View>
+    );
+  }
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#ffffff' }}>
-      {/* TOP BAR */}
-      <View style={styles.topbar}>
-        <View style={styles.brandWrap}>
-          <View style={styles.brandDot} />
-          <Text style={styles.brandTitle}>MentorInterviews</Text>
-        </View>
+    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
+      {/* Header */}
+      <View style={styles.header}>
+        <View style={[styles.headerInner, isSmall && styles.headerInnerMobile]}>
+          {/* Logo */}
+          <View style={[styles.brand, isSmall && styles.brandMobile]}>
+            {/* Eyes - hide on mobile */}
+            {!isSmall && (
+              <View style={styles.eyesWrapper}>
+                <View style={styles.eye}>
+                  <Animated.View
+                    style={[
+                      styles.pupil,
+                      {
+                        transform: [
+                          { translateX: leftEyeX },
+                          { translateY: leftEyeY },
+                        ],
+                      },
+                    ]}
+                  />
+                </View>
+                <View style={styles.eye}>
+                  <Animated.View
+                    style={[
+                      styles.pupil,
+                      {
+                        transform: [
+                          { translateX: rightEyeX },
+                          { translateY: rightEyeY },
+                        ],
+                      },
+                    ]}
+                  />
+                </View>
+              </View>
+            )}
 
-        {!isMobile && (
-          <View style={styles.navLinks}>
-            <TouchableOpacity>
-              <Text style={styles.navText}>Tracks</Text>
+            {/* Logo text */}
+            <View>
+              <Text style={[styles.logoMain, isSmall && styles.logoMainMobile]}>
+                <Text style={styles.logoMainCrack}>Crack</Text>
+                <Text style={styles.logoMainJobs}>Jobs</Text>
+              </Text>
+              <Text style={[styles.logoTagline, isSmall && styles.logoTaglineMobile]}>
+                Mad skills. Dream job.
+              </Text>
+            </View>
+          </View>
+
+          {/* Nav buttons */}
+          <View style={[styles.navRight, isSmall && styles.navRightMobile]}>
+            <TouchableOpacity
+              style={[styles.btn, styles.btnSecondary, isSmall && styles.btnMobile]}
+              onPress={() => router.push('/(auth)/sign-in')}
+            >
+              <Text style={[styles.btnText, isSmall && styles.btnTextMobile]}>
+                LOGIN
+              </Text>
             </TouchableOpacity>
-            <TouchableOpacity>
-              <Text style={styles.navText}>How it works</Text>
-            </TouchableOpacity>
-            <TouchableOpacity>
-              <Text style={styles.navText}>Pricing</Text>
+            <TouchableOpacity
+              style={[styles.btn, styles.btnPrimary, isSmall && styles.btnMobile]}
+              onPress={() => router.push('/(auth)/sign-up')}
+            >
+              <Text style={[styles.btnText, isSmall && styles.btnTextMobile]}>
+                SIGN UP
+              </Text>
             </TouchableOpacity>
           </View>
-        )}
-
-        <View style={styles.navActions}>
-          <TouchableOpacity onPress={goSignIn} style={styles.ghostBtn}>
-            <Text style={styles.ghostBtnText}>Sign in</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={goSignUp} style={styles.primaryBtn}>
-            <Text style={styles.primaryBtnText}>Sign up</Text>
-          </TouchableOpacity>
         </View>
       </View>
 
-      {/* BODY */}
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 40 }}>
-        {/* HERO */}
-        <View
-          style={[
-            styles.hero,
-            {
-              flexDirection: isMobile ? 'column' : 'row',
-              minHeight: Math.max(520, height * 0.7),
-            },
-          ]}
-        >
-          {/* left text */}
-          <View style={styles.heroTextBlock}>
-            <Text style={styles.heroEyebrow}>INTERVIEW COACHING, ROLE-FIRST</Text>
-            <Text style={styles.heroTitle}>Prepare for interviews.</Text>
-            <Text style={styles.heroSubtitle}>The right way.</Text>
-            <Text style={styles.heroBody}>
-              Real mentors, real interview flows, tailored to Product, Engineering and Data roles.
-              Minimal fluff, maximum signal.
+      {/* Hero */}
+      <View style={styles.heroSection}>
+        <View style={[styles.heroCard, isSmall && styles.heroCardMobile]}>
+          <View style={styles.heroContent}>
+            <Text style={[styles.heroTitle, isSmall && styles.heroTitleMobile]}>
+              Practice makes perfect!
             </Text>
-
-            <View style={[styles.heroActions, { flexDirection: isMobile ? 'column' : 'row' }]}>
-              <TouchableOpacity onPress={goSignUp} style={styles.primaryBtnHero}>
-                <Text style={styles.primaryBtnHeroText}>Start with a track</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => {}}
-                style={[
-                  styles.ghostBtnHero,
-                  { marginTop: isMobile ? 10 : 0, marginLeft: isMobile ? 0 : 10 },
-                ]}
-              >
-                <Text style={styles.ghostBtnHeroText}>View how it works</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* little info strip */}
-            <View style={styles.infoStrip}>
-              <View style={styles.infoPill}>
-                <Text style={styles.infoPillTitle}>Role-specific sessions</Text>
-                <Text style={styles.infoPillDesc}>Tech + HR loops</Text>
-              </View>
-              <View style={styles.infoPill}>
-                <Text style={styles.infoPillTitle}>Mentor-led</Text>
-                <Text style={styles.infoPillDesc}>Real interviewers</Text>
-              </View>
-            </View>
+            <Text style={[styles.heroSubtitle, isSmall && styles.heroSubtitleMobile]}>
+              Mock interviews with real professionals from your industry
+            </Text>
           </View>
-
-          {/* right image */}
-          <View style={styles.heroImageWrap}>
-            <Image
-              source={{
-                uri: 'https://images.unsplash.com/photo-1573496782646-e8d943a4bdd1?q=80&w=1600&auto=format&fit=crop',
-              }}
-              style={styles.heroImage}
-              resizeMode="cover"
-            />
-            <View style={styles.heroImageOverlay} />
-          </View>
+          <Image
+            source={require('../assets/crackjobs-hero.png')}
+            style={[styles.mascot, isSmall && styles.mascotMobile]}
+            resizeMode="contain"
+            accessibilityLabel="CrackJobs mascot celebrating getting hired with briefcase and HIRED speech bubble"
+          />
         </View>
+      </View>
 
-        {/* TRACKS SECTION */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Choose your interview path</Text>
-          <Text style={styles.sectionSubtitle}>
-            Pick the track you’re actually applying for — we’ll match the expectations.
+      {/* Role Cards */}
+      <View style={[styles.rolesGrid, isSmall && styles.rolesGridMobile]}>
+        {roles.map((role, idx) => (
+          <View key={idx} style={[styles.roleCard, isSmall && styles.roleCardMobile]}>
+            <Text style={styles.roleIcon}>{role.icon}</Text>
+            <Text style={styles.roleTitle}>{role.title}</Text>
+            <Text style={styles.roleDesc}>{role.desc}</Text>
+          </View>
+        ))}
+      </View>
+
+      {/* CTA */}
+      <View style={styles.ctaSection}>
+        <Text style={[styles.ctaTitle, isSmall && styles.ctaTitleMobile]}>
+          Ready to dive in?
+        </Text>
+        <TouchableOpacity
+          style={[styles.ctaButton, isSmall && styles.ctaButtonMobile]}
+          onPress={() => router.push('/(auth)/sign-up')}
+        >
+          <Text style={[styles.ctaButtonText, isSmall && styles.ctaButtonTextMobile]}>
+            GET STARTED
           </Text>
+        </TouchableOpacity>
+      </View>
 
-          <View
-            style={{
-              flexDirection: 'row',
-              flexWrap: 'wrap',
-              gap: 16,
-              marginTop: 20,
-            }}
-          >
-            {roleCards.map((role) => (
-              <View
-                key={role.id}
-                style={[
-                  styles.roleCard,
-                  { width: isMobile ? '100%' : '31%' },
-                ]}
-              >
-                <Image source={{ uri: role.uri }} style={styles.roleImage} resizeMode="cover" />
-                <View style={styles.roleBody}>
-                  <Text style={styles.roleTitle}>{role.title}</Text>
-                  <Text style={styles.roleDesc}>Mock rounds, structured feedback, interview prep.</Text>
-                  <TouchableOpacity
-                    onPress={goSignUp}
-                    style={{ marginTop: 10, alignSelf: 'flex-start' }}
-                  >
-                    <Text style={styles.roleLink}>View sessions →</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ))}
-          </View>
+      {/* Footer */}
+      <View style={styles.footer}>
+        <View style={[styles.footerContent, isSmall && styles.footerContentMobile]}>
+          <TouchableOpacity onPress={() => router.push('/how-it-works')}>
+            <Text style={styles.footerLink}>How It Works</Text>
+          </TouchableOpacity>
+          {!isSmall && <Text style={styles.footerDivider}>•</Text>}
+          <TouchableOpacity onPress={() => router.push('/about')}>
+            <Text style={styles.footerLink}>About</Text>
+          </TouchableOpacity>
+          {!isSmall && <Text style={styles.footerDivider}>•</Text>}
+          <TouchableOpacity onPress={() => router.push('/blog')}>
+            <Text style={styles.footerLink}>Blog</Text>
+          </TouchableOpacity>
+          {!isSmall && <Text style={styles.footerDivider}>•</Text>}
+          <TouchableOpacity onPress={() => router.push('/contact')}>
+            <Text style={styles.footerLink}>Contact</Text>
+          </TouchableOpacity>
+          {!isSmall && <Text style={styles.footerDivider}>•</Text>}
+          <TouchableOpacity>
+            <Text style={styles.footerLink}>Privacy Policy</Text>
+          </TouchableOpacity>
+          {!isSmall && <Text style={styles.footerDivider}>•</Text>}
+          <TouchableOpacity>
+            <Text style={styles.footerLink}>Terms & Conditions</Text>
+          </TouchableOpacity>
         </View>
-
-        {/* HOW IT WORKS */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>How it works</Text>
-          <Text style={styles.sectionSubtitle}>3 steps, no confusion.</Text>
-
-          <View
-            style={{
-              flexDirection: isMobile ? 'column' : 'row',
-              gap: 16,
-              marginTop: 20,
-            }}
-          >
-            <View style={styles.stepCard}>
-              <View style={styles.stepBadge}>
-                <Text style={styles.stepBadgeText}>1</Text>
-              </View>
-              <Text style={styles.stepTitle}>Pick your role</Text>
-              <Text style={styles.stepDesc}>
-                PM, FE, BE, Data, BA — we keep interviews role-aligned.
-              </Text>
-            </View>
-            <View style={styles.stepCard}>
-              <View style={styles.stepBadge}>
-                <Text style={styles.stepBadgeText}>2</Text>
-              </View>
-              <Text style={styles.stepTitle}>Book a mentor session</Text>
-              <Text style={styles.stepDesc}>
-                Real interviewers walk you through realistic rounds.
-              </Text>
-            </View>
-            <View style={styles.stepCard}>
-              <View style={styles.stepBadge}>
-                <Text style={styles.stepBadgeText}>3</Text>
-              </View>
-              <Text style={styles.stepTitle}>Get the feedback</Text>
-              <Text style={styles.stepDesc}>
-                Specific notes on structure, clarity and role-fit.
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        {/* FOOTER */}
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>© {new Date().getFullYear()} MentorInterviews</Text>
-        </View>
-      </ScrollView>
-    </View>
+      </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  topbar: {
-    width: '100%',
-    paddingHorizontal: 28,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(15,23,42,0.05)',
+  container: { flex: 1, backgroundColor: '#f8f5f0' },
+  scrollContent: { minHeight: '100%' },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f8f5f0',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#666',
+  },
+
+  // Header
+  header: { backgroundColor: '#f8f5f0', paddingVertical: 16 },
+  headerInner: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#ffffff',
-    gap: 12,
-  },
-  brandWrap: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  brandDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 999,
-    backgroundColor: '#0E9384',
-  },
-  brandTitle: { fontSize: 18, fontWeight: '700', color: '#0f172a' },
-  navLinks: { flexDirection: 'row', gap: 18 },
-  navText: { color: '#64748b', fontSize: 13 },
-  navActions: { flexDirection: 'row', gap: 10 },
-  ghostBtn: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: 'rgba(148,163,184,0.35)',
-    backgroundColor: '#fff',
-  },
-  ghostBtnText: { color: '#0f172a', fontWeight: '500', fontSize: 13 },
-  primaryBtn: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 999,
-    backgroundColor: '#0E9384',
-  },
-  primaryBtnText: { color: '#fff', fontWeight: '600', fontSize: 13 },
-
-  hero: {
+    maxWidth: 1400,
     width: '100%',
-    paddingHorizontal: 28,
-    paddingTop: 26,
-    gap: 28,
+    marginHorizontal: 'auto',
+    paddingHorizontal: 40,
   },
-  heroTextBlock: {
-    flex: 1,
-    justifyContent: 'center',
-    gap: 10,
-  },
-  heroEyebrow: {
-    color: '#0E9384',
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 1.1,
-  },
-  heroTitle: { fontSize: 46, fontWeight: '800', color: '#0f172a' },
-  heroSubtitle: { fontSize: 46, fontWeight: '800', color: '#0f172a', marginTop: -6 },
-  heroBody: { color: '#64748b', fontSize: 14, maxWidth: 500, marginTop: 6, lineHeight: 20 },
-  heroActions: { gap: 10, marginTop: 16 },
-  primaryBtnHero: {
-    backgroundColor: '#0E9384',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 999,
-  },
-  primaryBtnHeroText: { color: '#fff', fontWeight: '600' },
-  ghostBtnHero: {
-    borderWidth: 1,
-    borderColor: 'rgba(15,23,42,0.14)',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 999,
-    backgroundColor: '#fff',
-  },
-  ghostBtnHeroText: { color: '#0f172a', fontWeight: '500' },
-  infoStrip: {
-    flexDirection: 'row',
-    gap: 10,
-    marginTop: 16,
-    flexWrap: 'wrap',
-  },
-  infoPill: {
-    backgroundColor: 'rgba(14,147,132,0.06)',
-    borderWidth: 1,
-    borderColor: 'rgba(14,147,132,0.12)',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 14,
-  },
-  infoPillTitle: { fontWeight: '600', color: '#0f172a' },
-  infoPillDesc: { color: '#64748b', fontSize: 12, marginTop: 2 },
+  headerInnerMobile: { paddingHorizontal: 12, justifyContent: 'space-between' },
 
-  heroImageWrap: {
-    flex: 0.9,
-    minHeight: 320,
+  // Eyes
+  eyesWrapper: { flexDirection: 'row', gap: 8, marginRight: 12 },
+  eye: {
+    width: 40,
+    height: 40,
+    backgroundColor: '#fff',
     borderRadius: 20,
-    overflow: 'hidden',
-    backgroundColor: '#0f172a',
+    borderWidth: 3,
+    borderColor: '#333',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  heroImage: {
-    width: '100%',
-    height: '100%',
-  },
-  heroImageOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.12)',
+  pupil: {
+    width: 16,
+    height: 16,
+    backgroundColor: '#333',
+    borderRadius: 8,
   },
 
-  section: {
-    width: '100%',
+  // Brand
+  brand: { flexDirection: 'row', alignItems: 'center' },
+  brandMobile: {},
+  logoMain: {
+    fontFamily: 'DancingScript',
+    fontSize: 44,
+    fontWeight: '900',
+    textShadowColor: 'rgba(0,0,0,0.1)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+  logoMainCrack: {
+    color: '#333',
+    ...(Platform.OS === 'web' && {
+      WebkitTextStroke: '0.5px #333',
+    }),
+  },
+  logoMainJobs: {
+    color: CTA_TEAL,
+    ...(Platform.OS === 'web' && {
+      WebkitTextStroke: `0.5px ${CTA_TEAL}`,
+    }),
+  },
+  logoMainMobile: { fontSize: 24 },
+  logoTagline: {
+    fontFamily: 'DancingScript',
+    fontSize: 28,
+    fontWeight: '900',
+    color: CTA_TEAL,
+    marginTop: -8,
+    textShadowColor: 'rgba(0,0,0,0.1)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+    ...(Platform.OS === 'web' && {
+      WebkitTextStroke: `0.5px ${CTA_TEAL}`,
+    }),
+  },
+  logoTaglineMobile: { fontSize: 14 },
+
+  // Nav
+  navRight: { flexDirection: 'row', gap: 12, alignItems: 'center' },
+  navRightMobile: { gap: 8 },
+  btn: {
     paddingHorizontal: 28,
-    paddingTop: 34,
+    paddingVertical: 10,
+    borderRadius: 30,
+    borderWidth: 2,
   },
-  sectionTitle: { fontSize: 22, fontWeight: '700', color: '#0f172a' },
-  sectionSubtitle: { color: '#64748b', marginTop: 3 },
-  roleCard: {
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(148,163,184,0.25)',
-    backgroundColor: '#fff',
-    overflow: 'hidden',
+  btnPrimary: {
+    backgroundColor: CTA_TEAL,
+    borderColor: CTA_TEAL,
   },
-  roleImage: { width: '100%', height: 110 },
-  roleBody: { padding: 14 },
-  roleTitle: { fontWeight: '600', color: '#0f172a' },
-  roleDesc: { color: '#64748b', fontSize: 12, marginTop: 3 },
-  roleLink: { color: '#0E9384', fontWeight: '500', fontSize: 12 },
+  btnSecondary: {
+    backgroundColor: 'transparent',
+    borderColor: '#333',
+  },
+  btnMobile: { paddingHorizontal: 18, paddingVertical: 8 },
+  btnText: {
+    fontWeight: '700',
+    fontSize: 14,
+    letterSpacing: 1,
+  },
+  btnTextMobile: { fontSize: 11, letterSpacing: 0.5 },
 
-  stepCard: {
-    flex: 1,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(148,163,184,0.25)',
-    backgroundColor: '#fff',
-    padding: 16,
+  // Hero
+  heroSection: {
+    paddingHorizontal: 40,
+    paddingVertical: 10,
+    maxWidth: 1400,
+    width: '100%',
+    marginHorizontal: 'auto',
   },
-  stepBadge: {
-    width: 34,
-    height: 34,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: 'rgba(14,147,132,0.5)',
+  heroCard: {
+    backgroundColor: '#d3d3d3',
+    borderRadius: 24,
+    borderWidth: 3,
+    borderColor: '#000',
+    padding: 78,
+    position: 'relative',
+    overflow: 'visible',
+  },
+  heroCardMobile: {
+    padding: 32,
+    flexDirection: 'column',
+    alignItems: 'center',
+  },
+  heroContent: { maxWidth: 600, zIndex: 1 },
+  heroTitle: {
+    fontFamily: 'DancingScript',
+    fontSize: 50,
+    fontWeight: '900',
+    color: '#f58742',
+    marginBottom: 16,
+    textShadowColor: 'rgba(0,0,0,0.1)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
+    ...(Platform.OS === 'web' && {
+      WebkitTextStroke: '0.5px #f58742',
+    }),
+  },
+  heroTitleMobile: { fontSize: 36, textAlign: 'center' },
+  heroSubtitle: {
+    fontSize: 20,
+    color: '#333',
+    lineHeight: 32,
+  },
+  heroSubtitleMobile: { fontSize: 16, lineHeight: 24, textAlign: 'center' },
+  mascot: {
+    width: 280,
+    height: 280,
+    position: 'absolute',
+    right: 40,
+    bottom: -15,
+  },
+  mascotMobile: {
+    width: 200,
+    height: 200,
+    position: 'relative',
+    right: 'auto',
+    bottom: 'auto',
+    marginTop: 24,
+  },
+
+  // Roles
+  rolesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 24,
+    paddingHorizontal: 40,
+    paddingVertical: 10,
+    maxWidth: 1400,
+    width: '100%',
+    marginHorizontal: 'auto',
+  },
+  rolesGridMobile: {
+    flexDirection: 'column',
+    gap: 16,
+    paddingHorizontal: 20,
+  },
+  roleCard: {
+    flex: 1,
+    minWidth: 280,
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  roleCardMobile: {
+    minWidth: '100%',
+    padding: 20,
+  },
+  roleIcon: { fontSize: 48, marginBottom: 12 },
+  roleTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#333',
+    marginBottom: 8,
+  },
+  roleDesc: {
+    fontSize: 14,
+    color: '#666',
+    lineHeight: 20,
+  },
+
+  // CTA
+  ctaSection: {
+    paddingHorizontal: 40,
+    paddingVertical: 60,
+    alignItems: 'center',
+    backgroundColor: '#f8f5f0',
+  },
+  ctaTitle: {
+    fontFamily: 'DancingScript',
+    fontSize: 50,
+    fontWeight: '900',
+    color: '#333',
+    marginBottom: 32,
+    textAlign: 'center',
+    textShadowColor: 'rgba(0,0,0,0.1)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
+    ...(Platform.OS === 'web' && {
+      WebkitTextStroke: '0.5px #333',
+    }),
+  },
+  ctaTitleMobile: { fontSize: 36, marginBottom: 24 },
+  ctaButton: {
+    backgroundColor: CTA_TEAL,
+    paddingHorizontal: 48,
+    paddingVertical: 16,
+    borderRadius: 30,
+    shadowColor: CTA_TEAL,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  ctaButtonMobile: {
+    paddingHorizontal: 36,
+    paddingVertical: 14,
+  },
+  ctaButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '700',
+    letterSpacing: 1.5,
+  },
+  ctaButtonTextMobile: { fontSize: 16 },
+
+  // Footer
+  footer: {
+    backgroundColor: '#333',
+    paddingVertical: 32,
+    paddingHorizontal: 40,
+  },
+  footerContent: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 10,
+    gap: 16,
+    maxWidth: 1400,
+    marginHorizontal: 'auto',
+    flexWrap: 'wrap',
   },
-  stepBadgeText: { fontWeight: '700', color: '#0E9384' },
-  stepTitle: { fontWeight: '600', color: '#0f172a', marginBottom: 4 },
-  stepDesc: { color: '#64748b', fontSize: 12 },
-
-  footer: {
-    width: '100%',
-    paddingHorizontal: 28,
-    paddingTop: 30,
+  footerContentMobile: {
+    flexDirection: 'column',
+    gap: 12,
   },
-  footerText: { color: '#94a3b8', fontSize: 12 },
+  footerLink: {
+    color: '#fff',
+    fontSize: 14,
+    textDecorationLine: 'none',
+  },
+  footerDivider: {
+    color: '#666',
+    fontSize: 14,
+  },
 });
