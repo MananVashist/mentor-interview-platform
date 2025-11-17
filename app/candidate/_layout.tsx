@@ -20,34 +20,35 @@ export default function CandidateLayout() {
     router.replace('/(auth)/sign-in');
   };
 
-  // Side menu items as per requirement
+  // Side menu items with correct URLs (route groups are invisible)
   const menuItems = [
     { 
       name: 'Browse Mentors', 
-      path: '/(candidate)', 
+      path: '/candidate', 
       icon: 'search-outline',
       description: 'Find and book mentors'
     },
     { 
       name: 'My Profile', 
-      path: '/(candidate)/profile', 
+      path: '/candidate/profile', 
       icon: 'person-outline',
       description: 'Resume & LinkedIn'
     },
     { 
       name: 'My Bookings', 
-      path: '/(candidate)/bookings', 
+      path: '/candidate/bookings', 
       icon: 'calendar-outline',
       description: 'Your upcoming sessions'
     },
   ];
 
   const isActive = (path: string) => {
-    if (path === '/(candidate)') {
-      return pathname === '/(candidate)' || pathname === '/' || 
-             (pathname.includes('/(candidate)') && !pathname.includes('/profile') && !pathname.includes('/bookings'));
+    if (path === '/candidate') {
+      // Home is active only when exactly at root, not on subpages
+      return pathname === '/candidate' || (pathname === '/' && !pathname.includes('/profile') && !pathname.includes('/bookings'));
     }
-    return pathname.includes(path);
+    // For other paths, check exact match or if pathname starts with the path
+    return pathname === path || pathname.startsWith(path + '/');
   };
 
   const Sidebar = () => (
@@ -85,7 +86,7 @@ export default function CandidateLayout() {
                 <Ionicons
                   name={item.icon as any}
                   size={22}
-                  color={active ? '#2563eb' : '#6b7280'}
+                  color={active ? '#0E9384' : '#6b7280'}
                 />
                 <View style={styles.menuTextContainer}>
                   <Text style={[styles.menuText, active && styles.menuTextActive]}>
@@ -121,7 +122,7 @@ export default function CandidateLayout() {
           >
             <Ionicons name={menuOpen ? "close" : "menu"} size={24} color="#111827" />
           </TouchableOpacity>
-          <Text style={styles.mobileHeaderTitle}>Interview Platform</Text>
+          <Text style={styles.mobileHeaderTitle}>CrackJobs</Text>
           <View style={{ width: 40 }} />
         </View>
       )}
@@ -218,7 +219,7 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: '#2563eb',
+    backgroundColor: '#0E9384', // Brand teal
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 12,
@@ -259,7 +260,7 @@ const styles = StyleSheet.create({
     marginVertical: 2,
   },
   menuItemActive: {
-    backgroundColor: '#eff6ff',
+    backgroundColor: 'rgba(14,147,132,0.08)', // Brand teal with opacity
   },
   menuItemContent: {
     flexDirection: 'row',
@@ -277,7 +278,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   menuTextActive: {
-    color: '#2563eb',
+    color: '#0E9384', // Brand teal
     fontWeight: '600',
   },
   menuDescription: {
@@ -287,7 +288,7 @@ const styles = StyleSheet.create({
   activeIndicator: {
     width: 3,
     height: '100%',
-    backgroundColor: '#2563eb',
+    backgroundColor: '#0E9384', // Brand teal
     position: 'absolute',
     right: 0,
     top: 0,

@@ -49,16 +49,16 @@ export default function OAuthCallback() {
           // route by role
           switch (profile.role) {
             case 'candidate':
-              router.replace('/(candidate)');
+              router.replace('/candidate');
               break;
             case 'mentor':
-              router.replace('/(mentor)');
+              router.replace('/mentor');
               break;
             case 'admin':
               router.replace('/(admin)');
               break;
             default:
-              router.replace('/(candidate)');
+              router.replace('/candidate');
               break;
           }
         } else {

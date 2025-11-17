@@ -44,8 +44,8 @@ mentor-interview-platform/
 ├── app/                      # Expo Router screens
 │   ├── _layout.tsx          # Root layout with auth check
 │   ├── (auth)/              # Auth screens (sign-in, sign-up)
-│   ├── (candidate)/         # Candidate app screens
-│   ├── (mentor)/            # Mentor app screens
+│   ├── candidate/         # Candidate app screens
+│   ├── mentor/            # Mentor app screens
 │   └── (admin)/             # Admin dashboard screens
 ├── components/              # UI components (empty dirs ready)
 ├── services/                # API service layer

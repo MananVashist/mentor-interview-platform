@@ -141,9 +141,9 @@ export default function SignUpScreen() {
       showBanner('Account created successfully!', 'success');
 
       if (role === 'candidate') {
-        router.replace('/(candidate)');
+        router.replace('/candidate');
       } else if (role === 'mentor') {
-        router.replace('/(mentor)');
+        router.replace('/mentor');
       } else {
         router.replace('/(admin)');
       }

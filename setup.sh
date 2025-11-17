@@ -212,8 +212,8 @@ log_info "Step 6/7: Validating project structure..."
 
 REQUIRED_DIRS=(
     "app/(auth)"
-    "app/(candidate)"
-    "app/(mentor)"
+    "app/candidate"
+    "app/mentor"
     "app/(admin)"
     "components"
     "services"

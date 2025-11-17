@@ -1,11 +1,10 @@
-// app/(candidate)/mentors.tsx
+// app/candidate/mentors.tsx
 import React, { useEffect, useState } from 'react';
 import {
   View,
   ScrollView,
   StyleSheet,
   ActivityIndicator,
-  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -25,8 +24,8 @@ type Mentor = {
     full_name?: string | null;
     avatar_url?: string | null;
   };
-  session_price_inr?: number | null;
-  session_price?: number | null;
+  session_price_inr?: number | null; // mentor’s own price
+  session_price?: number | null;     // legacy fallback
   mentor_level?: string | null;
 };
 
@@ -65,10 +64,8 @@ export default function CandidateMentorsList() {
   }, []);
 
   const handleView = (id: string) => {
-    // Use Expo Router navigation instead of window.location
-    // Route file: app/(candidate)/[id].tsx
     router.push({
-      pathname: '/(candidate)/[id]',
+      pathname: '/candidate/[id]',
       params: { id },
     });
   };
@@ -78,7 +75,7 @@ export default function CandidateMentorsList() {
       <Section style={styles.header}>
         <Heading>All Mentors</Heading>
         <AppText style={styles.sub}>
-          Mentors available for the profiles added by admin.
+          Anonymous mentors available for the profiles added by admin.
         </AppText>
       </Section>
 
@@ -97,29 +94,28 @@ export default function CandidateMentorsList() {
         ) : (
           <View style={{ gap: spacing.md }}>
             {mentors.map((m) => {
-              const price = m.session_price_inr || m.session_price || 0;
+              const basePrice = m.session_price_inr ?? m.session_price ?? 0;
+              const candidatePrice = basePrice
+                ? Math.round(basePrice * 1.2)
+                : 0;
+
               return (
                 <Card key={m.id} style={styles.card}>
                   <View style={styles.row}>
-                    {m.profile?.avatar_url ? (
-                      <Image
-                        source={{ uri: m.profile.avatar_url }}
-                        style={styles.avatar}
+                    <View style={styles.avatarPlaceholder}>
+                      <Ionicons
+                        name="person-outline"
+                        size={22}
+                        color={colors.surface}
                       />
-                    ) : (
-                      <View style={styles.avatarPlaceholder}>
-                        <AppText style={styles.avatarInitial}>
-                          {m.profile?.full_name?.charAt(0) || 'M'}
-                        </AppText>
-                      </View>
-                    )}
+                    </View>
                     <View style={{ flex: 1 }}>
                       <AppText style={styles.name}>
-                        {m.profile?.full_name || 'Mentor'}
+                        Interview mentor
                       </AppText>
                       <AppText style={styles.title}>
                         {m.professional_title ||
-                          (m.expertise_profiles || []).join(', ')}
+                          'Experienced CrackJobs mentor'}
                       </AppText>
                       {m.experience_description ? (
                         <AppText numberOfLines={2} style={styles.desc}>
@@ -128,13 +124,17 @@ export default function CandidateMentorsList() {
                       ) : null}
                     </View>
                     <View>
-                      <AppText style={styles.priceLabel}>Per session</AppText>
-                      <AppText style={styles.priceValue}>₹{price}</AppText>
+                      <AppText style={styles.priceLabel}>
+                        Per booking (2 sessions)
+                      </AppText>
+                      <AppText style={styles.priceValue}>
+                        ₹{candidatePrice.toLocaleString('en-IN')}
+                      </AppText>
                     </View>
                   </View>
                   <View style={styles.actions}>
                     <Button
-                      title="View & Book"
+                      title="View details"
                       size="sm"
                       onPress={() => handleView(m.id)}
                     />
@@ -164,16 +164,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.md,
   },
-  avatar: { width: 48, height: 48, borderRadius: 48 },
   avatarPlaceholder: {
     width: 48,
     height: 48,
     borderRadius: 48,
-    backgroundColor: colors.backgroundSecondary,
+    backgroundColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  avatarInitial: { fontWeight: '700' },
   name: { fontWeight: '700', fontSize: typography.size.md },
   title: { color: colors.textSecondary, fontSize: typography.size.sm },
   desc: { color: colors.textTertiary, marginTop: spacing.xs },

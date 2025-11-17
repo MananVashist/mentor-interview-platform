@@ -6,7 +6,7 @@ export default function MentorIndex() {
 
   useEffect(() => {
     // Redirect to profile page by default
-    router.replace('/(mentor)/profile');
+    router.replace('/mentor/profile');
   }, []);
 
   return null;

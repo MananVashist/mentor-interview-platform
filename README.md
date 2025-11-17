@@ -124,12 +124,12 @@ mentor-interview-platform/
 │   ├── (auth)/                   # Authentication screens
 │   │   ├── sign-in.tsx
 │   │   └── sign-up.tsx
-│   ├── (candidate)/              # Candidate screens
+│   ├── candidate/              # Candidate screens
 │   │   ├── index.tsx             # Dashboard
 │   │   ├── mentors.tsx           # Browse mentors
 │   │   ├── sessions.tsx          # View sessions
 │   │   └── packages.tsx          # Interview packages
-│   ├── (mentor)/                 # Mentor screens
+│   ├── mentor/                 # Mentor screens
 │   │   ├── index.tsx             # Dashboard
 │   │   ├── availability.tsx      # Set availability
 │   │   ├── sessions.tsx          # Manage sessions

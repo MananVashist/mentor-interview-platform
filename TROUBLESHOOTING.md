@@ -508,15 +508,15 @@ await AsyncStorage.setItem('key', 'value');
 
 1. **Check file exists**:
 ```bash
-# For route: /(candidate)/mentors
-# File should be: app/(candidate)/mentors.tsx
+# For route: /candidate/mentors
+# File should be: app/candidate/mentors.tsx
 ls app/\(candidate\)/mentors.tsx
 ```
 
 2. **Use correct Link syntax**:
 ```typescript
 // ✅ Correct
-<Link href="/(candidate)/mentors">Go to Mentors</Link>
+<Link href="/candidate/mentors">Go to Mentors</Link>
 
 // ❌ Wrong
 <Link href="/candidate/mentors">Go to Mentors</Link>

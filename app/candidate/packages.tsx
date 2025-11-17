@@ -1,19 +1,25 @@
-﻿// app/(candidate)/sessions.tsx
+﻿// app/candidate/packages.tsx
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { colors, spacing, borderRadius, typography } from '@/lib/theme';
-import { Heading, AppText, Card, Section, Button } from '@/lib/ui';
+import { Heading, AppText, Card, Button, Section } from '@/lib/ui';
 
-export default function SessionsScreen() {
+export default function PackagesScreen() {
   return (
     <View style={styles.container}>
       <Section style={styles.centerWrap}>
         <Card style={styles.card}>
-          <Heading>Sessions</Heading>
+          <Heading>Packages</Heading>
           <AppText style={styles.sub}>Coming soon</AppText>
 
           <View style={{ height: spacing.lg }} />
-          <Button title="Refresh" variant="outline" onPress={() => { /* no-op */ }} />
+          <Button
+            title="Back to Dashboard"
+            variant="outline"
+            onPress={() => {
+              /* no-op for now */
+            }}
+          />
         </Card>
       </Section>
     </View>
@@ -36,14 +42,14 @@ const styles = StyleSheet.create({
     maxWidth: 560,
     padding: spacing.lg,
     borderRadius: borderRadius.lg,
-    backgroundColor: colors.surface ?? colors.background,
+    backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
     alignItems: 'center',
   },
   sub: {
     marginTop: spacing.sm,
-    color: colors.textMuted ?? colors.text,
+    color: colors.textSecondary,
     fontSize: typography.body,
   },
 });
