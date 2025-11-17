@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Pressable, useWindowDimensions } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Pressable, useWindowDimensions } from 'react-native';
 import { Slot, useRouter, usePathname } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '@/lib/store';
@@ -21,16 +21,28 @@ export default function MentorLayout() {
   };
 
   const menuItems = [
-    { name: 'My Profile', path: '/(mentor)/profile', icon: 'person' },
-    { name: 'My Bookings', path: '/(mentor)/bookings', icon: 'calendar' },
-    { name: 'My Mentorship', path: '/(mentor)/mentorship', icon: 'trophy' },
+    { 
+      name: 'My Profile', 
+      path: '/mentor/profile', 
+      icon: 'person-outline',
+      description: 'Professional details'
+    },
+    { 
+      name: 'Mentorship', 
+      path: '/mentor/mentorship', 
+      icon: 'school-outline',
+      description: 'Pricing & levels'
+    },
+    { 
+      name: 'My Bookings', 
+      path: '/mentor/bookings', 
+      icon: 'calendar-outline',
+      description: 'Scheduled sessions'
+    },
   ];
 
   const isActive = (path: string) => {
-    if (path === '/(mentor)/profile') {
-      return pathname === '/(mentor)/profile' || pathname === '/(mentor)' || pathname === '/';
-    }
-    return pathname === path;
+    return pathname === path || pathname.startsWith(path + '/');
   };
 
   const Sidebar = () => (
@@ -39,7 +51,7 @@ export default function MentorLayout() {
       <View style={styles.userSection}>
         <View style={styles.avatarCircle}>
           <Text style={styles.avatarText}>
-            {profile?.full_name?.charAt(0) || 'M'}
+            {profile?.full_name?.charAt(0).toUpperCase() || 'M'}
           </Text>
         </View>
         <Text style={styles.userName} numberOfLines={1}>
@@ -48,14 +60,11 @@ export default function MentorLayout() {
         <Text style={styles.userEmail} numberOfLines={1}>
           {profile?.email}
         </Text>
-        <View style={styles.badge}>
-          <Ionicons name="star" size={14} color="#f59e0b" />
-          <Text style={styles.badgeText}>Bronze Mentor</Text>
-        </View>
       </View>
 
-      {/* Navigation */}
-      <ScrollView style={styles.menuScroll}>
+      {/* Navigation Menu */}
+      <View style={styles.menuContainer}>
+        <Text style={styles.menuLabel}>MENU</Text>
         {menuItems.map((item) => {
           const active = isActive(item.path);
           return (
@@ -67,20 +76,28 @@ export default function MentorLayout() {
                 setMenuOpen(false);
               }}
             >
-              <Ionicons
-                name={item.icon as any}
-                size={20}
-                color={active ? '#7c3aed' : '#6b7280'}
-              />
-              <Text style={[styles.menuText, active && styles.menuTextActive]}>
-                {item.name}
-              </Text>
+              <View style={styles.menuItemContent}>
+                <Ionicons
+                  name={item.icon as any}
+                  size={22}
+                  color={active ? '#0E9384' : '#6b7280'}
+                />
+                <View style={styles.menuTextContainer}>
+                  <Text style={[styles.menuText, active && styles.menuTextActive]}>
+                    {item.name}
+                  </Text>
+                  <Text style={styles.menuDescription}>
+                    {item.description}
+                  </Text>
+                </View>
+              </View>
+              {active && <View style={styles.activeIndicator} />}
             </TouchableOpacity>
           );
         })}
-      </ScrollView>
+      </View>
 
-      {/* Sign Out */}
+      {/* Sign Out Button */}
       <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
         <Ionicons name="log-out-outline" size={20} color="#ef4444" />
         <Text style={styles.signOutText}>Sign Out</Text>
@@ -93,29 +110,35 @@ export default function MentorLayout() {
       {/* Mobile Header */}
       {!isDesktop && (
         <View style={styles.mobileHeader}>
-          <TouchableOpacity onPress={() => setMenuOpen(!menuOpen)}>
-            <Ionicons name="menu" size={24} color="#111827" />
+          <TouchableOpacity 
+            onPress={() => setMenuOpen(!menuOpen)}
+            style={styles.menuButton}
+          >
+            <Ionicons name={menuOpen ? "close" : "menu"} size={24} color="#111827" />
           </TouchableOpacity>
-          <Text style={styles.mobileHeaderTitle}>Mentor Dashboard</Text>
-          <View style={{ width: 24 }} />
+          <Text style={styles.mobileHeaderTitle}>CrackJobs</Text>
+          <View style={{ width: 40 }} />
         </View>
       )}
 
       <View style={styles.content}>
-        {/* Desktop Sidebar - Always visible */}
+        {/* Desktop Sidebar */}
         {isDesktop && <Sidebar />}
 
-        {/* Mobile Sidebar - Overlay */}
+        {/* Mobile Sidebar */}
         {!isDesktop && menuOpen && (
           <>
-            <Pressable style={styles.overlay} onPress={() => setMenuOpen(false)} />
+            <Pressable 
+              style={styles.overlay} 
+              onPress={() => setMenuOpen(false)} 
+            />
             <View style={styles.sidebarMobile}>
               <Sidebar />
             </View>
           </>
         )}
 
-        {/* Main Content */}
+        {/* Main Content Area */}
         <View style={styles.mainContent}>
           <Slot />
         </View>
@@ -134,14 +157,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 14,
     backgroundColor: '#ffffff',
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
   },
+  menuButton: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   mobileHeaderTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: '700',
     color: '#111827',
   },
   content: {
@@ -159,7 +188,9 @@ const styles = StyleSheet.create({
     left: 0,
     top: 0,
     bottom: 0,
+    width: 280,
     zIndex: 50,
+    backgroundColor: '#ffffff',
   },
   overlay: {
     position: 'absolute',
@@ -172,82 +203,100 @@ const styles = StyleSheet.create({
   },
   userSection: {
     padding: 24,
+    paddingTop: 32,
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
     alignItems: 'center',
+    backgroundColor: '#fafafa',
   },
   avatarCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: '#7c3aed',
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: '#0E9384', // Brand teal
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 12,
   },
   avatarText: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: 'bold',
     color: '#ffffff',
   },
   userName: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '600',
     color: '#111827',
     marginBottom: 4,
   },
   userEmail: {
-    fontSize: 12,
+    fontSize: 13,
     color: '#6b7280',
-    marginBottom: 8,
   },
-  badge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fef3c7',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
-    gap: 4,
-  },
-  badgeText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#92400e',
-  },
-  menuScroll: {
+  menuContainer: {
     flex: 1,
-    paddingTop: 8,
+    paddingTop: 16,
+  },
+  menuLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#9ca3af',
+    paddingHorizontal: 20,
+    marginBottom: 8,
+    letterSpacing: 0.5,
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
+    justifyContent: 'space-between',
+    paddingVertical: 14,
     paddingHorizontal: 20,
-    gap: 12,
+    marginVertical: 2,
   },
   menuItemActive: {
-    backgroundColor: '#f5f3ff',
-    borderRightWidth: 3,
-    borderRightColor: '#7c3aed',
+    backgroundColor: 'rgba(14,147,132,0.08)', // Brand teal with opacity
+  },
+  menuItemContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: 14,
+  },
+  menuTextContainer: {
+    flex: 1,
   },
   menuText: {
     fontSize: 15,
     color: '#6b7280',
     fontWeight: '500',
+    marginBottom: 2,
   },
   menuTextActive: {
-    color: '#7c3aed',
+    color: '#0E9384', // Brand teal
     fontWeight: '600',
+  },
+  menuDescription: {
+    fontSize: 11,
+    color: '#9ca3af',
+  },
+  activeIndicator: {
+    width: 3,
+    height: '100%',
+    backgroundColor: '#0E9384', // Brand teal
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    bottom: 0,
   },
   signOutButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: 16,
     paddingHorizontal: 20,
     gap: 12,
     borderTopWidth: 1,
     borderTopColor: '#e5e7eb',
+    marginTop: 'auto',
   },
   signOutText: {
     fontSize: 15,
@@ -256,5 +305,6 @@ const styles = StyleSheet.create({
   },
   mainContent: {
     flex: 1,
+    backgroundColor: '#ffffff',
   },
 });

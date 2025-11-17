@@ -170,8 +170,8 @@ npm start -- --clear
 mentor-interview-platform/
 ├── app/                    # All screens
 │   ├── (auth)/            # Login, signup
-│   ├── (candidate)/       # Candidate screens
-│   ├── (mentor)/          # Mentor screens
+│   ├── candidate/       # Candidate screens
+│   ├── mentor/          # Mentor screens
 │   └── (admin)/           # Admin screens
 ├── services/              # API calls
 ├── lib/                   # Utilities

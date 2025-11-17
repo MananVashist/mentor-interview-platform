@@ -67,8 +67,8 @@ Your zip file contains a fully functional React Native + Supabase application wi
 mentor-interview-platform/
 ├── app/                    # Screens (Expo Router)
 │   ├── (auth)/            # Sign in/up screens
-│   ├── (candidate)/       # Candidate app
-│   ├── (mentor)/          # Mentor app
+│   ├── candidate/       # Candidate app
+│   ├── mentor/          # Mentor app
 │   └── (admin)/           # Admin dashboard
 ├── components/            # Reusable UI components
 ├── services/             # API services layer
