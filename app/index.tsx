@@ -1,5 +1,5 @@
 ﻿// app/index.tsx
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,19 +10,14 @@ import {
   useWindowDimensions,
   Animated,
   ScrollView,
-  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useAuthStore } from '@/lib/store';
-import { supabase } from '@/lib/supabase/client';
 
 const CTA_TEAL = '#18a7a7';
 
 export default function LandingPage() {
   const router = useRouter();
   const { width } = useWindowDimensions();
-  const { profile, setProfile } = useAuthStore();
-  const [checking, setChecking] = useState(true);
   const isSmall = width < 900;
 
   // Eye animation
@@ -31,77 +26,9 @@ export default function LandingPage() {
   const rightEyeX = React.useRef(new Animated.Value(0)).current;
   const rightEyeY = React.useRef(new Animated.Value(0)).current;
 
-  // Check if user is already logged in and redirect to appropriate dashboard
-  useEffect(() => {
-    let mounted = true;
-
-    const checkAuth = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!session?.user) {
-          // No session, stay on landing page
-          if (mounted) setChecking(false);
-          return;
-        }
-
-        // Has session, check if we have profile in store
-        if (profile?.role) {
-          // Already have profile, route immediately
-          routeToRole(profile.role);
-          return;
-        }
-
-        // Need to load profile from database
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
-
-        if (mounted && profileData) {
-          setProfile(profileData as any);
-          routeToRole(profileData.role);
-        } else {
-          // No profile found, stay on landing
-          if (mounted) setChecking(false);
-        }
-      } catch (error) {
-        console.log('[index] Auth check error:', error);
-        if (mounted) setChecking(false);
-      }
-    };
-
-    checkAuth();
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  const routeToRole = (role: string | null) => {
-    if (!role) return;
-    
-    switch (role) {
-      case 'candidate':
-        router.replace('/(candidate)');
-        break;
-      case 'mentor':
-        router.replace('/(mentor)');
-        break;
-      case 'admin':
-        router.replace('/(admin)');
-        break;
-      default:
-        setChecking(false);
-        break;
-    }
-  };
-
   useEffect(() => {
     const animateEyes = () => {
       const randomMove = () => {
-        // more twitchy: bigger movement, shorter duration, faster interval
         const maxMove = 10;
 
         const makeTwitch = (xVal: Animated.Value, yVal: Animated.Value) => {
@@ -128,7 +55,7 @@ export default function LandingPage() {
       };
 
       randomMove();
-      const interval = setInterval(randomMove, 120); // faster twitch
+      const interval = setInterval(randomMove, 120);
       return () => clearInterval(interval);
     };
 
@@ -144,16 +71,6 @@ export default function LandingPage() {
     { icon: '🤖', title: 'Data Scientist / ML Engineer', desc: 'ML, Python, Statistics' },
     { icon: '👥', title: 'HR / Talent Acquisition', desc: 'Recruiting, Culture Fit' },
   ];
-
-  // Show loading while checking auth
-  if (checking) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={CTA_TEAL} />
-        <Text style={styles.loadingText}>Loading...</Text>
-      </View>
-    );
-  }
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
@@ -309,17 +226,6 @@ export default function LandingPage() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f8f5f0' },
   scrollContent: { minHeight: '100%' },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f8f5f0',
-  },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: '#666',
-  },
 
   // Header
   header: { backgroundColor: '#f8f5f0', paddingVertical: 16 },
