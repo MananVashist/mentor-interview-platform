@@ -107,43 +107,46 @@ export default function CandidateDashboard() {
   }, []);
 
   // Fetch mentors for selected profile
-  const fetchMentorsForProfile = useCallback(async (profileName: string | null) => {
-    if (!profileName) return;
-    setMentorsLoading(true);
-    try {
-      const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/mentors?select=*,profile:profiles(*)`,
-        {
-          headers: {
-            apikey: SUPABASE_ANON_KEY,
-            Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-          },
+  const fetchMentorsForProfile = useCallback(
+    async (profileName: string | null) => {
+      if (!profileName) return;
+      setMentorsLoading(true);
+      try {
+        const res = await fetch(
+          `${SUPABASE_URL}/rest/v1/mentors?select=*,profile:profiles(*)`,
+          {
+            headers: {
+              apikey: SUPABASE_ANON_KEY,
+              Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+            },
+          }
+        );
+        const text = await res.text();
+        if (res.ok) {
+          const data = JSON.parse(text) as Mentor[];
+          const filtered = (data || []).filter((m) =>
+            Array.isArray(m.expertise_profiles)
+              ? m.expertise_profiles.includes(profileName)
+              : false
+          );
+          setMentors(filtered);
+        } else {
+          console.log(
+            "[candidate/index] mentors fetch failed",
+            res.status,
+            text
+          );
+          setMentors([]);
         }
-      );
-      const text = await res.text();
-      if (res.ok) {
-        const data = JSON.parse(text) as Mentor[];
-        const filtered = (data || []).filter((m) =>
-          Array.isArray(m.expertise_profiles)
-            ? m.expertise_profiles.includes(profileName)
-            : false
-        );
-        setMentors(filtered);
-      } else {
-        console.log(
-          "[candidate/index] mentors fetch failed",
-          res.status,
-          text
-        );
+      } catch (err) {
+        console.log("[candidate/index] mentors fetch error", err);
         setMentors([]);
+      } finally {
+        setMentorsLoading(false);
       }
-    } catch (err) {
-      console.log("[candidate/index] mentors fetch error", err);
-      setMentors([]);
-    } finally {
-      setMentorsLoading(false);
-    }
-  }, []);
+    },
+    []
+  );
 
   // Refresh mentors when selection changes
   useEffect(() => {
@@ -288,34 +291,20 @@ export default function CandidateDashboard() {
                     : 0;
                   const levelConfig = getLevelBadgeStyle(m.mentor_level);
 
-                  const profileLabel = selectedProfile
-                    ? `${selectedProfile} mentor`
-                    : "Interview mentor";
-
                   return (
                     <Card
                       key={m.id}
                       style={[styles.mentorCard, shadows.card as any]}
                     >
-                      {/* Header with anonymous avatar and level */}
+                      {/* Header: title + experience + level badge (no avatar) */}
                       <View style={styles.mentorHeader}>
-                        <View style={styles.mentorAvatar}>
-                          <Ionicons
-                            name="person-outline"
-                            size={22}
-                            color="#FFFFFF"
-                          />
-                        </View>
                         <View style={styles.mentorInfo}>
-                          {/* Anonymised primary label */}
                           <AppText style={styles.mentorName}>
-                            {profileLabel}
+                            {m.professional_title ||
+                              "Backend Engineer (Node/Java/Python)"}
                           </AppText>
-                          <AppText
-                            style={styles.mentorTitle}
-                            numberOfLines={1}
-                          >
-                            {m.professional_title || "CrackJobs mentor"}
+                          <AppText style={styles.mentorTitle}>
+                            5 years experience
                           </AppText>
                         </View>
                         <View
@@ -324,89 +313,68 @@ export default function CandidateDashboard() {
                             { backgroundColor: levelConfig.bg },
                           ]}
                         >
-                          <Ionicons
-                            name={levelConfig.icon}
-                            size={12}
-                            color={levelConfig.fg}
-                          />
                           <AppText
                             style={[
                               styles.levelBadgeText,
                               { color: levelConfig.fg },
                             ]}
                           >
-                            {(m.mentor_level || "bronze").toUpperCase()}
+                            {(m.mentor_level || "BRONZE").toUpperCase()}
                           </AppText>
                         </View>
                       </View>
 
-                      {/* Stats */}
-                      {m.total_sessions != null && m.total_sessions > 0 && (
-                        <View style={styles.mentorStats}>
-                          <View style={styles.statItem}>
-                            <Ionicons
-                              name="checkmark-done"
-                              size={14}
-                              color={colors.success}
-                            />
-                            <AppText style={styles.statText}>
-                              {m.total_sessions} sessions completed
-                            </AppText>
-                          </View>
-                        </View>
-                      )}
-
                       {/* Description */}
                       {m.experience_description ? (
-                        <AppText numberOfLines={3} style={styles.mentorDesc}>
+                        <AppText style={styles.mentorDesc}>
                           {m.experience_description}
                         </AppText>
                       ) : (
                         <AppText style={styles.mentorDescPlaceholder}>
-                          Experienced professional ready to help you crack your
-                          interviews.
+                          Covers API design, REST fundamentals, auth, SQL/NoSQL
+                          choices, caching and debugging – same as the backend
+                          profile. Will also do a quick behavioral/on-call
+                          scenario.
                         </AppText>
                       )}
 
-                      {/* Expertise tags */}
-                      {m.expertise_profiles &&
-                        m.expertise_profiles.length > 0 && (
-                          <View style={styles.expertiseTags}>
-                            {m.expertise_profiles.slice(0, 3).map((tag, idx) => (
-                              <View key={idx} style={styles.expertiseTag}>
-                                <AppText style={styles.expertiseTagText}>
-                                  {tag}
-                                </AppText>
-                              </View>
-                            ))}
-                            {m.expertise_profiles.length > 3 && (
-                              <View style={styles.expertiseTag}>
-                                <AppText style={styles.expertiseTagText}>
-                                  +{m.expertise_profiles.length - 3}
-                                </AppText>
-                              </View>
-                            )}
-                          </View>
-                        )}
+                      {/* Divider */}
+                      <View style={styles.mentorDivider} />
 
-                      {/* Footer with price and action */}
-                      <View style={styles.mentorFooter}>
-                        <View style={styles.priceSection}>
-                          <AppText style={styles.priceLabel}>
-                            Per booking (2 sessions)
-                          </AppText>
-                          <AppText style={styles.priceValue}>
-                            ₹{candidatePrice.toLocaleString("en-IN")}
-                          </AppText>
+                      {/* Price block */}
+                      <View style={styles.priceSection}>
+                        <AppText style={styles.priceValue}>
+                          {candidatePrice
+                            ? `₹${candidatePrice.toLocaleString("en-IN")}`
+                            : "Price on request"}
+                        </AppText>
+                        <AppText style={styles.priceLabel}>
+                          Per session (2 sessions booked)
+                        </AppText>
+                        {candidatePrice ? (
                           <AppText style={styles.priceSub}>
-                            Mentor payout + 20% platform fee
+                            + 20% platform fee
                           </AppText>
-                        </View>
+                        ) : null}
+                      </View>
+
+                      {/* Divider */}
+                      <View style={styles.mentorDivider} />
+
+                      {/* Actions row */}
+                      <View style={styles.actionsRow}>
                         <Button
                           title="View details"
-                          onPress={() => handleViewMentor(m.id)}
                           size="sm"
-                          style={styles.viewButton}
+                          variant="outline"
+                          style={styles.actionButton}
+                          onPress={() => handleViewMentor(m.id)}
+                        />
+                        <Button
+                          title="Book now →"
+                          size="sm"
+                          style={styles.actionButton}
+                          onPress={() => handleViewMentor(m.id)}
                         />
                       </View>
                     </Card>
@@ -518,12 +486,16 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.lg,
     padding: spacing.md,
     backgroundColor: colors.surface,
+    width: "100%",
+  maxWidth: 900,        // 🔹 keeps it tight on big monitors
+  alignSelf: "center",
   },
   mentorHeader: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     marginBottom: spacing.sm,
   },
+  // mentorAvatar remains unused but kept for minimal changes
   mentorAvatar: {
     width: 40,
     height: 40,
@@ -604,18 +576,19 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
 
-  mentorFooter: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: spacing.md,
+  mentorDivider: {
+    height: 1,
+    backgroundColor: colors.border,
+    marginVertical: spacing.md,
   },
+
   priceSection: {
     flexShrink: 1,
   },
   priceLabel: {
     fontSize: typography.size.xs,
-    color: colors.textTertiary,
+    color: colors.textSecondary,
+    marginTop: 2,
   },
   priceValue: {
     fontSize: typography.size.md,
@@ -627,6 +600,28 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginTop: 2,
   },
+
+  mentorFooter: {
+    // kept for backwards compatibility; no longer used
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: spacing.md,
+  },
+
+  actionsRow: {
+    flexDirection: "row",
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+     alignItems: "center",
+  justifyContent: "flex-end", 
+  },
+  actionButton: {
+    flex: 1,
+    minWidth: 160,   // 🔹 keeps them at a sensible size on web + mobile
+  flexShrink: 0,
+  },
+
   viewButton: {
     alignSelf: "flex-end",
   },

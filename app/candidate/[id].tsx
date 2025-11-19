@@ -19,8 +19,8 @@ import {
 import {
   Heading,
   AppText,
-  Section,
   Card,
+  Section,
   Button,
   ScreenBackground,
 } from '@/lib/ui';
@@ -31,25 +31,27 @@ const SUPABASE_ANON_KEY =
 
 type Mentor = {
   id: string;
+  email?: string;
   professional_title?: string | null;
   experience_description?: string | null;
-  years_of_experience?: number | null;
-  expertise_profiles?: string[] | null;
+  expertise_profiles?: string[];
+  profile?: {
+    full_name?: string | null;
+    avatar_url?: string | null;
+  };
   session_price_inr?: number | null;
   session_price?: number | null;
   total_sessions?: number | null;
   mentor_level?: string | null;
-  profile?: {
-    full_name?: string | null;
-  };
+  years_of_experience?: number | null;
 };
 
 export default function CandidateMentorDetail() {
-  const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const { id } = useLocalSearchParams<{ id: string }>();
 
-  const [loading, setLoading] = useState(true);
   const [mentor, setMentor] = useState<Mentor | null>(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -58,18 +60,21 @@ export default function CandidateMentorDetail() {
     (async () => {
       setLoading(true);
       setError(null);
+
       try {
-        const res = await fetch(
-          `${SUPABASE_URL}/rest/v1/mentors?select=*,profile:profiles(*)&id=eq.${id}`,
-          {
-            headers: {
-              apikey: SUPABASE_ANON_KEY,
-              Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-            },
-          }
-        );
+        const url = `${SUPABASE_URL}/rest/v1/mentors?select=*,profile:profiles(*)&id=eq.${id}`;
+        console.log('[candidate/[id]] fetching mentor', url);
+
+        const res = await fetch(url, {
+          headers: {
+            apikey: SUPABASE_ANON_KEY,
+            Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          },
+        });
 
         const text = await res.text();
+        console.log('[candidate/[id]] raw response', res.status, text);
+
         if (!res.ok) {
           console.log('[candidate/[id]] error response', text);
           setError('Could not load mentor details.');
@@ -94,7 +99,7 @@ export default function CandidateMentorDetail() {
   const handleBook = () => {
     if (!id) return;
     router.push({
-      pathname: '/candidate/bookings',
+      pathname: '/candidate/sessions',
       params: { mentorId: String(id) },
     });
   };
@@ -115,11 +120,6 @@ export default function CandidateMentorDetail() {
     }
   };
 
-  // Derive prices
-  const basePrice = mentor?.session_price_inr ?? mentor?.session_price ?? 0;
-  const candidatePrice = basePrice ? Math.round(basePrice * 1.2) : 0;
-  const platformFee = basePrice ? candidatePrice - basePrice : 0;
-
   if (loading) {
     return (
       <ScreenBackground>
@@ -137,59 +137,82 @@ export default function CandidateMentorDetail() {
     );
   }
 
-  if (!mentor) {
+  if (!mentor || error) {
     return (
       <ScreenBackground>
-        <Section
-          style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
-        >
-          <View style={styles.errorIcon}>
-            <Ionicons
-              name="alert-circle-outline"
-              size={64}
-              color={colors.textTertiary}
+        <ScrollView contentContainerStyle={{ paddingBottom: spacing.xl }}>
+          <Section>
+            <TouchableOpacity style={styles.backButton} onPress={handleBack}>
+              <Ionicons
+                name="chevron-back"
+                size={18}
+                color={colors.textPrimary}
+              />
+              <AppText style={styles.backText}>Back to mentors</AppText>
+            </TouchableOpacity>
+          </Section>
+
+          <Section style={{ alignItems: 'center', marginTop: spacing.xl }}>
+            <View style={styles.errorIcon}>
+              <Ionicons
+                name="alert-circle-outline"
+                size={64}
+                color={colors.textTertiary}
+              />
+            </View>
+            <Heading level={2} style={styles.errorTitle}>
+              Mentor Not Found
+            </Heading>
+            <AppText style={styles.errorText}>
+              {error || 'The mentor you are looking for could not be found.'}
+            </AppText>
+            <Button
+              title="Back to Mentors"
+              onPress={handleBack}
+              style={{ marginTop: spacing.lg }}
             />
-          </View>
-          <Heading level={2} style={styles.errorTitle}>
-            Mentor Not Found
-          </Heading>
-          <AppText style={styles.errorText}>
-            {error || 'The mentor you are looking for could not be found.'}
-          </AppText>
-          <Button
-            title="Back to Mentors"
-            onPress={handleBack}
-            style={{ marginTop: spacing.lg }}
-          />
-        </Section>
+          </Section>
+        </ScrollView>
       </ScreenBackground>
     );
   }
 
   const levelConfig = getLevelBadgeStyle(mentor.mentor_level);
+  const basePrice = mentor.session_price_inr ?? mentor.session_price ?? 0;
+  const platformFee = Math.round(basePrice * 0.2);
+  const candidatePrice = basePrice + platformFee;
 
   return (
     <ScreenBackground>
       <ScrollView contentContainerStyle={{ paddingBottom: spacing.xl }}>
-        {/* Back Button */}
-        <Section style={{ paddingTop: spacing.md }}>
-          <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-            <Ionicons
-              name="arrow-back"
-              size={20}
-              color={colors.textPrimary}
-            />
+        {/* Back link */}
+        <Section>
+          <TouchableOpacity style={styles.backButton} onPress={handleBack}>
+            <Ionicons name="chevron-back" size={18} color={colors.textPrimary} />
             <AppText style={styles.backText}>Back to mentors</AppText>
           </TouchableOpacity>
         </Section>
 
-        {/* Mentor Header Card */}
+        {/* Header Card */}
         <Section>
           <Card style={[styles.headerCard, shadows.card as any]}>
-            <View style={styles.headerTop}>
-              <View style={styles.mentorAvatar}>
-                <Ionicons name="person-outline" size={32} color="#FFFFFF" />
+            <View style={styles.headerTopRow}>
+              {/* Title + years of experience */}
+              <View style={{ flex: 1, paddingRight: spacing.md }}>
+                <Heading level={1} style={styles.mentorName}>
+                  {mentor.professional_title ||
+                    'Backend Engineer (Node/Java/Python)'}
+                </Heading>
+                {mentor.years_of_experience != null && (
+                  <AppText style={styles.mentorTitle}>
+                    {mentor.years_of_experience}{' '}
+                    {mentor.years_of_experience === 1 ? 'year' : 'years'}{' '}
+                    experience
+                  </AppText>
+                )}
               </View>
+
+              {/* Level badge */}
               <View
                 style={[
                   styles.levelBadgeLarge,
@@ -209,35 +232,8 @@ export default function CandidateMentorDetail() {
               </View>
             </View>
 
-            {/* anonymised title */}
-            <Heading level={1} style={styles.mentorName}>
-              Interview mentor
-            </Heading>
-
-            {mentor.professional_title && (
-              <AppText style={styles.mentorTitle}>
-                {mentor.professional_title}
-              </AppText>
-            )}
-
-            {/* Stats Row */}
+            {/* Stats Row – only sessions now */}
             <View style={styles.statsRow}>
-              {mentor.years_of_experience != null && (
-                <View style={styles.statItem}>
-                  <View style={styles.statIcon}>
-                    <Ionicons
-                      name="calendar-outline"
-                      size={18}
-                      color={colors.primary}
-                    />
-                  </View>
-                  <AppText style={styles.statText}>
-                    {mentor.years_of_experience}{' '}
-                    {mentor.years_of_experience === 1 ? 'year' : 'years'}
-                  </AppText>
-                </View>
-              )}
-
               {mentor.total_sessions != null && mentor.total_sessions > 0 && (
                 <View style={styles.statItem}>
                   <View style={styles.statIcon}>
@@ -262,7 +258,7 @@ export default function CandidateMentorDetail() {
             <Card style={[styles.card, shadows.card as any]}>
               <View style={styles.cardHeader}>
                 <Ionicons
-                  name="person-outline"
+                  name="information-circle-outline"
                   size={20}
                   color={colors.textTertiary}
                 />
@@ -297,11 +293,6 @@ export default function CandidateMentorDetail() {
               <View style={styles.expertiseGrid}>
                 {mentor.expertise_profiles.map((profile, idx) => (
                   <View key={idx} style={styles.expertiseCard}>
-                    <Ionicons
-                      name="school"
-                      size={16}
-                      color={colors.primary}
-                    />
                     <AppText style={styles.expertiseText}>{profile}</AppText>
                   </View>
                 ))}
@@ -359,11 +350,7 @@ export default function CandidateMentorDetail() {
                       { backgroundColor: 'rgba(37,99,235,0.1)' },
                     ]}
                   >
-                    <Ionicons
-                      name="business"
-                      size={16}
-                      color="#2563eb"
-                    />
+                    <Ionicons name="business" size={16} color="#2563eb" />
                   </View>
                   <AppText style={styles.pricingLabel}>Platform fee</AppText>
                 </View>
@@ -408,11 +395,9 @@ export default function CandidateMentorDetail() {
         {/* Book Button */}
         <Section>
           <Button
-            title="Book this mentor"
+            title="Schedule session"
             onPress={handleBook}
-            leftIcon={
-              <Ionicons name="calendar" size={20} color="#FFFFFF" />
-            }
+            leftIcon={<Ionicons name="calendar" size={20} color="#FFFFFF" />}
             style={styles.bookButton}
           />
           <AppText style={styles.bookHint}>
@@ -439,17 +424,19 @@ const styles = StyleSheet.create({
   headerCard: {
     padding: spacing.lg,
     borderRadius: borderRadius.lg,
+    width: '100%',
+    maxWidth: 900,
+    alignSelf: 'center',
   },
-  headerTop: {
+  headerTopRow: {
     flexDirection: 'row',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.md,
   },
-  mentorAvatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+  avatarCircle: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
@@ -458,31 +445,31 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
     borderRadius: 999,
   },
   levelBadgeText: {
-    fontSize: 11,
+    fontSize: typography.size.xs,
     fontWeight: '700',
-    letterSpacing: 0.5,
+    letterSpacing: 0.7,
   },
 
   mentorName: {
-    marginBottom: spacing.xs,
+    marginTop: spacing.sm,
+    fontSize: typography.size.lg,
   },
   mentorTitle: {
-    fontSize: typography.size.md,
+    marginTop: 2,
+    fontSize: typography.size.sm,
     color: colors.textSecondary,
-    marginBottom: spacing.md,
   },
 
   statsRow: {
+    marginTop: spacing.md,
     flexDirection: 'row',
-    gap: spacing.lg,
-    paddingTop: spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
+    flexWrap: 'wrap',
+    gap: spacing.md,
   },
   statItem: {
     flexDirection: 'row',
@@ -505,6 +492,9 @@ const styles = StyleSheet.create({
   card: {
     padding: spacing.lg,
     borderRadius: borderRadius.lg,
+    width: '100%',
+    maxWidth: 900,
+    alignSelf: 'center',
   },
   cardHeader: {
     flexDirection: 'row',
@@ -523,12 +513,13 @@ const styles = StyleSheet.create({
   bodyText: {
     fontSize: typography.size.sm,
     color: colors.textSecondary,
+    lineHeight: 22,
   },
 
   expertiseGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: spacing.sm,
+    gap: spacing.xs,
     marginTop: spacing.sm,
   },
   expertiseCard: {
