@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { colors, spacing, borderRadius, typography } from '@/lib/theme';
+import { colors, spacing, borderRadius, typography, shadows } from '@/lib/theme';
 import { Heading, AppText, Section, Card, Button } from '@/lib/ui';
 
 const SUPABASE_URL = 'https://rcbaaiiawrglvyzmawvr.supabase.co';
@@ -70,6 +70,18 @@ export default function CandidateMentorsList() {
     });
   };
 
+  const getLevelBadgeStyle = (level?: string | null) => {
+    const l = (level || 'bronze').toLowerCase();
+    switch (l) {
+      case 'gold':
+        return { bg: '#FEF9C3', fg: '#854D0E', icon: 'star' as const };
+      case 'silver':
+        return { bg: '#F3F4F6', fg: '#6b7280', icon: 'star-half' as const };
+      default:
+        return { bg: '#FDF2E9', fg: '#CD7F32', icon: 'medal' as const }; // bronze
+    }
+  };
+
   return (
     <ScrollView style={styles.container}>
       <Section style={styles.header}>
@@ -92,59 +104,129 @@ export default function CandidateMentorsList() {
             <AppText style={styles.emptyText}>No mentors found</AppText>
           </Card>
         ) : (
-          <View style={{ gap: spacing.md }}>
-            {mentors.map((m) => {
-              const basePrice = m.session_price_inr ?? m.session_price ?? 0;
-              const candidatePrice = basePrice
-                ? Math.round(basePrice * 1.2)
-                : 0;
+          <>
+            <View style={styles.resultsHeader}>
+              <AppText style={styles.resultsCount}>
+                {mentors.length} {mentors.length === 1 ? 'mentor' : 'mentors'} available
+              </AppText>
+            </View>
 
-              return (
-                <Card key={m.id} style={styles.card}>
-                  <View style={styles.row}>
-                    <View style={styles.avatarPlaceholder}>
-                      <Ionicons
-                        name="person-outline"
-                        size={22}
-                        color={colors.surface}
+            <View style={styles.mentorList}>
+              {mentors.map((m) => {
+                const basePrice = m.session_price_inr ?? m.session_price ?? 0;
+                const candidatePrice = basePrice ? Math.round(basePrice * 1.2) : 0;
+                const levelCfg = getLevelBadgeStyle(m.mentor_level);
+
+                const subtitle =
+                  Array.isArray(m.expertise_profiles) && m.expertise_profiles.length > 0
+                    ? `${m.expertise_profiles[0]} Interviewer`
+                    : 'Interview mentor';
+
+                return (
+                  <Card
+                    key={m.id}
+                    style={[styles.mentorCard, shadows.card as any]}
+                  >
+                    {/* Header: avatar + title + level badge */}
+                    <View style={styles.mentorHeader}>
+                      <View style={styles.avatarPlaceholder}>
+                        <Ionicons
+                          name="person-outline"
+                          size={22}
+                          color="#FFFFFF"
+                        />
+                      </View>
+
+                      <View style={styles.headerText}>
+                        <AppText style={styles.name}>
+                          {m.professional_title || 'SDE / Software Engineer mentor'}
+                        </AppText>
+                        <AppText style={styles.subtitle} numberOfLines={1}>
+                          {subtitle}
+                        </AppText>
+                      </View>
+
+                      <View
+                        style={[
+                          styles.levelBadge,
+                          { backgroundColor: levelCfg.bg },
+                        ]}
+                      >
+                        <Ionicons
+                          name={levelCfg.icon}
+                          size={12}
+                          color={levelCfg.fg}
+                        />
+                        <AppText
+                          style={[
+                            styles.levelBadgeText,
+                            { color: levelCfg.fg },
+                          ]}
+                        >
+                          {(m.mentor_level || 'BRONZE').toUpperCase()}
+                        </AppText>
+                      </View>
+                    </View>
+
+                    {/* Description */}
+                    {m.experience_description ? (
+                      <AppText style={styles.desc}>
+                        {m.experience_description}
+                      </AppText>
+                    ) : (
+                      <AppText style={styles.descPlaceholder}>
+                        Experienced professional ready to help you crack your
+                        interviews.
+                      </AppText>
+                    )}
+
+                    {/* Expertise tags */}
+                    {m.expertise_profiles && m.expertise_profiles.length > 0 && (
+                      <View style={styles.tagsRow}>
+                        {m.expertise_profiles.slice(0, 3).map((tag, idx) => (
+                          <View key={idx} style={styles.tag}>
+                            <AppText style={styles.tagText}>{tag}</AppText>
+                          </View>
+                        ))}
+                        {m.expertise_profiles.length > 3 && (
+                          <View style={styles.tag}>
+                            <AppText style={styles.tagText}>
+                              +{m.expertise_profiles.length - 3}
+                            </AppText>
+                          </View>
+                        )}
+                      </View>
+                    )}
+
+                    {/* Footer: price + button */}
+                    <View style={styles.footerRow}>
+                      <View style={styles.priceSection}>
+                        <AppText style={styles.priceLabel}>
+                          Per booking (2 sessions)
+                        </AppText>
+                        <AppText style={styles.priceValue}>
+                          ₹{candidatePrice.toLocaleString('en-IN')}
+                        </AppText>
+                        <AppText style={styles.priceSub}>
+                          Mentor payout + 20% platform fee
+                        </AppText>
+                      </View>
+
+                      <Button
+                        title="View details"
+                        size="sm"
+                        onPress={() => handleView(m.id)}
+                        style={styles.viewButton}
                       />
                     </View>
-                    <View style={{ flex: 1 }}>
-                      <AppText style={styles.name}>
-                        Interview mentor
-                      </AppText>
-                      <AppText style={styles.title}>
-                        {m.professional_title ||
-                          'Experienced CrackJobs mentor'}
-                      </AppText>
-                      {m.experience_description ? (
-                        <AppText numberOfLines={2} style={styles.desc}>
-                          {m.experience_description}
-                        </AppText>
-                      ) : null}
-                    </View>
-                    <View>
-                      <AppText style={styles.priceLabel}>
-                        Per booking (2 sessions)
-                      </AppText>
-                      <AppText style={styles.priceValue}>
-                        ₹{candidatePrice.toLocaleString('en-IN')}
-                      </AppText>
-                    </View>
-                  </View>
-                  <View style={styles.actions}>
-                    <Button
-                      title="View details"
-                      size="sm"
-                      onPress={() => handleView(m.id)}
-                    />
-                  </View>
-                </Card>
-              );
-            })}
-          </View>
+                  </Card>
+                );
+              })}
+            </View>
+          </>
         )}
       </Section>
+
       <View style={{ height: spacing.xl }} />
     </ScrollView>
   );
@@ -152,34 +234,124 @@ export default function CandidateMentorsList() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
+
   header: { paddingTop: spacing.lg, paddingBottom: spacing.sm },
   sub: { color: colors.textSecondary, marginTop: spacing.xs },
+
   emptyCard: { alignItems: 'center', gap: spacing.sm, padding: spacing.lg },
   emptyText: { color: colors.textSecondary },
-  card: {
-    padding: spacing.md,
-    borderRadius: borderRadius.lg,
+
+  resultsHeader: {
+    marginBottom: spacing.sm,
   },
-  row: {
-    flexDirection: 'row',
+  resultsCount: {
+    fontSize: typography.size.sm,
+    color: colors.textSecondary,
+  },
+
+  mentorList: {
     gap: spacing.md,
   },
+  mentorCard: {
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
+    backgroundColor: colors.surface,
+  },
+
+  mentorHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+  },
   avatarPlaceholder: {
-    width: 48,
-    height: 48,
-    borderRadius: 48,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
+    marginRight: spacing.sm,
   },
-  name: { fontWeight: '700', fontSize: typography.size.md },
-  title: { color: colors.textSecondary, fontSize: typography.size.sm },
-  desc: { color: colors.textTertiary, marginTop: spacing.xs },
-  priceLabel: { color: colors.textTertiary, fontSize: typography.size.xs },
-  priceValue: { fontWeight: '700', fontSize: typography.size.md },
-  actions: {
-    marginTop: spacing.sm,
+  headerText: {
+    flex: 1,
+  },
+  name: {
+    fontWeight: '700',
+    fontSize: typography.size.md,
+    color: colors.textPrimary,
+  },
+  subtitle: {
+    fontSize: typography.size.xs,
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
+
+  levelBadge: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    alignItems: 'center',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    borderRadius: 999,
+    gap: spacing.xs,
+  },
+  levelBadgeText: {
+    fontSize: typography.size.xxs,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+
+  desc: {
+    fontSize: typography.size.sm,
+    color: colors.textSecondary,
+    marginBottom: spacing.sm,
+  },
+  descPlaceholder: {
+    fontSize: typography.size.sm,
+    color: colors.textTertiary,
+    marginBottom: spacing.sm,
+  },
+
+  tagsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+    marginBottom: spacing.md,
+  },
+  tag: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    borderRadius: 999,
+    backgroundColor: colors.backgroundSecondary,
+  },
+  tagText: {
+    fontSize: typography.size.xs,
+    color: colors.textSecondary,
+  },
+
+  footerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+  },
+  priceSection: {
+    flexShrink: 1,
+  },
+  priceLabel: {
+    fontSize: typography.size.xs,
+    color: colors.textTertiary,
+  },
+  priceValue: {
+    fontSize: typography.size.md,
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
+  priceSub: {
+    fontSize: typography.size.xxs,
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
+  viewButton: {
+    alignSelf: 'flex-end',
   },
 });
