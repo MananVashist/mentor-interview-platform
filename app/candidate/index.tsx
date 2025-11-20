@@ -7,6 +7,9 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   RefreshControl,
+  TextInput,
+  Platform,
+  useWindowDimensions,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -23,9 +26,27 @@ import {
   AppText,
   Card,
   Section,
-  Button,
   ScreenBackground,
 } from "@/lib/ui";
+
+// --- EXACT theme MATCHING YOUR HTML ---
+const theme = {
+  primary: "#0F766E", // Teal-700/600 mix to match the dark teal in image
+  primaryBtn: "#0d9488", // Teal-600 for buttons
+  bg: "#F9FAFB", // Gray-50
+  white: "#FFFFFF",
+  textMain: "#111827", // Gray-900
+  textSub: "#6B7280", // Gray-500
+  border: "#E5E7EB", // Gray-200
+  
+  // Badge Colors
+  bronzeBg: "#FFFBEB", // Amber-50
+  bronzeText: "#B45309", // Amber-700
+  bronzeBorder: "#FEF3C7", // Amber-100
+  
+  expBg: "#F3F4F6", // Gray-100
+  expText: "#374151", // Gray-700
+};
 
 const SUPABASE_URL = "https://rcbaaiiawrglvyzmawvr.supabase.co";
 const SUPABASE_ANON_KEY =
@@ -55,104 +76,63 @@ type Mentor = {
 };
 
 export default function CandidateDashboard() {
-  const { profile: authProfile } = useAuthStore();
+  const { width } = useWindowDimensions();
+  const isDesktop = width > 768; // Simple responsive check
   const router = useRouter();
 
   const [adminProfiles, setAdminProfiles] = useState<AdminProfile[]>([]);
   const [profilesLoading, setProfilesLoading] = useState(true);
   const [selectedProfile, setSelectedProfile] = useState<string | null>(null);
-
   const [mentors, setMentors] = useState<Mentor[]>([]);
   const [mentorsLoading, setMentorsLoading] = useState(false);
-
   const [refreshing, setRefreshing] = useState(false);
 
-  // Fetch admin profiles
   useEffect(() => {
     (async () => {
       setProfilesLoading(true);
       try {
         const res = await fetch(
           `${SUPABASE_URL}/rest/v1/interview_profiles_admin?select=*`,
-          {
-            headers: {
-              apikey: SUPABASE_ANON_KEY,
-              Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-            },
-          }
+          { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
         );
-        const text = await res.text();
+        const data = await res.json();
         if (res.ok) {
-          const data = JSON.parse(text) as AdminProfile[];
-          const actives = (data || []).filter((p) => p.is_active !== false);
+          const actives = (data || []).filter((p: AdminProfile) => p.is_active !== false);
           setAdminProfiles(actives);
-          if (actives.length > 0) {
-            setSelectedProfile((prev) => prev || actives[0].name);
-          }
-        } else {
-          console.log(
-            "[candidate/index] admin profiles fetch failed",
-            res.status,
-            text
-          );
-          setAdminProfiles([]);
+          if (actives.length > 0) setSelectedProfile(actives[0].name);
         }
       } catch (err) {
-        console.log("[candidate/index] admin profiles error", err);
-        setAdminProfiles([]);
+        console.log("Error fetching profiles", err);
       } finally {
         setProfilesLoading(false);
       }
     })();
   }, []);
 
-  // Fetch mentors for selected profile
-  const fetchMentorsForProfile = useCallback(
-    async (profileName: string | null) => {
-      if (!profileName) return;
-      setMentorsLoading(true);
-      try {
-        const res = await fetch(
-          `${SUPABASE_URL}/rest/v1/mentors?select=*,profile:profiles(*)`,
-          {
-            headers: {
-              apikey: SUPABASE_ANON_KEY,
-              Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-            },
-          }
+  const fetchMentorsForProfile = useCallback(async (profileName: string | null) => {
+    if (!profileName) return;
+    setMentorsLoading(true);
+    try {
+      const res = await fetch(
+        `${SUPABASE_URL}/rest/v1/mentors?select=*,profile:profiles(*)`,
+        { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
+      );
+      const data = await res.json();
+      if (res.ok) {
+        const filtered = (data || []).filter((m: Mentor) =>
+          Array.isArray(m.expertise_profiles) ? m.expertise_profiles.includes(profileName) : false
         );
-        const text = await res.text();
-        if (res.ok) {
-          const data = JSON.parse(text) as Mentor[];
-          const filtered = (data || []).filter((m) =>
-            Array.isArray(m.expertise_profiles)
-              ? m.expertise_profiles.includes(profileName)
-              : false
-          );
-          setMentors(filtered);
-        } else {
-          console.log(
-            "[candidate/index] mentors fetch failed",
-            res.status,
-            text
-          );
-          setMentors([]);
-        }
-      } catch (err) {
-        console.log("[candidate/index] mentors fetch error", err);
-        setMentors([]);
-      } finally {
-        setMentorsLoading(false);
+        setMentors(filtered);
       }
-    },
-    []
-  );
-
-  // Refresh mentors when selection changes
-  useEffect(() => {
-    if (selectedProfile) {
-      fetchMentorsForProfile(selectedProfile);
+    } catch (err) {
+      console.log("Error fetching mentors", err);
+    } finally {
+      setMentorsLoading(false);
     }
+  }, []);
+
+  useEffect(() => {
+    if (selectedProfile) fetchMentorsForProfile(selectedProfile);
   }, [selectedProfile, fetchMentorsForProfile]);
 
   const onRefresh = async () => {
@@ -162,85 +142,56 @@ export default function CandidateDashboard() {
   };
 
   const handleViewMentor = (id: string) => {
-    router.push({
-      pathname: "/candidate/[id]",
-      params: { id },
-    });
-  };
-
-  const getLevelBadgeStyle = (level?: string | null) => {
-    const l = (level || "bronze").toLowerCase();
-    switch (l) {
-      case "gold":
-        return { bg: "#FEF9C3", fg: "#854D0E", icon: "star" as const };
-      case "silver":
-        return { bg: "#F3F4F6", fg: "#6b7280", icon: "star-half" as const };
-      default:
-        return { bg: "#FDF2E9", fg: "#CD7F32", icon: "medal" as const };
-    }
+    router.push({ pathname: "/candidate/[id]", params: { id } });
   };
 
   return (
-    <ScreenBackground>
+    <ScreenBackground style={styles.container}>
       <ScrollView
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={colors.primary}
-          />
-        }
-        contentContainerStyle={{ paddingBottom: spacing.xl }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.primary} />}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
-        <Section style={styles.header}>
-          <View style={styles.headerIcon}>
-            <Ionicons name="search" size={32} color={colors.primary} />
+        {/* --- HEADER SECTION (Left Aligned with Search on Right) --- */}
+        <View style={styles.headerContainer}>
+          <View style={styles.headerLeft}>
+            <Heading level={1} style={styles.headerTitle}>Find Your Mentor</Heading>
+            <AppText style={styles.headerSubtitle}>
+              Select a profile below and connect with experienced professionals
+            </AppText>
           </View>
-          <Heading level={1}>Find Your Mentor</Heading>
-          <AppText style={styles.headerSub}>
-            Select a profile below and connect with experienced professionals
-          </AppText>
-        </Section>
+          
+          {/* Search Bar (Visible on Web/Tablet) */}
+          <View style={styles.searchWrapper}>
+            <Ionicons name="search" size={20} color="#9CA3AF" style={{ marginRight: 8 }} />
+            <TextInput 
+              placeholder="Search skills..." 
+              placeholderTextColor="#9CA3AF"
+              style={styles.searchInput} 
+            />
+          </View>
+        </View>
 
-        {/* Profile Selector */}
-        <Section>
-          <AppText style={styles.sectionLabel}>Select Interview Profile</AppText>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.profilesScroll}
-          >
+        {/* --- SEPARATOR LINE --- */}
+        <View style={styles.headerDivider} />
+
+        {/* --- FILTERS SECTION --- */}
+        <View style={styles.filtersContainer}>
+          <AppText style={styles.filterLabel}>Select Interview Profile</AppText>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pillsScroll}>
             {profilesLoading ? (
-              <ActivityIndicator color={colors.primary} />
-            ) : adminProfiles.length === 0 ? (
-              <AppText style={styles.noProfilesText}>
-                No interview profiles configured yet.
-              </AppText>
+              <ActivityIndicator color={theme.primary} />
             ) : (
               adminProfiles.map((p) => {
-                const active = selectedProfile === p.name;
+                const isActive = selectedProfile === p.name;
                 return (
                   <TouchableOpacity
                     key={p.id}
                     onPress={() => setSelectedProfile(p.name)}
-                    style={[
-                      styles.profilePill,
-                      active && styles.profilePillActive,
-                      shadows.card as any,
-                    ]}
+                    style={[styles.pill, isActive ? styles.pillActive : styles.pillInactive]}
                   >
-                    <Ionicons
-                      name={active ? "checkmark-circle" : "ellipse-outline"}
-                      size={18}
-                      color={active ? colors.primary : colors.textSecondary}
-                    />
-                    <AppText
-                      style={[
-                        styles.profilePillText,
-                        active && styles.profilePillTextActive,
-                      ]}
-                    >
+                    {isActive && <Ionicons name="checkmark" size={16} color="#FFF" style={{ marginRight: 6 }} />}
+                    <AppText style={[styles.pillText, isActive ? styles.pillTextActive : styles.pillTextInactive]}>
                       {p.name}
                     </AppText>
                   </TouchableOpacity>
@@ -248,381 +199,333 @@ export default function CandidateDashboard() {
               })
             )}
           </ScrollView>
-        </Section>
+          <AppText style={styles.resultsCount}>
+            {mentors.length} {mentors.length === 1 ? "mentor" : "mentors"} available
+          </AppText>
+        </View>
 
-        {/* Mentors Grid */}
-        <Section>
+        {/* --- MENTORS LIST --- */}
+        <View style={styles.listContainer}>
           {mentorsLoading ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color={colors.primary} />
-              <AppText style={styles.loadingText}>Finding mentors...</AppText>
-            </View>
+            <ActivityIndicator size="large" color={theme.primary} style={{ marginTop: 40 }} />
           ) : mentors.length === 0 ? (
-            <Card style={[styles.emptyCard, shadows.card as any]}>
-              <View style={styles.emptyIcon}>
-                <Ionicons
-                  name="search-outline"
-                  size={48}
-                  color={colors.textTertiary}
-                />
-              </View>
-              <Heading level={2} style={styles.emptyTitle}>
-                No mentors found
-              </Heading>
-              <AppText style={styles.emptyText}>
-                Try another interview profile, or check back soon as we add more
-                mentors to this track.
-              </AppText>
-            </Card>
+            <View style={styles.emptyState}>
+              <Ionicons name="search-outline" size={48} color={theme.textSub} />
+              <AppText style={styles.emptyText}>No mentors found for this profile.</AppText>
+            </View>
           ) : (
-            <>
-              <View style={styles.resultsHeader}>
-                <AppText style={styles.resultsCount}>
-                  {mentors.length}{" "}
-                  {mentors.length === 1 ? "mentor" : "mentors"} available
-                </AppText>
-              </View>
-              <View style={styles.mentorGrid}>
-                {mentors.map((m) => {
-                  const basePrice =
-                    m.session_price_inr ?? m.session_price ?? 0;
-                  const candidatePrice = basePrice
-                    ? Math.round(basePrice * 1.2)
-                    : 0;
-                  const levelConfig = getLevelBadgeStyle(m.mentor_level);
+            mentors.map((m) => {
+              const price = m.session_price_inr ?? m.session_price ?? 0;
+              const displayPrice = price ? Math.round(price * 1.2) : 0;
 
-                  return (
-                    <Card
-                      key={m.id}
-                      style={[styles.mentorCard, shadows.card as any]}
-                    >
-                      {/* Header: title + experience + level badge (no avatar) */}
-                      <View style={styles.mentorHeader}>
-                        <View style={styles.mentorInfo}>
-                          <AppText style={styles.mentorName}>
-                            {m.professional_title ||
-                              "Backend Engineer (Node/Java/Python)"}
-                          </AppText>
-                          <AppText style={styles.mentorTitle}>
-                            5 years experience
-                          </AppText>
+              return (
+                <Card key={m.id} style={styles.card}>
+                  
+                  {/* --- CARD CONTENT (Flex Row on Desktop) --- */}
+                  <View style={isDesktop ? styles.cardRow : styles.cardCol}>
+                    
+                    {/* LEFT COLUMN: Info */}
+                    <View style={styles.cardLeft}>
+                      {/* Title */}
+                      <AppText style={styles.mentorName}>
+                        {m.professional_title || "Backend Engineer (Node/Java)"}
+                      </AppText>
+                      
+                      {/* Tags Row: Experience + Badge */}
+                      <View style={styles.tagsRow}>
+                        <View style={styles.expPill}>
+                          <AppText style={styles.expText}>5 years exp</AppText>
                         </View>
-                        <View
-                          style={[
-                            styles.levelBadge,
-                            { backgroundColor: levelConfig.bg },
-                          ]}
-                        >
-                          <AppText
-                            style={[
-                              styles.levelBadgeText,
-                              { color: levelConfig.fg },
-                            ]}
-                          >
-                            {(m.mentor_level || "BRONZE").toUpperCase()}
-                          </AppText>
+                        <View style={styles.badge}>
+                          <Ionicons name="star" size={10} color={theme.bronzeText} style={{ marginRight: 4 }} />
+                          <AppText style={styles.badgeText}>BRONZE</AppText>
                         </View>
                       </View>
 
                       {/* Description */}
-                      {m.experience_description ? (
-                        <AppText style={styles.mentorDesc}>
-                          {m.experience_description}
-                        </AppText>
-                      ) : (
-                        <AppText style={styles.mentorDescPlaceholder}>
-                          Covers API design, REST fundamentals, auth, SQL/NoSQL
-                          choices, caching and debugging – same as the backend
-                          profile. Will also do a quick behavioral/on-call
-                          scenario.
-                        </AppText>
-                      )}
+                      <AppText style={styles.description} numberOfLines={3}>
+                        {m.experience_description || "Covers API design, REST fundamentals, auth, SQL/NoSQL choices, caching and debugging. Will also do a quick behavioral/on-call scenario."}
+                      </AppText>
+                    </View>
 
-                      {/* Divider */}
-                      <View style={styles.mentorDivider} />
-
-                      {/* Price block */}
-                      <View style={styles.priceSection}>
-                        <AppText style={styles.priceValue}>
-                          {candidatePrice
-                            ? `₹${candidatePrice.toLocaleString("en-IN")}`
-                            : "Price on request"}
-                        </AppText>
-                        <AppText style={styles.priceLabel}>
-                          Per session (2 sessions booked)
-                        </AppText>
-                        {candidatePrice ? (
-                          <AppText style={styles.priceSub}>
-                            + 20% platform fee
-                          </AppText>
-                        ) : null}
+                    {/* RIGHT COLUMN: Price + Actions */}
+                    <View style={styles.cardRight}>
+                      {/* Price Block */}
+                      <View style={styles.priceBlock}>
+                         <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: isDesktop ? 'flex-start' : 'flex-start' }}>
+                            <AppText style={styles.priceText}>
+                              ₹{displayPrice.toLocaleString("en-IN")}
+                            </AppText>
+                            <AppText style={styles.perSessionText}> / session</AppText>
+                         </View>
+                         <AppText style={styles.feeText}>+ 20% platform fee</AppText>
                       </View>
 
-                      {/* Divider */}
-                      <View style={styles.mentorDivider} />
-
-                      {/* Actions row */}
-                      <View style={styles.actionsRow}>
-                        <Button
-                          title="View details"
-                          size="sm"
-                          variant="outline"
-                          style={styles.actionButton}
-                          onPress={() => handleViewMentor(m.id)}
-                        />
-                        <Button
-                          title="Book now →"
-                          size="sm"
-                          style={styles.actionButton}
-                          onPress={() => handleViewMentor(m.id)}
-                        />
+                      {/* Buttons Stacked Vertically */}
+                      <View style={styles.buttonStack}>
+                        <TouchableOpacity style={styles.solidBtn} onPress={() => handleViewMentor(m.id)}>
+                          <AppText style={styles.solidBtnText}>Book now →</AppText>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.outlineBtn} onPress={() => handleViewMentor(m.id)}>
+                          <AppText style={styles.outlineBtnText}>View details</AppText>
+                        </TouchableOpacity>
                       </View>
-                    </Card>
-                  );
-                })}
-              </View>
-            </>
+                    </View>
+
+                  </View>
+                </Card>
+              );
+            })
           )}
-        </Section>
+        </View>
       </ScrollView>
     </ScreenBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  header: {
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.md,
-    alignItems: "center",
+  container: {
+    flex: 1,
+    backgroundColor: "#FFF", // White background for the whole screen often looks cleaner, or matches header
   },
-  headerIcon: {
-    marginBottom: spacing.sm,
+  scrollContent: {
+    paddingBottom: 40,
   },
-  headerSub: {
-    color: colors.textSecondary,
-    marginTop: spacing.xs,
-    textAlign: "center",
+  
+  // --- Header ---
+  headerContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start", // Align top
+    paddingTop: 40,
+    paddingBottom: 20,
+    paddingHorizontal: 32,
+    backgroundColor: "#FFFFFF",
   },
-
-  sectionLabel: {
-    fontSize: typography.size.sm,
-    fontWeight: "600",
-    color: colors.textPrimary,
-    marginBottom: spacing.sm,
+  headerLeft: {
+    flex: 1,
   },
-
-  profilesScroll: {
-    gap: spacing.sm,
-    paddingRight: spacing.md,
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: theme.textMain,
+    marginBottom: 4,
   },
-  profilePill: {
+  headerSubtitle: {
+    fontSize: 15,
+    color: theme.textSub,
+    maxWidth: 500,
+  },
+  searchWrapper: {
     flexDirection: "row",
     alignItems: "center",
-    gap: spacing.xs,
-    borderWidth: 1.5,
-    borderColor: colors.border,
+    backgroundColor: "#F3F4F6",
     borderRadius: 999,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    backgroundColor: colors.surface,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    width: 240,
+    marginLeft: 20,
+    marginTop: 4, 
   },
-  profilePillActive: {
-    backgroundColor: "rgba(14,147,132,0.08)",
-    borderColor: colors.primary,
+  searchInput: {
+    flex: 1,
+    fontSize: 14,
+    color: theme.textMain,
+    outlineStyle: "none", // For web
   },
-  profilePillText: {
+  headerDivider: {
+    height: 1,
+    backgroundColor: theme.border,
+    width: "100%",
+  },
+
+  // --- Filters ---
+  filtersContainer: {
+    paddingHorizontal: 32,
+    paddingTop: 24,
+    marginBottom: 24,
+  },
+  filterLabel: {
+    fontSize: 14,
     fontWeight: "600",
-    color: colors.textSecondary,
-    fontSize: typography.size.sm,
+    color: theme.textMain,
+    marginBottom: 16,
   },
-  profilePillTextActive: {
-    color: colors.primary,
+  pillsScroll: {
+    gap: 12,
+    paddingRight: 20,
   },
-  noProfilesText: {
-    color: colors.textSecondary,
-    fontSize: typography.size.sm,
-  },
-
-  loadingContainer: {
+  pill: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: spacing.xl * 2,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 999,
+    borderWidth: 1,
   },
-  loadingText: {
-    marginTop: spacing.md,
-    color: colors.textSecondary,
+  pillActive: {
+    backgroundColor: theme.primaryBtn, // Solid Teal
+    borderColor: theme.primaryBtn,
   },
-
-  emptyCard: {
-    padding: spacing.xl,
-    borderRadius: borderRadius.lg,
-    alignItems: "center",
+  pillInactive: {
+    backgroundColor: "#FFF",
+    borderColor: "#E5E7EB",
   },
-  emptyIcon: {
-    marginBottom: spacing.md,
-    opacity: 0.6,
+  pillText: {
+    fontSize: 14,
+    fontWeight: "500",
   },
-  emptyTitle: {
-    marginBottom: spacing.xs,
+  pillTextActive: {
+    color: "#FFF",
   },
-  emptyText: {
-    color: colors.textSecondary,
-    textAlign: "center",
-    lineHeight: 22,
-  },
-
-  resultsHeader: {
-    marginBottom: spacing.md,
+  pillTextInactive: {
+    color: "#4B5563", // Gray-600
   },
   resultsCount: {
-    fontSize: typography.size.sm,
-    color: colors.textSecondary,
+    marginTop: 16,
+    fontSize: 14,
+    color: theme.textSub,
   },
 
-  mentorGrid: {
-    gap: spacing.md,
+  // --- List ---
+  listContainer: {
+    paddingHorizontal: 32,
+    gap: 16,
   },
-  mentorCard: {
-    borderRadius: borderRadius.lg,
-    padding: spacing.md,
-    backgroundColor: colors.surface,
-    width: "100%",
-  maxWidth: 900,        // 🔹 keeps it tight on big monitors
-  alignSelf: "center",
+  card: {
+    backgroundColor: "#FFF",
+    borderRadius: 16,
+    padding: 24,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    shadowColor: "transparent", // Remove heavy shadow to match clean HTML look
   },
-  mentorHeader: {
+  
+  // Layout logic
+  cardRow: {
     flexDirection: "row",
-    alignItems: "flex-start",
-    marginBottom: spacing.sm,
+    gap: 32,
   },
-  // mentorAvatar remains unused but kept for minimal changes
-  mentorAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.primary,
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: spacing.sm,
+  cardCol: {
+    flexDirection: "column",
+    gap: 24,
   },
-  mentorInfo: {
+
+  // Left Col
+  cardLeft: {
     flex: 1,
   },
   mentorName: {
-    fontSize: typography.size.md,
-    fontWeight: "700",
-    color: colors.textPrimary,
+    fontSize: 18,
+    fontWeight: "bold", // Bold title
+    color: theme.textMain,
+    marginBottom: 10,
   },
-  mentorTitle: {
-    fontSize: typography.size.xs,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
-  levelBadge: {
+  tagsRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: spacing.xs,
-    borderRadius: 999,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
+    gap: 8,
+    marginBottom: 12,
   },
-  levelBadgeText: {
-    fontSize: typography.size.xxs,
-    fontWeight: "700",
+  expPill: {
+    backgroundColor: theme.expBg,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  expText: {
+    fontSize: 13,
+    fontWeight: "500",
+    color: theme.expText,
+  },
+  badge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: theme.bronzeBg,
+    borderWidth: 1,
+    borderColor: theme.bronzeBorder,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  badgeText: {
+    fontSize: 11,
+    fontWeight: "800",
+    color: theme.bronzeText,
     letterSpacing: 0.5,
   },
-
-  mentorStats: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: spacing.sm,
-    marginTop: spacing.xs,
-  },
-  statItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.xs,
-  },
-  statText: {
-    fontSize: typography.size.xs,
-    color: colors.textSecondary,
+  description: {
+    fontSize: 14,
+    color: "#4B5563", // Gray-600
+    lineHeight: 24,
   },
 
-  mentorDesc: {
-    fontSize: typography.size.sm,
-    color: colors.textSecondary,
-    marginBottom: spacing.sm,
-  },
-  mentorDescPlaceholder: {
-    fontSize: typography.size.sm,
-    color: colors.textTertiary,
-    marginBottom: spacing.sm,
-  },
-
-  expertiseTags: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: spacing.xs,
-    marginBottom: spacing.md,
-  },
-  expertiseTag: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-    borderRadius: 999,
-    backgroundColor: colors.backgroundSecondary,
-  },
-  expertiseTagText: {
-    fontSize: typography.size.xs,
-    color: colors.textSecondary,
-  },
-
-  mentorDivider: {
-    height: 1,
-    backgroundColor: colors.border,
-    marginVertical: spacing.md,
-  },
-
-  priceSection: {
-    flexShrink: 1,
-  },
-  priceLabel: {
-    fontSize: typography.size.xs,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
-  priceValue: {
-    fontSize: typography.size.md,
-    fontWeight: "700",
-    color: colors.textPrimary,
-  },
-  priceSub: {
-    fontSize: typography.size.xxs,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
-
-  mentorFooter: {
-    // kept for backwards compatibility; no longer used
-    flexDirection: "row",
-    alignItems: "center",
+  // Right Col
+  cardRight: {
+    minWidth: 200,
+    borderLeftWidth: Platform.OS === 'web' ? 1 : 0, // Vertical divider on web
+    borderLeftColor: "#F3F4F6",
+    paddingLeft: Platform.OS === 'web' ? 24 : 0,
     justifyContent: "space-between",
-    gap: spacing.md,
+  },
+  priceBlock: {
+    marginBottom: 16,
+  },
+  priceText: {
+    fontSize: 24,
+    fontWeight: "800", // Very bold price
+    color: theme.textMain,
+  },
+  perSessionText: {
+    fontSize: 12,
+    color: "#9CA3AF",
+  },
+  feeText: {
+    fontSize: 12,
+    color: "#9CA3AF",
+    marginTop: 4,
   },
 
-  actionsRow: {
-    flexDirection: "row",
-    gap: spacing.sm,
-    marginTop: spacing.sm,
-     alignItems: "center",
-  justifyContent: "flex-end", 
+  // Buttons
+  buttonStack: {
+    gap: 10,
   },
-  actionButton: {
-    flex: 1,
-    minWidth: 160,   // 🔹 keeps them at a sensible size on web + mobile
-  flexShrink: 0,
+  solidBtn: {
+    width: "100%",
+    paddingVertical: 12,
+    borderRadius: 8,
+    backgroundColor: theme.primaryBtn,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  solidBtnText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#FFF",
+  },
+  outlineBtn: {
+    width: "100%",
+    paddingVertical: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    backgroundColor: "#FFF",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  outlineBtnText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: theme.textMain,
   },
 
-  viewButton: {
-    alignSelf: "flex-end",
+  // Empty
+  emptyState: {
+    alignItems: "center",
+    padding: 40,
+  },
+  emptyText: {
+    marginTop: 10,
+    color: theme.textSub,
   },
 });

@@ -2,8 +2,8 @@
 import { supabase } from '@/lib/supabase/client';
 import { logger } from '@/lib/debug';
 
-// same values you confirmed in PowerShell and browser
 const SUPABASE_URL = 'https://rcbaaiiawrglvyzmawvr.supabase.co';
+// We keep the key for manual sign-in if needed, but use client for data fetching
 const SUPABASE_ANON_KEY =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJjYmFhaWlhd3JnbHZ5em1hd3ZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjExNTA1NjAsImV4cCI6MjA3NjcyNjU2MH0.V3qRHGXBMlspRS7XFJlXdo4qIcCms60Nepp7dYMEjLA';
 
@@ -17,7 +17,7 @@ export type Profile = {
   updated_at: string;
 };
 
-// small helper for timing logs (still useful for sign-up)
+// Helper for timing logs
 async function withTiming<T>(label: string, fn: () => Promise<T>): Promise<T> {
   const start = Date.now();
   console.log(`[AUTH DBG] ${label} → START at ${new Date(start).toISOString()}`);
@@ -84,6 +84,14 @@ async function signIn(email: string, password: string) {
       };
     }
 
+    // Important: Set the session on the client so subsequent requests are authenticated
+    if (json.access_token) {
+      await supabase.auth.setSession({
+        access_token: json.access_token,
+        refresh_token: json.refresh_token,
+      });
+    }
+
     const session = {
       access_token: json.access_token,
       refresh_token: json.refresh_token,
@@ -148,11 +156,9 @@ async function signUp(
 
 /**
  * SIGN OUT
- * we add this so UI can call authService.signOut()
  */
 async function signOut() {
   console.log('================ SIGN OUT ================');
-  // try normal supabase sign out first
   try {
     const { error } = await withTiming('supabase.auth.signOut', () =>
       supabase.auth.signOut()
@@ -165,9 +171,6 @@ async function signOut() {
   } catch (err) {
     console.log('[AUTH DBG] supabase.auth.signOut threw, ignoring', err);
   }
-
-  // optional: also clear the browser local session via REST (not strictly needed
-  // since UI store is what actually controls navigation)
   return { error: null };
 }
 
@@ -199,41 +202,36 @@ async function getCurrentUserProfile(): Promise<Profile | null> {
 }
 
 /**
- * GET USER PROFILE BY ID (manual REST)
+ * GET USER PROFILE BY ID
+ * UPDATED: Uses supabase client to ensure Auth Token is sent
  */
 async function getUserProfileById(userId: string): Promise<Profile | null> {
-  console.log('================ GET USER PROFILE BY ID (manual) ================');
+  console.log('================ GET USER PROFILE BY ID ================');
   console.log('[AUTH DBG] getUserProfileById called with', { userId });
 
-  const url = `${SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}&select=*`;
-
   try {
-    console.log('[AUTH DBG] GET →', url);
-    const res = await fetch(url, {
-      headers: {
-        apikey: SUPABASE_ANON_KEY,
-        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-      },
-    });
+    // Use the supabase client, which automatically sends the auth token
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .maybeSingle(); 
 
-    console.log('[AUTH DBG] profile fetch status =', res.status);
-
-    if (!res.ok) {
-      console.log('[AUTH DBG] profile fetch failed');
+    if (error) {
+      console.error('[AUTH DBG] Supabase fetch error:', error);
       return null;
     }
 
-    const json = (await res.json()) as any[];
-    console.log('[AUTH DBG] profile fetch json =', json);
-
-    if (!json || json.length === 0) {
-      console.log('[AUTH DBG] no profile row returned');
+    if (!data) {
+      console.log('[AUTH DBG] no profile row returned from Supabase client');
       return null;
     }
 
-    return json[0] as Profile;
+    console.log('[AUTH DBG] profile fetched successfully:', data);
+    return data as Profile;
+
   } catch (err) {
-    console.log('[AUTH DBG] profile fetch error', err);
+    console.error('[AUTH DBG] Unexpected error:', err);
     return null;
   }
 }
@@ -241,7 +239,7 @@ async function getUserProfileById(userId: string): Promise<Profile | null> {
 export const authService = {
   signIn,
   signUp,
-  signOut, // 👈 this was missing
+  signOut,
   getCurrentUser,
   getCurrentUserProfile,
   getUserProfileById,

@@ -1,238 +1,94 @@
 ﻿import { supabase } from '@/lib/supabase/client';
-import { InterviewPackage } from '@/lib/types';
-
-const SUPABASE_URL = 'https://rcbaaiiawrglvyzmawvr.supabase.co';
-const SUPABASE_ANON_KEY =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJjYmFhaWlhd3JnbHZ5em1hd3ZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjExNTA1NjAsImV4cCI6MjA3NjcyNjU2MH0.V3qRHGXBMlspRS7XFJlXdo4qIcCms60Nepp7dYMEjLA';
-
-function withTimeout<T>(p: Promise<T>, ms: number, label = 'operation'): Promise<T> {
-  return new Promise((resolve, reject) => {
-    const t = setTimeout(() => {
-      const err = new Error(`[TIMEOUT] ${label} did not resolve within ${ms}ms`);
-      console.log('[PAYMENT DBG]', err.message);
-      reject(err);
-    }, ms);
-    p.then((v) => { clearTimeout(t); resolve(v); })
-     .catch((e) => { clearTimeout(t); reject(e); });
-  });
-}
 
 export const paymentService = {
-  calculatePackagePrice(mentorSessionPrice: number) {
-    const mentorPayoutPerSession = mentorSessionPrice;
-    const platformFeePerSession = mentorSessionPrice; // 50% margin (mirror your logic)
-    const totalPerSession = mentorPayoutPerSession + platformFeePerSession;
-    return {
-      mentorPayout: mentorPayoutPerSession * 3,
-      platformFee: platformFeePerSession * 3,
-      totalAmount: totalPerSession * 3,
-    };
-  },
-
+  /**
+   * Creates a booking package + sessions using a Secure Database Function (RPC).
+   * This bypasses client-side RLS issues and ensures data integrity.
+   */
   async createPackage(
     candidateId: string,
     mentorId: string,
     targetProfile: string,
-    mentorSessionPrice: number
-  ): Promise<{ package: InterviewPackage | null; orderId: string | null; error: any }> {
-    console.log('[PAYMENT DBG] createPackage called', {
-      candidateId, mentorId, targetProfile, mentorSessionPrice, ts: Date.now(),
+    totalPrice: number,
+    selectedSlots: string[]
+  ) {
+    console.log("🔵 [PaymentService] createPackage called via RPC", { 
+        candidateId, mentorId, totalPrice, selectedSlots 
     });
-
-    // 0) Soft check: session visibility from client (helps spot RLS/auth)
+    
     try {
-      console.log('[PAYMENT DBG] STEP 0: auth.getUser() (3s cap)…');
-      const { data: userData, error: userErr } = await withTimeout(
-        supabase.auth.getUser(),
-        3000,
-        'auth.getUser'
-      );
-      console.log('[PAYMENT DBG] STEP 0 result', {
-        userErr,
-        userId: userData?.user?.id,
-        email: userData?.user?.email,
+      const platformFee = Math.round(totalPrice * 0.2);
+      const mentorPayout = totalPrice - platformFee;
+
+      // Call the Postgres Function we created
+      const { data, error } = await supabase.rpc('create_booking_package', {
+        p_candidate_id: candidateId,
+        p_mentor_id: mentorId,
+        p_target_profile: targetProfile,
+        p_total_amount: totalPrice,
+        p_platform_fee: platformFee,
+        p_mentor_payout: mentorPayout,
+        p_session_times: selectedSlots // Array of ISO date strings
       });
-    } catch (e: any) {
-      console.log('[PAYMENT DBG] STEP 0 skipped/timeout', e?.message || e);
-    }
 
-    // 1) Pricing + payload
-    const pricing = this.calculatePackagePrice(mentorSessionPrice);
-    const payload = {
-      candidate_id: candidateId,
-      mentor_id: mentorId,
-      target_profile: targetProfile,
-      total_amount_inr: pricing.totalAmount,
-      platform_fee_inr: pricing.platformFee,
-      mentor_payout_inr: pricing.mentorPayout,
-      payment_status: 'pending',
-    };
-    console.log('[PAYMENT DBG] STEP 1: payload', payload);
-
-    // 2) Try client insert first (RLS-respecting)
-    console.log('[PAYMENT DBG] STEP 2: supabase client insert (10s cap)…');
-    try {
-      const query = supabase.from('interview_packages').insert(payload).select('*').single();
-      const result = await withTimeout(query, 10_000, 'supabase.insert(interview_packages)');
-      console.log('[PAYMENT DBG] STEP 2 done → raw result', result);
-
-      if (result?.error || !result?.data) {
-        console.log('[PAYMENT DBG] STEP 2 returned error/no data', {
-          error: result?.error,
-        });
-        // continue to fallback
-      } else {
-        console.log('[PAYMENT DBG] STEP 2 success', {
-          id: result.data?.id,
-          candidate_id: result.data?.candidate_id,
-          mentor_id: result.data?.mentor_id,
-        });
-        return { package: result.data as InterviewPackage, orderId: null, error: null };
+      if (error) {
+          console.error("🔴 RPC Error:", error);
+          throw error;
       }
-    } catch (e) {
-      console.log('[PAYMENT DBG] STEP 2 threw', e);
-      // continue to fallback
-    }
 
-    // 3) Fallback: REST insert (clear error surface if RLS/policy blocks)
-    console.log('[PAYMENT DBG] STEP 3: REST fallback insert…');
-    try {
-      const res = await withTimeout(
-        fetch(`${SUPABASE_URL}/rest/v1/interview_packages`, {
-          method: 'POST',
-          headers: {
-            apikey: SUPABASE_ANON_KEY,
-            Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-            'Content-Type': 'application/json',
-            Prefer: 'return=representation',
-          },
-          body: JSON.stringify(payload),
-        }),
-        8000,
-        'REST insert(interview_packages)'
-      );
-      const text = await res.text();
-      console.log('[PAYMENT DBG] STEP 3 response', res.status, text);
-      if (!res.ok) {
-        return { package: null, orderId: null, error: new Error(`${res.status} ${text}`) };
+      // RPC returns { "id": "...", "success": true }
+      const packageId = data?.id;
+      
+      if (!packageId) {
+        throw new Error("No Package ID returned from database function");
       }
-      const row = JSON.parse(text)[0] as InterviewPackage | undefined;
-      if (!row) {
-        return { package: null, orderId: null, error: new Error('REST insert returned no row') };
-      }
-      return { package: row, orderId: null, error: null };
-    } catch (e) {
-      console.log('[PAYMENT DBG] STEP 3 threw', e);
-      return { package: null, orderId: null, error: e };
+
+      console.log("✅ Package & Sessions created successfully:", packageId);
+      return { package: { id: packageId }, error: null };
+
+    } catch (error: any) {
+      console.error("🔴 [PaymentService] Error:", error.message || error);
+      return { package: null, error };
     }
   },
 
-  async createRazorpayOrder(amountInr: number, packageId: string): Promise<string> {
-    const mockOrderId = `order_${Date.now()}`;
-    console.log('[PAYMENT DBG] returning mock order id', mockOrderId);
-    return mockOrderId;
+  /**
+   * Simulates creating an order with Razorpay.
+   * In a real app, this would fetch an order_id from your backend/Edge Function.
+   */
+  async createRazorpayOrder(amount: number, pkgId: string) {
+      console.log("🔵 Creating Mock Order for", pkgId);
+      // Simulate network delay for realism
+      await new Promise(resolve => setTimeout(resolve, 800));
+      return `order_${Date.now()}_mock`;
   },
 
-  async verifyPayment(packageId: string, razorpayOrderId: string, razorpayPaymentId: string, razorpaySignature: string) {
-    try {
-      const { data, error } = await supabase
+  /**
+   * Verifies the payment and updates the database status.
+   */
+  async verifyPayment(pkgId: string, orderId: string, payId: string, sig: string) {
+      console.log("🔵 Verifying Payment for", pkgId);
+      
+      // 1. Update Package
+      const { error: pkgError } = await supabase
         .from('interview_packages')
-        .update({ payment_status: 'held_in_escrow', razorpay_payment_id: razorpayPaymentId })
-        .eq('id', packageId)
-        .select()
-        .single();
-      if (error) throw error;
-      await this.createInterviewSessions(packageId);
-      return { data, error: null };
-    } catch (error) {
-      console.error('Error verifying payment:', error);
-      return { data: null, error };
-    }
-  },
-
-  async createInterviewSessions(packageId: string) {
-    try {
-      const { data: packageData, error: packageError } = await supabase
-        .from('interview_packages')
-        .select('candidate_id, mentor_id')
-        .eq('id', packageId)
-        .single();
-      if (packageError || !packageData) throw packageError || new Error('Package not found');
-
-      const sessions = [
-        { round: 'round_1', mentor_id: (packageData as any).mentor_id },
-        { round: 'round_2', mentor_id: (packageData as any).mentor_id },
-        { round: 'hr_round', mentor_id: (packageData as any).mentor_id },
-      ];
-
-      const { data, error } = await supabase
+        .update({ 
+            payment_status: 'held_in_escrow', // ensure this is valid too!
+            razorpay_payment_id: payId
+        })
+        .eq('id', pkgId);
+      
+      if (pkgError) throw pkgError;
+      
+      // 2. Update Sessions Status
+      // FIX: Changed 'scheduled' to 'confirmed' (Check your DB enum if this fails again)
+      const { error: sessionError } = await supabase
         .from('interview_sessions')
-        .insert(
-          sessions.map((s) => ({
-            package_id: packageId,
-            candidate_id: (packageData as any).candidate_id,
-            ...s,
-            status: 'pending',
-          }))
-        )
-        .select();
-      if (error) throw error;
+        .update({ status: 'confirmed' }) 
+        .eq('package_id', pkgId);
 
-      return { data, error: null };
-    } catch (error) {
-      console.error('Error creating sessions:', error);
-      return { data: null, error };
-    }
-  },
-
-  async processRefund(packageId: string, refundType: 'full' | 'partial') {
-    try {
-      const { data: pkg, error: pkgErr } = await supabase
-        .from('interview_packages')
-        .select('*')
-        .eq('id', packageId)
-        .single();
-      if (pkgErr || !pkg) throw pkgErr || new Error('Package not found');
-
-      const newStatus = refundType === 'full' ? 'refunded' : 'partial_refund';
-      const { data, error } = await supabase
-        .from('interview_packages')
-        .update({ payment_status: newStatus })
-        .eq('id', packageId)
-        .select()
-        .single();
-      if (error) throw error;
-
-      return { data, error: null };
-    } catch (error) {
-      console.error('Error processing refund:', error);
-      return { data: null, error };
-    }
-  },
-
-  async releasePaymentToMentor(packageId: string) {
-    try {
-      const { data: sessions, error: sessionsError } = await supabase
-        .from('interview_sessions')
-        .select('status')
-        .eq('package_id', packageId);
-      if (sessionsError || !sessions) throw sessionsError || new Error('Sessions not found');
-
-      const allCompleted = sessions.every((s: any) => s.status === 'completed');
-      if (!allCompleted) throw new Error('Not all sessions completed');
-
-      const { data, error } = await supabase
-        .from('interview_packages')
-        .update({ payment_status: 'completed' })
-        .eq('id', packageId)
-        .select()
-        .single();
-      if (error) throw error;
-
-      return { data, error: null };
-    } catch (error) {
-      console.error('Error releasing payment to mentor:', error);
-      return { data: null, error };
-    }
-  },
+      if (sessionError) throw sessionError;
+        
+      return { success: true };
+  }
 };

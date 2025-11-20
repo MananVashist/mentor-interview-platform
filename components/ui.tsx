@@ -14,7 +14,7 @@ import {
   TextProps,
   ViewProps,
 } from 'react-native';
-import { THEME } from '@/lib/theme';
+import { theme } from '@/lib/theme';
 
 // ============================================
 // Button Component
@@ -61,7 +61,7 @@ export function Button({
     >
       {isLoading ? (
         <ActivityIndicator 
-          color={variant === 'outline' || variant === 'ghost' ? THEME.colors.primary : THEME.colors.background} 
+          color={variant === 'outline' || variant === 'ghost' ? theme.colors.primary : theme.colors.background} 
         />
       ) : (
         <Text style={textStyle}>{title}</Text>
@@ -102,7 +102,7 @@ export function Input({
             rightIcon && styles.input_withRightIcon,
             style,
           ]}
-          placeholderTextColor={THEME.colors.textTertiary}
+          placeholderTextColor={theme.colors.textTertiary}
           {...props}
         />
         
@@ -255,35 +255,35 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: THEME.borderRadius.round,
-    paddingVertical: THEME.spacing.md,
-    paddingHorizontal: THEME.spacing.lg,
+    borderRadius: theme.borderRadius.round,
+    paddingVertical: theme.spacing.md,
+    paddingHorizontal: theme.spacing.lg,
   },
   button_primary: {
-    backgroundColor: THEME.colors.primary,
+    backgroundColor: theme.colors.primary,
   },
   button_secondary: {
-    backgroundColor: THEME.colors.backgroundSecondary,
+    backgroundColor: theme.colors.backgroundSecondary,
   },
   button_outline: {
     backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: THEME.colors.border,
+    borderColor: theme.colors.border,
   },
   button_ghost: {
     backgroundColor: 'transparent',
   },
   button_sm: {
-    paddingVertical: THEME.spacing.sm,
-    paddingHorizontal: THEME.spacing.md,
+    paddingVertical: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.md,
   },
   button_md: {
-    paddingVertical: THEME.spacing.md,
-    paddingHorizontal: THEME.spacing.lg,
+    paddingVertical: theme.spacing.md,
+    paddingHorizontal: theme.spacing.lg,
   },
   button_lg: {
-    paddingVertical: THEME.spacing.lg,
-    paddingHorizontal: THEME.spacing.xl,
+    paddingVertical: theme.spacing.lg,
+    paddingHorizontal: theme.spacing.xl,
   },
   button_fullWidth: {
     width: '100%',
@@ -296,25 +296,25 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   buttonText_primary: {
-    color: THEME.colors.background,
+    color: theme.colors.background,
   },
   buttonText_secondary: {
-    color: THEME.colors.text,
+    color: theme.colors.text,
   },
   buttonText_outline: {
-    color: THEME.colors.primary,
+    color: theme.colors.primary,
   },
   buttonText_ghost: {
-    color: THEME.colors.primary,
+    color: theme.colors.primary,
   },
   buttonText_sm: {
-    fontSize: THEME.typography.fontSize.sm,
+    fontSize: theme.typography.fontSize.sm,
   },
   buttonText_md: {
-    fontSize: THEME.typography.fontSize.base,
+    fontSize: theme.typography.fontSize.base,
   },
   buttonText_lg: {
-    fontSize: THEME.typography.fontSize.lg,
+    fontSize: theme.typography.fontSize.lg,
   },
   buttonText_disabled: {
     opacity: 0.5,
@@ -322,75 +322,75 @@ const styles = StyleSheet.create({
 
   // Input styles
   inputContainer: {
-    marginBottom: THEME.spacing.md,
+    marginBottom: theme.spacing.md,
   },
   inputLabel: {
-    fontSize: THEME.typography.fontSize.sm,
+    fontSize: theme.typography.fontSize.sm,
     fontWeight: '600',
-    color: THEME.colors.text,
-    marginBottom: THEME.spacing.xs,
+    color: theme.colors.text,
+    marginBottom: theme.spacing.xs,
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: THEME.colors.border,
-    borderRadius: THEME.borderRadius.md,
-    backgroundColor: THEME.colors.background,
+    borderColor: theme.colors.border,
+    borderRadius: theme.borderRadius.md,
+    backgroundColor: theme.colors.background,
   },
   inputWrapper_error: {
-    borderColor: THEME.colors.error,
+    borderColor: theme.colors.error,
   },
   input: {
     flex: 1,
-    padding: THEME.spacing.md,
-    fontSize: THEME.typography.fontSize.base,
-    color: THEME.colors.text,
+    padding: theme.spacing.md,
+    fontSize: theme.typography.fontSize.base,
+    color: theme.colors.text,
   },
   input_withLeftIcon: {
-    paddingLeft: THEME.spacing.sm,
+    paddingLeft: theme.spacing.sm,
   },
   input_withRightIcon: {
-    paddingRight: THEME.spacing.sm,
+    paddingRight: theme.spacing.sm,
   },
   inputIcon: {
-    paddingHorizontal: THEME.spacing.md,
+    paddingHorizontal: theme.spacing.md,
   },
   inputError: {
-    fontSize: THEME.typography.fontSize.xs,
-    color: THEME.colors.error,
-    marginTop: THEME.spacing.xs,
+    fontSize: theme.typography.fontSize.xs,
+    color: theme.colors.error,
+    marginTop: theme.spacing.xs,
   },
 
   // Label styles
   label: {
-    fontSize: THEME.typography.fontSize.sm,
+    fontSize: theme.typography.fontSize.sm,
     fontWeight: '600',
-    color: THEME.colors.text,
-    marginBottom: THEME.spacing.xs,
+    color: theme.colors.text,
+    marginBottom: theme.spacing.xs,
   },
   labelRequired: {
-    color: THEME.colors.error,
+    color: theme.colors.error,
   },
 
   // Card styles
   card: {
-    backgroundColor: THEME.colors.background,
-    borderRadius: THEME.borderRadius.lg,
-    padding: THEME.spacing.lg,
+    backgroundColor: theme.colors.background,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.lg,
   },
   card_bordered: {
     borderWidth: 1,
-    borderColor: THEME.colors.border,
+    borderColor: theme.colors.border,
   },
   card_elevated: {
-    ...THEME.shadows.md,
+    ...theme.shadows.md,
   },
 
   // Divider styles
   divider: {
     height: 1,
-    backgroundColor: THEME.colors.border,
+    backgroundColor: theme.colors.border,
   },
   divider_vertical: {
     width: 1,
@@ -399,89 +399,89 @@ const styles = StyleSheet.create({
 
   // Badge styles
   badge: {
-    paddingVertical: THEME.spacing.xs,
-    paddingHorizontal: THEME.spacing.sm,
-    borderRadius: THEME.borderRadius.md,
+    paddingVertical: theme.spacing.xs,
+    paddingHorizontal: theme.spacing.sm,
+    borderRadius: theme.borderRadius.md,
     alignSelf: 'flex-start',
   },
   badge_primary: {
-    backgroundColor: THEME.colors.primary,
+    backgroundColor: theme.colors.primary,
   },
   badge_success: {
-    backgroundColor: THEME.colors.success,
+    backgroundColor: theme.colors.success,
   },
   badge_warning: {
-    backgroundColor: THEME.colors.warning,
+    backgroundColor: theme.colors.warning,
   },
   badge_error: {
-    backgroundColor: THEME.colors.error,
+    backgroundColor: theme.colors.error,
   },
   badge_info: {
-    backgroundColor: THEME.colors.info,
+    backgroundColor: theme.colors.info,
   },
   badge_sm: {
     paddingVertical: 2,
-    paddingHorizontal: THEME.spacing.xs,
+    paddingHorizontal: theme.spacing.xs,
   },
   badge_md: {
-    paddingVertical: THEME.spacing.xs,
-    paddingHorizontal: THEME.spacing.sm,
+    paddingVertical: theme.spacing.xs,
+    paddingHorizontal: theme.spacing.sm,
   },
   badgeText: {
-    fontSize: THEME.typography.fontSize.xs,
+    fontSize: theme.typography.fontSize.xs,
     fontWeight: '600',
-    color: THEME.colors.background,
+    color: theme.colors.background,
   },
   badgeText_primary: {
-    color: THEME.colors.background,
+    color: theme.colors.background,
   },
   badgeText_success: {
-    color: THEME.colors.background,
+    color: theme.colors.background,
   },
   badgeText_warning: {
-    color: THEME.colors.background,
+    color: theme.colors.background,
   },
   badgeText_error: {
-    color: THEME.colors.background,
+    color: theme.colors.background,
   },
   badgeText_info: {
-    color: THEME.colors.background,
+    color: theme.colors.background,
   },
   badgeText_sm: {
     fontSize: 10,
   },
   badgeText_md: {
-    fontSize: THEME.typography.fontSize.xs,
+    fontSize: theme.typography.fontSize.xs,
   },
 
   // Role toggle styles
   roleToggle: {
     flexDirection: 'row',
-    borderRadius: THEME.borderRadius.md,
+    borderRadius: theme.borderRadius.md,
     borderWidth: 1,
-    borderColor: THEME.colors.border,
+    borderColor: theme.colors.border,
     padding: 4,
-    backgroundColor: THEME.colors.backgroundSecondary,
+    backgroundColor: theme.colors.backgroundSecondary,
   },
   roleButton: {
     flex: 1,
-    paddingVertical: THEME.spacing.sm,
-    paddingHorizontal: THEME.spacing.md,
-    borderRadius: THEME.borderRadius.sm,
+    paddingVertical: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.md,
+    borderRadius: theme.borderRadius.sm,
     alignItems: 'center',
   },
   roleButton_active: {
-    backgroundColor: THEME.colors.primary,
+    backgroundColor: theme.colors.primary,
   },
   roleButton_disabled: {
     opacity: 0.5,
   },
   roleButtonText: {
-    fontSize: THEME.typography.fontSize.sm,
+    fontSize: theme.typography.fontSize.sm,
     fontWeight: '600',
-    color: THEME.colors.textSecondary,
+    color: theme.colors.textSecondary,
   },
   roleButtonText_active: {
-    color: THEME.colors.background,
+    color: theme.colors.background,
   },
 });

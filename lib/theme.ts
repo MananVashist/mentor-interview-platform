@@ -1,105 +1,104 @@
 ﻿// lib/theme.ts
-import { Platform } from 'react-native';
 
-const webFont =
-  'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial';
+export const colors = {
+  // Main Brand Colors
+  primary: "#11998e",
+  primaryDark: "#0F766E",
+  background: "#F9FAFB",
+  surface: "#FFFFFF",
+  border: "#E5E7EB",
 
-export const THEME = {
-  colors: {
-    // surfaces
-    background: '#F9FAFB',
-    surface: '#FFFFFF',
-    backgroundSecondary: '#F3F4F6',
-
-    // brand / CTA
-    primary: '#0E9384',
-    primarySoft: 'rgba(14,147,132,0.1)',
-    onPrimary: '#FFFFFF',
-    CTA: '#0E9384',
-    CTA_TEXT: '#FFFFFF',
-
-    // text
-    text: '#0f172a',
-    textSecondary: '#6b7280',
-    textMuted: '#6b7280',
-    textTertiary: '#94a3b8',
-
-    // links / accents
-    accent: '#2563eb',
-
-    // borders & states
-    border: 'rgba(15,23,42,0.08)',
-    success: '#10B981',
-    warning: '#F59E0B',
-    danger: '#EF4444',
-    error: '#EF4444',
-    disabled: 'rgba(15,23,42,0.12)',
-
-    // badges (you had these)
-    badgeBronze: '#CD7F32',
-    badgeSilver: '#C0C0C0',
-    badgeGold: '#FFD700',
+  // Typography Colors
+  text: {
+    main: "#111827", // Gray 900 (Titles)
+    body: "#4B5563", // Gray 600 (Paragraphs)
+    light: "#6B7280", // Gray 500 (Labels)
+    inverse: "#FFFFFF",
   },
 
-  spacing: {
-    xs: 4,
-    sm: 8,
-    md: 14,
-    lg: 20,
-    xl: 28,
+  // Gray Scale
+  gray: {
+    50: "#F9FAFB",
+    100: "#F3F4F6",
+    200: "#E5E7EB",
+    300: "#D1D5DB",
+    400: "#9CA3AF",
+    500: "#6B7280",
+    600: "#4B5563",
+    700: "#374151",
+    800: "#1F2937",
+    900: "#111827",
   },
 
-  radius: {
-    sm: 6,
-    md: 10,
-    lg: 16,
-    pill: 999,
+  // Component Specifics
+  badge: {
+    bronze: {
+      bg: "#FFF7ED",
+      text: "#C2410C",
+      border: "#FFEDD5",
+    }
   },
+  
+  pricing: {
+    greenText: "#10B981",
+    greenBg: "#ECFDF5",
+    blueIcon: "#3B82F6",
+    blueBg: "#EFF6FF",
+  }
+};
 
-  typography: {
-    // auth screens
-    heading1: 28,
-    heading2: 22,
-    body: 14,
-    small: 12,
-    button: 14,
-
-    // candidate screens were doing typography.size.md
-    size: {
-      xs: 10,
-      sm: 12,
-      md: 14,
-      lg: 16,
-      xl: 20,
-    },
+export const typography = {
+  fontFamily: {
+    regular: "Inter_400Regular",
+    medium: "Inter_500Medium",
+    semibold: "Inter_600SemiBold",
+    bold: "Inter_700Bold",
+    extrabold: "Inter_800ExtraBold",
   },
+  size: {
+    xs: 12,
+    sm: 14,
+    md: 16,
+    lg: 18,
+    xl: 20,
+    xxl: 24,
+  }
+};
 
-  // some candidate screens were doing ...shadows.card
-  shadows: {
-    card:
-      Platform.OS === 'web'
-        ? {
-            boxShadow: '0 10px 30px rgba(15,23,42,0.04)',
-          }
-        : {
-            shadowColor: '#0f172a',
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.08,
-            shadowRadius: 10,
-            elevation: 3,
-          },
-  },
+export const spacing = {
+  xs: 4,
+  sm: 8,
+  md: 16,
+  lg: 24,
+  xl: 32,
+};
 
-  fonts: {
-    heading: Platform.OS === 'web' ? (webFont as any) : undefined,
-    body: Platform.OS === 'web' ? (webFont as any) : undefined,
-  },
-} as const;
+export const borderRadius = {
+  sm: 6,
+  md: 8,
+  lg: 12,
+  xl: 16,
+  full: 9999,
+};
 
-export const colors = THEME.colors;
-export const spacing = THEME.spacing;
-export const borderRadius = THEME.radius;
-export const typography = THEME.typography;
-export const shadows = THEME.shadows;
+export const shadows = {
+  card: {
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
+  }
+};
 
-export type AppTheme = typeof THEME;
+// --- CRITICAL FIX: Export the combined object ---
+const theme = {
+  colors,
+  typography,
+  spacing,
+  borderRadius,
+  shadows,
+};
+
+export { theme };
+export default theme;
