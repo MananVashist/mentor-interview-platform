@@ -16,7 +16,7 @@ type MentorRow = {
   experience_description: string | null;
   years_of_experience: number | null;
   bio: string | null;
-  profile_ids: number[] | null;
+  profile_ids: number[] | null; // <--- This now exists in the DB
 };
 
 type InterviewProfile = {
@@ -52,14 +52,15 @@ export default function MentorProfileScreen() {
     if (!profile?.id) return;
 
     let mounted = true;
+
     (async () => {
       try {
         setLoading(true);
 
-        // 1) Load mentor row
+        // 1) Load mentor row - We now SELECT the new profile_ids column
         const { data: mentor, error: mentorError } = await supabase
           .from('mentors')
-          .select('*')
+          .select('id, professional_title, experience_description, years_of_experience, bio, profile_ids')
           .eq('profile_id', profile.id)
           .maybeSingle();
 
@@ -68,7 +69,7 @@ export default function MentorProfileScreen() {
           if (mounted) {
             setBanner({
               type: 'error',
-              message: 'Failed to load your mentor profile.',
+              message: 'Failed to load mentor settings.',
             });
           }
         } else if (mentor && mounted) {
@@ -80,17 +81,17 @@ export default function MentorProfileScreen() {
             m.years_of_experience != null ? String(m.years_of_experience) : ''
           );
           setBio(m.bio ?? '');
-          setSelectedProfiles(m.profile_ids ?? []);
+          setSelectedProfiles(m.profile_ids ?? []); // Load the array of IDs
         }
 
-        // 2) Load interview profiles
+        // 2) Load available interview profiles (from the ADMIN table)
         const { data: profilesData, error: profilesError } = await supabase
-          .from('interview_profiles')
+          .from('interview_profiles_admin') // Use the table that exists
           .select('id, name')
           .order('name', { ascending: true });
 
         if (profilesError) {
-          console.log('[mentor/profile] load interview_profiles error', profilesError);
+          console.log('[mentor/profile] load interview_profiles_admin error', profilesError);
         } else if (profilesData && mounted) {
           setAvailableProfiles(profilesData as InterviewProfile[]);
         }
@@ -143,7 +144,7 @@ export default function MentorProfileScreen() {
           experience_description: experienceDescription.trim() || null,
           years_of_experience: yrs,
           bio: bio.trim() || null,
-          profile_ids: selectedProfiles,
+          profile_ids: selectedProfiles, // <--- WRITE NOW WORKS
         })
         .eq('id', mentorId);
 
@@ -481,7 +482,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     marginTop: spacing.md,
     padding: spacing.sm,
-    backgroundColor: 'rgba(16,185,129,0.08)',
+    backgroundColor: 'rgba(16,185,192,0.08)',
     borderRadius: borderRadius.sm,
   },
   privacyText: {

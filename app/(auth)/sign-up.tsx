@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { Link, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { THEME } from '@/lib/theme';
+import { theme } from '@/lib/theme';
 import { authService } from '@/services/auth.service';
 import { useAuthStore } from '@/lib/store';
 
@@ -274,7 +274,7 @@ export default function SignUpScreen() {
                 value={name}
                 onChangeText={setName}
                 placeholder="John Doe"
-                placeholderTextColor={THEME.colors.textTertiary}
+                placeholderTextColor={theme.colors.textTertiary}
                 editable={!loading}
               />
             </View>
@@ -287,7 +287,7 @@ export default function SignUpScreen() {
                 value={email}
                 onChangeText={setEmail}
                 placeholder="you@example.com"
-                placeholderTextColor={THEME.colors.textTertiary}
+                placeholderTextColor={theme.colors.textTertiary}
                 autoCapitalize="none"
                 keyboardType="email-address"
                 editable={!loading}
@@ -302,7 +302,7 @@ export default function SignUpScreen() {
                 value={password}
                 onChangeText={setPassword}
                 placeholder="Min. 6 characters"
-                placeholderTextColor={THEME.colors.textTertiary}
+                placeholderTextColor={theme.colors.textTertiary}
                 secureTextEntry
                 editable={!loading}
               />
@@ -316,7 +316,7 @@ export default function SignUpScreen() {
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
                 placeholder="Re-enter password"
-                placeholderTextColor={THEME.colors.textTertiary}
+                placeholderTextColor={theme.colors.textTertiary}
                 secureTextEntry
                 editable={!loading}
               />
@@ -332,7 +332,7 @@ export default function SignUpScreen() {
               disabled={!isFormValid || loading}
             >
               {loading ? (
-                <ActivityIndicator color={THEME.colors.background} />
+                <ActivityIndicator color={theme.colors.background} />
               ) : (
                 <Text style={styles.signUpButtonText}>Create Account</Text>
               )}
@@ -373,7 +373,7 @@ export default function SignUpScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: THEME.colors.background,
+    backgroundColor: theme.colors.background,
     paddingTop: 60,
   },
   scrollView: {
@@ -393,12 +393,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: THEME.colors.text,
+    color: theme.colors.text,
     marginBottom: 4,
   },
   subtitle: {
     fontSize: 16,
-    color: THEME.colors.textSecondary,
+    color: theme.colors.textSecondary,
   },
   socialRow: {
     gap: 10,
@@ -409,14 +409,14 @@ const styles = StyleSheet.create({
     gap: 8,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: THEME.colors.border,
+    borderColor: theme.colors.border,
     borderRadius: 999,
     paddingVertical: 8,
     paddingHorizontal: 14,
-    backgroundColor: THEME.colors.surface,
+    backgroundColor: theme.colors.surface,
   },
   socialText: {
-    color: THEME.colors.text,
+    color: theme.colors.text,
     fontWeight: '500',
   },
   section: {
@@ -426,15 +426,15 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     marginBottom: 6,
-    color: THEME.colors.text,
+    color: theme.colors.text,
   },
   roleToggle: {
     flexDirection: 'row',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: THEME.colors.border,
+    borderColor: theme.colors.border,
     padding: 4,
-    backgroundColor: THEME.colors.backgroundSecondary,
+    backgroundColor: theme.colors.backgroundSecondary,
     gap: 6,
   },
   roleButton: {
@@ -444,37 +444,37 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   roleButtonActive: {
-    backgroundColor: THEME.colors.primary,
+    backgroundColor: theme.colors.primary,
   },
   roleButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: THEME.colors.textSecondary,
+    color: theme.colors.textSecondary,
   },
   roleButtonTextActive: {
-    color: THEME.colors.background,
+    color: theme.colors.background,
   },
   input: {
     borderWidth: 1,
-    borderColor: THEME.colors.border,
+    borderColor: theme.colors.border,
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
-    color: THEME.colors.text,
-    backgroundColor: THEME.colors.background,
+    color: theme.colors.text,
+    backgroundColor: theme.colors.background,
   },
   signUpButton: {
-    backgroundColor: THEME.colors.primary,
+    backgroundColor: theme.colors.primary,
     borderRadius: 999,
     alignItems: 'center',
     padding: 14,
     marginTop: 8,
   },
   signUpButtonDisabled: {
-    backgroundColor: THEME.colors.disabled,
+    backgroundColor: theme.colors.disabled,
   },
   signUpButtonText: {
-    color: THEME.colors.background,
+    color: theme.colors.background,
     fontSize: 16,
     fontWeight: '700',
   },
@@ -484,7 +484,7 @@ const styles = StyleSheet.create({
   quickTitle: {
     fontSize: 12,
     fontWeight: '600',
-    color: THEME.colors.textSecondary,
+    color: theme.colors.textSecondary,
     marginBottom: 6,
   },
   quickRow: {
@@ -492,14 +492,14 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   quickBtn: {
-    backgroundColor: THEME.colors.backgroundSecondary,
+    backgroundColor: theme.colors.backgroundSecondary,
     borderRadius: 999,
     paddingVertical: 6,
     paddingHorizontal: 14,
   },
   quickBtnText: {
     fontWeight: '600',
-    color: THEME.colors.text,
+    color: theme.colors.text,
   },
   footer: {
     flexDirection: 'row',
@@ -507,11 +507,11 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   footerText: {
-    color: THEME.colors.textSecondary,
+    color: theme.colors.textSecondary,
     fontSize: 14,
   },
   footerLink: {
-    color: THEME.colors.primary,
+    color: theme.colors.primary,
     fontSize: 14,
     fontWeight: '700',
   },

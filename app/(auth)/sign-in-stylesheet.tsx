@@ -17,7 +17,7 @@ import { authService } from '@/services/auth.service';
 import { UserRole } from '@/lib/types';
 import { logger } from '@/lib/debug';
 
-const THEME = {
+const theme = {
   color: {
     bg: '#FFFFFF',
     text: '#0F172A',
@@ -122,7 +122,7 @@ export default function SignInStylesheetScreen() {
             <TextInput
               style={styles.input}
               placeholder="your.email@example.com"
-              placeholderTextColor={THEME.color.placeholder}
+              placeholderTextColor={theme.color.placeholder}
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
@@ -136,7 +136,7 @@ export default function SignInStylesheetScreen() {
             <TextInput
               style={styles.input}
               placeholder="Enter your password"
-              placeholderTextColor={THEME.color.placeholder}
+              placeholderTextColor={theme.color.placeholder}
               secureTextEntry
               value={password}
               onChangeText={setPassword}
@@ -152,7 +152,7 @@ export default function SignInStylesheetScreen() {
             style={[styles.cta, loading && styles.ctaDisabled]}
           >
             {loading ? (
-              <ActivityIndicator color={THEME.color.ctaText} />
+              <ActivityIndicator color={theme.color.ctaText} />
             ) : (
               <Text style={styles.ctaText}>Sign In</Text>
             )}
@@ -180,98 +180,98 @@ export default function SignInStylesheetScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: THEME.color.bg },
+  container: { flex: 1, backgroundColor: theme.color.bg },
   scrollView: { flex: 1 },
   scrollContent: { flexGrow: 1 },
   content: {
     flex: 1,
-    paddingHorizontal: THEME.space.xl,
-    paddingVertical: THEME.space.xxl,
+    paddingHorizontal: theme.space.xl,
+    paddingVertical: theme.space.xxl,
     justifyContent: 'center',
   },
-  header: { marginBottom: THEME.space.xl },
+  header: { marginBottom: theme.space.xl },
   title: {
-    fontFamily: THEME.font.family as string,
-    fontSize: THEME.font.h1,
+    fontFamily: theme.font.family as string,
+    fontSize: theme.font.h1,
     fontWeight: '800',
-    color: THEME.color.text,
+    color: theme.color.text,
     letterSpacing: -0.3,
-    marginBottom: THEME.space.xs,
+    marginBottom: theme.space.xs,
   },
   subtitle: {
-    fontFamily: THEME.font.family as string,
-    fontSize: THEME.font.h2,
-    color: THEME.color.subtext,
+    fontFamily: theme.font.family as string,
+    fontSize: theme.font.h2,
+    color: theme.color.subtext,
   },
-  section: { marginBottom: THEME.space.lg },
+  section: { marginBottom: theme.space.lg },
   label: {
-    fontFamily: THEME.font.family as string,
-    fontSize: THEME.font.label,
+    fontFamily: theme.font.family as string,
+    fontSize: theme.font.label,
     fontWeight: '700',
     letterSpacing: 0.6,
-    color: THEME.color.label,
-    opacity: THEME.labelOpacity,
-    marginBottom: THEME.space.sm,
+    color: theme.color.label,
+    opacity: theme.labelOpacity,
+    marginBottom: theme.space.sm,
   },
-  roleRow: { flexDirection: 'row', gap: THEME.space.sm },
+  roleRow: { flexDirection: 'row', gap: theme.space.sm },
   roleButton: {
     flex: 1,
-    paddingVertical: THEME.space.md,
-    borderRadius: THEME.radius,
+    paddingVertical: theme.space.md,
+    borderRadius: theme.radius,
     borderWidth: 2,
-    borderColor: THEME.color.border,
-    backgroundColor: THEME.color.inputBg,
+    borderColor: theme.color.border,
+    backgroundColor: theme.color.inputBg,
     alignItems: 'center',
   },
   roleButtonActive: {
-    borderColor: THEME.color.roleActiveBorder,
-    backgroundColor: THEME.color.roleActiveBg,
+    borderColor: theme.color.roleActiveBorder,
+    backgroundColor: theme.color.roleActiveBg,
   },
   roleText: {
-    fontFamily: THEME.font.family as string,
-    fontSize: THEME.font.body,
+    fontFamily: theme.font.family as string,
+    fontSize: theme.font.body,
     fontWeight: '700',
-    color: THEME.color.subtext,
+    color: theme.color.subtext,
   },
-  roleTextActive: { color: THEME.color.text },
+  roleTextActive: { color: theme.color.text },
   input: {
     width: '100%',
-    paddingVertical: THEME.space.md,
-    paddingHorizontal: THEME.space.lg,
+    paddingVertical: theme.space.md,
+    paddingHorizontal: theme.space.lg,
     borderWidth: 1,
-    borderColor: THEME.color.border,
-    borderRadius: THEME.radius,
-    backgroundColor: THEME.color.bg,
-    fontFamily: THEME.font.family as string,
-    fontSize: THEME.font.body,
-    color: THEME.color.text,
+    borderColor: theme.color.border,
+    borderRadius: theme.radius,
+    backgroundColor: theme.color.bg,
+    fontFamily: theme.font.family as string,
+    fontSize: theme.font.body,
+    color: theme.color.text,
   },
   cta: {
     width: '100%',
-    paddingVertical: THEME.space.lg,
-    borderRadius: THEME.radius,
-    backgroundColor: THEME.color.cta,
+    paddingVertical: theme.space.lg,
+    borderRadius: theme.radius,
+    backgroundColor: theme.color.cta,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: THEME.space.md,
-    marginBottom: THEME.space.lg,
+    marginTop: theme.space.md,
+    marginBottom: theme.space.lg,
     ...(Platform.OS === 'web'
       ? {
           boxShadow: '0 12px 20px rgba(11,139,130,0.35)',
         }
       : {
-          shadowColor: THEME.color.cta,
+          shadowColor: theme.color.cta,
           shadowOffset: { width: 0, height: 6 },
           shadowOpacity: 0.27,
           shadowRadius: 8,
           elevation: 5,
         }),
   },
-  ctaDisabled: { backgroundColor: THEME.color.ctaDisabled },
+  ctaDisabled: { backgroundColor: theme.color.ctaDisabled },
   ctaText: {
-    fontFamily: THEME.font.family as string,
-    color: THEME.color.ctaText,
-    fontSize: THEME.font.cta,
+    fontFamily: theme.font.family as string,
+    color: theme.color.ctaText,
+    fontSize: theme.font.cta,
     fontWeight: '800',
     letterSpacing: 0.2,
   },
@@ -279,37 +279,37 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: THEME.space.md,
+    marginBottom: theme.space.md,
   },
   footerText: {
-    fontFamily: THEME.font.family as string,
-    fontSize: THEME.font.body,
-    color: THEME.color.subtext,
+    fontFamily: theme.font.family as string,
+    fontSize: theme.font.body,
+    color: theme.color.subtext,
   },
   footerLink: {
-    fontFamily: THEME.font.family as string,
-    fontSize: THEME.font.body,
-    color: THEME.color.link,
+    fontFamily: theme.font.family as string,
+    fontSize: theme.font.body,
+    color: theme.color.link,
     fontWeight: '800',
   },
   debugBox: {
-    marginTop: THEME.space.lg,
-    padding: THEME.space.md,
-    backgroundColor: THEME.color.debugBg,
-    borderRadius: THEME.radius - 4,
+    marginTop: theme.space.lg,
+    padding: theme.space.md,
+    backgroundColor: theme.color.debugBg,
+    borderRadius: theme.radius - 4,
     borderWidth: 1,
-    borderColor: THEME.color.debugBorder,
+    borderColor: theme.color.debugBorder,
   },
   debugTitle: {
-    fontFamily: THEME.font.family as string,
-    fontSize: THEME.font.label,
+    fontFamily: theme.font.family as string,
+    fontSize: theme.font.label,
     fontWeight: '700',
-    color: THEME.color.debugText,
+    color: theme.color.debugText,
     marginBottom: 4,
   },
   debugText: {
-    fontFamily: THEME.font.family as string,
-    fontSize: THEME.font.label,
-    color: THEME.color.debugText,
+    fontFamily: theme.font.family as string,
+    fontSize: theme.font.label,
+    color: theme.color.debugText,
   },
 });

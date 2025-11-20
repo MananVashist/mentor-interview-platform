@@ -1,144 +1,63 @@
 ﻿// lib/ui.tsx
-import React from 'react';
+import React from "react";
 import {
-  View,
   Text,
-  TouchableOpacity,
-  TextInput,
+  View,
   StyleSheet,
+  TouchableOpacity,
   ViewStyle,
   TextStyle,
+  ActivityIndicator,
+  SafeAreaView,
+  StatusBar,
+  TextInput,
   TextInputProps,
-} from 'react-native';
-import { useTheme } from './theme_provider';
+} from "react-native";
+import { theme } from "./theme";
 
-type WithChildren = {
+// --- Types ---
+interface HeadingProps {
+  level?: 1 | 2 | 3 | 4;
   children: React.ReactNode;
-  style?: ViewStyle | TextStyle;
-};
-
-export const AppText = ({ children, style }: WithChildren) => {
-  const theme = useTheme();
-  return (
-    <Text
-      style={[
-        {
-          color: theme.colors.text,
-          fontSize: theme.typography.body,
-          fontFamily: theme.fonts.body,
-        },
-        style as TextStyle,
-      ]}
-    >
-      {children}
-    </Text>
-  );
-};
-
-export const Heading = ({
-  children,
-  level = 1,
-  style,
-}: {
-  children: React.ReactNode;
-  level?: 1 | 2 | 3;
   style?: TextStyle;
-}) => {
-  const theme = useTheme();
-  const size =
-    level === 1
-      ? theme.typography.heading1
-      : level === 2
-      ? theme.typography.heading2
-      : theme.typography.body;
-  return (
-    <Text
-      style={[
-        {
-          fontSize: size,
-          fontWeight: '700',
-          color: theme.colors.text,
-          fontFamily: theme.fonts.heading,
-        },
-        style,
-      ]}
-    >
-      {children}
-    </Text>
-  );
-};
+}
 
-export const Label = ({ children, style }: WithChildren) => {
-  const theme = useTheme();
-  return (
-    <Text
-      style={[
-        {
-          marginBottom: theme.spacing.xs,
-          color: theme.colors.textSecondary,
-          fontSize: theme.typography.small,
-          fontWeight: '500',
-        },
-        style as TextStyle,
-      ]}
-    >
-      {children}
-    </Text>
-  );
-};
+interface AppTextProps {
+  children: React.ReactNode;
+  style?: TextStyle;
+  numberOfLines?: number;
+}
 
-export const Input = ({
-  style,
-  ...props
-}: TextInputProps & { style?: ViewStyle | TextStyle }) => {
-  const theme = useTheme();
-  return (
-    <TextInput
-      placeholderTextColor={theme.colors.textMuted}
-      style={[
-        {
-          borderWidth: StyleSheet.hairlineWidth,
-          borderColor: theme.colors.border,
-          backgroundColor: theme.colors.surface,
-          borderRadius: theme.radius.md,
-          paddingHorizontal: theme.spacing.md,
-          paddingVertical: theme.spacing.sm,
-          fontSize: theme.typography.body,
-          color: theme.colors.text,
-          fontFamily: theme.fonts.body,
-        },
-        style as ViewStyle,
-      ]}
-      {...props}
-    />
-  );
-};
+interface CardProps {
+  children: React.ReactNode;
+  style?: ViewStyle | ViewStyle[];
+}
 
-export const Card = ({
+interface ButtonProps {
+  title: string;
+  onPress: () => void;
+  variant?: "primary" | "outline" | "ghost";
+  size?: "sm" | "md" | "lg";
+  style?: ViewStyle;
+  textStyle?: TextStyle;
+  disabled?: boolean;
+  loading?: boolean;
+}
+
+// --- Components ---
+
+export const ScreenBackground = ({
   children,
   style,
 }: {
   children: React.ReactNode;
   style?: ViewStyle;
-}) => {
-  const theme = useTheme();
-  return (
-    <View
-      style={[
-        {
-          backgroundColor: theme.colors.surface,
-          borderRadius: theme.radius.lg,
-          borderWidth: StyleSheet.hairlineWidth,
-          borderColor: theme.colors.border,
-          padding: theme.spacing.lg,
-        },
-        style,
-      ]}
-    >
-      {children}
-    </View>
-  );
-};
+}) => (
+  <SafeAreaView style={[styles.screen, style]}>
+    <StatusBar barStyle="dark-content" backgroundColor={theme.colors.background} />
+    <View style={{ flex: 1 }}>{children}</View>
+  </SafeAreaView>
+);
 
 export const Section = ({
   children,
@@ -146,92 +65,232 @@ export const Section = ({
 }: {
   children: React.ReactNode;
   style?: ViewStyle;
-}) => {
-  const theme = useTheme();
-  return (
-    <View
-      style={[
-        {
-          width: '100%',
-          paddingHorizontal: theme.spacing.lg,
-          paddingVertical: theme.spacing.md,
-        },
-        style,
-      ]}
-    >
-      {children}
-    </View>
-  );
+}) => <View style={[styles.section, style]}>{children}</View>;
+
+export const Heading = ({ level = 1, children, style }: HeadingProps) => {
+  const getStyle = () => {
+    switch (level) {
+      case 1:
+        return styles.h1;
+      case 2:
+        return styles.h2;
+      case 3:
+        return styles.h3;
+      default:
+        return styles.h4;
+    }
+  };
+  return <Text style={[getStyle(), style]}>{children}</Text>;
 };
+
+export const AppText = ({ children, style, numberOfLines }: AppTextProps) => (
+  <Text style={[styles.text, style]} numberOfLines={numberOfLines}>
+    {children}
+  </Text>
+);
+
+export const Label = ({ children, style }: { children: React.ReactNode, style?: TextStyle }) => (
+  <Text style={[styles.label, style]}>{children}</Text>
+);
+
+export const Input = ({ style, ...props }: TextInputProps & { style?: TextStyle }) => (
+  <TextInput 
+    placeholderTextColor={theme.colors.gray[400]}
+    style={[styles.input, style]} 
+    {...props} 
+  />
+);
+
+export const Card = ({ children, style }: CardProps) => (
+  <View style={[styles.card, style]}>{children}</View>
+);
 
 export const Button = ({
   title,
   onPress,
-  variant = 'primary',
-  disabled,
+  variant = "primary",
+  size = "md",
   style,
   textStyle,
-}: {
-  title: string;
-  onPress?: () => void;
-  variant?: 'primary' | 'outline' | 'ghost';
-  disabled?: boolean;
-  style?: ViewStyle;
-  textStyle?: TextStyle;
-}) => {
-  const theme = useTheme();
-  const isPrimary = variant === 'primary';
-  const isOutline = variant === 'outline';
+  disabled,
+  loading,
+}: ButtonProps) => {
+  const getVariantStyle = () => {
+    switch (variant) {
+      case "outline":
+        return styles.btnOutline;
+      case "ghost":
+        return styles.btnGhost;
+      default:
+        return styles.btnPrimary;
+    }
+  };
 
-  const bg = isPrimary
-    ? theme.colors.primary
-    : variant === 'ghost'
-    ? 'transparent'
-    : theme.colors.surface;
+  const getVariantTextStyle = () => {
+    switch (variant) {
+      case "outline":
+        return styles.btnTextOutline;
+      case "ghost":
+        return styles.btnTextGhost;
+      default:
+        return styles.btnTextPrimary;
+    }
+  };
 
-  const borderColor = isOutline ? theme.colors.border : 'transparent';
-  const txtColor = isPrimary ? theme.colors.onPrimary : theme.colors.text;
+  const getSizeStyle = () => {
+    switch (size) {
+      case "sm":
+        return { paddingVertical: 8, paddingHorizontal: 12 };
+      case "lg":
+        return { paddingVertical: 16, paddingHorizontal: 32 };
+      default:
+        return { paddingVertical: 12, paddingHorizontal: 24 };
+    }
+  };
 
   return (
     <TouchableOpacity
       onPress={onPress}
-      disabled={disabled}
+      disabled={disabled || loading}
+      activeOpacity={0.8}
       style={[
-        {
-          backgroundColor: disabled ? theme.colors.disabled : bg,
-          borderWidth: isOutline ? StyleSheet.hairlineWidth : 0,
-          borderColor,
-          borderRadius: theme.radius.pill,
-          paddingVertical: theme.spacing.md,
-          paddingHorizontal: theme.spacing.lg,
-          alignItems: 'center',
-          justifyContent: 'center',
-        },
+        styles.buttonBase,
+        getVariantStyle(),
+        getSizeStyle(),
+        disabled && styles.btnDisabled,
         style,
       ]}
     >
-      <Text
-        style={[
-          {
-            color: txtColor,
-            fontSize: theme.typography.button,
-            fontWeight: '600',
-            fontFamily: theme.fonts.heading,
-          },
-          textStyle,
-        ]}
-      >
-        {title}
-      </Text>
+      {loading ? (
+        <ActivityIndicator
+          color={variant === "primary" ? "#FFF" : theme.colors.primary}
+        />
+      ) : (
+        <Text
+          style={[
+            styles.btnTextBase,
+            getVariantTextStyle(),
+            disabled && styles.btnTextDisabled,
+            textStyle,
+          ]}
+        >
+          {title}
+        </Text>
+      )}
     </TouchableOpacity>
   );
 };
 
-export const ScreenBackground = ({ children }: { children: React.ReactNode }) => {
-  const theme = useTheme();
-  return <View style={{ flex: 1, backgroundColor: theme.colors.background }}>{children}</View>;
-};
+// --- Styles ---
+const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+  },
+  section: {
+    marginBottom: theme.spacing.lg,
+    paddingHorizontal: theme.spacing.md,
+  },
+  
+  // Typography
+  h1: {
+    fontFamily: theme.typography.fontFamily.bold,
+    fontSize: theme.typography.size.xxl,
+    color: theme.colors.text.main,
+    marginBottom: theme.spacing.xs,
+  },
+  h2: {
+    fontFamily: theme.typography.fontFamily.semibold,
+    fontSize: theme.typography.size.xl,
+    color: theme.colors.text.main,
+    marginBottom: theme.spacing.xs,
+  },
+  h3: {
+    fontFamily: theme.typography.fontFamily.semibold,
+    fontSize: theme.typography.size.lg,
+    color: theme.colors.text.main,
+    marginBottom: theme.spacing.xs,
+  },
+  h4: {
+    fontFamily: theme.typography.fontFamily.medium,
+    fontSize: theme.typography.size.md,
+    color: theme.colors.text.main,
+  },
+  text: {
+    fontFamily: theme.typography.fontFamily.regular,
+    fontSize: theme.typography.size.sm,
+    color: theme.colors.text.body,
+  },
+  label: {
+    fontFamily: theme.typography.fontFamily.medium,
+    fontSize: theme.typography.size.xs,
+    color: theme.colors.text.light,
+    marginBottom: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
 
-// keep old names so existing code won’t break
-export const ThemedButton = Button;
-export const ThemedCard = Card;
+  // Forms
+  input: {
+    fontFamily: theme.typography.fontFamily.regular,
+    fontSize: theme.typography.size.md,
+    color: theme.colors.text.main,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: theme.borderRadius.md,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: 12,
+    backgroundColor: theme.colors.surface,
+  },
+
+  // Cards
+  card: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.md,
+    ...theme.shadows.card,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+
+  // Buttons
+  buttonBase: {
+    borderRadius: theme.borderRadius.md,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+  },
+  btnPrimary: {
+    backgroundColor: theme.colors.primary,
+  },
+  btnOutline: {
+    backgroundColor: "transparent",
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  btnGhost: {
+    backgroundColor: "transparent",
+  },
+  btnDisabled: {
+    backgroundColor: theme.colors.gray[200],
+    borderColor: theme.colors.gray[200],
+  },
+
+  // Button Text
+  btnTextBase: {
+    fontFamily: theme.typography.fontFamily.semibold,
+    fontSize: theme.typography.size.sm,
+  },
+  btnTextPrimary: {
+    color: "#FFFFFF",
+  },
+  btnTextOutline: {
+    color: theme.colors.text.main,
+  },
+  btnTextGhost: {
+    color: theme.colors.primary,
+  },
+  btnTextDisabled: {
+    color: theme.colors.gray[500],
+  },
+});

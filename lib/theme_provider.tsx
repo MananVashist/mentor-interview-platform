@@ -1,6 +1,6 @@
 // lib/theme_provider.tsx
 import React, { createContext, useContext } from 'react';
-import { THEME, type AppTheme } from './theme';
+import { theme, type AppTheme } from './theme';
 
 const ThemeContext = createContext<AppTheme | null>(null);
 
@@ -13,7 +13,7 @@ export const ThemeProvider = ({
 }) => {
   // always provide a non-null theme
   return (
-    <ThemeContext.Provider value={value ?? THEME}>
+    <ThemeContext.Provider value={value ?? theme}>
       {children}
     </ThemeContext.Provider>
   );
@@ -21,6 +21,6 @@ export const ThemeProvider = ({
 
 export const useTheme = (): AppTheme => {
   const ctx = useContext(ThemeContext);
-  // if someone calls useTheme() outside provider, don't crash — return THEME
-  return ctx ?? THEME;
+  // if someone calls useTheme() outside provider, don't crash — return theme
+  return ctx ?? theme;
 };

@@ -1,6 +1,3 @@
-// app/(auth)/sign-in.tsx
-// Always a pure sign-in screen (no landing here)
-
 import React, { useState } from 'react';
 import {
   View,
@@ -13,7 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
-  Image, // ✅ ADD
+  Image,
 } from 'react-native';
 import { Link, useRouter } from 'expo-router';
 import { authService } from '@/services/auth.service';
@@ -22,7 +19,7 @@ import { mentorService } from '@/services/mentor.service';
 import { useAuthStore } from '@/lib/store';
 import { logger } from '@/lib/debug';
 
-// ✅ OAuth imports (unchanged)
+// OAuth imports
 import * as WebBrowser from 'expo-web-browser';
 import { makeRedirectUri } from 'expo-auth-session';
 import Constants from 'expo-constants';
@@ -30,7 +27,6 @@ import { supabase } from '@/lib/supabase/client';
 
 WebBrowser.maybeCompleteAuthSession();
 
-// ✅ Redirect target for web & native (unchanged)
 const redirectTo = makeRedirectUri({
   scheme: Constants.expoConfig?.scheme ?? 'mentorplatform',
   path: 'auth-callback',
@@ -72,7 +68,7 @@ export default function SignInScreen() {
   };
 
   const handleSignIn = async () => {
-    logger.info('[AUTH UI] sign-in button clicked', { email });
+    console.log('🔵 [Sign-In] Button clicked for:', email);
     if (!email || !password) {
       Alert.alert('Error', 'Please enter both email and password');
       return;
@@ -80,18 +76,11 @@ export default function SignInScreen() {
 
     setLoading(true);
     try {
-      logger.info('[AUTH UI] calling authService.signIn');
+      // 1. Authenticate
       const { user, session, error } = await authService.signIn(email, password);
-      logger.info('[AUTH UI] signIn result', { hasUser: !!user, hasSession: !!session, error });
-
-      if (error) {
-        Alert.alert('Sign In Failed', error.message || 'Invalid email or password');
-        setLoading(false);
-        return;
-      }
-
-      if (!user || !session) {
-        Alert.alert('Sign In Failed', 'Unable to sign in. Please try again.');
+      
+      if (error || !user || !session) {
+        Alert.alert('Login Failed', error?.message || 'Invalid credentials');
         setLoading(false);
         return;
       }
@@ -99,42 +88,67 @@ export default function SignInScreen() {
       setUser(user);
       setSession(session);
 
-      logger.info('[AUTH UI] fetching profile from DB', { userId: user.id });
-      const profile = await authService.getUserProfileById(user.id);
-      logger.info('[AUTH UI] profile fetched', profile);
+      // 2. Fetch Profile
+      console.log('🔵 [Sign-In] Authenticated. User ID:', user.id);
+      let profile = await authService.getUserProfileById(user.id);
+      
+      // DEBUG: Check raw result
+      if (!profile) {
+          console.warn('⚠️ [Sign-In] Profile is NULL. RLS might be blocking read, or row missing.');
+      } else {
+          console.log('✅ [Sign-In] Profile found:', profile);
+      }
 
+      // 3. SELF-HEALING: If profile missing, create it!
+      if (!profile) {
+        console.warn("🛠️ [Sign-In] Attempting to auto-create Mentor profile...");
+        
+        const { data: newProfile, error: createError } = await supabase
+          .from('profiles')
+          .insert({
+            id: user.id,
+            email: user.email,
+            full_name: 'New Mentor', 
+            role: 'mentor'           
+          })
+          .select()
+          .single();
+
+        if (createError) {
+            console.error("🔴 [Sign-In] Failed to auto-create profile:", createError);
+            // Even if this fails, we can't proceed without a role.
+            // We will fall through to the metadata check below.
+        } else {
+            console.log("✅ [Sign-In] Profile auto-created:", newProfile);
+            profile = newProfile; 
+        }
+      }
+
+      // 4. Route based on Role
       if (profile) {
         setProfile(profile as any);
-
-        if (profile.role === 'candidate') {
-          const candidate = await candidateService.getCandidateById(user.id);
-          setCandidateProfile(candidate ?? null);
-        } else if (profile.role === 'mentor') {
-          const mentor = await mentorService.getMentorById(user.id);
-          setMentorProfile(mentor ?? null);
+        
+        // Handle specifics (Candidate/Mentor tables)
+        const roleLower = (profile.role || '').toLowerCase().trim();
+        if (roleLower === 'candidate') {
+            const c = await candidateService.getCandidateById(user.id);
+            setCandidateProfile(c ?? null);
+        } else if (roleLower === 'mentor') {
+            const m = await mentorService.getMentorById(user.id);
+            setMentorProfile(m ?? null);
         }
 
         goToRole(router, profile.role);
       } else {
-        const meta = (user as any).user_metadata || {};
-        const fallback = {
-          id: user.id,
-          email: user.email ?? '',
-          full_name: meta.full_name ?? null,
-          role: meta.role ?? null,
-        };
-        setProfile(fallback as any);
-        if (fallback.role) {
-          goToRole(router, fallback.role);
-        } else {
-          Alert.alert('Signed in', 'But no role found. Please contact admin.');
-        }
+        // Ultimate Fallback if DB is totally broken/locked
+        console.error("❌ [Sign-In] Still no profile. Defaulting to Candidate to prevent crash.");
+        router.replace('/candidate');
       }
 
-      setLoading(false);
     } catch (err: any) {
-      logger.error('[AUTH UI] sign-in exception', err);
-      Alert.alert('Error', 'Unexpected error during sign in.');
+      logger.error('[AUTH UI] Exception:', err);
+      Alert.alert('Error', err.message);
+    } finally {
       setLoading(false);
     }
   };
@@ -202,9 +216,8 @@ export default function SignInScreen() {
             <View style={styles.dividerLine} />
           </View>
 
-          {/* Social buttons moved BELOW Sign In and ABOVE Sign Up */}
+          {/* Social buttons */}
           <View style={{ gap: 8, width: '100%', marginBottom: 12 }}>
-            {/* Google: white button, dark text, Google “G” logo on left (official) */}
             <TouchableOpacity
               onPress={() => signInWithProvider('google')}
               style={[styles.oauthBtn, styles.googleBtn]}
@@ -219,7 +232,6 @@ export default function SignInScreen() {
               </View>
             </TouchableOpacity>
 
-            {/* LinkedIn: blue button, white text, official “in” glyph */}
             <TouchableOpacity
               onPress={() => signInWithProvider('linkedin_oidc')}
               style={[styles.oauthBtn, styles.linkedinBtn]}
@@ -252,21 +264,26 @@ export default function SignInScreen() {
   );
 }
 
+// --- HELPER FUNCTION FOR REDIRECTION ---
 function goToRole(router: any, role: string | null) {
-  if (!role) return;
-  switch (role) {
-    case 'candidate':
-      router.replace('/candidate');
-      break;
-    case 'mentor':
-      router.replace('/mentor');
-      break;
-    case 'admin':
-      router.replace('/(admin)');
-      break;
-    default:
-      router.replace('/candidate');
-      break;
+  console.log('🔄 [Redirection] Checking role:', role); 
+
+  if (!role) {
+    console.warn('⚠️ No role found, defaulting to candidate');
+    router.replace('/candidate');
+    return;
+  }
+
+  const normalizedRole = role.toLowerCase().trim();
+  
+  if (normalizedRole === 'mentor') {
+    console.log('✅ Redirecting to /mentor');
+    router.replace('/mentor');
+  } else if (normalizedRole === 'admin') {
+    router.replace('/(admin)');
+  } else {
+    console.log('✅ Redirecting to /candidate');
+    router.replace('/candidate');
   }
 }
 
@@ -278,67 +295,23 @@ const styles = StyleSheet.create({
   header: { marginBottom: 32, alignItems: 'center' },
   title: { fontSize: 28, fontWeight: 'bold', color: '#0f172a' },
   subtitle: { color: '#6b7280', marginTop: 4, textAlign: 'center' },
-
   section: { marginBottom: 16, width: '100%' },
   label: { fontSize: 12, fontWeight: '600', marginBottom: 6, color: '#334155' },
-  input: {
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 10,
-    padding: 12,
-    backgroundColor: '#fff',
-  },
-
-  signInButton: {
-    backgroundColor: '#0E9384',
-    borderRadius: 999,
-    alignItems: 'center',
-    padding: 14,
-    marginTop: 8,
-  },
+  input: { borderWidth: 1, borderColor: '#d1d5db', borderRadius: 10, padding: 12, backgroundColor: '#fff' },
+  signInButton: { backgroundColor: '#0E9384', borderRadius: 999, alignItems: 'center', padding: 14, marginTop: 8 },
   signInButtonDisabled: { backgroundColor: '#93c5fd' },
   signInButtonText: { color: '#fff', fontWeight: '700' },
-
-  // Divider
-  dividerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginVertical: 16,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#e5e7eb',
-  },
-  dividerText: {
-    fontSize: 12,
-    color: '#6b7280',
-  },
-
-  // OAuth buttons
-  oauthBtn: {
-    borderRadius: 999,
-    borderWidth: 1,
-    overflow: 'hidden',
-  },
-  oauthInner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    justifyContent: 'center',
-    paddingVertical: 12,
-  },
+  dividerRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginVertical: 16 },
+  dividerLine: { flex: 1, height: 1, backgroundColor: '#e5e7eb' },
+  dividerText: { fontSize: 12, color: '#6b7280' },
+  oauthBtn: { borderRadius: 999, borderWidth: 1, overflow: 'hidden' },
+  oauthInner: { flexDirection: 'row', alignItems: 'center', gap: 10, justifyContent: 'center', paddingVertical: 12 },
   oauthIcon: { width: 18, height: 18 },
-
-  // Google style (white button, dark text)
+  oauthText: { fontSize: 14 },
   googleBtn: { backgroundColor: '#fff', borderColor: '#e5e7eb' },
   googleText: { color: '#111827', fontWeight: '700' },
-
-  // LinkedIn style (brand blue, white text)
   linkedinBtn: { backgroundColor: '#0A66C2', borderColor: '#0A66C2' },
   linkedinText: { color: '#fff', fontWeight: '700' },
-
   footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 16 },
   footerText: { color: '#6b7280' },
   footerLink: { color: '#0E9384', fontWeight: '700' },
