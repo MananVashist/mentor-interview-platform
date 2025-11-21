@@ -1,3 +1,5 @@
+export const RAZORPAY_KEY_ID = process.env.EXPO_PUBLIC_RAZORPAY_KEY_ID || rzp_test_RiJIzZKnnM179K;
+
 export const COLORS = {
   primary: '#2563eb',
   primaryDark: '#1d4ed8',

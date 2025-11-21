@@ -1,11 +1,9 @@
-﻿// services/auth.service.ts
-import { supabase } from '@/lib/supabase/client';
-import { logger } from '@/lib/debug';
+﻿import { supabase } from '../lib/supabase/client';
+import { Session, AuthChangeEvent } from '@supabase/supabase-js';
 
-const SUPABASE_URL = 'https://rcbaaiiawrglvyzmawvr.supabase.co';
 // We keep the key for manual sign-in if needed, but use client for data fetching
-const SUPABASE_ANON_KEY =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJjYmFhaWlhd3JnbHZ5em1hd3ZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjExNTA1NjAsImV4cCI6MjA3NjcyNjU2MH0.V3qRHGXBMlspRS7XFJlXdo4qIcCms60Nepp7dYMEjLA';
+const SUPABASE_URL = 'https://rcbaaiiawrglvyzmawvr.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJjYmFhaWlhd3JnbHZ5em1hd3ZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjExNTA1NjAsImV4cCI6MjA3NjcyNjU2MH0.V3qRHGXBMlspRS7XFJlXdo4qIcCms60Nepp7dYMEjLA';
 
 export type Profile = {
   id: string;
@@ -203,14 +201,12 @@ async function getCurrentUserProfile(): Promise<Profile | null> {
 
 /**
  * GET USER PROFILE BY ID
- * UPDATED: Uses supabase client to ensure Auth Token is sent
  */
 async function getUserProfileById(userId: string): Promise<Profile | null> {
   console.log('================ GET USER PROFILE BY ID ================');
   console.log('[AUTH DBG] getUserProfileById called with', { userId });
 
   try {
-    // Use the supabase client, which automatically sends the auth token
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
@@ -236,6 +232,14 @@ async function getUserProfileById(userId: string): Promise<Profile | null> {
   }
 }
 
+/**
+ * 🎯 ADDED: LISTEN FOR AUTH CHANGES
+ * Required for useAuth hook to function correctly
+ */
+function onAuthStateChange(callback: (event: AuthChangeEvent, session: Session | null) => void) {
+  return supabase.auth.onAuthStateChange(callback);
+}
+
 export const authService = {
   signIn,
   signUp,
@@ -243,4 +247,5 @@ export const authService = {
   getCurrentUser,
   getCurrentUserProfile,
   getUserProfileById,
+  onAuthStateChange, // 🎯 Exported
 };
