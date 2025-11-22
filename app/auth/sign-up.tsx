@@ -1,5 +1,4 @@
-﻿// app/(auth)/sign-up.tsx
-import React, { useEffect, useRef, useState } from 'react';
+﻿import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -17,8 +16,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { theme } from '@/lib/theme';
 import { authService } from '@/services/auth.service';
 import { useAuthStore } from '@/lib/store';
+import { supabase } from '@/lib/supabase/client'; // 🎯 Import Supabase directly
 
-// slide-down banner
+// Slide-down banner component
 function TopBanner({
   visible,
   message,
@@ -47,7 +47,7 @@ function TopBanner({
           }).start(() => {
             onHide && onHide();
           });
-        }, 2500);
+        }, 3500); // Extended duration to read error
       });
     }
   }, [visible, slide, onHide]);
@@ -68,19 +68,20 @@ function TopBanner({
       <View
         style={{
           backgroundColor: type === 'success' ? '#10B981' : '#EF4444',
-          paddingVertical: 12,
+          paddingVertical: 16, // Taller for readability
           paddingHorizontal: 18,
           flexDirection: 'row',
           alignItems: 'center',
           gap: 8,
+          paddingTop: Platform.OS === 'ios' ? 50 : 16, // Handle notch
         }}
       >
         <Ionicons
           name={type === 'success' ? 'checkmark-circle' : 'alert-circle'}
-          size={20}
+          size={24}
           color="#fff"
         />
-        <Text style={{ color: '#fff', fontWeight: '600', flex: 1 }}>{message}</Text>
+        <Text style={{ color: '#fff', fontWeight: '600', flex: 1, fontSize: 14 }}>{message}</Text>
       </View>
     </Animated.View>
   );
@@ -91,7 +92,7 @@ export default function SignUpScreen() {
   const { setUser, setProfile } = useAuthStore();
 
   const [name, setName] = useState('');
-  const [role, setRole] = useState<'candidate' | 'mentor' | 'admin'>('candidate');
+  const [role, setRole] = useState<'candidate' | 'mentor'>('candidate');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -129,46 +130,95 @@ export default function SignUpScreen() {
 
     setLoading(true);
     try {
-      const { user, profile } = await authService.signUp(
+      // 1. Create Auth User
+      // Note: We destructure 'error' to catch the real message
+      const { user, error: authError } = await authService.signUp(
         email.trim(),
         password.trim(),
-        role,
-        name.trim()
+        name.trim(),
+        role
       );
 
+      if (authError) {
+        // 🛑 THROW REAL ERROR
+        throw new Error(authError.message); 
+      }
+
+      if (!user) {
+        throw new Error("Signup failed. No user returned.");
+      }
+
+      // 2. Manually Create Profile (Ensures data exists immediately)
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert({
+          id: user.id,
+          email: email.trim(),
+          full_name: name.trim(),
+          role: role,
+          is_admin: false
+        });
+
+      if (profileError) {
+        console.error("Profile Insert Error:", profileError);
+        // Don't block flow, but log it. Auth worked, so we might need to self-heal later.
+      }
+
+      // 3. If Mentor, Create Mentor Row (Critical for "Under Review" status)
+      if (role === 'mentor') {
+        const { error: mentorError } = await supabase
+          .from('mentors')
+          .insert({
+            profile_id: user.id,
+            status: 'pending', // Default status
+            years_of_experience: 0
+          });
+        
+        if (mentorError) console.error("Mentor Insert Error:", mentorError);
+      } 
+      // 4. If Candidate, Create Candidate Row
+      else if (role === 'candidate') {
+         const { error: candidateError } = await supabase
+          .from('candidates')
+          .insert({
+            profile_id: user.id
+          });
+         if (candidateError) console.error("Candidate Insert Error:", candidateError);
+      }
+
+      // 5. Update Store
       setUser(user);
-      setProfile(profile);
+      // We reconstruct the profile object since we just created it
+      setProfile({
+          id: user.id,
+          email: email.trim(),
+          full_name: name.trim(),
+          role: role,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          phone: null,
+          is_admin: false
+      });
+
       showBanner('Account created successfully!', 'success');
 
-      if (role === 'candidate') {
-        router.replace('/candidate');
-      } else if (role === 'mentor') {
-        router.replace('/mentor');
-      } else {
-        router.replace('/(admin)');
-      }
+      // 6. Redirect Logic
+      setTimeout(() => {
+        if (role === 'candidate') {
+          router.replace('/candidate');
+        } else if (role === 'mentor') {
+          router.replace('/mentor/under-review');
+        } else {
+          router.replace('/auth/sign-in');
+        }
+      }, 500); // Small delay to let banner show
+
     } catch (err: any) {
+      console.error("Sign Up Exception:", err);
       showBanner(err?.message ?? 'Sign up failed', 'error');
     } finally {
       setLoading(false);
     }
-  };
-
-  // quick prefills
-  const fillQuick = (r: 'candidate' | 'mentor' | 'admin') => {
-    setRole(r);
-    if (r === 'candidate') {
-      setName('Candidate User');
-      setEmail('candidate2@gmail.com');
-    } else if (r === 'mentor') {
-      setName('Mentor User');
-      setEmail('mentor@example.com');
-    } else {
-      setName('Admin User');
-      setEmail('admin@example.com');
-    }
-    setPassword('password');
-    setConfirmPassword('password');
   };
 
   return (
@@ -191,22 +241,10 @@ export default function SignUpScreen() {
           <View style={styles.content}>
             <View style={styles.header}>
               <Text style={styles.title}>Create Account</Text>
-              <Text style={styles.subtitle}>Join MentorInterviews</Text>
+              <Text style={styles.subtitle}>Join CrackJobs</Text>
             </View>
 
-            {/* social */}
-            <View style={styles.socialRow}>
-              <TouchableOpacity style={styles.socialButton}>
-                <Ionicons name="logo-google" size={18} color="#DB4437" />
-                <Text style={styles.socialText}>Continue with Google</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.socialButton}>
-                <Ionicons name="logo-linkedin" size={18} color="#0A66C2" />
-                <Text style={styles.socialText}>Continue with LinkedIn</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* role toggle */}
+            {/* Role Toggle */}
             <View style={styles.section}>
               <Text style={styles.label}>I AM A</Text>
               <View style={styles.roleToggle}>
@@ -245,28 +283,10 @@ export default function SignUpScreen() {
                     Mentor
                   </Text>
                 </TouchableOpacity>
-
-                <TouchableOpacity
-                    style={[
-                      styles.roleButton,
-                      role === 'admin' ? styles.roleButtonActive : null,
-                    ]}
-                    onPress={() => setRole('admin')}
-                    disabled={loading}
-                  >
-                  <Text
-                    style={[
-                      styles.roleButtonText,
-                      role === 'admin' ? styles.roleButtonTextActive : null,
-                    ]}
-                  >
-                    Admin
-                  </Text>
-                </TouchableOpacity>
               </View>
             </View>
 
-            {/* name */}
+            {/* Inputs */}
             <View style={styles.section}>
               <Text style={styles.label}>FULL NAME</Text>
               <TextInput
@@ -274,12 +294,11 @@ export default function SignUpScreen() {
                 value={name}
                 onChangeText={setName}
                 placeholder="John Doe"
-                placeholderTextColor={theme.colors.textTertiary}
+                placeholderTextColor="#9CA3AF"
                 editable={!loading}
               />
             </View>
 
-            {/* email */}
             <View style={styles.section}>
               <Text style={styles.label}>EMAIL</Text>
               <TextInput
@@ -287,14 +306,13 @@ export default function SignUpScreen() {
                 value={email}
                 onChangeText={setEmail}
                 placeholder="you@example.com"
-                placeholderTextColor={theme.colors.textTertiary}
+                placeholderTextColor="#9CA3AF"
                 autoCapitalize="none"
                 keyboardType="email-address"
                 editable={!loading}
               />
             </View>
 
-            {/* password */}
             <View style={styles.section}>
               <Text style={styles.label}>PASSWORD</Text>
               <TextInput
@@ -302,13 +320,12 @@ export default function SignUpScreen() {
                 value={password}
                 onChangeText={setPassword}
                 placeholder="Min. 6 characters"
-                placeholderTextColor={theme.colors.textTertiary}
+                placeholderTextColor="#9CA3AF"
                 secureTextEntry
                 editable={!loading}
               />
             </View>
 
-            {/* confirm */}
             <View style={styles.section}>
               <Text style={styles.label}>CONFIRM PASSWORD</Text>
               <TextInput
@@ -316,13 +333,12 @@ export default function SignUpScreen() {
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
                 placeholder="Re-enter password"
-                placeholderTextColor={theme.colors.textTertiary}
+                placeholderTextColor="#9CA3AF"
                 secureTextEntry
                 editable={!loading}
               />
             </View>
 
-            {/* submit */}
             <TouchableOpacity
               style={[
                 styles.signUpButton,
@@ -332,32 +348,15 @@ export default function SignUpScreen() {
               disabled={!isFormValid || loading}
             >
               {loading ? (
-                <ActivityIndicator color={theme.colors.background} />
+                <ActivityIndicator color="#fff" />
               ) : (
                 <Text style={styles.signUpButtonText}>Create Account</Text>
               )}
             </TouchableOpacity>
 
-            {/* quick presets */}
-            <View style={styles.quickWrap}>
-              <Text style={styles.quickTitle}>Quick presets</Text>
-              <View style={styles.quickRow}>
-                <TouchableOpacity style={styles.quickBtn} onPress={() => fillQuick('candidate')}>
-                  <Text style={styles.quickBtnText}>Candidate</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.quickBtn} onPress={() => fillQuick('mentor')}>
-                  <Text style={styles.quickBtnText}>Mentor</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.quickBtn} onPress={() => fillQuick('admin')}>
-                  <Text style={styles.quickBtnText}>Admin</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            {/* footer */}
             <View style={styles.footer}>
               <Text style={styles.footerText}>Already have an account? </Text>
-              <Link href="/(auth)/sign-in" asChild>
+              <Link href="/auth/sign-in" asChild>
                 <TouchableOpacity>
                   <Text style={styles.footerLink}>Sign In</Text>
                 </TouchableOpacity>
@@ -373,7 +372,7 @@ export default function SignUpScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: '#fff',
     paddingTop: 60,
   },
   scrollView: {
@@ -393,31 +392,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: theme.colors.text,
+    color: '#1F2937',
     marginBottom: 4,
   },
   subtitle: {
     fontSize: 16,
-    color: theme.colors.textSecondary,
-  },
-  socialRow: {
-    gap: 10,
-    marginBottom: 10,
-  },
-  socialButton: {
-    flexDirection: 'row',
-    gap: 8,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    borderRadius: 999,
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    backgroundColor: theme.colors.surface,
-  },
-  socialText: {
-    color: theme.colors.text,
-    fontWeight: '500',
+    color: '#6B7280',
   },
   section: {
     marginBottom: 16,
@@ -426,15 +406,15 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     marginBottom: 6,
-    color: theme.colors.text,
+    color: '#374151',
   },
   roleToggle: {
     flexDirection: 'row',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: theme.colors.border,
+    borderColor: '#E5E7EB',
     padding: 4,
-    backgroundColor: theme.colors.backgroundSecondary,
+    backgroundColor: '#F9FAFB',
     gap: 6,
   },
   roleButton: {
@@ -444,37 +424,37 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   roleButtonActive: {
-    backgroundColor: theme.colors.primary,
+    backgroundColor: '#2563eb', 
   },
   roleButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: theme.colors.textSecondary,
+    color: '#6B7280',
   },
   roleButtonTextActive: {
-    color: theme.colors.background,
+    color: '#fff',
   },
   input: {
     borderWidth: 1,
-    borderColor: theme.colors.border,
+    borderColor: '#E5E7EB',
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
-    color: theme.colors.text,
-    backgroundColor: theme.colors.background,
+    color: '#1F2937',
+    backgroundColor: '#fff',
   },
   signUpButton: {
-    backgroundColor: theme.colors.primary,
+    backgroundColor: '#2563eb',
     borderRadius: 999,
     alignItems: 'center',
     padding: 14,
     marginTop: 8,
   },
   signUpButtonDisabled: {
-    backgroundColor: theme.colors.disabled,
+    backgroundColor: '#9CA3AF', 
   },
   signUpButtonText: {
-    color: theme.colors.background,
+    color: '#fff',
     fontSize: 16,
     fontWeight: '700',
   },
@@ -484,7 +464,7 @@ const styles = StyleSheet.create({
   quickTitle: {
     fontSize: 12,
     fontWeight: '600',
-    color: theme.colors.textSecondary,
+    color: '#6B7280',
     marginBottom: 6,
   },
   quickRow: {
@@ -492,14 +472,14 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   quickBtn: {
-    backgroundColor: theme.colors.backgroundSecondary,
+    backgroundColor: '#F3F4F6',
     borderRadius: 999,
     paddingVertical: 6,
     paddingHorizontal: 14,
   },
   quickBtnText: {
     fontWeight: '600',
-    color: theme.colors.text,
+    color: '#1F2937',
   },
   footer: {
     flexDirection: 'row',
@@ -507,11 +487,11 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   footerText: {
-    color: theme.colors.textSecondary,
+    color: '#6B7280',
     fontSize: 14,
   },
   footerLink: {
-    color: theme.colors.primary,
+    color: '#2563eb',
     fontSize: 14,
     fontWeight: '700',
   },

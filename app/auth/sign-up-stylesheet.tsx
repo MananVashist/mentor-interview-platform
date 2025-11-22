@@ -206,7 +206,7 @@ export default function SignUpScreen() {
           {/* Footer */}
           <View style={styles.footerRow}>
             <Text style={styles.footerText}>Already have an account? </Text>
-            <Link href="/(auth)/sign-in" asChild>
+            <Link href="/auth/sign-in" asChild>
               <TouchableOpacity>
                 <Text style={styles.footerLink}>Sign In</Text>
               </TouchableOpacity>

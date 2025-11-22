@@ -127,7 +127,7 @@ export default function LandingPage() {
           <View style={[styles.navRight, isSmall && styles.navRightMobile]}>
             <TouchableOpacity
               style={[styles.btn, styles.btnSecondary, isSmall && styles.btnMobile]}
-              onPress={() => router.push('/(auth)/sign-in')}
+              onPress={() => router.push('/auth/sign-in')}
             >
               <Text style={[styles.btnText, isSmall && styles.btnTextMobile]}>
                 LOGIN
@@ -135,7 +135,7 @@ export default function LandingPage() {
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.btn, styles.btnPrimary, isSmall && styles.btnMobile]}
-              onPress={() => router.push('/(auth)/sign-up')}
+              onPress={() => router.push('/auth/sign-up')}
             >
               <Text style={[styles.btnText, isSmall && styles.btnTextMobile]}>
                 SIGN UP
@@ -183,7 +183,7 @@ export default function LandingPage() {
         </Text>
         <TouchableOpacity
           style={[styles.ctaButton, isSmall && styles.ctaButtonMobile]}
-          onPress={() => router.push('/(auth)/sign-up')}
+          onPress={() => router.push('/auth/sign-up')}
         >
           <Text style={[styles.ctaButtonText, isSmall && styles.ctaButtonTextMobile]}>
             GET STARTED

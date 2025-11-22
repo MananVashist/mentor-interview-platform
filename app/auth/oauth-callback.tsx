@@ -1,4 +1,4 @@
-// app/(auth)/oauth-callback.tsx
+// app/auth/oauth-callback.tsx
 import { useEffect } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -34,7 +34,7 @@ export default function OAuthCallback() {
         logger.debug('[OAuthCB] session', { hasSession: !!session, uid: user?.id });
 
         if (!user || !session) {
-          router.replace('/(auth)/sign-in');
+          router.replace('/auth/sign-in');
           return;
         }
 
@@ -63,11 +63,11 @@ export default function OAuthCallback() {
           }
         } else {
           // No profile row yet; send them to sign-in (or a role-picker if you add one later)
-          router.replace('/(auth)/sign-in');
+          router.replace('/auth/sign-in');
         }
       } catch (e) {
         logger.warn('[OAuthCB] exception', e);
-        router.replace('/(auth)/sign-in');
+        router.replace('/auth/sign-in');
       }
     })();
 

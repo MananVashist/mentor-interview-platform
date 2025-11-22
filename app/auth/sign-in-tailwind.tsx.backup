@@ -180,7 +180,7 @@ export default function SignInScreen() {
           {/* Sign Up Link */}
           <View className="flex-row justify-center items-center mb-4">
             <Text className="text-gray-600 text-base">Don't have an account? </Text>
-            <Link href="/(auth)/sign-up" asChild>
+            <Link href="/auth/sign-up" asChild>
               <TouchableOpacity disabled={loading}>
                 <Text className="text-blue-600 font-bold text-base">Sign Up</Text>
               </TouchableOpacity>

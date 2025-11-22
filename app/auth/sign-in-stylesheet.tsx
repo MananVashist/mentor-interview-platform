@@ -1,4 +1,4 @@
-// app/(auth)/sign-in-stylesheet.tsx
+// app/auth/sign-in-stylesheet.tsx
 import React, { useState } from 'react';
 import {
   View,
@@ -160,7 +160,7 @@ export default function SignInStylesheetScreen() {
 
           <View style={styles.footerRow}>
             <Text style={styles.footerText}>Don’t have an account? </Text>
-            <Link href="/(auth)/sign-up" asChild>
+            <Link href="/auth/sign-up" asChild>
               <TouchableOpacity>
                 <Text style={styles.footerLink}>Sign Up</Text>
               </TouchableOpacity>

@@ -41,7 +41,7 @@ export default function SignUpScreen() {
     Alert.alert(
       'Success',
       'Account created successfully! Please check your email for verification.',
-      [{ text: 'OK', onPress: () => router.replace('/(auth)/sign-in') }]
+      [{ text: 'OK', onPress: () => router.replace('/auth/sign-in') }]
     );
   };
 
@@ -165,7 +165,7 @@ export default function SignUpScreen() {
         {/* Sign In Link */}
         <View className="flex-row justify-center items-center">
           <Text className="text-gray-600">Already have an account? </Text>
-          <Link href="/(auth)/sign-in" asChild>
+          <Link href="/auth/sign-in" asChild>
             <TouchableOpacity>
               <Text className="text-blue-600 font-semibold">Sign In</Text>
             </TouchableOpacity>

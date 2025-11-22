@@ -130,18 +130,35 @@ export default function SignInScreen() {
         
         // Handle specifics (Candidate/Mentor tables)
         const roleLower = (profile.role || '').toLowerCase().trim();
-        if (roleLower === 'candidate') {
-            const c = await candidateService.getCandidateById(user.id);
-            setCandidateProfile(c ?? null);
-        } else if (roleLower === 'mentor') {
-            const m = await mentorService.getMentorById(user.id);
-            setMentorProfile(m ?? null);
+        // 🎯 1. ADMIN CHECK
+        if (roleLower === 'admin' || profile.is_admin) { 
+             router.replace('/admin'); // Goes to Admin Dashboard
+             return;
         }
 
-        goToRole(router, profile.role);
+        // 🎯 2. MENTOR SCREENING CHECK
+        if (roleLower === 'mentor') {
+            const m = await mentorService.getMentorById(user.id);
+            setMentorProfile(m ?? null);
+
+            // If status is NOT approved, block them
+            // (Handles null status, 'pending', or 'rejected')
+            if (!m?.status || m.status === 'pending' || m.status === 'rejected') {
+                router.replace('/mentor/under-review');
+                return;
+            }
+            
+            // Approved -> Go to Dashboard
+            router.replace('/mentor');
+            
+        } else {
+            // Candidate Flow
+            const c = await candidateService.getCandidateById(user.id);
+            setCandidateProfile(c ?? null);
+            router.replace('/candidate');
+        }
+
       } else {
-        // Ultimate Fallback if DB is totally broken/locked
-        console.error("❌ [Sign-In] Still no profile. Defaulting to Candidate to prevent crash.");
         router.replace('/candidate');
       }
 
@@ -252,7 +269,7 @@ export default function SignInScreen() {
           {/* Sign up link */}
           <View style={styles.footer}>
             <Text style={styles.footerText}>Don’t have an account? </Text>
-            <Link href="/(auth)/sign-up" asChild>
+            <Link href="/auth/sign-up" asChild>
               <TouchableOpacity>
                 <Text style={styles.footerLink}>Sign Up</Text>
               </TouchableOpacity>
