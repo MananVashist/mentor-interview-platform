@@ -1,10 +1,11 @@
 ﻿import React, { useEffect, useState } from 'react';
 import { 
   View, ScrollView, StyleSheet, ActivityIndicator, 
-  TouchableOpacity, RefreshControl, StatusBar 
+  TouchableOpacity, RefreshControl, StatusBar, Alert, Linking, Platform
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { DateTime } from 'luxon';
+import { useRouter } from 'expo-router';
 
 // Libs
 import { supabase } from '@/lib/supabase/client';
@@ -14,6 +15,7 @@ import { useAuthStore } from '@/lib/store';
 
 export default function MentorBookingsScreen() {
   const { user } = useAuthStore();
+  const router = useRouter();
   
   const [sessions, setSessions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -22,6 +24,7 @@ export default function MentorBookingsScreen() {
 
   const fetchSessions = async () => {
     if (!user) return;
+    console.log("Fetching mentor sessions...");
 
     try {
       // 1. Fetch Sessions linked to this Mentor
@@ -32,6 +35,7 @@ export default function MentorBookingsScreen() {
           scheduled_at,
           status,
           round,
+          meeting_link, 
           package:interview_packages (
             total_amount_inr,
             mentor_payout_inr
@@ -41,7 +45,8 @@ export default function MentorBookingsScreen() {
           )
         `)
         .eq('mentor_id', user.id)
-        .order('scheduled_at', { ascending: true });
+        // 🎯 FIX: Sort by Created Date (Newest First) to find your test booking
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
 
@@ -57,8 +62,6 @@ export default function MentorBookingsScreen() {
         if (s.status === 'scheduled' || s.status === 'confirmed') upcoming++;
         if (s.status === 'completed') completed++;
         
-        // Calculate earnings from valid sessions (scheduled/completed)
-        // Assuming 50% of package price per session (since 2 sessions = 1 package)
         if (s.status !== 'cancelled' && s.package?.mentor_payout_inr) {
            earnings += (s.package.mentor_payout_inr / 2);
         }
@@ -81,6 +84,24 @@ export default function MentorBookingsScreen() {
   const onRefresh = () => {
     setRefreshing(true);
     fetchSessions();
+  };
+
+  // Join Meeting Function
+  const handleJoin = (link: string) => {
+    if (!link) {
+        Alert.alert("No Link", "Meeting link is not ready yet.");
+        return;
+    }
+    
+    if (Platform.OS === 'web') {
+        const win = window.open(link, '_blank');
+        if (!win) Alert.alert("Popup Blocked", "Please allow popups.");
+    } else {
+        Linking.openURL(link).catch(err => {
+            console.error("Linking error:", err);
+            Alert.alert("Error", "Could not open link.");
+        });
+    }
   };
 
   if (loading) {
@@ -112,7 +133,6 @@ export default function MentorBookingsScreen() {
         contentContainerStyle={styles.scrollContent}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        {/* Header */}
         <Section style={styles.header}>
           <View style={styles.headerIcon}>
             <Ionicons name="briefcase" size={32} color={theme.colors.primary} />
@@ -128,13 +148,11 @@ export default function MentorBookingsScreen() {
             <AppText style={styles.statValue}>{stats.upcoming}</AppText>
             <AppText style={styles.statLabel}>Upcoming</AppText>
           </Card>
-          
           <Card style={styles.statCard}>
             <Ionicons name="checkmark-done-circle" size={24} color="#059669" />
             <AppText style={styles.statValue}>{stats.completed}</AppText>
             <AppText style={styles.statLabel}>Completed</AppText>
           </Card>
-          
           <Card style={[styles.statCard, styles.earningsCard]}>
             <Ionicons name="cash" size={24} color="#FFF" />
             <AppText style={[styles.statValue, {color:'#FFF'}]}>
@@ -148,14 +166,12 @@ export default function MentorBookingsScreen() {
 
         <View style={styles.divider} />
 
-        {/* Sessions List */}
         <Heading level={3} style={styles.sectionTitle}>Your Schedule</Heading>
         
         {sessions.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons name="calendar-outline" size={48} color="#9CA3AF" />
             <AppText style={styles.emptyText}>No sessions booked yet.</AppText>
-            <AppText style={styles.emptySub}>Make sure your availability is up to date!</AppText>
           </View>
         ) : (
           <View style={styles.list}>
@@ -163,22 +179,21 @@ export default function MentorBookingsScreen() {
               const date = DateTime.fromISO(session.scheduled_at);
               const config = getStatusStyle(session.status);
               const candidateName = session.candidate?.profile?.full_name || 'Candidate';
+              const isActionable = session.status === 'confirmed' || session.status === 'scheduled';
+              const isCompleted = session.status === 'completed';
 
               return (
                 <Card key={session.id} style={styles.sessionCard}>
-                  {/* Date Badge */}
                   <View style={styles.dateBox}>
                     <AppText style={styles.dateMonth}>{date.toFormat('MMM')}</AppText>
                     <AppText style={styles.dateDay}>{date.toFormat('dd')}</AppText>
                   </View>
 
-                  {/* Info */}
                   <View style={styles.infoCol}>
                     <View style={styles.row}>
                       <AppText style={styles.timeText}>
                         {date.toFormat('h:mm a')} • {date.toFormat('cccc')}
                       </AppText>
-                      {/* Status Chip */}
                       <View style={[styles.statusChip, { backgroundColor: config.bg }]}>
                         <AppText style={[styles.statusText, { color: config.text }]}>
                           {session.status}
@@ -191,16 +206,31 @@ export default function MentorBookingsScreen() {
                     </Heading>
                     
                     <AppText style={styles.roundName}>
-                      {session.round === 'round_1' ? 'Mock Interview 1' : 'Mock Interview 2'}
+                      {session.round ? session.round.replace('_', ' ') : 'Interview'}
                     </AppText>
 
-                    {/* Actions */}
-                    {session.status === 'confirmed' || session.status === 'scheduled' ? (
-                      <TouchableOpacity style={styles.joinBtn}>
-                        <Ionicons name="videocam" size={16} color="#FFF" />
-                        <AppText style={styles.joinBtnText}>Join Session</AppText>
-                      </TouchableOpacity>
-                    ) : null}
+                    <View style={styles.actionRow}>
+                        {isActionable && (
+                        <TouchableOpacity 
+                            style={styles.joinBtn}
+                            onPress={() => handleJoin(session.meeting_link)}
+                        >
+                            <Ionicons name="videocam" size={16} color="#FFF" />
+                            <AppText style={styles.joinBtnText}>Start Call</AppText>
+                        </TouchableOpacity>
+                        )}
+
+                        <TouchableOpacity 
+                            style={[styles.evalBtn, isCompleted && styles.evalBtnCompleted]}
+                            onPress={() => router.push(`/mentor/session/${session.id}`)}
+                        >
+                            <AppText style={[styles.evalBtnText, isCompleted && {color: '#6B7280'}]}>
+                                {isCompleted ? 'View Feedback' : 'Evaluate'}
+                            </AppText>
+                            <Ionicons name="chevron-forward" size={16} color={isCompleted ? '#6B7280' : theme.colors.primary} />
+                        </TouchableOpacity>
+                    </View>
+
                   </View>
                 </Card>
               );
@@ -247,8 +277,13 @@ const styles = StyleSheet.create({
   candidateName: { fontSize: 16, fontWeight: '700', color: theme.colors.text.main },
   roundName: { fontSize: 13, color: theme.colors.text.body, marginBottom: 8 },
 
-  joinBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: theme.colors.primary, paddingVertical: 8, borderRadius: 8, alignSelf: 'flex-start', paddingHorizontal: 16 },
+  actionRow: { flexDirection: 'row', gap: 10, marginTop: 8 },
+  joinBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: theme.colors.primary, paddingVertical: 8, borderRadius: 8 },
   joinBtnText: { color: '#FFF', fontWeight: '600', fontSize: 13 },
+  
+  evalBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: '#EFF6FF', paddingVertical: 8, borderRadius: 8 },
+  evalBtnCompleted: { backgroundColor: '#F3F4F6' },
+  evalBtnText: { color: theme.colors.primary, fontWeight: '600', fontSize: 13 },
 
   emptyState: { alignItems: 'center', marginTop: 40 },
   emptyText: { marginTop: 16, fontSize: 16, fontWeight: '600', color: theme.colors.text.main },

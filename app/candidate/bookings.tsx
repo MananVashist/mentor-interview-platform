@@ -1,517 +1,214 @@
-﻿// app/candidate/bookings.tsx - NEW SCREEN
-import React, { useEffect, useState } from 'react';
-import {
-  View,
-  ScrollView,
-  StyleSheet,
+﻿import React, { useState, useEffect } from 'react';
+import { 
+  View, 
+  Text, 
+  FlatList, 
+  StyleSheet, 
+  TouchableOpacity, 
+  Linking, 
   ActivityIndicator,
-  RefreshControl,
+  Alert,
+  Platform
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, spacing, borderRadius, typography, shadows } from '@/lib/theme';
-import {
-  Heading,
-  AppText,
-  Section,
-  Card,
-  Button,
-  ScreenBackground,
-} from '@/lib/ui';
-import { useAuthStore } from '@/lib/store';
-import { supabase } from '@/lib/supabase/client';
+import { supabase } from '../../lib/supabase/client'; 
+import { useAuth } from '../../hooks/useAuth';
+import { useRouter, useNavigation } from 'expo-router';
 
-type Booking = {
-  id: string;
-  scheduled_at: string;
-  status: string;
-  notes?: string | null;
-  package_id: string;
-  mentor?: {
-    id: string;
-    profile?: {
-      full_name?: string | null;
-    };
-  };
-};
+export default function BookingsScreen() {
+  const { user, isLoading: authLoading } = useAuth();
+  const router = useRouter();
+  const navigation = useNavigation();
+  
+  const [sessions, setSessions] = useState<any[]>([]);
+  const [dataLoading, setDataLoading] = useState(true);
 
-export default function CandidateBookingsScreen() {
-  const { profile } = useAuthStore();
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [bookings, setBookings] = useState<Booking[]>([]);
+  // Trigger Fetch only when Auth is ready
+  useEffect(() => {
+    if (authLoading) return; 
+
+    if (!user) {
+      setDataLoading(false);
+      return;
+    }
+    fetchBookings();
+  }, [user, authLoading]);
+
+  // Navigation listener for refreshing on return
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      if (!authLoading && user) {
+        fetchBookings();
+      }
+    });
+    return unsubscribe;
+  }, [navigation, user, authLoading]);
 
   const fetchBookings = async () => {
-    if (!profile?.id) return;
-
+    console.log("Fetching bookings for user:", user?.id);
+    setDataLoading(true);
     try {
-      // TODO: Replace with actual bookings query
-      // For now, return empty array
-      const { data, error } = await supabase
+      const { data: sessionsData, error } = await supabase
         .from('interview_sessions')
-        .select('*, package:interview_packages(mentor:mentors(profile:profiles(*)))')
-        .eq('candidate_id', profile.id)
-        .order('scheduled_at', { ascending: true });
+        .select('*')
+        .eq('candidate_id', user?.id)
+        // 🎯 FIX: Sort by 'created_at' Descending (Newest bookings first)
+        .order('created_at', { ascending: false });
 
-      if (error) {
-        console.log('[candidate/bookings] fetch error', error);
-        setBookings([]);
-      } else {
-        setBookings((data as any) || []);
+      if (error) throw error;
+
+      if (!sessionsData || sessionsData.length === 0) {
+          setSessions([]);
+          return;
       }
+
+      // Manual Join for Mentor Name
+      const mentorIds = [...new Set(sessionsData.map(s => s.mentor_id))];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .in('id', mentorIds);
+      
+      const profileMap = (profiles || []).reduce((acc: any, p: any) => {
+          acc[p.id] = p; return acc;
+      }, {});
+
+      const merged = sessionsData.map(s => ({
+          ...s,
+          mentor_name: profileMap[s.mentor_id]?.full_name || 'Mentor'
+      }));
+
+      setSessions(merged);
     } catch (err) {
-      console.log('[candidate/bookings] error', err);
-      setBookings([]);
+      console.error("Fetch Bookings Failed:", err);
+    } finally {
+      setDataLoading(false);
     }
   };
 
-  useEffect(() => {
-    (async () => {
-      setLoading(true);
-      await fetchBookings();
-      setLoading(false);
-    })();
-  }, [profile?.id]);
-
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await fetchBookings();
-    setRefreshing(false);
-  };
-
-  const getStatusConfig = (status?: string) => {
-    const s = (status || '').toLowerCase();
-    switch (s) {
-      case 'scheduled':
-      case 'confirmed':
-        return {
-          bg: 'rgba(16,185,129,0.12)',
-          fg: colors.success,
-          icon: 'checkmark-circle' as const,
-          label: 'Scheduled',
-        };
-      case 'completed':
-        return {
-          bg: 'rgba(14,147,132,0.12)',
-          fg: colors.primary,
-          icon: 'checkmark-done-circle' as const,
-          label: 'Completed',
-        };
-      case 'cancelled':
-      case 'canceled':
-        return {
-          bg: 'rgba(239,68,68,0.12)',
-          fg: colors.error,
-          icon: 'close-circle' as const,
-          label: 'Cancelled',
-        };
-      default:
-        return {
-          bg: 'rgba(37,99,235,0.1)',
-          fg: '#2563eb',
-          icon: 'time' as const,
-          label: 'Pending',
-        };
+  const handleJoin = (link: string) => {
+    if (!link) {
+      Alert.alert("No Link", "Meeting link is not available yet.");
+      return;
+    }
+    if (Platform.OS === 'web') {
+      window.open(link, '_blank');
+    } else {
+      Linking.openURL(link).catch(err => console.error("Link Error:", err));
     }
   };
 
-  // Calculate stats
-  const upcomingCount = bookings.filter((b) =>
-    ['scheduled', 'confirmed', 'pending'].includes((b.status || '').toLowerCase())
-  ).length;
-  const completedCount = bookings.filter(
-    (b) => (b.status || '').toLowerCase() === 'completed'
-  ).length;
+  const renderSession = ({ item }: { item: any }) => {
+    const date = new Date(item.scheduled_at);
+    const dateStr = date.toLocaleDateString();
+    const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    
+    const statusDisplay = item.status ? item.status.toUpperCase() : 'PENDING';
+    const isConfirmed = item.status === 'confirmed';
 
-  if (loading) {
     return (
-      <ScreenBackground>
-        <Section style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <ActivityIndicator color={colors.primary} size="large" />
-          <AppText style={{ marginTop: spacing.md, color: colors.textSecondary }}>
-            Loading your bookings…
-          </AppText>
-        </Section>
-      </ScreenBackground>
+      <View style={styles.card}>
+        <View style={styles.headerRow}>
+            <View>
+                <Text style={styles.mentorName}>{item.mentor_name}</Text>
+                <Text style={styles.role}>Mock Interview</Text>
+            </View>
+            <View style={[styles.badge, isConfirmed ? styles.bgGreen : styles.bgGray]}>
+                <Text style={[styles.badgeText, isConfirmed ? styles.textGreen : styles.textGray]}>
+                    {statusDisplay}
+                </Text>
+            </View>
+        </View>
+        <View style={styles.divider} />
+        <View style={styles.infoRow}>
+            <Ionicons name="calendar" size={16} color="#666" />
+            <Text style={styles.detailText}>{dateStr} • {timeStr}</Text>
+        </View>
+        {isConfirmed && (
+          <TouchableOpacity 
+            style={styles.joinButton} 
+            onPress={() => handleJoin(item.meeting_link)}
+          >
+            <Ionicons name="videocam" size={20} color="#fff" style={{ marginRight: 8 }} />
+            <Text style={styles.joinButtonText}>Join Jitsi Meet</Text>
+          </TouchableOpacity>
+        )}
+      </View>
     );
-  }
+  };
 
   return (
-    <ScreenBackground>
-      <ScrollView
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={colors.primary}
-          />
-        }
-        contentContainerStyle={{ paddingBottom: spacing.xl }}
-      >
-        {/* Header */}
-        <Section style={styles.header}>
-          <View style={styles.headerIcon}>
-            <Ionicons name="calendar" size={32} color={colors.primary} />
-          </View>
-          <Heading level={1}>My Bookings</Heading>
-          <AppText style={styles.headerSub}>
-            View and manage your scheduled interview sessions
-          </AppText>
-        </Section>
+    <View style={styles.container}>
+      <View style={styles.topBar}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+            <Ionicons name="arrow-back" size={24} color="#000" />
+        </TouchableOpacity>
+        <Text style={styles.title}>My Bookings</Text>
+      </View>
 
-        {/* Stats Cards */}
-        {bookings.length > 0 && (
-          <Section>
-            <View style={styles.statsGrid}>
-              <Card style={[styles.statCard, styles.statCardPrimary, shadows.card as any]}>
-                <View style={styles.statIcon}>
-                  <Ionicons name="calendar-outline" size={24} color={colors.primary} />
+      {(authLoading || dataLoading) ? (
+        <View style={styles.center}>
+            <ActivityIndicator size="large" color="#2563eb" />
+        </View>
+      ) : (
+        <FlatList 
+            data={sessions} 
+            renderItem={renderSession} 
+            keyExtractor={i => i.id} 
+            contentContainerStyle={{ padding: 16 }}
+            ListEmptyComponent={
+                <View style={styles.center}>
+                    <Text style={styles.emptyText}>No bookings found.</Text>
+                    <TouchableOpacity onPress={() => router.push('/candidate')} style={{ marginTop: 12 }}>
+                        <Text style={{ color: '#2563eb', fontWeight: 'bold' }}>Book a Session</Text>
+                    </TouchableOpacity>
                 </View>
-                <AppText style={styles.statValue}>{upcomingCount}</AppText>
-                <AppText style={styles.statLabel}>Upcoming</AppText>
-              </Card>
-
-              <Card style={[styles.statCard, shadows.card as any]}>
-                <View style={[styles.statIcon, { backgroundColor: 'rgba(16,185,129,0.1)' }]}>
-                  <Ionicons name="checkmark-done" size={24} color={colors.success} />
-                </View>
-                <AppText style={styles.statValue}>{completedCount}</AppText>
-                <AppText style={styles.statLabel}>Completed</AppText>
-              </Card>
-
-              <Card style={[styles.statCard, shadows.card as any]}>
-                <View style={[styles.statIcon, { backgroundColor: 'rgba(37,99,235,0.1)' }]}>
-                  <Ionicons name="people" size={24} color="#2563eb" />
-                </View>
-                <AppText style={styles.statValue}>{bookings.length}</AppText>
-                <AppText style={styles.statLabel}>Total</AppText>
-              </Card>
-            </View>
-          </Section>
-        )}
-
-        {/* Bookings List or Empty State */}
-        <Section>
-          {bookings.length === 0 ? (
-            <Card style={[styles.emptyCard, shadows.card as any]}>
-              <View style={styles.emptyIcon}>
-                <Ionicons name="calendar-outline" size={64} color={colors.textTertiary} />
-              </View>
-              <Heading level={2} style={styles.emptyTitle}>No bookings yet</Heading>
-              <AppText style={styles.emptyText}>
-                You haven't booked any interview sessions yet. Browse mentors and book your first session to start preparing for your dream job!
-              </AppText>
-              <Button
-                title="Browse Mentors"
-                onPress={() => {
-                  /* TODO: Navigate to mentor list */
-                }}
-                style={{ marginTop: spacing.md }}
-              />
-            </Card>
-          ) : (
-            <View style={styles.bookingsList}>
-              {bookings.map((booking) => {
-                const config = getStatusConfig(booking.status);
-                const mentorName =
-                  (booking.mentor as any)?.profile?.full_name || 'Mentor';
-                const when = new Date(booking.scheduled_at);
-                const isValidDate = !isNaN(when.getTime());
-                const dateStr = isValidDate
-                  ? when.toLocaleDateString('en-IN', {
-                      weekday: 'short',
-                      day: 'numeric',
-                      month: 'short',
-                      year: 'numeric',
-                    })
-                  : booking.scheduled_at;
-                const timeStr = isValidDate
-                  ? when.toLocaleTimeString('en-IN', {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })
-                  : '';
-
-                return (
-                  <Card key={booking.id} style={[styles.bookingCard, shadows.card as any]}>
-                    {/* Header with mentor and status */}
-                    <View style={styles.bookingHeader}>
-                      <View style={styles.bookingHeaderLeft}>
-                        <View style={styles.mentorAvatar}>
-                          <AppText style={styles.mentorAvatarText}>
-                            {mentorName.charAt(0).toUpperCase()}
-                          </AppText>
-                        </View>
-                        <View style={styles.mentorInfo}>
-                          <AppText style={styles.mentorName}>
-                            Session with {mentorName}
-                          </AppText>
-                          <AppText style={styles.bookingType}>
-                            Mock Interview Session
-                          </AppText>
-                        </View>
-                      </View>
-
-                      <View
-                        style={[styles.statusBadge, { backgroundColor: config.bg }]}
-                      >
-                        <Ionicons name={config.icon} size={14} color={config.fg} />
-                        <AppText style={[styles.statusText, { color: config.fg }]}>
-                          {config.label}
-                        </AppText>
-                      </View>
-                    </View>
-
-                    {/* Date & Time */}
-                    <View style={styles.bookingDetails}>
-                      <View style={styles.detailRow}>
-                        <View style={styles.detailIcon}>
-                          <Ionicons
-                            name="calendar-outline"
-                            size={16}
-                            color={colors.primary}
-                          />
-                        </View>
-                        <AppText style={styles.detailText}>{dateStr}</AppText>
-                      </View>
-
-                      {timeStr && (
-                        <View style={styles.detailRow}>
-                          <View style={styles.detailIcon}>
-                            <Ionicons
-                              name="time-outline"
-                              size={16}
-                              color={colors.primary}
-                            />
-                          </View>
-                          <AppText style={styles.detailText}>{timeStr}</AppText>
-                        </View>
-                      )}
-                    </View>
-
-                    {/* Notes */}
-                    {booking.notes && (
-                      <View style={styles.bookingNotes}>
-                        <Ionicons
-                          name="document-text-outline"
-                          size={14}
-                          color={colors.textTertiary}
-                        />
-                        <AppText style={styles.notesText} numberOfLines={2}>
-                          {booking.notes}
-                        </AppText>
-                      </View>
-                    )}
-
-                    {/* Actions */}
-                    <View style={styles.bookingActions}>
-                      <Button
-                        title="View Details"
-                        variant="outline"
-                        size="sm"
-                        onPress={() => {
-                          /* TODO: Navigate to booking detail */
-                        }}
-                        style={styles.actionButton}
-                      />
-                      {config.label === 'Scheduled' && (
-                        <Button
-                          title="Join Session"
-                          size="sm"
-                          onPress={() => {
-                            /* TODO: Open meeting link */
-                          }}
-                          style={styles.actionButton}
-                        />
-                      )}
-                    </View>
-                  </Card>
-                );
-              })}
-            </View>
-          )}
-        </Section>
-      </ScrollView>
-    </ScreenBackground>
+            }
+        />
+      )}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  header: {
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.md,
-    alignItems: 'center',
+  container: { flex: 1, backgroundColor: '#F9FAFB' },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 50 },
+  topBar: { 
+      flexDirection: 'row', 
+      alignItems: 'center', 
+      padding: 20, 
+      backgroundColor: '#fff', 
+      borderBottomWidth: 1, 
+      borderBottomColor: '#eee',
+      paddingTop: Platform.OS === 'ios' ? 60 : 20 
   },
-  headerIcon: {
-    marginBottom: spacing.sm,
+  backBtn: { marginRight: 16 },
+  title: { fontSize: 20, fontWeight: 'bold' },
+  
+  card: { backgroundColor: '#fff', padding: 16, borderRadius: 12, marginBottom: 12, elevation: 2 },
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  mentorName: { fontSize: 18, fontWeight: '700' },
+  role: { color: '#6B7280', fontSize: 12 },
+  
+  divider: { height: 1, backgroundColor: '#E5E7EB', marginVertical: 12 },
+  infoRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
+  detailText: { color: '#374151', fontSize: 14 },
+  
+  joinButton: { 
+      backgroundColor: '#2563eb', 
+      padding: 12, 
+      borderRadius: 8, 
+      flexDirection: 'row', 
+      alignItems: 'center', 
+      justifyContent: 'center' 
   },
-  headerSub: {
-    color: colors.textSecondary,
-    marginTop: spacing.xs,
-    textAlign: 'center',
-  },
+  joinButtonText: { color: '#fff', fontWeight: 'bold' },
+  emptyText: { textAlign: 'center', color: '#6B7280', fontSize: 16 },
 
-  // Stats
-  statsGrid: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  statCard: {
-    flex: 1,
-    padding: spacing.md,
-    borderRadius: borderRadius.md,
-    alignItems: 'center',
-  },
-  statCardPrimary: {
-    backgroundColor: 'rgba(14,147,132,0.05)',
-  },
-  statIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: 'rgba(14,147,132,0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.sm,
-  },
-  statValue: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: colors.textPrimary,
-    marginBottom: 2,
-  },
-  statLabel: {
-    fontSize: typography.size.xs,
-    color: colors.textSecondary,
-    fontWeight: '500',
-  },
-
-  // Empty state
-  emptyCard: {
-    padding: spacing.xl,
-    borderRadius: borderRadius.lg,
-    alignItems: 'center',
-  },
-  emptyIcon: {
-    marginBottom: spacing.md,
-    opacity: 0.6,
-  },
-  emptyTitle: {
-    marginBottom: spacing.xs,
-  },
-  emptyText: {
-    color: colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 22,
-  },
-
-  // Bookings list
-  bookingsList: {
-    gap: spacing.md,
-  },
-  bookingCard: {
-    padding: spacing.lg,
-    borderRadius: borderRadius.lg,
-  },
-
-  bookingHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: spacing.md,
-  },
-  bookingHeaderLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    gap: spacing.sm,
-  },
-  mentorAvatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  mentorAvatarText: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  mentorInfo: {
-    flex: 1,
-  },
-  mentorName: {
-    fontSize: typography.size.md,
-    fontWeight: '600',
-    color: colors.textPrimary,
-    marginBottom: 2,
-  },
-  bookingType: {
-    fontSize: typography.size.xs,
-    color: colors.textTertiary,
-  },
-
-  statusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 6,
-    borderRadius: 999,
-  },
-  statusText: {
-    fontSize: typography.size.xs,
-    fontWeight: '700',
-  },
-
-  bookingDetails: {
-    gap: spacing.xs,
-    marginBottom: spacing.md,
-    padding: spacing.md,
-    backgroundColor: colors.backgroundSecondary,
-    borderRadius: borderRadius.md,
-  },
-  detailRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  detailIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: 'rgba(14,147,132,0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  detailText: {
-    fontSize: typography.size.sm,
-    color: colors.textPrimary,
-    fontWeight: '500',
-  },
-
-  bookingNotes: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.xs,
-    padding: spacing.sm,
-    backgroundColor: 'rgba(37,99,235,0.05)',
-    borderRadius: borderRadius.sm,
-    marginBottom: spacing.md,
-  },
-  notesText: {
-    flex: 1,
-    fontSize: typography.size.xs,
-    color: colors.textSecondary,
-    lineHeight: 18,
-  },
-
-  bookingActions: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  actionButton: {
-    flex: 1,
-  },
+  badge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 },
+  bgGreen: { backgroundColor: '#D1FAE5' },
+  bgGray: { backgroundColor: '#F3F4F6' },
+  badgeText: { fontSize: 10, fontWeight: '700' },
+  textGreen: { color: '#059669' },
+  textGray: { color: '#6B7280' },
 });
