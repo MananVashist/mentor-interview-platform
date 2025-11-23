@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,21 +8,24 @@ import {
   ActivityIndicator,
   ScrollView,
   TextInput,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { supabase } from '@/lib/supabase/client';
+import { supabase } from '@/lib/supabase/client'; // Ensure this path matches your project
 
+// --- TYPES ---
 type DaySchedule = {
   day_of_week: number;
   start_time: string; // HH:mm:ss
   end_time: string;   // HH:mm:ss
+  is_active: boolean;
 };
 
 type Unavailability = {
   id: string;
-  start_at: string;
-  end_at: string;
+  start_at: string; // ISO Timestamp
+  end_at: string;   // ISO Timestamp
   reason?: string | null;
 };
 
@@ -30,6 +33,7 @@ type Props = {
   mentorId: string;
 };
 
+// --- CONSTANTS ---
 const DAYS_OF_WEEK = [
   { name: 'Monday', value: 1 },
   { name: 'Tuesday', value: 2 },
@@ -40,7 +44,6 @@ const DAYS_OF_WEEK = [
   { name: 'Sunday', value: 0 },
 ];
 
-// Extended time slots
 const TIME_SLOTS = [
   { label: '8:00 AM', value: '08:00:00' },
   { label: '9:00 AM', value: '09:00:00' },
@@ -60,61 +63,55 @@ const TIME_SLOTS = [
   { label: '11:00 PM', value: '23:00:00' },
 ];
 
+// --- HELPERS ---
 function formatTimeLabel(value: string) {
   const slot = TIME_SLOTS.find((s) => s.value === value);
-  return slot ? slot.label : value;
+  if (slot) return slot.label;
+  // Fallback formatting if custom time
+  const [h, m] = value.split(':');
+  const hour = parseInt(h, 10);
+  const ampm = hour >= 12 ? 'PM' : 'AM';
+  const hour12 = hour % 12 || 12;
+  return `${hour12}:${m} ${ampm}`;
 }
 
 function formatDateTimeRange(startISO: string, endISO: string) {
   const start = new Date(startISO);
   const end = new Date(endISO);
-  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
-    return `${startISO} – ${endISO}`;
-  }
-  const sameDay =
-    start.getFullYear() === end.getFullYear() &&
-    start.getMonth() === end.getMonth() &&
-    start.getDate() === end.getDate();
-
-  const dayFormatter = new Intl.DateTimeFormat('en-IN', {
-    weekday: 'short',
-    day: 'numeric',
-    month: 'short',
-  });
-  const timeFormatter = new Intl.DateTimeFormat('en-IN', {
-    hour: 'numeric',
-    minute: '2-digit',
-  });
-
-  if (sameDay) {
-    return `${dayFormatter.format(start)}, ${timeFormatter.format(
-      start,
-    )} – ${timeFormatter.format(end)}`;
-  }
-  return `${dayFormatter.format(start)}, ${timeFormatter.format(
-    start,
-  )} – ${dayFormatter.format(end)}, ${timeFormatter.format(end)}`;
+  
+  const dateStr = start.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' });
+  const timeStart = start.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+  const timeEnd = end.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+  
+  return `${dateStr}, ${timeStart} - ${timeEnd}`;
 }
 
 export default function MentorAvailabilityEditor({ mentorId }: Props) {
   const router = useRouter();
+  
+  // State
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [availability, setAvailability] = useState<DaySchedule[]>([]);
   const [expandedDay, setExpandedDay] = useState<number | null>(null);
 
+  // Unavailability State
   const [unavailability, setUnavailability] = useState<Unavailability[]>([]);
   const [loadingUnavailability, setLoadingUnavailability] = useState(false);
   const [addingUnavailability, setAddingUnavailability] = useState(false);
-
+  
+  // Form Inputs
   const [newDate, setNewDate] = useState('');
   const [newStartTime, setNewStartTime] = useState('');
   const [newEndTime, setNewEndTime] = useState('');
   const [newReason, setNewReason] = useState('');
 
+  // --- LOAD DATA ---
   useEffect(() => {
-    loadAvailability();
-    loadUnavailability();
+    if (mentorId) {
+      loadAvailability();
+      loadUnavailability();
+    }
   }, [mentorId]);
 
   const loadAvailability = async () => {
@@ -125,40 +122,29 @@ export default function MentorAvailabilityEditor({ mentorId }: Props) {
         .select('*')
         .eq('mentor_id', mentorId);
 
-      if (error) {
-        console.error('Error loading availability:', error);
-        Alert.alert('Error', 'Could not load availability.');
-        return;
-      }
+      if (error) throw error;
 
-      const rows = (data || []) as any[];
-      
-      // Filter to only show ACTIVE days in the UI
-      const activeRows = rows.filter(r => r.is_active !== false);
+      // Populate state (Active days only for UI, logic handles missing ones)
+      const rows = (data || []) as DaySchedule[];
       
       if (rows.length > 0) {
-        // Case A: Load existing active schedule
-        const mapped: DaySchedule[] = activeRows.map((row) => ({
-          day_of_week: row.day_of_week,
-          start_time: row.start_time,
-          end_time: row.end_time,
-        }));
-        setAvailability(mapped);
+        setAvailability(rows.filter(r => r.is_active));
       } else {
-        // Case B: Empty DB -> Set Defaults
-        const defaults = DAYS_OF_WEEK.map((day) => {
-            const isWeekend = day.value === 0 || day.value === 6; // 0=Sun, 6=Sat
+        // Defaults: Weekdays 8-10pm, Weekends 12-5pm
+        const defaults = DAYS_OF_WEEK.map(d => {
+            const isWeekend = d.value === 0 || d.value === 6;
             return {
-                day_of_week: day.value,
+                day_of_week: d.value,
                 start_time: isWeekend ? '12:00:00' : '20:00:00',
                 end_time: isWeekend ? '17:00:00' : '22:00:00',
+                is_active: true
             };
         });
         setAvailability(defaults);
       }
-    } catch (error) {
-      console.error('Unexpected error loading availability:', error);
-      Alert.alert('Error', 'Something went wrong while loading availability.');
+    } catch (err) {
+      console.error(err);
+      Alert.alert('Error', 'Failed to load availability');
     } finally {
       setLoading(false);
     }
@@ -167,136 +153,107 @@ export default function MentorAvailabilityEditor({ mentorId }: Props) {
   const loadUnavailability = async () => {
     try {
       setLoadingUnavailability(true);
-      const now = new Date().toISOString();
-
+      const today = new Date().toISOString();
       const { data, error } = await supabase
         .from('mentor_unavailability')
         .select('*')
         .eq('mentor_id', mentorId)
-        .gte('end_at', now)
+        .gte('end_at', today) // Only future exceptions
         .order('start_at', { ascending: true });
 
-      if (error) {
-        console.error('Error loading unavailability:', error);
-        return;
-      }
-
-      setUnavailability((data || []) as Unavailability[]);
-    } catch (error) {
-      console.error('Unexpected error loading unavailability:', error);
+      if (error) throw error;
+      setUnavailability(data as Unavailability[]);
+    } catch (err) {
+      console.error(err);
     } finally {
       setLoadingUnavailability(false);
     }
   };
 
-  const isDayActive = (dayValue: number) =>
-    availability.some((a) => a.day_of_week === dayValue);
+  // --- WEEKLY SCHEDULE LOGIC ---
+  const isDayActive = (dayVal: number) => availability.some(a => a.day_of_week === dayVal);
 
-  const toggleDay = (dayValue: number) => {
-    if (isDayActive(dayValue)) {
-      setAvailability(availability.filter((a) => a.day_of_week !== dayValue));
-      if (expandedDay === dayValue) {
-        setExpandedDay(null);
-      }
+  const toggleDay = (dayVal: number) => {
+    if (isDayActive(dayVal)) {
+      // Remove
+      setAvailability(prev => prev.filter(a => a.day_of_week !== dayVal));
+      if (expandedDay === dayVal) setExpandedDay(null);
     } else {
-      const isWeekend = dayValue === 0 || dayValue === 6; 
-      const defaultStartTime = isWeekend ? '12:00:00' : '20:00:00';
-      const defaultEndTime = isWeekend ? '17:00:00' : '22:00:00';
-
-      setAvailability([
-        ...availability,
-        {
-          day_of_week: dayValue,
-          start_time: defaultStartTime,
-          end_time: defaultEndTime,
-        },
-      ]);
-      setExpandedDay(dayValue);
+      // Add
+      const isWeekend = dayVal === 0 || dayVal === 6;
+      setAvailability(prev => [...prev, {
+        day_of_week: dayVal,
+        start_time: isWeekend ? '12:00:00' : '20:00:00',
+        end_time: isWeekend ? '17:00:00' : '22:00:00',
+        is_active: true
+      }]);
+      setExpandedDay(dayVal);
     }
   };
 
-  const updateDayTime = (
-    dayValue: number,
-    field: 'start_time' | 'end_time',
-    value: string,
-  ) => {
-    setAvailability((prev) =>
-      prev.map((a) =>
-        a.day_of_week === dayValue ? { ...a, [field]: value } : a,
-      ),
-    );
+  const updateTime = (dayVal: number, field: 'start_time'|'end_time', time: string) => {
+    setAvailability(prev => prev.map(a => 
+      a.day_of_week === dayVal ? { ...a, [field]: time } : a
+    ));
   };
 
-  const handleSave = async () => {
-    // We save ALL 7 days. If in 'availability' state -> Active. Else -> Inactive.
-    
+  const handleSaveWeekly = async () => {
+    setSaving(true);
     try {
-      setSaving(true);
-
-      // 1. Clear old rules
-      const { error: deleteError } = await supabase
+      // 1. Delete existing rules for this mentor
+      const { error: delErr } = await supabase
         .from('mentor_availability')
         .delete()
         .eq('mentor_id', mentorId);
+      
+      if (delErr) throw delErr;
 
-      if (deleteError) {
-        console.error('Delete error:', deleteError);
-        throw deleteError;
-      }
-
-      // 2. Prepare payload for ALL 7 days
-      const payload = DAYS_OF_WEEK.map((day) => {
-        const schedule = availability.find(a => a.day_of_week === day.value);
-        
-        if (schedule) {
-            return {
-                mentor_id: mentorId,
-                day_of_week: day.value,
-                start_time: schedule.start_time,
-                end_time: schedule.end_time,
-                is_active: true // ACTIVE
-            };
+      // 2. Prepare Payload (Map UI state to DB rows)
+      // We save ALL days. Active = present in state. Inactive = missing from state (so we save is_active=false)
+      const payload = DAYS_OF_WEEK.map(day => {
+        const activeRule = availability.find(a => a.day_of_week === day.value);
+        if (activeRule) {
+          return { ...activeRule, mentor_id: mentorId, is_active: true };
         } else {
-            return {
-                mentor_id: mentorId,
-                day_of_week: day.value,
-                start_time: '09:00:00', // Dummy values
-                end_time: '17:00:00',
-                is_active: false // INACTIVE (Closed)
-            };
+          return {
+            mentor_id: mentorId,
+            day_of_week: day.value,
+            start_time: '09:00:00', // Dummy time
+            end_time: '17:00:00',
+            is_active: false
+          };
         }
       });
 
-      const { error: insertError } = await supabase
+      // 3. Insert new rules
+      const { error: insErr } = await supabase
         .from('mentor_availability')
         .insert(payload);
 
-      if (insertError) {
-        console.error('Insert error:', insertError);
-        throw insertError;
-      }
+      if (insErr) throw insErr;
 
-      Alert.alert('Success', 'Availability updated successfully.', [
-        { text: 'OK', onPress: () => router.back() }
-      ]);
-
-    } catch (error) {
-      console.error('Save error:', error);
-      Alert.alert('Error', 'Could not save availability.');
+      Alert.alert('Success', 'Weekly schedule updated!');
+    } catch (err: any) {
+      Alert.alert('Error', err.message);
     } finally {
       setSaving(false);
     }
   };
 
-  const handleAddUnavailability = async () => {
+  // --- EXCEPTION LOGIC ---
+  const handleAddException = async () => {
     if (!newDate || !newStartTime || !newEndTime) {
-      Alert.alert('Missing info', 'Please fill date, start time and end time.');
+      Alert.alert('Missing Fields', 'Please fill Date, Start, and End times');
       return;
     }
+
+    setAddingUnavailability(true);
     try {
-      setAddingUnavailability(true);
-      const startISO = `${newDate}T${newStartTime}:00`;
-      const endISO = `${newDate}T${newEndTime}:00`;
+      // Construct ISO strings
+      // Note: In a real app, use Luxon/date-fns to handle Timezones strictly.
+      // Assuming input is local time, we convert to ISO.
+      const startISO = new Date(`${newDate}T${newStartTime}`).toISOString();
+      const endISO = new Date(`${newDate}T${newEndTime}`).toISOString();
 
       const { data, error } = await supabase
         .from('mentor_unavailability')
@@ -304,247 +261,206 @@ export default function MentorAvailabilityEditor({ mentorId }: Props) {
           mentor_id: mentorId,
           start_at: startISO,
           end_at: endISO,
-          reason: newReason || null,
+          reason: newReason
         })
         .select()
         .single();
 
       if (error) throw error;
 
-      setUnavailability((prev) => [...prev, data as Unavailability]);
+      setUnavailability(prev => [...prev, data]);
       setNewDate(''); setNewStartTime(''); setNewEndTime(''); setNewReason('');
-    } catch (error) {
-      console.error(error);
-      Alert.alert('Error', 'Could not add time off.');
+    } catch (err: any) {
+      Alert.alert('Error', 'Invalid Date/Time format. Use YYYY-MM-DD and HH:MM:ss');
+      console.error(err);
     } finally {
       setAddingUnavailability(false);
     }
   };
 
-  const handleRemoveUnavailability = async (id: string) => {
-    try {
-      const { error } = await supabase.from('mentor_unavailability').delete().eq('id', id);
-      if (error) throw error;
-      setUnavailability((prev) => prev.filter((u) => u.id !== id));
-    } catch (error) {
-      console.error(error);
-      Alert.alert('Error', 'Could not remove block.');
+  const handleRemoveException = async (id: string) => {
+    const { error } = await supabase.from('mentor_unavailability').delete().eq('id', id);
+    if (!error) {
+      setUnavailability(prev => prev.filter(u => u.id !== id));
     }
   };
 
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="small" color="#7c3aed" />
-        <Text style={styles.loadingText}>Loading availability...</Text>
-      </View>
-    );
-  }
+  if (loading) return <ActivityIndicator style={{marginTop: 50}} color="#0E9384" />;
 
   return (
-    <ScrollView contentContainerStyle={styles.scrollContent}>
-      <View style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.title}>Set Your Availability</Text>
-          <Text style={styles.subtitle}>Select days/hours for candidate bookings.</Text>
-          <View style={styles.defaultTimesNote}>
-            <Ionicons name="information-circle-outline" size={18} color="#2563eb" />
-            <Text style={styles.defaultTimesText}>
-              Weekdays default: 8-10 PM. Weekends default: 12-5 PM.
-            </Text>
-          </View>
-        </View>
+    <ScrollView contentContainerStyle={styles.container}>
+      
+      {/* HEADER */}
+      <View style={styles.header}>
+        <Text style={styles.title}>Weekly Schedule</Text>
+        <Text style={styles.subtitle}>Set your recurring availability (IST)</Text>
+      </View>
 
-        {/* Weekly availability */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Weekly availability</Text>
-          <View style={styles.daysContainer}>
-            {DAYS_OF_WEEK.map((day) => {
-              const isActive = isDayActive(day.value);
-              const schedule = availability.find((a) => a.day_of_week === day.value);
-              const isExpanded = expandedDay === day.value;
+      {/* WEEKLY LIST */}
+      <View style={styles.section}>
+        {DAYS_OF_WEEK.map((day) => {
+          const isActive = isDayActive(day.value);
+          const schedule = availability.find(a => a.day_of_week === day.value);
 
-              return (
-                <View key={day.value} style={[styles.dayCard, isActive && styles.dayCardActive]}>
-                  <TouchableOpacity style={styles.dayToggle} onPress={() => toggleDay(day.value)}>
-                    <View style={styles.dayToggleLeft}>
-                      <View style={[styles.dayDot, isActive && styles.dayDotActive]} />
-                      <View>
-                        <Text style={styles.dayName}>{day.name}</Text>
-                        <Text style={styles.daySubtitle}>
-                          {isActive && schedule ? `${formatTimeLabel(schedule.start_time)} – ${formatTimeLabel(schedule.end_time)}` : 'Not available'}
-                        </Text>
-                      </View>
-                    </View>
-                    <View style={styles.dayToggleRight}>
-                      <View style={[styles.activePill, isActive && styles.activePillOn]}>
-                        <Text style={[styles.activePillText, isActive && styles.activePillTextOn]}>{isActive ? 'Active' : 'Off'}</Text>
-                      </View>
-                      {isActive && (
-                        <TouchableOpacity onPress={() => setExpandedDay(isExpanded ? null : day.value)}>
-                          <Ionicons name={isExpanded ? 'chevron-up' : 'chevron-down'} size={18} color="#6b7280" />
-                        </TouchableOpacity>
-                      )}
-                    </View>
-                  </TouchableOpacity>
-
-                  {isActive && isExpanded && schedule && (
-                    <View style={styles.expandedRow}>
-                      <View style={styles.timeColumn}>
-                        <Text style={styles.timeLabel}>Start</Text>
-                        <View style={styles.timeOptionsRow}>
-                          {TIME_SLOTS.map((slot) => (
-                            <TouchableOpacity
-                              key={slot.value}
-                              style={[styles.timeChip, schedule.start_time === slot.value && styles.timeChipSelected]}
-                              onPress={() => updateDayTime(day.value, 'start_time', slot.value)}
-                            >
-                              <Text style={[styles.timeChipText, schedule.start_time === slot.value && styles.timeChipTextSelected]}>{slot.label}</Text>
-                            </TouchableOpacity>
-                          ))}
-                        </View>
-                      </View>
-                      <View style={styles.timeColumn}>
-                        <Text style={styles.timeLabel}>End</Text>
-                        <View style={styles.timeOptionsRow}>
-                          {TIME_SLOTS.map((slot) => (
-                            <TouchableOpacity
-                              key={slot.value}
-                              style={[styles.timeChip, schedule.end_time === slot.value && styles.timeChipSelected]}
-                              onPress={() => updateDayTime(day.value, 'end_time', slot.value)}
-                            >
-                              <Text style={[styles.timeChipText, schedule.end_time === slot.value && styles.timeChipTextSelected]}>{slot.label}</Text>
-                            </TouchableOpacity>
-                          ))}
-                        </View>
-                      </View>
-                    </View>
+          return (
+            <View key={day.value} style={[styles.card, isActive && styles.activeCard]}>
+              <TouchableOpacity 
+                style={styles.cardHeader} 
+                onPress={() => toggleDay(day.value)}
+              >
+                <Text style={styles.dayName}>{day.name}</Text>
+                
+                <View style={styles.switchRow}>
+                  <Text style={[styles.statusText, isActive ? styles.on : styles.off]}>
+                    {isActive ? 'Active' : 'Off'}
+                  </Text>
+                  {isActive && (
+                     <Ionicons name="chevron-down" size={20} color="#666" />
                   )}
                 </View>
-              );
-            })}
-          </View>
-        </View>
+              </TouchableOpacity>
 
-        {/* Unavailability Section */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Time Off & Exceptions</Text>
-          {loadingUnavailability ? (
-            <ActivityIndicator size="small" color="#7c3aed" />
-          ) : unavailability.length === 0 ? (
-            <Text style={styles.emptyText}>No time off added.</Text>
-          ) : (
-            <View style={styles.unavailabilityList}>
-              {unavailability.map((block) => (
-                <View key={block.id} style={styles.unavailabilityItem}>
-                  <View style={styles.unavailabilityTextContainer}>
-                    <Text style={styles.unavailabilityRange}>{formatDateTimeRange(block.start_at, block.end_at)}</Text>
-                    {block.reason ? <Text style={styles.unavailabilityReason}>{block.reason}</Text> : null}
-                  </View>
-                  <TouchableOpacity style={styles.removeButton} onPress={() => handleRemoveUnavailability(block.id)}>
-                    <Ionicons name="trash-outline" size={18} color="#ef4444" />
-                  </TouchableOpacity>
+              {/* EXPANDED TIME SELECTOR */}
+              {isActive && (
+                <View style={styles.timeSelector}>
+                  <Text style={styles.label}>Start Time</Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.timeScroll}>
+                    {TIME_SLOTS.map(slot => (
+                      <TouchableOpacity 
+                        key={`start-${day.value}-${slot.value}`}
+                        style={[styles.chip, schedule?.start_time === slot.value && styles.selectedChip]}
+                        onPress={() => updateTime(day.value, 'start_time', slot.value)}
+                      >
+                        <Text style={[styles.chipText, schedule?.start_time === slot.value && styles.selectedChipText]}>
+                          {slot.label}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+
+                  <Text style={[styles.label, {marginTop: 10}]}>End Time</Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.timeScroll}>
+                    {TIME_SLOTS.map(slot => (
+                      <TouchableOpacity 
+                        key={`end-${day.value}-${slot.value}`}
+                        style={[styles.chip, schedule?.end_time === slot.value && styles.selectedChip]}
+                        onPress={() => updateTime(day.value, 'end_time', slot.value)}
+                      >
+                        <Text style={[styles.chipText, schedule?.end_time === slot.value && styles.selectedChipText]}>
+                          {slot.label}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
                 </View>
-              ))}
+              )}
             </View>
-          )}
+          );
+        })}
 
-          <View style={styles.addUnavailabilityContainer}>
-            <Text style={styles.addUnavailabilityTitle}>Add Block</Text>
-            <View style={styles.formRow}>
-              <View style={styles.formField}>
-                <Text style={styles.formLabel}>Date (YYYY-MM-DD)</Text>
-                <TextInput style={styles.input} value={newDate} onChangeText={setNewDate} placeholder="2023-12-25" />
-              </View>
-            </View>
-            <View style={styles.formRow}>
-              <View style={styles.formField}>
-                <Text style={styles.formLabel}>Start (HH:MM)</Text>
-                <TextInput style={styles.input} value={newStartTime} onChangeText={setNewStartTime} placeholder="09:00" />
-              </View>
-              <View style={styles.formField}>
-                <Text style={styles.formLabel}>End (HH:MM)</Text>
-                <TextInput style={styles.input} value={newEndTime} onChangeText={setNewEndTime} placeholder="17:00" />
-              </View>
-            </View>
-            <TouchableOpacity style={styles.addUnavailabilityButton} onPress={handleAddUnavailability} disabled={addingUnavailability}>
-              <Text style={styles.addUnavailabilityButtonText}>{addingUnavailability ? 'Adding...' : 'Add Time Off'}</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Save Button */}
-        <TouchableOpacity
-          style={[styles.saveButton, saving && styles.saveButtonDisabled]}
-          onPress={handleSave}
+        <TouchableOpacity 
+          style={styles.saveBtn} 
+          onPress={handleSaveWeekly}
           disabled={saving}
         >
-          {saving ? <ActivityIndicator color="#FFF" /> : <Text style={styles.saveButtonText}>Save Changes</Text>}
+          {saving ? <ActivityIndicator color="#fff"/> : <Text style={styles.saveBtnText}>Save Weekly Schedule</Text>}
         </TouchableOpacity>
       </View>
+
+      {/* EXCEPTIONS SECTION */}
+      <View style={[styles.header, {marginTop: 30}]}>
+        <Text style={styles.title}>Exceptions / Time Off</Text>
+        <Text style={styles.subtitle}>Specific dates you are unavailable</Text>
+      </View>
+
+      <View style={styles.section}>
+        {/* LIST EXISTING */}
+        {unavailability.map(u => (
+          <View key={u.id} style={styles.exceptionItem}>
+            <View>
+              <Text style={styles.exceptionDate}>{formatDateTimeRange(u.start_at, u.end_at)}</Text>
+              {u.reason && <Text style={styles.exceptionReason}>{u.reason}</Text>}
+            </View>
+            <TouchableOpacity onPress={() => handleRemoveException(u.id)}>
+              <Ionicons name="trash-outline" size={20} color="red" />
+            </TouchableOpacity>
+          </View>
+        ))}
+
+        {/* ADD NEW */}
+        <View style={styles.addBox}>
+          <Text style={styles.addTitle}>Add Exception</Text>
+          <TextInput 
+            placeholder="YYYY-MM-DD (e.g. 2025-12-25)" 
+            style={styles.input} 
+            value={newDate} 
+            onChangeText={setNewDate}
+          />
+          <View style={{flexDirection: 'row', gap: 10}}>
+            <TextInput 
+              placeholder="09:00" 
+              style={[styles.input, {flex:1}]} 
+              value={newStartTime} 
+              onChangeText={setNewStartTime}
+            />
+             <TextInput 
+              placeholder="17:00" 
+              style={[styles.input, {flex:1}]} 
+              value={newEndTime} 
+              onChangeText={setNewEndTime}
+            />
+          </View>
+          <TextInput 
+            placeholder="Reason (Optional)" 
+            style={styles.input} 
+            value={newReason} 
+            onChangeText={setNewReason}
+          />
+          <TouchableOpacity 
+            style={styles.addBtn} 
+            onPress={handleAddException}
+            disabled={addingUnavailability}
+          >
+             <Text style={styles.addBtnText}>+ Add Unavailable Block</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  scrollContent: { paddingBottom: 24 },
-  container: { padding: 16, gap: 16 },
-  loadingContainer: { padding: 24, flexDirection: 'row', alignItems: 'center', gap: 8 },
-  loadingText: { fontSize: 14, color: '#4b5563' },
-  header: { gap: 8 },
-  title: { fontSize: 18, fontWeight: '700', color: '#111827' },
-  subtitle: { fontSize: 13, color: '#4b5563' },
-  defaultTimesNote: { marginTop: 4, flexDirection: 'row', gap: 8, backgroundColor: '#eff6ff', padding: 10, borderRadius: 8 },
-  defaultTimesText: { flex: 1, fontSize: 12, color: '#1d4ed8' },
-  card: { backgroundColor: '#ffffff', borderRadius: 12, padding: 14, borderWidth: 1, borderColor: '#e5e7eb', gap: 8 },
-  cardTitle: { fontSize: 15, fontWeight: '600', color: '#111827' },
-  cardSubtitle: { fontSize: 12, color: '#6b7280' },
-  daysContainer: { marginTop: 8, gap: 8 },
-  dayCard: { borderRadius: 10, borderWidth: 1, borderColor: '#e5e7eb', overflow: 'hidden' },
-  dayCardActive: { borderColor: '#c4b5fd', backgroundColor: '#faf5ff' },
-  dayToggle: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 12 },
-  dayToggleLeft: { flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 },
-  dayDot: { width: 10, height: 10, borderRadius: 5, borderWidth: 1, borderColor: '#d1d5db' },
-  dayDotActive: { backgroundColor: '#7c3aed', borderColor: '#7c3aed' },
-  dayName: { fontSize: 14, fontWeight: '500', color: '#111827' },
-  daySubtitle: { fontSize: 12, color: '#6b7280' },
-  dayToggleRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  activePill: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, borderWidth: 1, borderColor: '#d1d5db', backgroundColor: '#f9fafb' },
-  activePillOn: { borderColor: '#a855f7', backgroundColor: '#f3e8ff' },
-  activePillText: { fontSize: 11, color: '#4b5563', fontWeight: '500' },
-  activePillTextOn: { color: '#6b21a8' },
-  expandedRow: { borderTopWidth: 1, borderTopColor: '#e5e7eb', padding: 10, gap: 10 },
-  timeColumn: { gap: 6 },
-  timeLabel: { fontSize: 12, fontWeight: '500', color: '#374151' },
-  timeOptionsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  timeChip: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999, borderWidth: 1, borderColor: '#e5e7eb', backgroundColor: '#f9fafb' },
-  timeChipSelected: { borderColor: '#7c3aed', backgroundColor: '#f5f3ff' },
-  timeChipText: { fontSize: 11, color: '#4b5563' },
-  timeChipTextSelected: { color: '#5b21b6', fontWeight: '600' },
-  inlineLoading: { marginTop: 8, flexDirection: 'row', alignItems: 'center', gap: 8 },
-  inlineLoadingText: { fontSize: 12, color: '#4b5563' },
-  emptyText: { marginTop: 8, fontSize: 12, color: '#6b7280' },
-  unavailabilityList: { marginTop: 8, gap: 8 },
-  unavailabilityItem: { flexDirection: 'row', alignItems: 'center', borderRadius: 8, borderWidth: 1, borderColor: '#e5e7eb', padding: 10, gap: 8 },
-  unavailabilityTextContainer: { flex: 1, gap: 2 },
-  unavailabilityRange: { fontSize: 13, color: '#111827', fontWeight: '500' },
-  unavailabilityReason: { fontSize: 12, color: '#6b7280' },
-  removeButton: { padding: 4 },
-  addUnavailabilityContainer: { marginTop: 12, borderTopWidth: 1, borderTopColor: '#e5e7eb', paddingTop: 10, gap: 8 },
-  addUnavailabilityTitle: { fontSize: 13, fontWeight: '600', color: '#111827' },
-  formRow: { flexDirection: 'row', gap: 8 },
-  formField: { flex: 1 },
-  formFieldFull: { marginTop: 8 },
-  formLabel: { fontSize: 11, color: '#6b7280', marginBottom: 4 },
-  input: { borderWidth: 1, borderColor: '#d1d5db', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 6, fontSize: 13, color: '#111827', backgroundColor: '#f9fafb' },
-  inputMultiline: { minHeight: 40, textAlignVertical: 'top' },
-  addUnavailabilityButton: { marginTop: 4, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 8, borderRadius: 999, backgroundColor: '#4f46e5' },
-  addUnavailabilityButtonDisabled: { opacity: 0.7 },
-  addUnavailabilityButtonText: { fontSize: 13, fontWeight: '600', color: '#ffffff' },
-  saveButton: { marginTop: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, borderRadius: 999, backgroundColor: '#4f46e5' },
-  saveButtonDisabled: { opacity: 0.7 },
-  saveButtonText: { fontSize: 14, fontWeight: '600', color: '#ffffff' },
-  infoBox: { marginTop: 8, flexDirection: 'row', alignItems: 'flex-start', gap: 10, backgroundColor: '#eff6ff', padding: 14, borderRadius: 10 },
-  infoText: { flex: 1, fontSize: 13, color: '#1e40af', lineHeight: 18 },
+  container: { padding: 20, paddingBottom: 50, backgroundColor: '#f8fafc' },
+  header: { marginBottom: 15 },
+  title: { fontSize: 20, fontWeight: 'bold', color: '#1e293b' },
+  subtitle: { color: '#64748b' },
+  section: { gap: 10 },
+  card: { backgroundColor: '#fff', borderRadius: 10, padding: 12, borderWidth: 1, borderColor: '#e2e8f0' },
+  activeCard: { borderColor: '#0E9384', backgroundColor: '#f0fdfa' },
+  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  dayName: { fontSize: 16, fontWeight: '600', color: '#334155' },
+  switchRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  statusText: { fontSize: 12, fontWeight: 'bold' },
+  on: { color: '#0E9384' },
+  off: { color: '#94a3b8' },
+  timeSelector: { marginTop: 15, borderTopWidth: 1, borderTopColor: '#e2e8f0', paddingTop: 10 },
+  label: { fontSize: 12, fontWeight: '600', color: '#64748b', marginBottom: 5 },
+  timeScroll: { flexDirection: 'row', gap: 8 },
+  chip: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 20, backgroundColor: '#f1f5f9', marginRight: 8 },
+  selectedChip: { backgroundColor: '#0E9384' },
+  chipText: { fontSize: 12, color: '#475569' },
+  selectedChipText: { color: '#fff' },
+  saveBtn: { backgroundColor: '#0f172a', padding: 15, borderRadius: 10, alignItems: 'center', marginTop: 10 },
+  saveBtnText: { color: '#fff', fontWeight: 'bold' },
+  
+  // Exception Styles
+  exceptionItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fff', padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#e2e8f0' },
+  exceptionDate: { fontWeight: '600', color: '#334155' },
+  exceptionReason: { fontSize: 12, color: '#64748b' },
+  addBox: { backgroundColor: '#fff', padding: 15, borderRadius: 10, marginTop: 10, borderWidth: 1, borderColor: '#cbd5e1' },
+  addTitle: { fontWeight: 'bold', marginBottom: 10 },
+  input: { borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 6, padding: 10, marginBottom: 10, backgroundColor: '#f8fafc' },
+  addBtn: { backgroundColor: '#0E9384', padding: 10, borderRadius: 6, alignItems: 'center' },
+  addBtnText: { color: '#fff', fontWeight: '600' }
 });

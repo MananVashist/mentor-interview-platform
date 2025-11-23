@@ -164,6 +164,15 @@ export default function MentorBookingsScreen() {
           </Card>
         </View>
 
+        {/* --- NEW BUTTON: Manage Availability --- */}
+        <TouchableOpacity 
+          style={styles.availabilityBtn}
+          onPress={() => router.push('/mentor/availability')}
+        >
+          <Ionicons name="time-outline" size={22} color="#FFF" />
+          <AppText style={styles.availabilityBtnText}>Manage Availability</AppText>
+        </TouchableOpacity>
+
         <View style={styles.divider} />
 
         <Heading level={3} style={styles.sectionTitle}>Your Schedule</Heading>
@@ -256,6 +265,30 @@ const styles = StyleSheet.create({
   earningsCard: { backgroundColor: theme.colors.primary, borderWidth: 0 },
   statValue: { fontSize: 20, fontWeight: '700', color: theme.colors.text.main, marginTop: 8 },
   statLabel: { fontSize: 12, color: theme.colors.text.light },
+
+  // --- NEW STYLES FOR AVAILABILITY BUTTON ---
+  availabilityBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#0E9384', // Primary color
+    paddingVertical: 14,
+    borderRadius: 12,
+    marginBottom: 24,
+    gap: 8,
+    // Optional shadow for depth
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  availabilityBtnText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  // ----------------------------------------
 
   divider: { height: 1, backgroundColor: theme.colors.border, marginBottom: 24 },
   sectionTitle: { marginBottom: 16 },

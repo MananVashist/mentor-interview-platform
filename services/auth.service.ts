@@ -1,5 +1,6 @@
 ﻿import { supabase } from '../lib/supabase/client';
 import { Session, AuthChangeEvent } from '@supabase/supabase-js';
+import * as Linking from 'expo-linking'; // 🟢 Added for OAuth redirects
 
 // We keep the key for manual sign-in if needed, but use client for data fetching
 const SUPABASE_URL = 'https://rcbaaiiawrglvyzmawvr.supabase.co';
@@ -114,6 +115,27 @@ async function signIn(email: string, password: string) {
       error: { message: err?.message || 'Network/auth error' },
     };
   }
+}
+
+/**
+ * 🟢 NEW: SIGN IN WITH OAUTH
+ */
+async function signInWithOAuth(provider: 'google' | 'linkedin') {
+  console.log(`[AUTH] signInWithOAuth called for ${provider}`);
+  
+  // Creates a URL like "exp://.../auth/callback" or your production scheme
+  const redirectUrl = Linking.createURL('/auth/callback'); 
+  console.log('[AUTH] Redirect URL:', redirectUrl);
+
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider,
+    options: {
+      redirectTo: redirectUrl,
+      skipBrowserRedirect: false, // Let Supabase/Browser handle the flow
+    },
+  });
+
+  return { data, error };
 }
 
 /**
@@ -233,8 +255,7 @@ async function getUserProfileById(userId: string): Promise<Profile | null> {
 }
 
 /**
- * 🎯 ADDED: LISTEN FOR AUTH CHANGES
- * Required for useAuth hook to function correctly
+ * LISTEN FOR AUTH CHANGES
  */
 function onAuthStateChange(callback: (event: AuthChangeEvent, session: Session | null) => void) {
   return supabase.auth.onAuthStateChange(callback);
@@ -242,10 +263,11 @@ function onAuthStateChange(callback: (event: AuthChangeEvent, session: Session |
 
 export const authService = {
   signIn,
+  signInWithOAuth, // 🟢 Exported new method
   signUp,
   signOut,
   getCurrentUser,
   getCurrentUserProfile,
   getUserProfileById,
-  onAuthStateChange, // 🎯 Exported
+  onAuthStateChange,
 };

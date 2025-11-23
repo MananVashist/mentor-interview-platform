@@ -1,15 +1,8 @@
 {
   "ExpandedNodes": [
     "",
-    "\\app",
-    "\\app\\candidate",
-    "\\app\\mentor",
-    "\\assets",
-    "\\components",
-    "\\lib",
-    "\\lib\\ui",
-    "\\public"
+    "\\app"
   ],
-  "SelectedNode": "\\app\\candidate\\[id].tsx",
+  "SelectedNode": "\\app\\index.tsx",
   "PreviewInSolutionExplorer": false
 }

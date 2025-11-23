@@ -1,5 +1,6 @@
 ﻿// app/index.tsx
-import React, { useEffect } from 'react';
+// 🟢 CHANGE #1: Added useState
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -11,16 +12,42 @@ import {
   Animated,
   ScrollView,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, Redirect } from 'expo-router';
+// 🟢 CHANGE #2: Import SplashScreen
+import { SplashScreen } from '../components/SplashScreen';
 
 const CTA_TEAL = '#18a7a7';
 
 export default function LandingPage() {
+  // 🟢 CHANGE #3: Mobile-only splash logic
+  // Initialize showSplash to true ONLY if not web
+  const [showSplash, setShowSplash] = useState(Platform.OS !== 'web');
+
+  useEffect(() => {
+    // Only run timer on mobile
+    if (Platform.OS !== 'web') {
+      const timer = setTimeout(() => setShowSplash(false), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
+  // Show splash ONLY on mobile (not web)
+  if (Platform.OS !== 'web' && showSplash) {
+    return <SplashScreen />;
+  }
+
+  // After splash on mobile → redirect to sign-in
+  if (Platform.OS !== 'web') {
+    return <Redirect href="/auth/sign-in" />;
+  }
+  // 🟢 END OF CHANGES - Web continues to landing page below
+
+  // ⬇️ WEB LANDING PAGE - ALL YOUR ORIGINAL CODE UNCHANGED ⬇️
   const router = useRouter();
   const { width } = useWindowDimensions();
   const isSmall = width < 900;
 
-  // Eye animation
+  // Eye animation (for web landing page header)
   const leftEyeX = React.useRef(new Animated.Value(0)).current;
   const leftEyeY = React.useRef(new Animated.Value(0)).current;
   const rightEyeX = React.useRef(new Animated.Value(0)).current;

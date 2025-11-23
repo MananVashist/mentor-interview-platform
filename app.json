@@ -3,6 +3,7 @@
     "name": "Mentor Interview Platform",
     "slug": "mentor-interview-platform",
     "version": "1.0.0",
+    "sdkVersion": "51.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -40,7 +41,7 @@
         "origin": false
       },
       "eas": {
-        "projectId": "your-project-id"
+        "projectId": "b4bb97e0-d7da-494a-86e0-04f5f41faebe"
       }
     }
   }

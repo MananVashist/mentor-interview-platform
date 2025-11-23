@@ -19,7 +19,7 @@ export const availabilityService = {
 
     // 1. Run queries in parallel
     const [availabilityRes, unavailabilityRes, bookingsRes] = await Promise.all([
-      // A. Check for EXPLICIT schedule in DB (Uses start_time / end_time)
+      // A. Check for EXPLICIT schedule in DB
       supabase
         .from('mentor_availability')
         .select('start_time, end_time, is_active')
@@ -27,20 +27,19 @@ export const availabilityService = {
         .eq('day_of_week', dbDayOfWeek)
         .maybeSingle(),
 
-      // B. Check Exceptions (Uses start_at / end_at) <--- FIXED COLUMN NAMES
+      // B. Check Exceptions (Using start_at / end_at)
       supabase
         .from('mentor_unavailability')
         .select('start_at, end_at')
         .eq('mentor_id', mentorId)
         .or(`start_at.lte.${dayEnd},end_at.gte.${dayStart}`),
 
-      // C. Check Bookings (Uses scheduled_at)
+      // C. Check Bookings (Using the upgraded 'bookings' table)
       supabase
-        .from('interview_sessions')
-        .select('scheduled_at')
+        .from('bookings')
+        .select('start_time, booking_date')
         .eq('mentor_id', mentorId)
-        .gte('scheduled_at', dayStart)
-        .lte('scheduled_at', dayEnd)
+        .eq('booking_date', dateStr) // 'bookings' uses separate date column
         .neq('status', 'cancelled')
     ]);
 
@@ -54,35 +53,40 @@ export const availabilityService = {
     if (availabilityRes.data) {
       // CASE A: We have a specific rule for this day
       if (availabilityRes.data.is_active === false) {
-        // Mentor explicitly marked this day as CLOSED
-        return [];
+        return []; // Mentor explicitly closed this day
       }
       startStr = availabilityRes.data.start_time;
       endStr = availabilityRes.data.end_time;
     } else {
       // CASE B: No DB record (New Mentor) -> Use DEFAULT Rules
-      // 0=Sun, 6=Sat
       const isWeekend = dbDayOfWeek === 0 || dbDayOfWeek === 6;
       if (isWeekend) {
-        startStr = '12:00:00'; // 12 PM
-        endStr = '17:00:00';   // 5 PM
+        startStr = '12:00:00'; 
+        endStr = '17:00:00';   
       } else {
-        startStr = '20:00:00'; // 8 PM
-        endStr = '22:00:00';   // 10 PM
+        startStr = '20:00:00'; 
+        endStr = '22:00:00';   
       }
     }
 
     // --- 3. GENERATE SLOTS ---
+    // Note: startStr format might be "20:00:00"
     const ruleStart = DateTime.fromFormat(startStr, 'HH:mm:ss');
     const ruleEnd = DateTime.fromFormat(endStr, 'HH:mm:ss');
     
     const slots: TimeSlot[] = [];
     let current = ruleStart;
     
-    // Loop hourly until end time
+    // Loop hourly (Change .plus({ minutes: 30 }) if you want 30 min slots)
     while (current < ruleEnd) {
       const timeStr = current.toFormat('HH:mm'); // e.g. "20:00"
-      const slotDateTime = date.set({ hour: current.hour, minute: current.minute });
+      
+      // Construct exact DateTime for this slot on the target day
+      const slotDateTime = date.set({ 
+        hour: current.hour, 
+        minute: current.minute, 
+        second: 0 
+      });
       
       let isAvailable = true;
       let reason: TimeSlot['reason'] = undefined;
@@ -93,21 +97,20 @@ export const availabilityService = {
         reason = 'past';
       }
 
-      // Filter: Already Booked
+      // Filter: Already Booked (Check bookings table)
       if (isAvailable && bookingsRes.data?.some(b => {
-        const bookingTime = DateTime.fromISO(b.scheduled_at);
-        return bookingTime.hasSame(slotDateTime, 'hour');
+        // b.start_time is "20:00:00"
+        return b.start_time.startsWith(timeStr); 
       })) {
         isAvailable = false;
         reason = 'booked';
       }
 
       // Filter: Specific Unavailability (Vacation)
-      // FIXED: Uses u.start_at and u.end_at
       if (isAvailable && unavailabilityRes.data?.some(u => {
         const uStart = DateTime.fromISO(u.start_at);
         const uEnd = DateTime.fromISO(u.end_at);
-        // Check if slot overlaps with "Out of Office" block
+        // Check overlap
         return slotDateTime >= uStart && slotDateTime < uEnd;
       })) {
         isAvailable = false;
@@ -115,7 +118,7 @@ export const availabilityService = {
       }
 
       slots.push({ time: timeStr, isAvailable, reason });
-      current = current.plus({ hours: 1 });
+      current = current.plus({ hours: 1 }); // Increment by 1 hour
     }
 
     return slots;
