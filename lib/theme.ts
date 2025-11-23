@@ -12,10 +12,10 @@ export const THEME = {
     backgroundSecondary: '#F3F4F6',
 
     // brand / CTA
-    primary: '#F97316',
-    primarySoft: 'rgba(249,115,22,0.1)',
+    primary: '#0E9384',
+    primarySoft: 'rgba(14,147,132,0.1)',
     onPrimary: '#FFFFFF',
-    CTA: '#F97316',
+    CTA: '#0E9384',
     CTA_TEXT: '#FFFFFF',
 
     // text
