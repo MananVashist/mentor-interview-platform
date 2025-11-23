@@ -1,4 +1,5 @@
-﻿import React, { useState, useEffect } from 'react';
+﻿// app/candidate/schedule.tsx
+import React, { useState, useEffect } from 'react';
 import { 
   View, StyleSheet, ScrollView, TouchableOpacity, 
   ActivityIndicator, Alert, StatusBar 
@@ -17,7 +18,12 @@ export default function ScheduleScreen() {
   const mentorId = Array.isArray(params.mentorId) ? params.mentorId[0] : params.mentorId;
 
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedDate, setSelectedDate] = useState(DateTime.now());
+  
+  // ✅ FIX 1: Initialize Date specifically in Indian Standard Time (IST)
+  const [selectedDate, setSelectedDate] = useState(
+    DateTime.now().setZone('Asia/Kolkata')
+  );
+  
   const [slots, setSlots] = useState<TimeSlot[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
   
@@ -35,7 +41,7 @@ export default function ScheduleScreen() {
   const fetchSlots = async () => {
     setLoadingSlots(true);
     try {
-      const dateStr = selectedDate.toISODate();
+      const dateStr = selectedDate.toISODate(); // Returns YYYY-MM-DD based on IST
       if (dateStr && mentorId) {
         const data = await availabilityService.getSlotsForDate(mentorId, dateStr);
         setSlots(data);
@@ -69,17 +75,19 @@ export default function ScheduleScreen() {
     const dateStr = selectedDate.toISODate();
     if (!dateStr) return;
 
-    // Create ISO Timestamps
-    const slot1ISO = `${dateStr}T${session1}:00`;
-    const slot2ISO = `${dateStr}T${session2}:00`;
+    // ✅ FIX 2: Construct ISO timestamps strictly in IST
+    // This ensures the backend receives '2025-11-23T14:00:00+05:30'
+    const dt1 = DateTime.fromFormat(`${dateStr} ${session1}`, "yyyy-MM-dd HH:mm", { zone: 'Asia/Kolkata' });
+    const dt2 = DateTime.fromFormat(`${dateStr} ${session2}`, "yyyy-MM-dd HH:mm", { zone: 'Asia/Kolkata' });
 
     // Navigate to Payment Screen
     router.push({
-      pathname: '/candidate/payment',
+      pathname: '/candidate/pgscreen', // ✅ Pointing to your actual payment screen file
       params: { 
         mentorId,
-        slot1: slot1ISO, 
-        slot2: slot2ISO 
+        // Send full ISO string so backend knows the absolute time
+        slot1: dt1.toISO(), 
+        slot2: dt2.toISO() 
       }
     });
   };
@@ -109,7 +117,7 @@ export default function ScheduleScreen() {
             onPress={() => setActiveField('session1')}
             activeOpacity={0.9}
           >
-            <AppText style={styles.selectorLabel}>SESSION 1</AppText>
+            <AppText style={styles.selectorLabel}>SESSION 1 (IST)</AppText>
             <View style={styles.selectorValueRow}>
               <Ionicons name="time-outline" size={18} color={activeField === 'session1' ? theme.colors.primary : '#9CA3AF'} />
               <AppText style={[styles.selectorValue, !session1 && styles.placeholder]}>
@@ -125,7 +133,7 @@ export default function ScheduleScreen() {
             onPress={() => setActiveField('session2')}
             activeOpacity={0.9}
           >
-            <AppText style={styles.selectorLabel}>SESSION 2</AppText>
+            <AppText style={styles.selectorLabel}>SESSION 2 (IST)</AppText>
             <View style={styles.selectorValueRow}>
               <Ionicons name="time-outline" size={18} color={activeField === 'session2' ? theme.colors.primary : '#9CA3AF'} />
               <AppText style={[styles.selectorValue, !session2 && styles.placeholder]}>
@@ -138,13 +146,22 @@ export default function ScheduleScreen() {
         {/* Calendar Navigation */}
         <View style={styles.calendarSection}>
           <View style={styles.dateNav}>
+            {/* ✅ FIX 3: Ensure date math keeps the timezone */}
             <TouchableOpacity style={styles.navBtn} onPress={() => setSelectedDate(d => d.minus({ days: 1 }))}>
               <Ionicons name="chevron-back" size={20} color={theme.colors.text.main} />
             </TouchableOpacity>
+            
             <View style={styles.dateDisplay}>
               <AppText style={styles.dateDay}>{selectedDate.toFormat('cccc')}</AppText>
-              <AppText style={styles.dateDate}>{selectedDate.toFormat('MMM d')}</AppText>
+              <View style={{flexDirection: 'row', alignItems: 'center', gap: 4}}>
+                <AppText style={styles.dateDate}>{selectedDate.toFormat('MMM d')}</AppText>
+                {/* Visual Indicator for Timezone */}
+                <View style={styles.istBadge}>
+                    <AppText style={styles.istText}>IST</AppText>
+                </View>
+              </View>
             </View>
+
             <TouchableOpacity style={styles.navBtn} onPress={() => setSelectedDate(d => d.plus({ days: 1 }))}>
               <Ionicons name="chevron-forward" size={20} color={theme.colors.text.main} />
             </TouchableOpacity>
@@ -230,6 +247,8 @@ const styles = StyleSheet.create({
   dateDisplay: { alignItems: 'center' },
   dateDay: { fontSize: 13, color: theme.colors.text.light, fontWeight: '600', textTransform: 'uppercase' },
   dateDate: { fontSize: 18, color: theme.colors.text.main, fontWeight: '700' },
+  istBadge: { backgroundColor: '#ECFDF5', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, marginLeft: 6 },
+  istText: { fontSize: 10, color: '#059669', fontWeight: '800' },
   slotsContainer: { minHeight: 100, justifyContent: 'center' },
   slotsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   slotBadge: { flexGrow: 1, flexBasis: '30%', paddingVertical: 12, borderRadius: 10, backgroundColor: theme.colors.pricing.greenBg, borderWidth: 1, borderColor: theme.colors.pricing.greenText, alignItems: 'center', position: 'relative' },

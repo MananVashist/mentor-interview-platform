@@ -13,71 +13,63 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useAuthStore } from "@/lib/store";
-import {
-  colors,
-  spacing,
-  borderRadius,
-  typography,
-  shadows,
-} from "@/lib/theme";
 import {
   Heading,
   AppText,
   Card,
-  Section,
   ScreenBackground,
 } from "@/lib/ui";
+import { calculateMentorTier } from "@/lib/logic";
 
 // --- EXACT theme MATCHING YOUR HTML ---
 const theme = {
-  primary: "#0F766E", // Teal-700/600 mix to match the dark teal in image
-  primaryBtn: "#0d9488", // Teal-600 for buttons
-  bg: "#F9FAFB", // Gray-50
+  primary: "#0F766E", 
+  primaryBtn: "#0d9488",
+  bg: "#F9FAFB",
   white: "#FFFFFF",
-  textMain: "#111827", // Gray-900
-  textSub: "#6B7280", // Gray-500
-  border: "#E5E7EB", // Gray-200
-  
-  // Badge Colors
-  bronzeBg: "#FFFBEB", // Amber-50
-  bronzeText: "#B45309", // Amber-700
-  bronzeBorder: "#FEF3C7", // Amber-100
-  
-  expBg: "#F3F4F6", // Gray-100
-  expText: "#374151", // Gray-700
+  textMain: "#111827",
+  textSub: "#6B7280", 
+  border: "#E5E7EB",
+  // Bronze
+  bronzeBg: "#FFFBEB",
+  bronzeText: "#B45309",
+  bronzeBorder: "#FEF3C7",
+  // Silver
+  silverBg: "#F3F4F6",
+  silverText: "#4B5563",
+  silverBorder: "#E5E7EB",
+  // Gold
+  goldBg: "#FEFCE8",
+  goldText: "#854D0E",
+  goldBorder: "#FEF9C3",
+  // NEW - Blue (FIX #3)
+  newBg: "#DBEAFE",
+  newText: "#2563EB",
+  newBorder: "#BFDBFE",
+  // Experience Pill
+  expBg: "#F3F4F6",
+  expText: "#374151",
 };
 
 const SUPABASE_URL = "https://rcbaaiiawrglvyzmawvr.supabase.co";
-const SUPABASE_ANON_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJjYmFhaWlhd3JnbHZ5em1hd3ZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjExNTA1NjAsImV4cCI6MjA3NjcyNjU2MH0.V3qRHGXBMlspRS7XFJlXdo4qIcCms60Nepp7dYMEjLA";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJjYmFhaWlhd3JnbHZ5em1hd3ZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjExNTA1NjAsImV4cCI6MjA3NjcyNjU2MH0.V3qRHGXBMlspRS7XFJlXdo4qIcCms60Nepp7dYMEjLA";
 
-type AdminProfile = {
-  id: number;
-  name: string;
-  description: string | null;
-  is_active: boolean;
-};
-
-type Mentor = {
-  id: string;
-  email?: string;
-  professional_title?: string | null;
-  experience_description?: string | null;
-  expertise_profiles?: string[];
-  profile?: {
-    full_name?: string | null;
-    avatar_url?: string | null;
-  };
-  session_price_inr?: number | null;
+type AdminProfile = { id: number; name: string; description: string | null; is_active: boolean; };
+type Mentor = { 
+  id: string; 
+  professional_title?: string | null; 
+  experience_description?: string | null; 
+  expertise_profiles?: string[]; 
+  session_price_inr?: number | null; 
   session_price?: number | null;
-  total_sessions?: number | null;
-  mentor_level?: string | null;
+  total_sessions?: number;
 };
 
 export default function CandidateDashboard() {
   const { width } = useWindowDimensions();
-  const isDesktop = width > 768; // Simple responsive check
+  const isDesktop = width > 768; 
+  const isMobile = width <= 768;
+
   const router = useRouter();
 
   const [adminProfiles, setAdminProfiles] = useState<AdminProfile[]>([]);
@@ -91,21 +83,15 @@ export default function CandidateDashboard() {
     (async () => {
       setProfilesLoading(true);
       try {
-        const res = await fetch(
-          `${SUPABASE_URL}/rest/v1/interview_profiles_admin?select=*`,
-          { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
-        );
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/interview_profiles_admin?select=*`, { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } });
         const data = await res.json();
         if (res.ok) {
           const actives = (data || []).filter((p: AdminProfile) => p.is_active !== false);
           setAdminProfiles(actives);
           if (actives.length > 0) setSelectedProfile(actives[0].name);
         }
-      } catch (err) {
-        console.log("Error fetching profiles", err);
-      } finally {
-        setProfilesLoading(false);
-      }
+      } catch (err) { console.log("Error fetching profiles", err); } 
+      finally { setProfilesLoading(false); }
     })();
   }, []);
 
@@ -113,27 +99,18 @@ export default function CandidateDashboard() {
     if (!profileName) return;
     setMentorsLoading(true);
     try {
-      const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/mentors?select=*,profile:profiles(*)`,
-        { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
-      );
+      // ✅ FIX #2: Changed from is_approved=eq.true to status=eq.approved
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/mentors?select=*,profile:profiles(*)&status=eq.approved`, { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } });
       const data = await res.json();
       if (res.ok) {
-        const filtered = (data || []).filter((m: Mentor) =>
-          Array.isArray(m.expertise_profiles) ? m.expertise_profiles.includes(profileName) : false
-        );
+        const filtered = (data || []).filter((m: Mentor) => Array.isArray(m.expertise_profiles) ? m.expertise_profiles.includes(profileName) : false);
         setMentors(filtered);
       }
-    } catch (err) {
-      console.log("Error fetching mentors", err);
-    } finally {
-      setMentorsLoading(false);
-    }
+    } catch (err) { console.log("Error fetching mentors", err); } 
+    finally { setMentorsLoading(false); }
   }, []);
 
-  useEffect(() => {
-    if (selectedProfile) fetchMentorsForProfile(selectedProfile);
-  }, [selectedProfile, fetchMentorsForProfile]);
+  useEffect(() => { if (selectedProfile) fetchMentorsForProfile(selectedProfile); }, [selectedProfile, fetchMentorsForProfile]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -145,6 +122,17 @@ export default function CandidateDashboard() {
     router.push({ pathname: "/candidate/[id]", params: { id } });
   };
 
+  // Helper for dynamic badge styles
+  const getBadgeStyle = (tier: string) => {
+    switch (tier) {
+      case 'Gold': return { bg: theme.goldBg, text: theme.goldText, border: theme.goldBorder };
+      case 'Silver': return { bg: theme.silverBg, text: theme.silverText, border: theme.silverBorder };
+      case 'Bronze': return { bg: theme.bronzeBg, text: theme.bronzeText, border: theme.bronzeBorder };
+      // ✅ FIX #3: New mentors get BLUE styling
+      default: return { bg: theme.newBg, text: theme.newText, border: theme.newBorder };
+    }
+  };
+
   return (
     <ScreenBackground style={styles.container}>
       <ScrollView
@@ -152,17 +140,17 @@ export default function CandidateDashboard() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* --- HEADER SECTION (Left Aligned with Search on Right) --- */}
-        <View style={styles.headerContainer}>
-          <View style={styles.headerLeft}>
+        {/* --- HEADER SECTION --- */}
+        <View style={[styles.headerContainer, isMobile && styles.headerContainerMobile]}>
+          <View style={[styles.headerLeft, isMobile && { marginBottom: 16 }]}>
             <Heading level={1} style={styles.headerTitle}>Find Your Mentor</Heading>
             <AppText style={styles.headerSubtitle}>
               Select a profile below and connect with experienced professionals
             </AppText>
           </View>
           
-          {/* Search Bar (Visible on Web/Tablet) */}
-          <View style={styles.searchWrapper}>
+          {/* Search Bar */}
+          <View style={[styles.searchWrapper, isMobile && styles.searchWrapperMobile]}>
             <Ionicons name="search" size={20} color="#9CA3AF" style={{ marginRight: 8 }} />
             <TextInput 
               placeholder="Search skills..." 
@@ -172,11 +160,10 @@ export default function CandidateDashboard() {
           </View>
         </View>
 
-        {/* --- SEPARATOR LINE --- */}
         <View style={styles.headerDivider} />
 
         {/* --- FILTERS SECTION --- */}
-        <View style={styles.filtersContainer}>
+        <View style={[styles.filtersContainer, isMobile && { paddingHorizontal: 20 }]}>
           <AppText style={styles.filterLabel}>Select Interview Profile</AppText>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pillsScroll}>
             {profilesLoading ? (
@@ -205,9 +192,9 @@ export default function CandidateDashboard() {
         </View>
 
         {/* --- MENTORS LIST --- */}
-        <View style={styles.listContainer}>
+        <View style={[styles.listContainer, isMobile && { paddingHorizontal: 20 }]}>
           {mentorsLoading ? (
-            <ActivityIndicator size="large" color={theme.primary} style={{ marginTop: 40 }} />
+            <ActivityIndicator size="large" color={theme.primary} />
           ) : mentors.length === 0 ? (
             <View style={styles.emptyState}>
               <Ionicons name="search-outline" size={48} color={theme.textSub} />
@@ -217,42 +204,53 @@ export default function CandidateDashboard() {
             mentors.map((m) => {
               const price = m.session_price_inr ?? m.session_price ?? 0;
               const displayPrice = price ? Math.round(price * 1.2) : 0;
+              
+              // ✅ DYNAMIC TIER CALCULATION
+              const tier = calculateMentorTier(m.total_sessions);
+              const badgeStyle = getBadgeStyle(tier);
+              const isNew = tier === 'New';
 
               return (
                 <Card key={m.id} style={styles.card}>
-                  
-                  {/* --- CARD CONTENT (Flex Row on Desktop) --- */}
                   <View style={isDesktop ? styles.cardRow : styles.cardCol}>
                     
-                    {/* LEFT COLUMN: Info */}
+                    {/* LEFT: Info */}
                     <View style={styles.cardLeft}>
-                      {/* Title */}
                       <AppText style={styles.mentorName}>
                         {m.professional_title || "Backend Engineer (Node/Java)"}
                       </AppText>
                       
-                      {/* Tags Row: Experience + Badge */}
                       <View style={styles.tagsRow}>
                         <View style={styles.expPill}>
                           <AppText style={styles.expText}>5 years exp</AppText>
                         </View>
-                        <View style={styles.badge}>
-                          <Ionicons name="star" size={10} color={theme.bronzeText} style={{ marginRight: 4 }} />
-                          <AppText style={styles.badgeText}>BRONZE</AppText>
+                        
+                        {/* ✅ FIX #3: Dynamic Badge with BLUE for New mentors */}
+                        <View style={[styles.badge, { backgroundColor: badgeStyle.bg, borderColor: badgeStyle.border }]}>
+                          {isNew ? (
+                            // Blue sparkles icon for NEW
+                            <Ionicons name="sparkles" size={10} color={badgeStyle.text} style={{ marginRight: 4 }} />
+                          ) : (
+                            // Trophy icon for Bronze/Silver/Gold
+                            <Ionicons name="trophy" size={10} color={badgeStyle.text} style={{ marginRight: 4 }} />
+                          )}
+                          <AppText style={[styles.badgeText, { color: badgeStyle.text }]}>
+                            {isNew ? 'NEW' : tier.toUpperCase()}
+                          </AppText>
                         </View>
                       </View>
 
-                      {/* Description */}
                       <AppText style={styles.description} numberOfLines={3}>
-                        {m.experience_description || "Covers API design, REST fundamentals, auth, SQL/NoSQL choices, caching and debugging. Will also do a quick behavioral/on-call scenario."}
+                        {m.experience_description || "Covers API design, REST fundamentals, auth, SQL/NoSQL choices, caching and debugging."}
                       </AppText>
                     </View>
 
-                    {/* RIGHT COLUMN: Price + Actions */}
-                    <View style={styles.cardRight}>
-                      {/* Price Block */}
+                    {/* RIGHT: Price + Actions */}
+                    <View style={[styles.cardRight, isMobile && styles.cardRightMobile]}>
+                      {isMobile && <View style={styles.mobileDivider} />}
+                      
                       <View style={styles.priceBlock}>
-                         <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: isDesktop ? 'flex-start' : 'flex-start' }}>
+                         <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
                             <AppText style={styles.priceText}>
                               ₹{displayPrice.toLocaleString("en-IN")}
                             </AppText>
@@ -261,13 +259,12 @@ export default function CandidateDashboard() {
                          <AppText style={styles.feeText}>+ 20% platform fee</AppText>
                       </View>
 
-                      {/* Buttons Stacked Vertically */}
-                      <View style={styles.buttonStack}>
-                        <TouchableOpacity style={styles.solidBtn} onPress={() => handleViewMentor(m.id)}>
-                          <AppText style={styles.solidBtnText}>Book now →</AppText>
+                      <View style={[styles.buttonStack, isMobile && { flexDirection: 'row' }]}>
+                        <TouchableOpacity style={[styles.solidBtn, isMobile && {flex: 1}]} onPress={() => handleViewMentor(m.id)}>
+                          <AppText style={styles.solidBtnText}>Book</AppText>
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.outlineBtn} onPress={() => handleViewMentor(m.id)}>
-                          <AppText style={styles.outlineBtnText}>View details</AppText>
+                        <TouchableOpacity style={[styles.outlineBtn, isMobile && {flex: 1}]} onPress={() => handleViewMentor(m.id)}>
+                          <AppText style={styles.outlineBtnText}>Details</AppText>
                         </TouchableOpacity>
                       </View>
                     </View>
@@ -284,38 +281,28 @@ export default function CandidateDashboard() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#FFF", // White background for the whole screen often looks cleaner, or matches header
-  },
-  scrollContent: {
-    paddingBottom: 40,
-  },
+  container: { flex: 1, backgroundColor: "#FFF" },
+  scrollContent: { paddingBottom: 40 },
   
   // --- Header ---
   headerContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "flex-start", // Align top
+    alignItems: "flex-start",
     paddingTop: 40,
     paddingBottom: 20,
     paddingHorizontal: 32,
     backgroundColor: "#FFFFFF",
   },
-  headerLeft: {
-    flex: 1,
+  headerContainerMobile: {
+    flexDirection: "column",
+    paddingHorizontal: 20,
+    paddingTop: 20,
   },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: theme.textMain,
-    marginBottom: 4,
-  },
-  headerSubtitle: {
-    fontSize: 15,
-    color: theme.textSub,
-    maxWidth: 500,
-  },
+  headerLeft: { flex: 1 },
+  headerTitle: { fontSize: 24, fontWeight: "bold", color: theme.textMain, marginBottom: 4 },
+  headerSubtitle: { fontSize: 15, color: theme.textSub, maxWidth: 500 },
+  
   searchWrapper: {
     flexDirection: "row",
     alignItems: "center",
@@ -327,205 +314,74 @@ const styles = StyleSheet.create({
     marginLeft: 20,
     marginTop: 4, 
   },
-  searchInput: {
-    flex: 1,
-    fontSize: 14,
-    color: theme.textMain,
-    outlineStyle: "none", // For web
+  searchWrapperMobile: {
+    width: "100%", 
+    marginLeft: 0,
+    marginTop: 12,
   },
-  headerDivider: {
-    height: 1,
-    backgroundColor: theme.border,
-    width: "100%",
-  },
+  searchInput: { flex: 1, fontSize: 14, color: theme.textMain },
+  headerDivider: { height: 1, backgroundColor: theme.border, width: "100%" },
 
   // --- Filters ---
-  filtersContainer: {
-    paddingHorizontal: 32,
-    paddingTop: 24,
-    marginBottom: 24,
-  },
-  filterLabel: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: theme.textMain,
-    marginBottom: 16,
-  },
-  pillsScroll: {
-    gap: 12,
-    paddingRight: 20,
-  },
-  pill: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 999,
-    borderWidth: 1,
-  },
-  pillActive: {
-    backgroundColor: theme.primaryBtn, // Solid Teal
-    borderColor: theme.primaryBtn,
-  },
-  pillInactive: {
-    backgroundColor: "#FFF",
-    borderColor: "#E5E7EB",
-  },
-  pillText: {
-    fontSize: 14,
-    fontWeight: "500",
-  },
-  pillTextActive: {
-    color: "#FFF",
-  },
-  pillTextInactive: {
-    color: "#4B5563", // Gray-600
-  },
-  resultsCount: {
-    marginTop: 16,
-    fontSize: 14,
-    color: theme.textSub,
-  },
+  filtersContainer: { paddingHorizontal: 32, paddingTop: 24, marginBottom: 24 },
+  filterLabel: { fontSize: 14, fontWeight: "600", color: theme.textMain, marginBottom: 16 },
+  pillsScroll: { gap: 12, paddingRight: 20 },
+  pill: { flexDirection: "row", alignItems: "center", paddingHorizontal: 20, paddingVertical: 10, borderRadius: 999, borderWidth: 1 },
+  pillActive: { backgroundColor: theme.primaryBtn, borderColor: theme.primaryBtn },
+  pillInactive: { backgroundColor: "#FFF", borderColor: "#E5E7EB" },
+  pillText: { fontSize: 14, fontWeight: "500" },
+  pillTextActive: { color: "#FFF" },
+  pillTextInactive: { color: "#4B5563" },
+  resultsCount: { marginTop: 16, fontSize: 14, color: theme.textSub },
 
   // --- List ---
-  listContainer: {
-    paddingHorizontal: 32,
-    gap: 16,
-  },
-  card: {
-    backgroundColor: "#FFF",
-    borderRadius: 16,
-    padding: 24,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    shadowColor: "transparent", // Remove heavy shadow to match clean HTML look
-  },
+  listContainer: { paddingHorizontal: 32, gap: 16 },
+  card: { backgroundColor: "#FFF", borderRadius: 16, padding: 24, borderWidth: 1, borderColor: "#E5E7EB" },
   
-  // Layout logic
-  cardRow: {
-    flexDirection: "row",
-    gap: 32,
-  },
-  cardCol: {
-    flexDirection: "column",
-    gap: 24,
-  },
+  cardRow: { flexDirection: "row", gap: 32 },
+  cardCol: { flexDirection: "column", gap: 16 },
 
   // Left Col
-  cardLeft: {
-    flex: 1,
-  },
-  mentorName: {
-    fontSize: 18,
-    fontWeight: "bold", // Bold title
-    color: theme.textMain,
-    marginBottom: 10,
-  },
-  tagsRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginBottom: 12,
-  },
-  expPill: {
-    backgroundColor: theme.expBg,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  expText: {
-    fontSize: 13,
-    fontWeight: "500",
-    color: theme.expText,
-  },
-  badge: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: theme.bronzeBg,
-    borderWidth: 1,
-    borderColor: theme.bronzeBorder,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  badgeText: {
-    fontSize: 11,
-    fontWeight: "800",
-    color: theme.bronzeText,
-    letterSpacing: 0.5,
-  },
-  description: {
-    fontSize: 14,
-    color: "#4B5563", // Gray-600
-    lineHeight: 24,
-  },
+  cardLeft: { flex: 1 },
+  mentorName: { fontSize: 18, fontWeight: "bold", color: theme.textMain, marginBottom: 10 },
+  tagsRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 },
+  expPill: { backgroundColor: theme.expBg, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 },
+  expText: { fontSize: 13, fontWeight: "500", color: theme.expText },
+  badge: { flexDirection: "row", alignItems: "center", borderWidth: 1, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 },
+  badgeText: { fontSize: 11, fontWeight: "800", letterSpacing: 0.5 },
+  description: { fontSize: 14, color: "#4B5563", lineHeight: 24 },
 
   // Right Col
   cardRight: {
     minWidth: 200,
-    borderLeftWidth: Platform.OS === 'web' ? 1 : 0, // Vertical divider on web
+    borderLeftWidth: 1,
     borderLeftColor: "#F3F4F6",
-    paddingLeft: Platform.OS === 'web' ? 24 : 0,
+    paddingLeft: 24,
     justifyContent: "space-between",
   },
-  priceBlock: {
-    marginBottom: 16,
+  cardRightMobile: {
+    minWidth: "100%",
+    borderLeftWidth: 0,
+    paddingLeft: 0,
+    flexDirection: 'column', 
   },
-  priceText: {
-    fontSize: 24,
-    fontWeight: "800", // Very bold price
-    color: theme.textMain,
+  mobileDivider: {
+      height: 1,
+      backgroundColor: '#F3F4F6',
+      width: '100%',
+      marginVertical: 16,
   },
-  perSessionText: {
-    fontSize: 12,
-    color: "#9CA3AF",
-  },
-  feeText: {
-    fontSize: 12,
-    color: "#9CA3AF",
-    marginTop: 4,
-  },
+  priceBlock: { marginBottom: 16 },
+  priceText: { fontSize: 24, fontWeight: "800", color: theme.textMain },
+  perSessionText: { fontSize: 12, color: "#9CA3AF" },
+  feeText: { fontSize: 12, color: "#9CA3AF", marginTop: 4 },
 
-  // Buttons
-  buttonStack: {
-    gap: 10,
-  },
-  solidBtn: {
-    width: "100%",
-    paddingVertical: 12,
-    borderRadius: 8,
-    backgroundColor: theme.primaryBtn,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  solidBtnText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#FFF",
-  },
-  outlineBtn: {
-    width: "100%",
-    paddingVertical: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    backgroundColor: "#FFF",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  outlineBtnText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: theme.textMain,
-  },
+  buttonStack: { gap: 10 },
+  solidBtn: { width: "100%", paddingVertical: 12, borderRadius: 8, backgroundColor: theme.primaryBtn, alignItems: "center", justifyContent: "center" },
+  solidBtnText: { fontSize: 14, fontWeight: "600", color: "#FFF" },
+  outlineBtn: { width: "100%", paddingVertical: 12, borderRadius: 8, borderWidth: 1, borderColor: "#E5E7EB", backgroundColor: "#FFF", alignItems: "center", justifyContent: "center" },
+  outlineBtnText: { fontSize: 14, fontWeight: "600", color: theme.textMain },
 
-  // Empty
-  emptyState: {
-    alignItems: "center",
-    padding: 40,
-  },
-  emptyText: {
-    marginTop: 10,
-    color: theme.textSub,
-  },
+  emptyState: { alignItems: 'center', padding: 40 },
+  emptyText: { marginTop: 10, color: theme.textSub },
 });

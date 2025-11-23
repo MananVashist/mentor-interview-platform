@@ -1,23 +1,84 @@
-import { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Pressable, useWindowDimensions } from 'react-native';
+﻿// app/mentor/_layout.tsx
+import { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Pressable, useWindowDimensions, ActivityIndicator } from 'react-native';
 import { Slot, useRouter, usePathname } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '@/lib/store';
 import { authService } from '@/services/auth.service';
+import { mentorService } from '@/services/mentor.service';
 
 export default function MentorLayout() {
   const router = useRouter();
   const pathname = usePathname();
-  const { profile, clear } = useAuthStore();
   const { width } = useWindowDimensions();
+  
+  const { user, profile, mentorProfile, setMentorProfile, clear } = useAuthStore();
+  
   const [menuOpen, setMenuOpen] = useState(false);
+  const [isCheckingStatus, setIsCheckingStatus] = useState(true);
 
   const isDesktop = width >= 768;
+
+  // 🔒 ENHANCED GATEKEEPER LOGIC
+  useEffect(() => {
+    const checkMentorStatus = async () => {
+      // 1. If no user/profile, let root _layout handle auth
+      if (!user || !profile) {
+        setIsCheckingStatus(false);
+        return;
+      }
+
+      // 2. Allow Admin overrides
+      if (profile.role === 'admin' || profile.is_admin) {
+        console.log('✅ [Layout] Admin access granted');
+        setIsCheckingStatus(false);
+        return;
+      }
+
+      // 3. Get fresh mentor status from DB (don't trust store)
+      let currentMentor = null;
+      
+      try {
+        currentMentor = await mentorService.getMentorById(user.id);
+        
+        if (currentMentor) {
+          setMentorProfile(currentMentor);
+          console.log('🔵 [Layout] Mentor status:', currentMentor.status);
+        } else {
+          console.warn('⚠️ [Layout] No mentor record found for user:', user.id);
+        }
+      } catch (err) {
+        console.error('❌ [Layout] Error fetching mentor status:', err);
+      }
+
+      // 4. STRICT CHECK - Only 'approved' status allowed
+      const isUnderReviewPage = pathname.includes('/under-review');
+      
+      // ✅ FIX: Only check 'status' column (ignore deprecated is_approved)
+      const isApproved = currentMentor?.status === 'approved';
+
+      if (!isApproved && !isUnderReviewPage) {
+        console.log('⛔ [Layout] Access DENIED - Status:', currentMentor?.status || 'missing');
+        await authService.signOut(); // Force sign out
+        clear(); // Clear store
+        router.replace('/mentor/under-review');
+      } else if (isApproved && isUnderReviewPage) {
+        console.log('✅ [Layout] Approved mentor on under-review, redirecting to dashboard');
+        router.replace('/mentor/bookings');
+      } else if (isApproved) {
+        console.log('✅ [Layout] Access granted - Mentor approved');
+      }
+
+      setIsCheckingStatus(false);
+    };
+
+    checkMentorStatus();
+  }, [pathname, user, profile]);
 
   const handleSignOut = async () => {
     await authService.signOut();
     clear();
-    router.replace('/(auth)/sign-in');
+    router.replace('/auth/sign-in');
   };
 
   const menuItems = [
@@ -47,7 +108,6 @@ export default function MentorLayout() {
 
   const Sidebar = () => (
     <View style={styles.sidebar}>
-      {/* User Info */}
       <View style={styles.userSection}>
         <View style={styles.avatarCircle}>
           <Text style={styles.avatarText}>
@@ -60,9 +120,14 @@ export default function MentorLayout() {
         <Text style={styles.userEmail} numberOfLines={1}>
           {profile?.email}
         </Text>
+        {/* Status Badge */}
+        <View style={[styles.statusBadge, { backgroundColor: mentorProfile?.status === 'approved' ? '#DCFCE7' : '#FEF3C7' }]}>
+           <Text style={[styles.statusText, { color: mentorProfile?.status === 'approved' ? '#166534' : '#D97706' }]}>
+             {mentorProfile?.status?.toUpperCase() || 'PENDING'}
+           </Text>
+        </View>
       </View>
 
-      {/* Navigation Menu */}
       <View style={styles.menuContainer}>
         <Text style={styles.menuLabel}>MENU</Text>
         {menuItems.map((item) => {
@@ -97,7 +162,6 @@ export default function MentorLayout() {
         })}
       </View>
 
-      {/* Sign Out Button */}
       <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
         <Ionicons name="log-out-outline" size={20} color="#ef4444" />
         <Text style={styles.signOutText}>Sign Out</Text>
@@ -105,9 +169,18 @@ export default function MentorLayout() {
     </View>
   );
 
+  // Loading state
+  if (isCheckingStatus) {
+      return (
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F9FAFB' }}>
+              <ActivityIndicator size="large" color="#0E9384" />
+              <Text style={{ marginTop: 12, color: '#6B7280' }}>Verifying account status...</Text>
+          </View>
+      );
+  }
+
   return (
     <View style={styles.container}>
-      {/* Mobile Header */}
       {!isDesktop && (
         <View style={styles.mobileHeader}>
           <TouchableOpacity 
@@ -122,10 +195,8 @@ export default function MentorLayout() {
       )}
 
       <View style={styles.content}>
-        {/* Desktop Sidebar */}
         {isDesktop && <Sidebar />}
 
-        {/* Mobile Sidebar */}
         {!isDesktop && menuOpen && (
           <>
             <Pressable 
@@ -138,7 +209,6 @@ export default function MentorLayout() {
           </>
         )}
 
-        {/* Main Content Area */}
         <View style={styles.mainContent}>
           <Slot />
         </View>
@@ -213,7 +283,7 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: '#0E9384', // Brand teal
+    backgroundColor: '#0E9384',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 12,
@@ -232,6 +302,16 @@ const styles = StyleSheet.create({
   userEmail: {
     fontSize: 13,
     color: '#6b7280',
+    marginBottom: 8,
+  },
+  statusBadge: {
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      borderRadius: 999,
+  },
+  statusText: {
+      fontSize: 10,
+      fontWeight: '700',
   },
   menuContainer: {
     flex: 1,
@@ -254,7 +334,7 @@ const styles = StyleSheet.create({
     marginVertical: 2,
   },
   menuItemActive: {
-    backgroundColor: 'rgba(14,147,132,0.08)', // Brand teal with opacity
+    backgroundColor: 'rgba(14,147,132,0.08)',
   },
   menuItemContent: {
     flexDirection: 'row',
@@ -272,7 +352,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   menuTextActive: {
-    color: '#0E9384', // Brand teal
+    color: '#0E9384',
     fontWeight: '600',
   },
   menuDescription: {
@@ -282,7 +362,7 @@ const styles = StyleSheet.create({
   activeIndicator: {
     width: 3,
     height: '100%',
-    backgroundColor: '#0E9384', // Brand teal
+    backgroundColor: '#0E9384',
     position: 'absolute',
     right: 0,
     top: 0,

@@ -1,4 +1,5 @@
-﻿import React, { useEffect, useState } from "react";
+﻿// app/candidate/[id].tsx
+import React, { useEffect, useState } from "react";
 import {
   View,
   ScrollView,
@@ -12,6 +13,7 @@ import { useLocalSearchParams, useRouter, usePathname } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { AppText, Heading, Card } from "@/lib/ui";
 import { supabase } from "@/lib/supabase/client";
+import { calculateMentorTier } from "@/lib/logic"; // ✅ NEW IMPORT
 
 // --- THEME ---
 const THEME = {
@@ -55,7 +57,8 @@ export default function MentorDetailsScreen() {
         const { data, error } = await supabase
           .from('mentors')
           // FIX: Removed 'session_price' from selection to fix 400 Error
-          .select('session_price_inr, professional_title, experience_description, expertise_profiles, mentor_level, profile:profiles(*)')
+          // ✅ ADDED total_sessions to this selection for logic calculation
+          .select('session_price_inr, professional_title, experience_description, expertise_profiles, total_sessions, profile:profiles(*)')
           .eq('id', id)
           .single();
           
@@ -67,11 +70,15 @@ export default function MentorDetailsScreen() {
         if (data) {
             // Use session_price_inr or default to 1000
             const price = data.session_price_inr || 1000;
+            
+            // ✅ DYNAMIC TIER CALCULATION (No longer hardcoded fallback)
+            const tier = calculateMentorTier(data.total_sessions);
+            const levelLabel = tier === 'New' ? "NEW MENTOR" : `${tier.toUpperCase()} MENTOR`;
 
             setMentor({
-                id: id, // Use the ID from params
+                id: id, 
                 title: data.professional_title || "Senior Interviewer",
-                level: (data.mentor_level || "Bronze").toUpperCase() + " MENTOR",
+                level: levelLabel, // ✅ Dynamic
                 about: data.experience_description || "No description provided.",
                 expertise: data.expertise_profiles || ["Software Engineer"],
                 priceBreakdown: {
@@ -112,6 +119,7 @@ export default function MentorDetailsScreen() {
             <AppText style={styles.headerTitle}>{mentor.title}</AppText>
             <View style={styles.badge}>
                <Ionicons name="trophy" size={12} color={THEME.bronzeText} style={{ marginRight: 6 }} />
+               {/* ✅ Displaying Dynamic Level */}
                <AppText style={styles.badgeText}>{mentor.level}</AppText>
             </View>
           </View>
@@ -194,7 +202,6 @@ export default function MentorDetailsScreen() {
             activeOpacity={0.9}
             onPress={() => {
                 console.log("🔵 Navigating to Schedule Screen for:", id);
-                // FIX: Point to the static file 'payment' and pass ID as a query param
                 router.push({
                     pathname: '/candidate/schedule', 
                     params: { mentorId: id } 

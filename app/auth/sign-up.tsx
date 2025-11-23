@@ -16,7 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { theme } from '@/lib/theme';
 import { authService } from '@/services/auth.service';
 import { useAuthStore } from '@/lib/store';
-import { supabase } from '@/lib/supabase/client'; // 🎯 Import Supabase directly
+import { supabase } from '@/lib/supabase/client';
 
 // Slide-down banner component
 function TopBanner({
@@ -47,7 +47,7 @@ function TopBanner({
           }).start(() => {
             onHide && onHide();
           });
-        }, 3500); // Extended duration to read error
+        }, 3500);
       });
     }
   }, [visible, slide, onHide]);
@@ -68,12 +68,12 @@ function TopBanner({
       <View
         style={{
           backgroundColor: type === 'success' ? '#10B981' : '#EF4444',
-          paddingVertical: 16, // Taller for readability
+          paddingVertical: 16,
           paddingHorizontal: 18,
           flexDirection: 'row',
           alignItems: 'center',
           gap: 8,
-          paddingTop: Platform.OS === 'ios' ? 50 : 16, // Handle notch
+          paddingTop: Platform.OS === 'ios' ? 50 : 16,
         }}
       >
         <Ionicons
@@ -131,7 +131,6 @@ export default function SignUpScreen() {
     setLoading(true);
     try {
       // 1. Create Auth User
-      // Note: We destructure 'error' to catch the real message
       const { user, error: authError } = await authService.signUp(
         email.trim(),
         password.trim(),
@@ -140,7 +139,6 @@ export default function SignUpScreen() {
       );
 
       if (authError) {
-        // 🛑 THROW REAL ERROR
         throw new Error(authError.message); 
       }
 
@@ -148,7 +146,9 @@ export default function SignUpScreen() {
         throw new Error("Signup failed. No user returned.");
       }
 
-      // 2. Manually Create Profile (Ensures data exists immediately)
+      console.log('✅ [Sign-Up] User created:', user.id);
+
+      // 2. Create Profile
       const { error: profileError } = await supabase
         .from('profiles')
         .insert({
@@ -160,35 +160,67 @@ export default function SignUpScreen() {
         });
 
       if (profileError) {
-        console.error("Profile Insert Error:", profileError);
-        // Don't block flow, but log it. Auth worked, so we might need to self-heal later.
+        console.error("❌ Profile Insert Error:", profileError);
+        throw new Error(`Failed to create profile: ${profileError.message}`);
       }
 
-      // 3. If Mentor, Create Mentor Row (Critical for "Under Review" status)
+      console.log('✅ [Sign-Up] Profile created');
+
+      // 3. If Mentor, Create Mentor Row with ALL required fields
       if (role === 'mentor') {
+        console.log('🔵 [Sign-Up] Creating mentor record...');
+        
         const { error: mentorError } = await supabase
           .from('mentors')
           .insert({
             profile_id: user.id,
-            status: 'pending', // Default status
-            years_of_experience: 0
+            status: 'pending', // ✅ Required - sets to pending for admin approval
+            professional_title: 'Mentor', // ✅ Required field
+            expertise_profiles: ['General'], // ✅ Required array field
+            session_price_inr: 2000, // ✅ Required - default price
+            total_sessions: 0, // ✅ Required - initial value
+            years_of_experience: 0, // ✅ Optional but good to include
+            experience_description: '', // ✅ Optional but prevents null issues
+            is_hr_mentor: false, // ✅ Optional but good default
           });
         
-        if (mentorError) console.error("Mentor Insert Error:", mentorError);
+        if (mentorError) {
+          console.error("❌ Mentor Insert Error:", mentorError);
+          
+          // ⚠️ CRITICAL: Clean up profile since mentor creation failed
+          await supabase.from('profiles').delete().eq('id', user.id);
+          await supabase.auth.signOut(); // Clean up auth session
+          
+          throw new Error(`Failed to create mentor profile: ${mentorError.message}`);
+        }
+
+        console.log('✅ [Sign-Up] Mentor record created with status=pending');
       } 
       // 4. If Candidate, Create Candidate Row
       else if (role === 'candidate') {
-         const { error: candidateError } = await supabase
+        console.log('🔵 [Sign-Up] Creating candidate record...');
+        
+        const { error: candidateError } = await supabase
           .from('candidates')
           .insert({
             profile_id: user.id
           });
-         if (candidateError) console.error("Candidate Insert Error:", candidateError);
+        
+        if (candidateError) {
+          console.error("❌ Candidate Insert Error:", candidateError);
+          
+          // Clean up profile
+          await supabase.from('profiles').delete().eq('id', user.id);
+          await supabase.auth.signOut();
+          
+          throw new Error(`Failed to create candidate profile: ${candidateError.message}`);
+        }
+
+        console.log('✅ [Sign-Up] Candidate record created');
       }
 
       // 5. Update Store
       setUser(user);
-      // We reconstruct the profile object since we just created it
       setProfile({
           id: user.id,
           email: email.trim(),
@@ -211,11 +243,11 @@ export default function SignUpScreen() {
         } else {
           router.replace('/auth/sign-in');
         }
-      }, 500); // Small delay to let banner show
+      }, 500);
 
     } catch (err: any) {
-      console.error("Sign Up Exception:", err);
-      showBanner(err?.message ?? 'Sign up failed', 'error');
+      console.error("❌ [Sign-Up] Exception:", err);
+      showBanner(err?.message ?? 'Sign up failed. Please try again.', 'error');
     } finally {
       setLoading(false);
     }
@@ -457,29 +489,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '700',
-  },
-  quickWrap: {
-    marginTop: 18,
-  },
-  quickTitle: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#6B7280',
-    marginBottom: 6,
-  },
-  quickRow: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  quickBtn: {
-    backgroundColor: '#F3F4F6',
-    borderRadius: 999,
-    paddingVertical: 6,
-    paddingHorizontal: 14,
-  },
-  quickBtnText: {
-    fontWeight: '600',
-    color: '#1F2937',
   },
   footer: {
     flexDirection: 'row',
