@@ -3,6 +3,7 @@
     "name": "Mentor Interview Platform",
     "slug": "mentor-interview-platform",
     "version": "1.0.0",
+    "sdkVersion": "51.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -16,22 +17,14 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.mentorplatform.app",
-      "buildNumber": "1.0.0"
+      "bundleIdentifier": "com.mentorplatform.app"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.mentorplatform.app",
-      "versionCode": 1,
-      "permissions": [
-        "CAMERA",
-        "RECORD_AUDIO",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE"
-      ]
+      "package": "com.mentorplatform.app"
     },
     "web": {
       "favicon": "./assets/favicon.png",
@@ -40,16 +33,6 @@
     "plugins": [
       "expo-router",
       "expo-secure-store",
-      [
-        "expo-build-properties",
-        {
-          "android": {
-            "compileSdkVersion": 34,
-            "targetSdkVersion": 34,
-            "buildToolsVersion": "34.0.0"
-          }
-        }
-      ],
       "expo-font"
     ],
     "scheme": "mentorplatform",
@@ -60,7 +43,6 @@
       "eas": {
         "projectId": "b4bb97e0-d7da-494a-86e0-04f5f41faebe"
       }
-    },
-    "owner": "mananvashist"
+    }
   }
 }
