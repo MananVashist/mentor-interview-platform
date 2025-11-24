@@ -35,7 +35,7 @@ export default function SignInScreen() {
   const [loading, setLoading] = useState(false);
 
   // --- OAUTH HANDLER ---
-  const handleOAuthSignIn = async (provider: 'google' | 'linkedin') => {
+  const handleOAuthSignIn = async (provider: 'google' | 'linkedin_oidc') => {
     try {
       setLoading(true);
       const { error } = await authService.signInWithOAuth(provider);
@@ -161,7 +161,7 @@ export default function SignInScreen() {
               <Text style={styles.socialBtnText}>Google</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.socialBtn} onPress={() => handleOAuthSignIn('linkedin')}>
+            <TouchableOpacity style={styles.socialBtn} onPress={() => handleOAuthSignIn('linkedin_oidc')}>
               <AntDesign name="linkedin-square" size={24} color="#0077B5" />
               <Text style={styles.socialBtnText}>LinkedIn</Text>
             </TouchableOpacity>

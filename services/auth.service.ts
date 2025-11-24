@@ -1,11 +1,8 @@
-﻿import { supabase } from '../lib/supabase/client';
+﻿// services/auth.service.ts
+import { supabase } from '../lib/supabase/client';
 import { Session, AuthChangeEvent } from '@supabase/supabase-js';
-import * as Linking from 'expo-linking'; // 🟢 Added for OAuth redirects
 
-// We keep the key for manual sign-in if needed, but use client for data fetching
-const SUPABASE_URL = 'https://rcbaaiiawrglvyzmawvr.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJjYmFhaWlhd3JnbHZ5em1hd3ZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjExNTA1NjAsImV4cCI6MjA3NjcyNjU2MH0.V3qRHGXBMlspRS7XFJlXdo4qIcCms60Nepp7dYMEjLA';
-
+// Define User Profile Type
 export type Profile = {
   id: string;
   email: string;
@@ -16,99 +13,51 @@ export type Profile = {
   updated_at: string;
 };
 
-// Helper for timing logs
+// Helper for timing logs (Optional but good for debugging)
 async function withTiming<T>(label: string, fn: () => Promise<T>): Promise<T> {
   const start = Date.now();
-  console.log(`[AUTH DBG] ${label} → START at ${new Date(start).toISOString()}`);
+  console.log(`[AUTH DBG] ${label} → START`);
   try {
     const res = await fn();
     const end = Date.now();
-    console.log(
-      `[AUTH DBG] ${label} → DONE in ${end - start}ms at ${new Date(end).toISOString()}`
-    );
+    console.log(`[AUTH DBG] ${label} → DONE in ${end - start}ms`);
     return res;
   } catch (err) {
     const end = Date.now();
-    console.log(
-      `[AUTH DBG] ${label} → ERROR after ${end - start}ms at ${new Date(end).toISOString()}`
-    );
+    console.log(`[AUTH DBG] ${label} → ERROR after ${end - start}ms`);
     throw err;
   }
 }
 
 /**
- * SIGN IN (manual REST call)
+ * SIGN IN (Switched to SDK to fix CORS on Web)
  */
 async function signIn(email: string, password: string) {
-  console.log('================ SIGN IN (manual fetch) ================');
+  console.log('================ SIGN IN (SDK) ================');
   console.log('[AUTH DBG] signIn called with', { email });
 
-  const url = `${SUPABASE_URL}/auth/v1/token?grant_type=password`;
-
-  const controller = new AbortController();
-  const timeout = setTimeout(() => {
-    console.log(
-      '[AUTH DBG] manual fetch timed out (7s) — likely CORS / localhost / browser issue'
-    );
-    controller.abort();
-  }, 7000);
-
   try {
-    console.log('[AUTH DBG] POST →', url);
-
-    const res = await fetch(url, {
-      method: 'POST',
-      signal: controller.signal,
-      headers: {
-        'Content-Type': 'application/json',
-        apikey: SUPABASE_ANON_KEY,
-        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-      },
-      body: JSON.stringify({ email, password }),
+    // 🟢 USE THE SDK, NOT FETCH
+    // This handles CORS automatically on Web and works on Native too.
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
     });
 
-    clearTimeout(timeout);
-
-    console.log('[AUTH DBG] response status =', res.status);
-    const json = await res.json().catch(() => ({} as any));
-    console.log('[AUTH DBG] response json =', json);
-
-    if (!res.ok) {
-      return {
-        user: null,
-        session: null,
-        error: {
-          message: json?.error_description || json?.msg || 'Auth failed',
-        },
-      };
+    if (error) {
+      console.log('[AUTH DBG] Sign in error:', error.message);
+      return { user: null, session: null, error };
     }
 
-    // Important: Set the session on the client so subsequent requests are authenticated
-    if (json.access_token) {
-      await supabase.auth.setSession({
-        access_token: json.access_token,
-        refresh_token: json.refresh_token,
-      });
-    }
-
-    const session = {
-      access_token: json.access_token,
-      refresh_token: json.refresh_token,
-      token_type: json.token_type,
-      expires_in: json.expires_in,
-      user: json.user,
-    };
-
-    console.log('[AUTH DBG] signIn success, returning user + session');
+    console.log('[AUTH DBG] signIn success');
 
     return {
-      user: json.user ?? null,
-      session,
+      user: data.user,
+      session: data.session,
       error: null,
     };
   } catch (err: any) {
-    clearTimeout(timeout);
-    console.log('[AUTH DBG] fetch error during signIn', err);
+    console.log('[AUTH DBG] unexpected error during signIn', err);
     return {
       user: null,
       session: null,
@@ -118,20 +67,23 @@ async function signIn(email: string, password: string) {
 }
 
 /**
- * 🟢 NEW: SIGN IN WITH OAUTH
+ * SIGN IN WITH OAUTH
+ * Accepts 'google' or 'linkedin_oidc' (since legacy 'linkedin' is deprecated)
  */
-async function signInWithOAuth(provider: 'google' | 'linkedin') {
+async function signInWithOAuth(provider: 'google' | 'linkedin_oidc') {
   console.log(`[AUTH] signInWithOAuth called for ${provider}`);
   
-  // Creates a URL like "exp://.../auth/callback" or your production scheme
-  const redirectUrl = Linking.createURL('/auth/callback'); 
+  // 🟢 Force the scheme to match your app.json
+  // This ensures the browser knows how to jump back to the app on Android.
+  const redirectUrl = 'crackjobs://'; 
   console.log('[AUTH] Redirect URL:', redirectUrl);
 
   const { data, error } = await supabase.auth.signInWithOAuth({
-    provider,
+    // @ts-ignore: TS might complain about 'linkedin_oidc' if types are old, but it works at runtime.
+    provider: provider, 
     options: {
       redirectTo: redirectUrl,
-      skipBrowserRedirect: false, // Let Supabase/Browser handle the flow
+      skipBrowserRedirect: false, 
     },
   });
 
@@ -148,8 +100,7 @@ async function signUp(
   role: string
 ) {
   console.log('================ SIGN UP (service) ================');
-  console.log('[AUTH DBG] signUp called with', { email, role });
-
+  
   const { data, error } = await withTiming('supabase.auth.signUp', () =>
     supabase.auth.signUp({
       email,
@@ -164,9 +115,6 @@ async function signUp(
     })
   );
 
-  console.log('[AUTH DBG] raw sign-up data:', data);
-  console.log('[AUTH DBG] raw sign-up error:', error);
-
   return {
     user: data?.user ?? null,
     session: data?.session ?? null,
@@ -179,31 +127,15 @@ async function signUp(
  */
 async function signOut() {
   console.log('================ SIGN OUT ================');
-  try {
-    const { error } = await withTiming('supabase.auth.signOut', () =>
-      supabase.auth.signOut()
-    );
-    if (error) {
-      console.log('[AUTH DBG] supabase.auth.signOut returned error:', error);
-    } else {
-      console.log('[AUTH DBG] supabase.auth.signOut success');
-    }
-  } catch (err) {
-    console.log('[AUTH DBG] supabase.auth.signOut threw, ignoring', err);
-  }
-  return { error: null };
+  const { error } = await supabase.auth.signOut();
+  return { error };
 }
 
 /**
  * GET CURRENT USER (auth)
  */
 async function getCurrentUser() {
-  console.log('================ GET CURRENT USER ================');
-  const { data, error } = await withTiming('supabase.auth.getUser', () =>
-    supabase.auth.getUser()
-  );
-  console.log('[AUTH DBG] getUser data:', data);
-  console.log('[AUTH DBG] getUser error:', error);
+  const { data, error } = await supabase.auth.getUser();
   if (error) return null;
   return data.user ?? null;
 }
@@ -212,12 +144,8 @@ async function getCurrentUser() {
  * GET CURRENT USER PROFILE
  */
 async function getCurrentUserProfile(): Promise<Profile | null> {
-  console.log('================ GET CURRENT USER PROFILE ================');
   const user = await getCurrentUser();
-  if (!user) {
-    console.log('[AUTH DBG] getCurrentUserProfile: no auth user');
-    return null;
-  }
+  if (!user) return null;
   return getUserProfileById(user.id);
 }
 
@@ -225,8 +153,7 @@ async function getCurrentUserProfile(): Promise<Profile | null> {
  * GET USER PROFILE BY ID
  */
 async function getUserProfileById(userId: string): Promise<Profile | null> {
-  console.log('================ GET USER PROFILE BY ID ================');
-  console.log('[AUTH DBG] getUserProfileById called with', { userId });
+  console.log('[AUTH DBG] getUserProfileById called for', userId);
 
   try {
     const { data, error } = await supabase
@@ -240,12 +167,6 @@ async function getUserProfileById(userId: string): Promise<Profile | null> {
       return null;
     }
 
-    if (!data) {
-      console.log('[AUTH DBG] no profile row returned from Supabase client');
-      return null;
-    }
-
-    console.log('[AUTH DBG] profile fetched successfully:', data);
     return data as Profile;
 
   } catch (err) {
@@ -263,7 +184,7 @@ function onAuthStateChange(callback: (event: AuthChangeEvent, session: Session |
 
 export const authService = {
   signIn,
-  signInWithOAuth, // 🟢 Exported new method
+  signInWithOAuth, 
   signUp,
   signOut,
   getCurrentUser,

@@ -1,12 +1,19 @@
 // lib/supabase/client.ts
-import 'react-native-url-polyfill/auto';
-import { createClient } from '@supabase/supabase-js';
 import { Platform } from 'react-native';
+
+// 🟢 FIX: Only apply the URL polyfill on Native (Android/iOS).
+// On Web, the browser's native URL implementation is better and stricter.
+// Polyfilling it on Web often breaks CORS handling and third-party libraries.
+if (Platform.OS !== 'web') {
+  require('react-native-url-polyfill/auto');
+}
+
+import { createClient } from '@supabase/supabase-js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import { logger } from '@/lib/debug';
 
-// Hardcoded because envs weren’t coming through (we verified these work)
+// Hardcoded credentials
 const SUPABASE_URL = 'https://rcbaaiiawrglvyzmawvr.supabase.co';
 const SUPABASE_ANON_KEY =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJjYmFhaWlhd3JnbHZ5em1hd3ZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjExNTA1NjAsImV4cCI6MjA3NjcyNjU2MH0.V3qRHGXBMlspRS7XFJlXdo4qIcCms60Nepp7dYMEjLA';
@@ -18,11 +25,13 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
   });
 }
 
-// Native-only storage adapter (causes hangs on web)
+// Native-only storage adapter (prevents hangs/errors on web)
 const ExpoSecureStoreAdapter = {
   getItem: async (key: string) => {
     try {
-      return Platform.OS === 'web' ? AsyncStorage.getItem(key) : SecureStore.getItemAsync(key);
+      return Platform.OS === 'web' 
+        ? AsyncStorage.getItem(key) 
+        : SecureStore.getItemAsync(key);
     } catch (error) {
       logger.error('Storage', `getItem failed: ${key}`, error);
       return null;
@@ -39,14 +48,18 @@ const ExpoSecureStoreAdapter = {
   },
   removeItem: async (key: string) => {
     try {
-      return Platform.OS === 'web' ? AsyncStorage.removeItem(key) : SecureStore.deleteItemAsync(key);
+      return Platform.OS === 'web' 
+        ? AsyncStorage.removeItem(key) 
+        : SecureStore.deleteItemAsync(key);
     } catch (error) {
       logger.error('Storage', `removeItem failed: ${key}`, error);
     }
   },
 };
 
-// 👉 Use a simple client on web (no custom storage); keep adapter for native
+// Initialize Client
+// Web: Use default storage (localStorage) for better compatibility
+// Native: Use SecureStore adapter for security
 export const supabase =
   Platform.OS === 'web'
     ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {

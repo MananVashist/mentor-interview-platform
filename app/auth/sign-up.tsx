@@ -69,7 +69,7 @@ export default function SignUpScreen() {
 
   const isFormValid = name.trim().length > 0 && email.trim().length > 0 && password.trim().length > 0 && confirmPassword.trim().length > 0 && password === confirmPassword && password.length >= 6;
 
-  const handleOAuthSignUp = async (provider: 'google' | 'linkedin') => {
+  const handleOAuthSignUp = async (provider: 'google' | 'linkedin_oidc') => {
     try {
       setLoading(true);
       const { error } = await authService.signInWithOAuth(provider);
@@ -201,7 +201,7 @@ export default function SignUpScreen() {
                 <AntDesign name="google" size={24} color="#DB4437" />
                 <Text style={styles.socialBtnText}>Google</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.socialBtn} onPress={() => handleOAuthSignUp('linkedin')}>
+              <TouchableOpacity style={styles.socialBtn} onPress={() => handleOAuthSignUp('linkedin_oidc')}>
                 <AntDesign name="linkedin-square" size={24} color="#0077B5" />
                 <Text style={styles.socialBtnText}>LinkedIn</Text>
               </TouchableOpacity>

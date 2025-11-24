@@ -1,13 +1,14 @@
 ﻿// app/candidate/pgscreen.tsx
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, SafeAreaView, Alert, Platform } from 'react-native';
+import { View, Text, ActivityIndicator, TouchableOpacity, SafeAreaView, Alert, Platform } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-
-// Relative imports
 import { paymentService } from '../../services/payment.service';
 import { RAZORPAY_KEY_ID } from '../../constants'; 
 import { useAuth } from '../../hooks/useAuth';
+
+// 🟢 FIX: Single import source. 
+// Metro automatically picks .native.ts for Android/iOS and .ts for Web.
+import RazorpayCheckout from './razorpayModule';
 
 export default function PGScreen() {
   const router = useRouter();
@@ -15,65 +16,87 @@ export default function PGScreen() {
   const { user } = useAuth();
 
   const { orderId, amount, packageId } = params;
-  const [isProcessing, setIsProcessing] = useState(true); // Start true to load script
-  const [scriptLoaded, setScriptLoaded] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(true);
+  const [sdkReady, setSdkReady] = useState(false);
 
-  // 🎯 FIX: Dynamically load the Razorpay script
+  // 1. Initialization Logic
   useEffect(() => {
-    const loadScript = async () => {
+    const prepareSDK = async () => {
       if (Platform.OS === 'web') {
+        // Web: Load the script manually
         const res = await loadRazorpayScript('https://checkout.razorpay.com/v1/checkout.js');
         if (!res) {
           Alert.alert('Error', 'Razorpay SDK failed to load. Are you online?');
           return;
         }
-        setScriptLoaded(true);
+        setSdkReady(true);
+      } else {
+        // Native: The library is loaded via the import above. Ready immediately.
+        setSdkReady(true);
       }
     };
-    loadScript();
+    prepareSDK();
   }, []);
 
-  // 🎯 FIX: Trigger payment only after script is loaded
+  // 2. Trigger Payment automatically when SDK is ready
   useEffect(() => {
-    if (scriptLoaded && amount) {
+    if (sdkReady && amount) {
       initiatePayment();
     }
-  }, [scriptLoaded]);
+  }, [sdkReady]);
 
   const initiatePayment = async () => {
     try {
-      // 1. Create Order
       const order = await paymentService.createRazorpayOrder(Number(amount), packageId as string);
 
-      // 2. Open Options
       const options = {
         description: 'Mock Interview Session',
         currency: 'INR',
-        key: RAZORPAY_KEY_ID,
-        amount: order.amount,
+        key: RAZORPAY_KEY_ID, 
+        amount: order.amount, // Amount in paise
         name: 'Mentor Platform',
-        //order_id: order.order_id,
         prefill: {
           email: user?.email || 'test@example.com',
-          contact: user?.phone || '',
+          contact: user?.phone || '9999999999',
         },
-        theme: { color: '#2563eb' },
-        handler: async function (response: any) {
-            // 🎯 Success Callback (Web specific handler)
-            await handleVerify(response);
-        },
-        modal: {
-            ondismiss: function() {
-                setIsProcessing(false);
-                Alert.alert("Payment Cancelled");
-                router.back();
-            }
-        }
+        theme: { color: '#0E9384' }
       };
 
-      // 3. Launch using window object (Safe for web)
-      const rzp1 = new (window as any).Razorpay(options);
-      rzp1.open();
+      if (Platform.OS === 'web') {
+        // --- WEB HANDLER ---
+        const rzp1 = new (window as any).Razorpay({
+          ...options,
+          handler: async function (response: any) {
+            await handleVerify(response);
+          },
+          modal: {
+            ondismiss: function() {
+              handleCancel();
+            }
+          }
+        });
+        rzp1.open();
+      } else {
+        // --- NATIVE HANDLER (Android/iOS) ---
+        // Check if the module loaded correctly
+        if (RazorpayCheckout) {
+          RazorpayCheckout.open(options)
+            .then((data: any) => {
+              handleVerify(data);
+            })
+            .catch((error: any) => {
+              if (error.code === 0) {
+                handleCancel();
+              } else {
+                Alert.alert('Payment Error', error.description || 'Something went wrong');
+                router.back();
+              }
+            });
+        } else {
+           Alert.alert("Configuration Error", "Native Payment SDK not loaded. Please rebuild the app.");
+           router.back();
+        }
+      }
 
     } catch (e) {
       console.error(e);
@@ -82,43 +105,51 @@ export default function PGScreen() {
     }
   };
 
+  const handleCancel = () => {
+    setIsProcessing(false);
+    Alert.alert("Cancelled", "Payment was cancelled by user.");
+    router.back();
+  };
+
   const handleVerify = async (data: any) => {
       try {
+        setIsProcessing(true);
         await paymentService.verifyPayment(
             packageId as string,
-            data.razorpay_order_id,
+            data.razorpay_order_id || 'mock_order_id', 
             data.razorpay_payment_id,
-            data.razorpay_signature
+            data.razorpay_signature || 'mock_signature'
         );
         Alert.alert("Success", "Payment Verified!");
         router.replace('/candidate/bookings');
       } catch(err) {
           Alert.alert("Failed", "Verification failed");
+          router.back();
       } finally {
           setIsProcessing(false);
       }
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-      <ActivityIndicator size="large" color="#2563eb" />
+    <SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' }}>
+      <ActivityIndicator size="large" color="#0E9384" />
       <View style={{ marginTop: 20 }}>
-        <Text style={{ marginBottom: 10 }}>
-            {!scriptLoaded ? "Loading Payment SDK..." : "Redirecting to Razorpay..."}
+        <Text style={{ marginBottom: 10, color: '#666' }}>
+            {!sdkReady ? "Initializing Payment..." : "Redirecting to Razorpay..."}
         </Text>
         <TouchableOpacity onPress={() => router.back()}>
-           <Text style={{ color: 'blue' }}>Cancel</Text>
+           <Text style={{ color: '#0E9384', fontWeight: '600' }}>Cancel</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
 }
 
-// 🎯 HELPER: Load Script Function
+// Helper for Web support
 function loadRazorpayScript(src: string) {
   return new Promise((resolve) => {
     if (Platform.OS !== 'web') {
-        resolve(false); // Strategy for native apps differs
+        resolve(false);
         return;
     }
     const script = document.createElement('script');
