@@ -8,7 +8,7 @@ import { useAuth } from '../../hooks/useAuth';
 
 // 🟢 FIX: Single import source. 
 // Metro automatically picks .native.ts for Android/iOS and .ts for Web.
-import RazorpayCheckout from './razorpayModule';
+import RazorpayCheckout from 'react-native-razorpay';
 
 export default function PGScreen() {
   const router = useRouter();
