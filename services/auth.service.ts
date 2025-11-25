@@ -1,8 +1,12 @@
 ﻿// services/auth.service.ts
 import { supabase } from '../lib/supabase/client';
 import { Session, AuthChangeEvent } from '@supabase/supabase-js';
+import * as WebBrowser from 'expo-web-browser'; //
+import * as Linking from 'expo-linking'; //
 
-// Define User Profile Type
+// Warm up the browser for faster load
+WebBrowser.maybeCompleteAuthSession();
+
 export type Profile = {
   id: string;
   email: string;
@@ -13,7 +17,7 @@ export type Profile = {
   updated_at: string;
 };
 
-// Helper for timing logs (Optional but good for debugging)
+// Helper for timing logs
 async function withTiming<T>(label: string, fn: () => Promise<T>): Promise<T> {
   const start = Date.now();
   console.log(`[AUTH DBG] ${label} → START`);
@@ -30,15 +34,11 @@ async function withTiming<T>(label: string, fn: () => Promise<T>): Promise<T> {
 }
 
 /**
- * SIGN IN (Switched to SDK to fix CORS on Web)
+ * SIGN IN (Email/Pass)
  */
 async function signIn(email: string, password: string) {
   console.log('================ SIGN IN (SDK) ================');
-  console.log('[AUTH DBG] signIn called with', { email });
-
   try {
-    // 🟢 USE THE SDK, NOT FETCH
-    // This handles CORS automatically on Web and works on Native too.
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -48,59 +48,61 @@ async function signIn(email: string, password: string) {
       console.log('[AUTH DBG] Sign in error:', error.message);
       return { user: null, session: null, error };
     }
-
-    console.log('[AUTH DBG] signIn success');
-
-    return {
-      user: data.user,
-      session: data.session,
-      error: null,
-    };
+    return { user: data.user, session: data.session, error: null };
   } catch (err: any) {
-    console.log('[AUTH DBG] unexpected error during signIn', err);
-    return {
-      user: null,
-      session: null,
-      error: { message: err?.message || 'Network/auth error' },
-    };
+    return { user: null, session: null, error: { message: err?.message || 'Network/auth error' } };
   }
 }
 
 /**
- * SIGN IN WITH OAUTH
- * Accepts 'google' or 'linkedin_oidc' (since legacy 'linkedin' is deprecated)
+ * SIGN IN WITH OAUTH (FIXED)
  */
 async function signInWithOAuth(provider: 'google' | 'linkedin_oidc') {
   console.log(`[AUTH] signInWithOAuth called for ${provider}`);
   
-  // 🟢 Force the scheme to match your app.json
-  // This ensures the browser knows how to jump back to the app on Android.
-  const redirectUrl = 'crackjobs://'; 
+  // 1. Create a dynamic redirect URL that works in Expo Go (exp://) and Prod (crackjobs://)
+  const redirectUrl = Linking.createURL('/auth/callback'); 
   console.log('[AUTH] Redirect URL:', redirectUrl);
 
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    // @ts-ignore: TS might complain about 'linkedin_oidc' if types are old, but it works at runtime.
-    provider: provider, 
-    options: {
-      redirectTo: redirectUrl,
-      skipBrowserRedirect: false, 
-    },
-  });
+  try {
+    // 2. Get the auth URL from Supabase, but DO NOT let Supabase open the browser (skipBrowserRedirect: true)
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: provider, 
+      options: {
+        redirectTo: redirectUrl,
+        skipBrowserRedirect: true, // We handle the browser manually
+      },
+    });
 
-  return { data, error };
+    if (error) throw error;
+
+    // 3. Open the browser session manually
+    if (data?.url) {
+      const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUrl);
+      
+      // If the user cancels the browser, we can log it
+      if (result.type !== 'success') {
+        console.log('[AUTH] User cancelled or browser failed');
+        return { data: null, error: { message: 'Login cancelled' } };
+      }
+      
+      // Note: On successful redirect, Supabase's global event listener (in client.ts) 
+      // picks up the deep link and sets the session.
+      return { data, error: null };
+    }
+    
+    return { data, error: null };
+  } catch (err: any) {
+    console.error('[AUTH] OAuth Error:', err);
+    return { data: null, error: err };
+  }
 }
 
 /**
  * SIGN UP (supabase-js)
  */
-async function signUp(
-  email: string,
-  password: string,
-  fullName: string,
-  role: string
-) {
+async function signUp(email: string, password: string, fullName: string, role: string) {
   console.log('================ SIGN UP (service) ================');
-  
   const { data, error } = await withTiming('supabase.auth.signUp', () =>
     supabase.auth.signUp({
       email,
@@ -114,12 +116,7 @@ async function signUp(
       },
     })
   );
-
-  return {
-    user: data?.user ?? null,
-    session: data?.session ?? null,
-    error: error ?? null,
-  };
+  return { user: data?.user ?? null, session: data?.session ?? null, error: error ?? null };
 }
 
 /**
@@ -132,7 +129,7 @@ async function signOut() {
 }
 
 /**
- * GET CURRENT USER (auth)
+ * GET CURRENT USER
  */
 async function getCurrentUser() {
   const { data, error } = await supabase.auth.getUser();
@@ -153,8 +150,6 @@ async function getCurrentUserProfile(): Promise<Profile | null> {
  * GET USER PROFILE BY ID
  */
 async function getUserProfileById(userId: string): Promise<Profile | null> {
-  console.log('[AUTH DBG] getUserProfileById called for', userId);
-
   try {
     const { data, error } = await supabase
       .from('profiles')
@@ -166,9 +161,7 @@ async function getUserProfileById(userId: string): Promise<Profile | null> {
       console.error('[AUTH DBG] Supabase fetch error:', error);
       return null;
     }
-
     return data as Profile;
-
   } catch (err) {
     console.error('[AUTH DBG] Unexpected error:', err);
     return null;

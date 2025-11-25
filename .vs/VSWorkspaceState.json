@@ -1,8 +1,11 @@
 {
   "ExpandedNodes": [
     "",
-    "\\app"
+    "\\app",
+    "\\app\\admin",
+    "\\app\\candidate",
+    "\\app\\mentor"
   ],
-  "SelectedNode": "\\app\\index.tsx",
+  "SelectedNode": "\\app\\blog.tsx",
   "PreviewInSolutionExplorer": false
 }
