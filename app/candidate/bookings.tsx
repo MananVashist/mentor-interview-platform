@@ -171,13 +171,13 @@ export default function BookingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F9FAFB' },
+  container: { flex: 1, backgroundColor: '#f8f5f0' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 50 },
   topBar: { 
       flexDirection: 'row', 
       alignItems: 'center', 
       padding: 20, 
-      backgroundColor: '#fff', 
+      backgroundColor: '#f8f5f0', 
       borderBottomWidth: 1, 
       borderBottomColor: '#eee',
       paddingTop: Platform.OS === 'ios' ? 60 : 20 

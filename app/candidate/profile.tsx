@@ -1,5 +1,4 @@
-﻿// app/candidate/profile.tsx
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import {
   View,
   ScrollView,
@@ -7,12 +6,13 @@ import {
   Alert,
   ActivityIndicator,
   TouchableOpacity,
+  TextInput,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
 
-import { colors, spacing, borderRadius, typography, shadows } from '@/lib/theme';
-import { Heading, AppText, Label, Input, Button, Card, Section, ScreenBackground } from '@/lib/ui';
+import { theme } from '@/lib/theme';
+import { Heading, AppText, ScreenBackground, Button } from '@/lib/ui';
 import { useAuthStore } from '@/lib/store';
 import { candidateService } from '@/services/candidate.service';
 
@@ -36,13 +36,7 @@ export default function ProfileScreen() {
     setLinkedinUrl(candidateProfile?.linkedin_url || '');
     setTargetProfile(candidateProfile?.target_profile || '');
     setResumeUrl(candidateProfile?.resume_url || '');
-  }, [
-    profile?.full_name,
-    profile?.phone,
-    candidateProfile?.linkedin_url,
-    candidateProfile?.target_profile,
-    candidateProfile?.resume_url,
-  ]);
+  }, [profile, candidateProfile]);
 
   const handlePickDocument = async () => {
     try {
@@ -54,8 +48,7 @@ export default function ProfileScreen() {
 
       if (result.assets && result.assets[0]) {
         setUploading(true);
-
-        // TODO: replace with real upload (S3/Supabase storage) and returned URL
+        // Mock upload delay
         await new Promise((resolve) => setTimeout(resolve, 1200));
         const file = result.assets[0];
         const uploadedUrl = `https://storage.example.com/resumes/${Date.now()}_${file.name}`;
@@ -85,14 +78,9 @@ export default function ProfileScreen() {
 
     setLoading(true);
     try {
-      // Update base profile
-      const updatedProfile = {
-        full_name: fullName,
-        phone: phone || null,
-      };
+      const updatedProfile = { full_name: fullName, phone: phone || null };
       await candidateService.updateProfile(profile.id, updatedProfile);
 
-      // Update candidate details
       const updatedCandidate = {
         linkedin_url: linkedinUrl || null,
         target_profile: targetProfile || null,
@@ -100,12 +88,7 @@ export default function ProfileScreen() {
       };
       await candidateService.updateCandidateProfile(profile.id, updatedCandidate);
 
-      // Local store
-      setCandidateProfile({
-        ...candidateProfile,
-        ...updatedCandidate,
-      } as any);
-
+      setCandidateProfile({ ...candidateProfile, ...updatedCandidate } as any);
       Alert.alert('Success', 'Profile updated successfully!');
     } catch (error) {
       console.error('Error updating profile:', error);
@@ -116,418 +99,312 @@ export default function ProfileScreen() {
   };
 
   return (
-    <ScreenBackground>
-      <ScrollView contentContainerStyle={{ paddingBottom: spacing.xl }}>
-        {/* Header */}
-        <Section style={styles.header}>
-          <View style={styles.headerIcon}>
-            <Ionicons name="person-circle-outline" size={32} color={colors.primary} />
+    // 🟢 1. Global Background Set to Cream
+    <ScreenBackground style={styles.container}>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        
+        {/* 🟢 2. Header Section (White BG + Border) */}
+        <View style={styles.headerContainer}>
+          <View style={styles.headerContent}>
+            <Heading level={1} style={styles.pageTitle}>My Profile</Heading>
+            <AppText style={styles.pageSubtitle}>
+              Manage your personal details and documents
+            </AppText>
           </View>
-          <Heading level={1}>My Profile</Heading>
-          <AppText style={styles.headerSub}>
-            Manage your details and documents for interview bookings
-          </AppText>
-        </Section>
+        </View>
+        <View style={styles.headerDivider} />
 
-        {/* Personal Info Card */}
-        <Section>
-          <Card style={[styles.card, shadows.card as any]}>
+        {/* CONTENT */}
+        <View style={styles.contentContainer}>
+          
+          {/* Personal Info Card */}
+          <View style={styles.card}>
             <View style={styles.cardHeader}>
-              <Ionicons name="person-outline" size={20} color={colors.textTertiary} />
-              <Heading level={2} style={styles.cardTitle}>Personal Information</Heading>
+              <Ionicons name="person-outline" size={20} color={theme.colors.text.main} />
+              <Heading level={3} style={styles.cardTitle}>Personal Information</Heading>
             </View>
 
-            <View style={styles.inputGroup}>
-              <Label style={styles.inputLabel}>
-                <Ionicons name="person" size={14} color={colors.textSecondary} style={{ marginRight: 4 }} />
-                Full Name *
-              </Label>
-              <Input
-                value={fullName}
-                onChangeText={setFullName}
-                placeholder="Enter your full name"
-                editable={!loading}
-                style={styles.input}
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Label style={styles.inputLabel}>
-                <Ionicons name="mail" size={14} color={colors.textSecondary} style={{ marginRight: 4 }} />
-                Email Address
-              </Label>
-              <View style={styles.lockedInput}>
-                <Input
-                  value={profile?.email || ''}
-                  editable={false}
-                  placeholder="you@example.com"
-                  style={[styles.input, { opacity: 0.6 }]}
+            <View style={styles.formGrid}>
+              <View style={styles.inputGroup}>
+                <AppText style={styles.label}>Full Name *</AppText>
+                <TextInput
+                  style={styles.input}
+                  value={fullName}
+                  onChangeText={setFullName}
+                  placeholder="John Doe"
+                  placeholderTextColor="#9CA3AF"
+                  editable={!loading}
                 />
-                <View style={styles.lockBadge}>
-                  <Ionicons name="lock-closed" size={12} color={colors.textTertiary} />
-                  <AppText style={styles.lockText}>Verified</AppText>
+              </View>
+
+              <View style={styles.inputGroup}>
+                <AppText style={styles.label}>Email Address</AppText>
+                <View style={[styles.input, styles.inputDisabled]}>
+                  <AppText style={{ color: theme.colors.text.light }}>{profile?.email}</AppText>
+                  <Ionicons name="lock-closed" size={14} color={theme.colors.text.light} />
                 </View>
               </View>
-              <AppText style={styles.inputHint}>
-                Your email is verified and cannot be changed
-              </AppText>
-            </View>
 
-            <View style={styles.inputGroup}>
-              <Label style={styles.inputLabel}>
-                <Ionicons name="call" size={14} color={colors.textSecondary} style={{ marginRight: 4 }} />
-                Phone Number
-              </Label>
-              <Input
-                value={phone}
-                onChangeText={setPhone}
-                placeholder="+91 98765 43210"
-                keyboardType="phone-pad"
-                editable={!loading}
-                style={styles.input}
-              />
-              <AppText style={styles.inputHint}>
-                Optional contact number for mentor coordination
-              </AppText>
-            </View>
+              <View style={styles.inputGroup}>
+                <AppText style={styles.label}>Phone Number</AppText>
+                <TextInput
+                  style={styles.input}
+                  value={phone}
+                  onChangeText={setPhone}
+                  placeholder="+91 98765 43210"
+                  placeholderTextColor="#9CA3AF"
+                  keyboardType="phone-pad"
+                  editable={!loading}
+                />
+              </View>
 
-            <View style={styles.inputGroup}>
-              <Label style={styles.inputLabel}>
-                <Ionicons name="briefcase" size={14} color={colors.textSecondary} style={{ marginRight: 4 }} />
-                Target Profile
-              </Label>
-              <Input
-                value={targetProfile}
-                onChangeText={setTargetProfile}
-                placeholder="e.g., Software Engineer, Product Manager"
-                editable={!loading}
-                style={styles.input}
-              />
-              <AppText style={styles.inputHint}>
-                The role you're preparing to interview for
-              </AppText>
+              <View style={styles.inputGroup}>
+                <AppText style={styles.label}>Target Role</AppText>
+                <TextInput
+                  style={styles.input}
+                  value={targetProfile}
+                  onChangeText={setTargetProfile}
+                  placeholder="e.g. Product Manager"
+                  placeholderTextColor="#9CA3AF"
+                  editable={!loading}
+                />
+              </View>
             </View>
-          </Card>
-        </Section>
+          </View>
 
-        {/* Documents & Links Card */}
-        <Section>
-          <Card style={[styles.card, shadows.card as any]}>
+          {/* Documents Card */}
+          <View style={styles.card}>
             <View style={styles.cardHeader}>
-              <Ionicons name="document-text-outline" size={20} color={colors.textTertiary} />
-              <Heading level={2} style={styles.cardTitle}>Documents & Links</Heading>
+              <Ionicons name="document-text-outline" size={20} color={theme.colors.text.main} />
+              <Heading level={3} style={styles.cardTitle}>Documents & Links</Heading>
             </View>
-            <AppText style={styles.cardDescription}>
-              Share your resume and professional profile with mentors
-            </AppText>
 
             {/* Resume Upload */}
             <View style={styles.inputGroup}>
-              <Label style={styles.inputLabel}>
-                <Ionicons name="document" size={14} color={colors.textSecondary} style={{ marginRight: 4 }} />
-                Resume (PDF) *
-              </Label>
-              
+              <AppText style={styles.label}>Resume (PDF)</AppText>
               {resumeUrl ? (
-                <View style={styles.uploadedFile}>
-                  <View style={styles.filePreview}>
-                    <View style={styles.fileIcon}>
-                      <Ionicons name="document-text" size={24} color={colors.primary} />
-                    </View>
-                    <View style={styles.fileInfo}>
-                      <AppText style={styles.fileName}>Resume.pdf</AppText>
-                      <AppText style={styles.fileSize}>Uploaded successfully</AppText>
-                    </View>
+                <View style={styles.fileCard}>
+                  <View style={styles.fileIcon}>
+                    <Ionicons name="document-text" size={24} color={theme.colors.primary} />
                   </View>
-                  
-                  <View style={styles.fileActions}>
-                    <TouchableOpacity
-                      style={styles.fileActionButton}
-                      onPress={() => Alert.alert('Resume URL', resumeUrl)}
-                    >
-                      <Ionicons name="eye-outline" size={18} color={colors.primary} />
-                      <AppText style={styles.fileActionText}>View</AppText>
-                    </TouchableOpacity>
-                    
-                    <TouchableOpacity
-                      style={[styles.fileActionButton, styles.fileActionDanger]}
-                      onPress={() =>
-                        Alert.alert(
-                          'Remove Resume',
-                          'Are you sure you want to remove your resume?',
-                          [
-                            { text: 'Cancel', style: 'cancel' },
-                            {
-                              text: 'Remove',
-                              style: 'destructive',
-                              onPress: () => setResumeUrl(''),
-                            },
-                          ]
-                        )
-                      }
-                    >
-                      <Ionicons name="trash-outline" size={18} color={colors.error} />
-                      <AppText style={[styles.fileActionText, { color: colors.error }]}>
-                        Remove
-                      </AppText>
-                    </TouchableOpacity>
+                  <View style={{ flex: 1 }}>
+                    <AppText style={styles.fileName}>Resume.pdf</AppText>
+                    <AppText style={styles.fileStatus}>Uploaded</AppText>
                   </View>
+                  <TouchableOpacity onPress={() => setResumeUrl('')}>
+                    <Ionicons name="trash-outline" size={20} color="#EF4444" />
+                  </TouchableOpacity>
                 </View>
               ) : (
-                <TouchableOpacity
-                  style={styles.uploadButton}
+                <TouchableOpacity 
+                  style={styles.uploadArea} 
                   onPress={handlePickDocument}
                   disabled={uploading}
                 >
                   {uploading ? (
-                    <>
-                      <ActivityIndicator color={colors.primary} />
-                      <AppText style={styles.uploadingText}>Uploading...</AppText>
-                    </>
+                    <ActivityIndicator color={theme.colors.primary} />
                   ) : (
                     <>
-                      <View style={styles.uploadIcon}>
-                        <Ionicons name="cloud-upload-outline" size={32} color={colors.primary} />
-                      </View>
-                      <AppText style={styles.uploadText}>Upload Resume</AppText>
-                      <AppText style={styles.uploadHint}>PDF format only • Max 5MB</AppText>
+                      <Ionicons name="cloud-upload-outline" size={24} color={theme.colors.primary} />
+                      <AppText style={styles.uploadText}>Click to upload resume</AppText>
+                      <AppText style={styles.uploadSub}>PDF format, max 5MB</AppText>
                     </>
                   )}
                 </TouchableOpacity>
               )}
-              
-              <AppText style={styles.inputHint}>
-                Your resume will be shared with mentors before sessions
-              </AppText>
             </View>
 
             {/* LinkedIn */}
-            <View style={styles.inputGroup}>
-              <Label style={styles.inputLabel}>
-                <Ionicons name="logo-linkedin" size={14} color="#0077b5" style={{ marginRight: 4 }} />
-                LinkedIn Profile
-              </Label>
-              <View style={styles.linkedinInput}>
-                <View style={styles.linkedinIcon}>
-                  <Ionicons name="logo-linkedin" size={20} color="#0077b5" />
+            <View style={[styles.inputGroup, { marginTop: 16 }]}>
+              <AppText style={styles.label}>LinkedIn Profile</AppText>
+              <View style={styles.iconInputContainer}>
+                <View style={styles.inputIcon}>
+                  <Ionicons name="logo-linkedin" size={18} color="#0077b5" />
                 </View>
-                <Input
+                <TextInput
+                  style={[styles.input, { paddingLeft: 44 }]}
                   value={linkedinUrl}
                   onChangeText={setLinkedinUrl}
-                  placeholder="https://linkedin.com/in/yourprofile"
-                  keyboardType="url"
-                  autoCapitalize="none"
-                  style={[styles.input, { flex: 1 }]}
+                  placeholder="https://linkedin.com/in/..."
+                  placeholderTextColor="#9CA3AF"
                   editable={!loading}
                 />
               </View>
-              <AppText style={styles.inputHint}>
-                Optional: Mentors can review your professional background
-              </AppText>
             </View>
-          </Card>
-        </Section>
+          </View>
 
-        {/* Save Button */}
-        <Section>
-          <Button
-            title={loading ? 'Saving Changes…' : 'Save Profile'}
+          {/* Action Button */}
+          <TouchableOpacity 
+            style={[styles.saveButton, loading && styles.saveButtonDisabled]} 
             onPress={handleSave}
             disabled={loading}
-            style={styles.saveButton}
-          />
-          <AppText style={styles.saveHint}>
-            Remember to save your changes before leaving this page
-          </AppText>
-        </Section>
+          >
+            {loading ? (
+              <ActivityIndicator color="#FFF" />
+            ) : (
+              <AppText style={styles.saveButtonText}>Save Changes</AppText>
+            )}
+          </TouchableOpacity>
+
+        </View>
       </ScrollView>
     </ScreenBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  header: {
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.md,
-    alignItems: 'center',
+  // 🟢 Cream Background to match Index layout
+  container: { 
+    flex: 1, 
+    backgroundColor: "#f8f5f0", // #F9FAFB
   },
-  headerIcon: {
-    marginBottom: spacing.sm,
+  scrollContent: { paddingBottom: 40 },
+
+  // 🟢 Header Styling (White BG + Border)
+  headerContainer: {
+    paddingTop: 40,
+    paddingBottom: 20,
+    paddingHorizontal: 32,
+    backgroundColor: "#f8f5f0",
   },
-  headerSub: {
-    color: colors.textSecondary,
-    marginTop: spacing.xs,
-    textAlign: 'center',
+  headerContent: {
+    maxWidth: 1000, // Optional max-width for large screens
+    width: '100%',
+  },
+  pageTitle: { 
+    fontSize: 24, 
+    fontWeight: "bold", 
+    color: theme.colors.text.main, 
+    marginBottom: 4 
+  },
+  pageSubtitle: { fontSize: 15, color: theme.colors.text.light },
+  
+  headerDivider: { 
+    height: 1, 
+    backgroundColor: theme.colors.border, 
+    width: "100%",
+    marginBottom: 24
   },
 
+  contentContainer: {
+    paddingHorizontal: 32,
+    maxWidth: 800,
+    width: '100%',
+    alignSelf: 'flex-start', // Align left to match dashboard grid
+  },
+
+  // Cards (White to pop against Cream bg)
   card: {
-    padding: spacing.lg,
-    borderRadius: borderRadius.lg,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 24,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    marginBottom: 24,
   },
   cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
-    marginBottom: spacing.xs,
+    gap: 10,
+    marginBottom: 20,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F3F4F6",
   },
   cardTitle: {
-    fontSize: typography.size.lg,
-  },
-  cardDescription: {
-    fontSize: typography.size.sm,
-    color: colors.textSecondary,
-    lineHeight: 20,
-    marginBottom: spacing.md,
+    fontSize: 18,
+    fontWeight: "bold",
+    color: theme.colors.text.main,
   },
 
-  inputGroup: {
-    marginBottom: spacing.lg,
-  },
-  inputLabel: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: spacing.xs,
+  // Forms
+  formGrid: { gap: 16 },
+  inputGroup: { gap: 6 },
+  label: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: theme.colors.text.main,
   },
   input: {
-    marginTop: 0,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: theme.colors.text.main,
+    backgroundColor: "#FFF",
   },
-  inputHint: {
-    fontSize: typography.size.xs,
-    color: colors.textTertiary,
-    marginTop: spacing.xs,
-  },
-
-  lockedInput: {
-    position: 'relative',
-  },
-  lockBadge: {
-    position: 'absolute',
-    right: spacing.md,
-    top: '50%',
-    transform: [{ translateY: -10 }],
+  inputDisabled: {
+    backgroundColor: "#F9FAFB",
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 4,
-    backgroundColor: 'rgba(16,185,129,0.1)',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-    borderRadius: 999,
-  },
-  lockText: {
-    fontSize: typography.size.xs,
-    color: colors.success,
-    fontWeight: '600',
   },
 
-  uploadButton: {
-    borderWidth: 2,
-    borderColor: colors.border,
+  // Upload Styles
+  uploadArea: {
+    borderWidth: 1,
+    borderColor: theme.colors.primary,
     borderStyle: 'dashed',
-    borderRadius: borderRadius.md,
-    padding: spacing.xl,
+    borderRadius: 8,
+    backgroundColor: "#F0FDFA",
+    padding: 24,
     alignItems: 'center',
-    backgroundColor: colors.backgroundSecondary,
-  },
-  uploadIcon: {
-    marginBottom: spacing.sm,
+    justifyContent: 'center',
+    gap: 4,
   },
   uploadText: {
-    fontSize: typography.size.md,
-    fontWeight: '600',
-    color: colors.primary,
-    marginBottom: spacing.xs,
+    fontSize: 14,
+    fontWeight: "600",
+    color: theme.colors.primary,
   },
-  uploadHint: {
-    fontSize: typography.size.xs,
-    color: colors.textTertiary,
+  uploadSub: {
+    fontSize: 12,
+    color: theme.colors.text.light,
   },
-  uploadingText: {
-    marginTop: spacing.sm,
-    color: colors.primary,
-  },
-
-  uploadedFile: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: borderRadius.md,
-    padding: spacing.md,
-    backgroundColor: 'rgba(14,147,132,0.05)',
-  },
-  filePreview: {
+  fileCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
-    marginBottom: spacing.md,
+    gap: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    borderRadius: 8,
+    backgroundColor: "#F9FAFB",
   },
   fileIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: borderRadius.md,
-    backgroundColor: 'rgba(14,147,132,0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  fileInfo: {
-    flex: 1,
-  },
-  fileName: {
-    fontSize: typography.size.md,
-    fontWeight: '600',
-    color: colors.textPrimary,
-    marginBottom: 2,
-  },
-  fileSize: {
-    fontSize: typography.size.xs,
-    color: colors.success,
-  },
-  fileActions: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  fileActionButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xs,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    borderRadius: borderRadius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-  },
-  fileActionDanger: {
-    borderColor: 'rgba(239,68,68,0.3)',
-    backgroundColor: 'rgba(239,68,68,0.05)',
-  },
-  fileActionText: {
-    fontSize: typography.size.sm,
-    fontWeight: '600',
-    color: colors.primary,
-  },
-
-  linkedinInput: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  linkedinIcon: {
     width: 40,
     height: 40,
-    borderRadius: borderRadius.sm,
-    backgroundColor: 'rgba(0,119,181,0.1)',
+    borderRadius: 20,
+    backgroundColor: "#F0FDFA",
     alignItems: 'center',
     justifyContent: 'center',
   },
+  fileName: { fontSize: 14, fontWeight: "600", color: theme.colors.text.main },
+  fileStatus: { fontSize: 12, color: theme.colors.primary },
 
-  saveButton: {
-    marginTop: spacing.sm,
+  // LinkedIn Icon Input
+  iconInputContainer: { position: 'relative', justifyContent: 'center' },
+  inputIcon: {
+    position: 'absolute',
+    left: 12,
+    zIndex: 1,
   },
-  saveHint: {
-    marginTop: spacing.sm,
-    fontSize: typography.size.xs,
-    color: colors.textTertiary,
-    textAlign: 'center',
+
+  // Buttons
+  saveButton: {
+    backgroundColor: theme.colors.primary,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+  },
+  saveButtonDisabled: { opacity: 0.7 },
+  saveButtonText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#FFF",
   },
 });
