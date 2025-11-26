@@ -173,7 +173,7 @@ export default function SignUpScreen() {
       } else {
         const { error: candidateError } = await supabase.from('candidates').insert({
           profile_id: user.id,
-          current_role: candidateTitle.trim(),
+          professional_title: candidateTitle.trim(),
         });
         if (candidateError) throw new Error(`Candidate profile failed: ${candidateError.message}`);
       }

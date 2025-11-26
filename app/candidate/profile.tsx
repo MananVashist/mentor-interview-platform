@@ -12,7 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
 
 import { theme } from '@/lib/theme';
-import { Heading, AppText, ScreenBackground, Button } from '@/lib/ui';
+import { Heading, AppText, ScreenBackground } from '@/lib/ui';
 import { useAuthStore } from '@/lib/store';
 import { candidateService } from '@/services/candidate.service';
 
@@ -24,17 +24,14 @@ export default function ProfileScreen() {
 
   // Form state
   const [fullName, setFullName] = useState(profile?.full_name || '');
-  const [phone, setPhone] = useState(profile?.phone || '');
-  const [linkedinUrl, setLinkedinUrl] = useState(candidateProfile?.linkedin_url || '');
-  const [targetProfile, setTargetProfile] = useState(candidateProfile?.target_profile || '');
+  // Mapped to 'professional_title' column in candidates table
+  const [professionalTitle, setProfessionalTitle] = useState(candidateProfile?.professional_title || '');
   const [resumeUrl, setResumeUrl] = useState(candidateProfile?.resume_url || '');
 
   // Keep local form fields in sync if store updates
   useEffect(() => {
     setFullName(profile?.full_name || '');
-    setPhone(profile?.phone || '');
-    setLinkedinUrl(candidateProfile?.linkedin_url || '');
-    setTargetProfile(candidateProfile?.target_profile || '');
+    setProfessionalTitle(candidateProfile?.professional_title || '');
     setResumeUrl(candidateProfile?.resume_url || '');
   }, [profile, candidateProfile]);
 
@@ -48,9 +45,11 @@ export default function ProfileScreen() {
 
       if (result.assets && result.assets[0]) {
         setUploading(true);
-        // Mock upload delay
+        // Mock upload delay - In production, replace with real Supabase Storage upload
         await new Promise((resolve) => setTimeout(resolve, 1200));
         const file = result.assets[0];
+        
+        // TODO: Replace with real storage URL after upload
         const uploadedUrl = `https://storage.example.com/resumes/${Date.now()}_${file.name}`;
 
         setResumeUrl(uploadedUrl);
@@ -71,23 +70,22 @@ export default function ProfileScreen() {
       Alert.alert('Error', 'Full name is required');
       return;
     }
-    if (linkedinUrl && !linkedinUrl.includes('linkedin.com')) {
-      Alert.alert('Error', 'Please enter a valid LinkedIn URL');
-      return;
-    }
 
     setLoading(true);
     try {
-      const updatedProfile = { full_name: fullName, phone: phone || null };
+      // 1. Update User Profile (profiles table)
+      const updatedProfile = { full_name: fullName };
       await candidateService.updateProfile(profile.id, updatedProfile);
 
+      // 2. Update Candidate Profile (candidates table)
+      // Only saving professional_title and resume_url as requested
       const updatedCandidate = {
-        linkedin_url: linkedinUrl || null,
-        target_profile: targetProfile || null,
+        professional_title: professionalTitle || null,
         resume_url: resumeUrl || null,
       };
       await candidateService.updateCandidateProfile(profile.id, updatedCandidate);
 
+      // 3. Update Local Store
       setCandidateProfile({ ...candidateProfile, ...updatedCandidate } as any);
       Alert.alert('Success', 'Profile updated successfully!');
     } catch (error) {
@@ -99,11 +97,10 @@ export default function ProfileScreen() {
   };
 
   return (
-    // 🟢 1. Global Background Set to Cream
     <ScreenBackground style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         
-        {/* 🟢 2. Header Section (White BG + Border) */}
+        {/* Header Section */}
         <View style={styles.headerContainer}>
           <View style={styles.headerContent}>
             <Heading level={1} style={styles.pageTitle}>My Profile</Heading>
@@ -125,8 +122,10 @@ export default function ProfileScreen() {
             </View>
 
             <View style={styles.formGrid}>
+              
+              {/* Full Name */}
               <View style={styles.inputGroup}>
-                <AppText style={styles.label}>Full Name *</AppText>
+                <AppText style={styles.label}>Full Name (will be kept private)</AppText>
                 <TextInput
                   style={styles.input}
                   value={fullName}
@@ -137,6 +136,7 @@ export default function ProfileScreen() {
                 />
               </View>
 
+              {/* Email (Read-only) */}
               <View style={styles.inputGroup}>
                 <AppText style={styles.label}>Email Address</AppText>
                 <View style={[styles.input, styles.inputDisabled]}>
@@ -145,30 +145,19 @@ export default function ProfileScreen() {
                 </View>
               </View>
 
+              {/* Professional Title (Mapped to DB: professional_title) */}
               <View style={styles.inputGroup}>
-                <AppText style={styles.label}>Phone Number</AppText>
+                <AppText style={styles.label}>Professional Title (will be shown to mentors)</AppText>
                 <TextInput
                   style={styles.input}
-                  value={phone}
-                  onChangeText={setPhone}
-                  placeholder="+91 98765 43210"
+                  value={professionalTitle}
+                  onChangeText={setProfessionalTitle}
+                  placeholder="e.g. Senior Product Manager"
                   placeholderTextColor="#9CA3AF"
-                  keyboardType="phone-pad"
                   editable={!loading}
                 />
               </View>
 
-              <View style={styles.inputGroup}>
-                <AppText style={styles.label}>Target Role</AppText>
-                <TextInput
-                  style={styles.input}
-                  value={targetProfile}
-                  onChangeText={setTargetProfile}
-                  placeholder="e.g. Product Manager"
-                  placeholderTextColor="#9CA3AF"
-                  editable={!loading}
-                />
-              </View>
             </View>
           </View>
 
@@ -176,12 +165,12 @@ export default function ProfileScreen() {
           <View style={styles.card}>
             <View style={styles.cardHeader}>
               <Ionicons name="document-text-outline" size={20} color={theme.colors.text.main} />
-              <Heading level={3} style={styles.cardTitle}>Documents & Links</Heading>
+              <Heading level={3} style={styles.cardTitle}>Resume</Heading>
             </View>
 
             {/* Resume Upload */}
             <View style={styles.inputGroup}>
-              <AppText style={styles.label}>Resume (PDF)</AppText>
+              <AppText style={styles.label}>Upload Resume (PDF)</AppText>
               {resumeUrl ? (
                 <View style={styles.fileCard}>
                   <View style={styles.fileIcon}>
@@ -213,24 +202,6 @@ export default function ProfileScreen() {
                 </TouchableOpacity>
               )}
             </View>
-
-            {/* LinkedIn */}
-            <View style={[styles.inputGroup, { marginTop: 16 }]}>
-              <AppText style={styles.label}>LinkedIn Profile</AppText>
-              <View style={styles.iconInputContainer}>
-                <View style={styles.inputIcon}>
-                  <Ionicons name="logo-linkedin" size={18} color="#0077b5" />
-                </View>
-                <TextInput
-                  style={[styles.input, { paddingLeft: 44 }]}
-                  value={linkedinUrl}
-                  onChangeText={setLinkedinUrl}
-                  placeholder="https://linkedin.com/in/..."
-                  placeholderTextColor="#9CA3AF"
-                  editable={!loading}
-                />
-              </View>
-            </View>
           </View>
 
           {/* Action Button */}
@@ -253,14 +224,12 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  // 🟢 Cream Background to match Index layout
   container: { 
     flex: 1, 
-    backgroundColor: "#f8f5f0", // #F9FAFB
+    backgroundColor: "#f8f5f0", 
   },
   scrollContent: { paddingBottom: 40 },
 
-  // 🟢 Header Styling (White BG + Border)
   headerContainer: {
     paddingTop: 40,
     paddingBottom: 20,
@@ -268,7 +237,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#f8f5f0",
   },
   headerContent: {
-    maxWidth: 1000, // Optional max-width for large screens
+    maxWidth: 1000, 
     width: '100%',
   },
   pageTitle: { 
@@ -290,10 +259,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
     maxWidth: 800,
     width: '100%',
-    alignSelf: 'flex-start', // Align left to match dashboard grid
+    alignSelf: 'flex-start', 
   },
 
-  // Cards (White to pop against Cream bg)
   card: {
     backgroundColor: "#FFFFFF",
     borderRadius: 16,
@@ -317,7 +285,6 @@ const styles = StyleSheet.create({
     color: theme.colors.text.main,
   },
 
-  // Forms
   formGrid: { gap: 16 },
   inputGroup: { gap: 6 },
   label: {
@@ -342,7 +309,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
-  // Upload Styles
   uploadArea: {
     borderWidth: 1,
     borderColor: theme.colors.primary,
@@ -384,15 +350,6 @@ const styles = StyleSheet.create({
   fileName: { fontSize: 14, fontWeight: "600", color: theme.colors.text.main },
   fileStatus: { fontSize: 12, color: theme.colors.primary },
 
-  // LinkedIn Icon Input
-  iconInputContainer: { position: 'relative', justifyContent: 'center' },
-  inputIcon: {
-    position: 'absolute',
-    left: 12,
-    zIndex: 1,
-  },
-
-  // Buttons
   saveButton: {
     backgroundColor: theme.colors.primary,
     paddingVertical: 12,

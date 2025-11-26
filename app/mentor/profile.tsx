@@ -1,4 +1,4 @@
-// app/mentor/profile.tsx
+ï»¿// app/mentor/profile.tsx
 import { useState, useEffect } from 'react';
 import { View, ScrollView, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -137,6 +137,11 @@ export default function MentorProfileScreen() {
     try {
       setSaving(true);
 
+      // Convert selected profile IDs to names for booking compatibility
+      const expertiseProfileNames = availableProfiles
+        .filter(p => selectedProfiles.includes(p.id))
+        .map(p => p.name);
+
       const { error } = await supabase
         .from('mentors')
         .update({
@@ -144,7 +149,8 @@ export default function MentorProfileScreen() {
           experience_description: experienceDescription.trim() || null,
           years_of_experience: yrs,
           bio: bio.trim() || null,
-          profile_ids: selectedProfiles, // <--- WRITE NOW WORKS
+          profile_ids: selectedProfiles,
+          expertise_profiles: expertiseProfileNames, // Also store names for booking flow
         })
         .eq('id', mentorId);
 
@@ -183,7 +189,7 @@ export default function MentorProfileScreen() {
         <Section style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
           <ActivityIndicator color={colors.primary} size="large" />
           <AppText style={{ marginTop: spacing.md, color: colors.textSecondary, fontSize: typography.size.md }}>
-            Loading your profile…
+            Loading your profileâ€¦
           </AppText>
         </Section>
       </ScreenBackground>
@@ -396,7 +402,7 @@ export default function MentorProfileScreen() {
         {/* Save button */}
         <Section>
           <Button
-            title={saving ? 'Saving Changes…' : 'Save Profile'}
+            title={saving ? 'Saving Changesâ€¦' : 'Save Profile'}
             onPress={handleSave}
             disabled={saving || !mentorId}
             style={styles.saveButton}

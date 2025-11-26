@@ -12,9 +12,9 @@ export default function HowItWorks() {
   const isSmall = width < 900;
 
   const steps = [
-    { number: '1', title: 'Sign Up & Profile Creation', description: 'Create your candidate account. Submit your resume and profile details to help mentors tailor the session to your background.' },
-    { number: '2', title: 'Browse Mentors & Book', description: 'Filter vetted mentors by expertise (SDE, PM, etc.). Select a package, choose a time slot, and securely complete the payment.' },
-    { number: '3', title: 'Confirmation & Invite', description: 'Once the mentor accepts, a secure Google Meet/Zoom link is automatically generated and sent to your calendar.' },
+    { number: '1', title: 'Sign Up & Profile Creation', description: 'Create your candidate account. Submit your resume to help mentors tailor the session to your background.' },
+    { number: '2', title: 'Browse Mentors & Book', description: 'Filter vetted mentors by expertise (Data Analyst, Product Manager etc.). Choose a time slot and securely complete the payment' },
+    { number: '3', title: 'Confirmation & Invite', description: 'Once the mentor accepts, a secure Google Meet/Zoom link is automatically generated in your bookings' },
     { number: '4', title: 'Mock Interview Session', description: 'Join the video session. Engage in a realistic, structured interview with real-time problem solving and role-play.' },
     { number: '5', title: 'Get Actionable Feedback', description: 'Receive a detailed evaluation report within 48 hours covering technical skills, communication, and specific areas for improvement.' },
   ];

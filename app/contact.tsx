@@ -36,29 +36,15 @@ export default function Contact() {
         <Text style={styles.subtitle}>We'd love to hear from you!</Text>
 
         <View style={[styles.grid, isSmall && styles.gridMobile]}>
-          <View style={styles.card}>
-            <Text style={styles.icon}>💬</Text>
-            <Text style={styles.cardTitle}>General Inquiries</Text>
-            <TouchableOpacity onPress={() => handleEmail('hello@crackjobs.com')}>
-              <Text style={styles.email}>hello@crackjobs.com</Text>
-            </TouchableOpacity>
-          </View>
-
+        
           <View style={styles.card}>
             <Text style={styles.icon}>🛟</Text>
             <Text style={styles.cardTitle}>Support</Text>
             <TouchableOpacity onPress={() => handleEmail('support@crackjobs.com')}>
-              <Text style={styles.email}>support@crackjobs.com</Text>
+              <Text style={styles.email}>crackjobshelpdesk@gmail.com</Text>
             </TouchableOpacity>
           </View>
 
-          <View style={styles.card}>
-            <Text style={styles.icon}>👨‍🏫</Text>
-            <Text style={styles.cardTitle}>Mentors</Text>
-            <TouchableOpacity onPress={() => handleEmail('mentors@crackjobs.com')}>
-              <Text style={styles.email}>mentors@crackjobs.com</Text>
-            </TouchableOpacity>
-          </View>
         </View>
       </View>
     </PageLayout>
