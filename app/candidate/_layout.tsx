@@ -21,7 +21,9 @@ export default function CandidateLayout() {
   const router = useRouter();
   const pathname = usePathname();
   const { profile, clear } = useAuthStore();
-  const { width } = useWindowDimensions();
+  
+  // 1. Get exact window dimensions
+  const { width, height } = useWindowDimensions();
   const [menuOpen, setMenuOpen] = useState(false);
 
   const isDesktop = width >= 768;
@@ -39,8 +41,10 @@ export default function CandidateLayout() {
   ];
 
   const Sidebar = () => (
-    <View style={styles.sidebar}>
-      {/* 1. Header Section */}
+    // 2. Fix: Pass 'height' to force sidebar to match viewport exactly
+    <View style={[styles.sidebar, isDesktop && { height: height, position: 'sticky', top: 0 }]}>
+      
+      {/* Header Section */}
       <View style={styles.brandSection}>
         <TouchableOpacity onPress={() => router.push('/')} activeOpacity={0.8}>
           <View style={{ alignItems: 'center' }}> 
@@ -59,37 +63,38 @@ export default function CandidateLayout() {
         </View>
       </View>
 
-      {/* 2. Navigation Menu (Takes remaining space) */}
-      <ScrollView 
-        style={styles.navScroll} 
-        contentContainerStyle={styles.menuContainer}
-        showsVerticalScrollIndicator={false}
-      >
-        {menuItems.map((item) => {
-          const active = pathname === item.path;
-          return (
-            <TouchableOpacity
-              key={item.path}
-              style={[styles.menuItem, active && styles.menuItemActive]}
-              onPress={() => {
-                router.push(item.path as any);
-                setMenuOpen(false);
-              }}
-            >
-              <Ionicons 
-                name={item.icon as any} 
-                size={22} 
-                color={active ? theme.colors.primary : theme.colors.text.light} 
-              />
-              <Text style={[styles.menuText, active && styles.menuTextActive]}>
-                {item.name}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
+      {/* 3. Fix: Navigation takes all remaining space, pushing footer down */}
+      <View style={styles.navContainer}>
+        <ScrollView 
+          contentContainerStyle={styles.menuScrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {menuItems.map((item) => {
+            const active = pathname === item.path;
+            return (
+              <TouchableOpacity
+                key={item.path}
+                style={[styles.menuItem, active && styles.menuItemActive]}
+                onPress={() => {
+                  router.push(item.path as any);
+                  setMenuOpen(false);
+                }}
+              >
+                <Ionicons 
+                  name={item.icon as any} 
+                  size={22} 
+                  color={active ? theme.colors.primary : theme.colors.text.light} 
+                />
+                <Text style={[styles.menuText, active && styles.menuTextActive]}>
+                  {item.name}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      </View>
 
-      {/* 3. Sticky Footer Section */}
+      {/* Sticky Footer Section - Now guaranteed to be at bottom */}
       <View style={styles.footerSection}>
         <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
           <Ionicons name="log-out-outline" size={20} color="#ef4444" />
@@ -100,7 +105,9 @@ export default function CandidateLayout() {
   );
 
   return (
-    <View style={styles.container}>
+    // 4. Container minHeight prevents white band on short content
+    <View style={[styles.container, { minHeight: height }]}>
+      
       {!isDesktop && (
         <View style={styles.mobileHeader}>
           <TouchableOpacity onPress={() => setMenuOpen(!menuOpen)}>
@@ -112,42 +119,65 @@ export default function CandidateLayout() {
           <View style={{ width: 24 }} />
         </View>
       )}
+
       <View style={styles.content}>
         {isDesktop && <Sidebar />}
+        
         {!isDesktop && menuOpen && (
           <>
             <Pressable style={styles.overlay} onPress={() => setMenuOpen(false)} />
-            <View style={styles.sidebarMobile}><Sidebar /></View>
+            <View style={[styles.sidebarMobile, { height: height }]}>
+              <Sidebar />
+            </View>
           </>
         )}
-        <View style={styles.mainContent}><Slot /></View>
+        
+        <View style={styles.mainContent}>
+          <Slot />
+        </View>
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8f5f0', },
-  mobileHeader: { 
-    flexDirection: 'row', justifyContent: 'space-between', padding: 16, 
-    backgroundColor: '#f8f5f0', borderBottomWidth: 1, borderBottomColor: theme.colors.border, 
-    alignItems: 'center' 
+  container: { 
+    flex: 1, 
+    backgroundColor: '#f8f5f0', 
   },
-  content: { flex: 1, flexDirection: 'row' },
+  content: { 
+    flex: 1, 
+    flexDirection: 'row',
+  },
   
-  // Sidebar Layout
+  // Sidebar Styling
   sidebar: { 
     width: 260, 
-    backgroundColor: '#f8f5f0', // White background as per screenshot
+    backgroundColor: '#f8f5f0',
     borderRightWidth: 1, 
     borderRightColor: theme.colors.border,
-    height: '100%', 
     display: 'flex',
     flexDirection: 'column',
+    // 'height' and 'position: sticky' are injected inline in component for responsiveness
   },
-  sidebarMobile: { position: 'absolute', top: 0, bottom: 0, left: 0, width: 260, backgroundColor: '#f8f5f0', zIndex: 50 },
-  overlay: { position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 40 },
-  
+  sidebarMobile: { 
+    position: 'absolute', 
+    top: 0, 
+    left: 0, 
+    width: 260, 
+    backgroundColor: '#f8f5f0', 
+    zIndex: 50,
+    borderRightWidth: 1,
+    borderRightColor: theme.colors.border,
+  },
+  overlay: { 
+    position: 'absolute', 
+    inset: 0, 
+    backgroundColor: 'rgba(0,0,0,0.5)', 
+    zIndex: 40 
+  },
+
+  // Brand Header
   brandSection: { 
     paddingTop: 40,
     paddingBottom: 20,
@@ -168,37 +198,46 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     ...(Platform.OS === 'web' && { WebkitTextStroke: `0.5px ${CTA_TEAL}` })
   },
-  
-  // 🟢 Typography matched to screenshot
   welcomeContainer: {
     marginTop: 24,
     alignItems: 'center',
+    paddingHorizontal: 16,
   },
   welcomeLabel: {
     fontSize: 22,
-    color: theme.colors.text.light, // Grey
+    color: theme.colors.text.light,
     fontFamily: theme.typography.fontFamily.medium,
     marginBottom: 4,
     textAlign: 'center',
   },
   welcomeName: { 
     fontFamily: theme.typography.fontFamily.medium,
-    color: theme.colors.text.body, // Slightly darker/different shade
+    color: theme.colors.text.body,
     fontSize: 16,
     textAlign: 'center',
   },
 
-  // 🟢 Flexible Scroll Container
-  navScroll: {
-    flex: 1, 
+  // Navigation Logic
+  navContainer: {
+    flex: 1, // CRITICAL: This fills space between header and footer
+    overflow: 'hidden', // Ensures scrollview stays contained
   },
-  menuContainer: { 
+  menuScrollContent: { 
     paddingHorizontal: 16, 
     paddingTop: 32, 
+    paddingBottom: 20,
     gap: 4 
   },
-  menuItem: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderRadius: 8 },
-  menuItemActive: { backgroundColor: theme.colors.pricing.greenBg },
+  menuItem: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: 12, 
+    padding: 12, 
+    borderRadius: 8 
+  },
+  menuItemActive: { 
+    backgroundColor: theme.colors.pricing.greenBg 
+  },
   menuText: { 
     color: theme.colors.text.light, 
     fontFamily: theme.typography.fontFamily.medium,
@@ -209,11 +248,11 @@ const styles = StyleSheet.create({
     fontFamily: theme.typography.fontFamily.semibold 
   },
   
-  // 🟢 Sticky Footer Wrapper
+  // Footer
   footerSection: {
     padding: 16,
-    borderTopWidth: 1, // Optional: adds subtle separation like standard sidebars
-    borderTopColor: 'transparent', // Hidden unless you want a line
+    borderTopWidth: 1, 
+    borderTopColor: 'rgba(0,0,0,0.05)', 
     backgroundColor: '#f8f5f0',
   },
   signOutButton: { 
@@ -228,5 +267,19 @@ const styles = StyleSheet.create({
     fontFamily: theme.typography.fontFamily.medium,
     fontSize: 14
   },
-  mainContent: { flex: 1 },
+
+  // Main Content
+  mainContent: { 
+    flex: 1,
+    maxWidth: '100%', 
+  },
+  mobileHeader: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    padding: 16, 
+    backgroundColor: '#f8f5f0', 
+    borderBottomWidth: 1, 
+    borderBottomColor: theme.colors.border, 
+    alignItems: 'center' 
+  },
 });
