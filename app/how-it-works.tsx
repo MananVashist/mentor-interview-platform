@@ -1,6 +1,6 @@
 ﻿import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, useWindowDimensions, Platform, ScrollView } from 'react-native';
-import { useRouter } from 'expo-router';
+import { View, Text, StyleSheet, TouchableOpacity, useWindowDimensions, Platform } from 'react-native';
+import { useRouter, Link } from 'expo-router';
 import Head from 'expo-router/head';
 import { PageLayout } from '@/components/PageLayout';
 import { theme } from '@/lib/theme';
@@ -11,15 +11,36 @@ export default function HowItWorks() {
   const { width } = useWindowDimensions();
   const isSmall = width < 900;
 
+  // 🟢 Step data separated to allow JSX in description
   const steps = [
-    { number: '1', title: 'Sign Up & Profile Creation', description: 'Create your candidate account. Submit your resume to help mentors tailor the session to your background.' },
-    { number: '2', title: 'Browse Mentors & Book', description: 'Filter vetted mentors by expertise (Data Analyst, Product Manager etc.). Choose a time slot and securely complete the payment' },
-    { number: '3', title: 'Confirmation & Invite', description: 'Once the mentor accepts, a secure Google Meet/Zoom link is automatically generated in your bookings' },
-    { number: '4', title: 'Mock Interview Session', description: 'Join the video session. Engage in a realistic, structured interview with real-time problem solving and role-play.' },
-    { number: '5', title: 'Get Actionable Feedback', description: 'Receive a detailed evaluation report within 48 hours covering technical skills, communication, and specific areas for improvement.' },
+    { 
+      number: '1', 
+      title: 'Sign Up & Profile Creation', 
+      renderDesc: () => <Text>Create your candidate account. Submit your resume to help mentors tailor the session to your background.</Text> 
+    },
+    { 
+      number: '2', 
+      title: 'Browse Mentors & Book', 
+      renderDesc: () => <Text>Filter vetted mentors by expertise (<Link href="/interviews/data-analyst" style={styles.linkText}>Data Analyst</Link>, <Link href="/interviews/product-management" style={styles.linkText}>Product Manager</Link>, etc.). Choose a time slot and securely complete the payment.</Text> 
+    },
+    { 
+      number: '3', 
+      title: 'Confirmation & Invite', 
+      renderDesc: () => <Text>Once the mentor accepts, a secure Google Meet/Zoom link is automatically generated in your bookings.</Text> 
+    },
+    { 
+      number: '4', 
+      title: 'Mock Interview Session', 
+      renderDesc: () => <Text>Join the video session. Engage in a realistic, structured interview with real-time problem solving and role-play.</Text> 
+    },
+    { 
+      number: '5', 
+      title: 'Get Actionable Feedback', 
+      renderDesc: () => <Text>Receive a detailed evaluation report within 48 hours covering technical skills, communication, and specific areas for improvement.</Text> 
+    },
   ];
 
-  // SEO: HowTo Schema
+  // SEO: HowTo Schema (Text only version for Schema)
   useEffect(() => {
     if (Platform.OS === 'web') {
       const howToSchema = {
@@ -29,7 +50,7 @@ export default function HowItWorks() {
         "step": steps.map(step => ({
           "@type": "HowToStep",
           "name": step.title,
-          "text": step.description,
+          "text": "Check description on page.", // Simplified for schema to avoid JSX issues
           "position": step.number
         }))
       };
@@ -60,7 +81,9 @@ export default function HowItWorks() {
               </View>
               <View style={styles.stepTextContent}>
                 <Text style={styles.stepTitle} accessibilityRole="header" aria-level={3}>{step.title}</Text>
-                <Text style={styles.stepDescription}>{step.description}</Text>
+                <Text style={styles.stepDescription}>
+                  {step.renderDesc()}
+                </Text>
               </View>
             </View>
           ))}
@@ -85,7 +108,6 @@ const styles = StyleSheet.create({
   pageTitle: { fontFamily: theme.typography.fontFamily.extrabold, fontSize: 48, color: theme.colors.text.main, textAlign: 'center', marginBottom: 16 },
   pageTitleMobile: { fontSize: 32 },
   pageSubtitle: { fontFamily: theme.typography.fontFamily.regular, fontSize: 20, color: theme.colors.text.body, textAlign: 'center', marginBottom: 60 },
-  
   stepsContainer: { gap: 24, marginBottom: 40 },
   stepCard: { 
     flexDirection: 'row', backgroundColor: theme.colors.surface, borderRadius: 16, padding: 32, 
@@ -97,7 +119,7 @@ const styles = StyleSheet.create({
   stepTextContent: { flex: 1 },
   stepTitle: { fontSize: 22, fontFamily: theme.typography.fontFamily.bold, color: theme.colors.text.main, marginBottom: 8 },
   stepDescription: { fontSize: 16, fontFamily: theme.typography.fontFamily.regular, color: theme.colors.text.body, lineHeight: 24 },
-  
+  linkText: { color: theme.colors.primary, fontWeight: 'bold' },
   ctaSection: { alignItems: 'center', marginTop: 20 },
   ctaButton: { backgroundColor: theme.colors.primary, paddingHorizontal: 48, paddingVertical: 18, borderRadius: 12, ...theme.shadows.card },
   ctaButtonMobile: { paddingHorizontal: 32, paddingVertical: 14 },

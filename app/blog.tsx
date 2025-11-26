@@ -1,5 +1,6 @@
 ﻿import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, useWindowDimensions, Platform } from 'react-native';
+import { Link } from 'expo-router';
 import Head from 'expo-router/head';
 import { PageLayout } from '@/components/PageLayout';
 import { theme } from '@/lib/theme';
@@ -51,6 +52,17 @@ export default function Blog() {
         <View style={styles.banner}>
           <Text style={styles.bannerText}>📝 Blog launching soon! Stay tuned.</Text>
         </View>
+
+        {/* 🟢 SEO: Category Links to prevent dead-ends */}
+        <View style={styles.categories}>
+          <Text style={styles.catHeader}>Browse by Role</Text>
+          <View style={styles.catLinks}>
+            <Link href="/interviews/product-management" style={styles.catLink}>Product Management</Link>
+            <Link href="/interviews/data-analyst" style={styles.catLink}>Data Analytics</Link>
+            <Link href="/interviews/data-scientist" style={styles.catLink}>Data Science</Link>
+            <Link href="/interviews/hr" style={styles.catLink}>HR & Behavioral</Link>
+          </View>
+        </View>
       </View>
     </PageLayout>
   );
@@ -72,4 +84,9 @@ const styles = StyleSheet.create({
   readMore: { color: theme.colors.primary, fontFamily: theme.typography.fontFamily.semibold },
   banner: { marginTop: 40, padding: 24, backgroundColor: theme.colors.pricing.blueBg, borderRadius: 12, alignItems: 'center' },
   bannerText: { fontFamily: theme.typography.fontFamily.medium, color: theme.colors.pricing.blueIcon },
+  // 🟢 New Category Styles
+  categories: { marginTop: 60, alignItems: 'center' },
+  catHeader: { fontSize: 20, fontFamily: theme.typography.fontFamily.bold, marginBottom: 16, color: theme.colors.text.main },
+  catLinks: { flexDirection: 'row', gap: 20, flexWrap: 'wrap', justifyContent: 'center' },
+  catLink: { color: theme.colors.primary, fontFamily: theme.typography.fontFamily.medium, fontSize: 16 },
 });

@@ -1,9 +1,10 @@
 ﻿import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, useWindowDimensions, Platform, Linking } from 'react-native';
+import { Link } from 'expo-router';
 import Head from 'expo-router/head';
 import { PageLayout } from '@/components/PageLayout';
 import { theme } from '@/lib/theme';
-import { createBreadcrumbSchema, injectMultipleSchemas } from '@/lib/structured-data';
+import { injectMultipleSchemas } from '@/lib/structured-data';
 
 export default function Contact() {
   const { width } = useWindowDimensions();
@@ -13,7 +14,7 @@ export default function Contact() {
     if (Platform.OS === 'web') {
       const contactSchema = { 
         "@context": "https://schema.org", "@type": "ContactPage", 
-        "mainEntity": { "@type": "Organization", "email": "hello@crackjobs.com" } 
+        "mainEntity": { "@type": "Organization", "email": "crackjobshelpdesk@gmail.com" } 
       };
       const cleanup = injectMultipleSchemas([contactSchema]);
       return () => cleanup && cleanup();
@@ -36,15 +37,17 @@ export default function Contact() {
         <Text style={styles.subtitle}>We'd love to hear from you!</Text>
 
         <View style={[styles.grid, isSmall && styles.gridMobile]}>
-        
           <View style={styles.card}>
             <Text style={styles.icon}>🛟</Text>
             <Text style={styles.cardTitle}>Support</Text>
-            <TouchableOpacity onPress={() => handleEmail('support@crackjobs.com')}>
+            <TouchableOpacity onPress={() => handleEmail('crackjobshelpdesk@gmail.com')}>
               <Text style={styles.email}>crackjobshelpdesk@gmail.com</Text>
             </TouchableOpacity>
+            
+            <Text style={styles.faqLink}>
+              Have a quick question? Check our <Link href="/faq" style={{textDecorationLine: 'underline'}}>FAQ</Link>
+            </Text>
           </View>
-
         </View>
       </View>
     </PageLayout>
@@ -62,5 +65,6 @@ const styles = StyleSheet.create({
   card: { flex: 1, minWidth: 250, backgroundColor: theme.colors.surface, borderRadius: 16, padding: 32, alignItems: 'center', ...theme.shadows.card },
   icon: { fontSize: 40, marginBottom: 16 },
   cardTitle: { fontFamily: theme.typography.fontFamily.bold, fontSize: 20, color: theme.colors.text.main, marginBottom: 8 },
-  email: { color: theme.colors.primary, fontFamily: theme.typography.fontFamily.semibold, fontSize: 16, textDecorationLine: 'underline' },
+  email: { color: theme.colors.primary, fontFamily: theme.typography.fontFamily.semibold, fontSize: 16, textDecorationLine: 'underline', marginBottom: 12 },
+  faqLink: { color: theme.colors.text.body, fontSize: 14, fontFamily: theme.typography.fontFamily.regular },
 });

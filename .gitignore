@@ -28,3 +28,51 @@ Thumbs.db
 # editor
 .vscode/
 .idea/
+
+# ============================================
+# SIZE OPTIMIZATION EXCLUSIONS
+# ============================================
+
+# Backup directories (should not be in bundle)
+backup/
+backups/
+old/
+archive/
+
+# Documentation files (not needed in bundle)
+*.md
+!README.md
+
+# Setup and diagnostic scripts (not needed in bundle)
+setup.js
+setup.sh
+setup-android.ps1
+apply-fix.ps1
+diagnose-ui.js
+analyze-app-size.js
+preflight.js
+
+# Troubleshooting files
+TROUBLESHOOTING.md
+DEBUGGING_GUIDE.md
+CONTEXT.md
+PROJECT_SUMMARY.md
+START_HERE.md
+UI_FIX.md
+
+# Test files
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+__tests__/
+__mocks__/
+
+# Build analysis
+bundle-report.html
+stats.json
+size-snapshot.json
+
+# Logs
+*.log
+logs/

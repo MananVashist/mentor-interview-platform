@@ -12,7 +12,7 @@
       "backgroundColor": "#11998e"
     },
     "assetBundlePatterns": [
-      "**/*"
+      "assets/**/*"
     ],
     "ios": {
       "supportsTablet": true,
@@ -72,7 +72,12 @@
           "android": {
             "compileSdkVersion": 34,
             "targetSdkVersion": 34,
-            "buildToolsVersion": "34.0.0"
+            "buildToolsVersion": "34.0.0",
+            "enableProguardInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true
+          },
+          "ios": {
+            "deploymentTarget": "13.4"
           }
         }
       ],
@@ -89,24 +94,6 @@
     },
     "owner": "mananvashist",
     "description": "Master your interview skills with expert mentors. Practice mock interviews across different roles (PM, SDE, HR, Data Science), get detailed feedback after each round, and crack your dream job. Structured 3-round interview preparation with personalized mentorship.",
-    "primaryColor": "#11998e",
-    "keywords": [
-      "interview preparation",
-      "mock interviews",
-      "career coaching",
-      "job interview practice",
-      "mentor platform",
-      "interview feedback",
-      "career development",
-      "job search",
-      "technical interviews",
-      "behavioral interviews",
-      "PM interviews",
-      "SDE interviews",
-      "HR interviews",
-      "data science interviews",
-      "interview skills",
-      "job coaching"
-    ]
+    "primaryColor": "#11998e"
   }
 }

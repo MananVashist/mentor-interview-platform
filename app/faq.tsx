@@ -1,6 +1,5 @@
 ﻿import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, useWindowDimensions, Platform, Linking } from 'react-native';
-import { useRouter } from 'expo-router';
 import Head from 'expo-router/head';
 import { PageLayout } from '@/components/PageLayout';
 import { theme } from '@/lib/theme';
@@ -14,15 +13,27 @@ export default function FAQ() {
     {
       category: 'Getting Started',
       questions: [
-        { q: 'What is CrackJobs?', a: 'CrackJobs is a mock interview platform connecting job seekers with FAANG professionals for realistic practice.' },
-        { q: 'Is it free?', a: 'Browsing is free. You only pay when you book a session. Prices vary by mentor.' },
+        { 
+          q: 'What is CrackJobs?', 
+          a: 'CrackJobs is a mock interview platform connecting job seekers with FAANG professionals (PMs, Data Scientists, etc.) for realistic practice and feedback.' 
+        },
+        { 
+          q: 'Is it free?', 
+          a: 'Browsing mentors is free. You only pay when you successfully book a mock interview. Pricing varies by mentor, typically starting from affordable rates.' 
+        },
       ],
     },
     {
       category: 'Booking & Refunds',
       questions: [
-        { q: 'Can I reschedule?', a: 'Yes. 48+ hours notice = 100% refund. 24-48 hours = 80%. Less than 24 hours = 50% refund.' },
-        { q: 'What if a mentor cancels?', a: 'You receive an immediate 100% refund.' },
+        { 
+          q: 'Can I reschedule?', 
+          a: 'Yes. If you reschedule with 48+ hours notice, it is free. Cancellations within 24-48 hours receive an 80% refund. Less than 24 hours receive a 50% refund.' 
+        },
+        { 
+          q: 'What if a mentor cancels?', 
+          a: 'You receive an immediate 100% refund automatically if the mentor cancels or does not show up.' 
+        },
       ],
     },
   ];
