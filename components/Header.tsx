@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -45,7 +45,7 @@ export const Header = () => {
   }, [leftEyeX, leftEyeY, rightEyeX, rightEyeY]);
 
   return (
-    <View style={styles.header} accessibilityRole="banner">
+    <View style={styles.header} accessibilityRole="header">
       <View style={[styles.headerInner, isSmall && styles.headerInnerMobile]}>
         
         {/* Brand Section with Eyes */}
@@ -72,7 +72,7 @@ export const Header = () => {
         </View>
 
         {/* Navigation Buttons */}
-        <View style={[styles.navRight, isSmall && styles.navRightMobile]} accessibilityRole="navigation">
+        <View style={[styles.navRight, isSmall && styles.navRightMobile]} accessibilityRole="header">
           <TouchableOpacity 
             style={[styles.btn, styles.btnSecondary, isSmall && styles.btnMobile]} 
             onPress={() => router.push('/auth/sign-in')}

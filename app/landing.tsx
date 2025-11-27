@@ -109,16 +109,16 @@ export default function LandingScreen() {
   }, [heroOpacity, heroTranslate, rolesOpacity, rolesTranslate]);
 
   const handleSignIn = () => {
-    router.push('/(auth)/sign-in');
+    router.push('/auth/sign-in');
   };
 
   const handleSignUp = () => {
-    router.push('/(auth)/sign-up');
+    router.push('/auth/sign-up');
   };
 
   const handleViewMentors = () => {
     // you can change this later to a public mentors gallery route
-    router.push('/(auth)/sign-up');
+    router.push('/auth/sign-up');
   };
 
   return (

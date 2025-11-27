@@ -5,7 +5,6 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
-  Alert,
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
@@ -19,43 +18,36 @@ import { authService } from '@/services/auth.service';
 import { candidateService } from '@/services/candidate.service';
 import { mentorService } from '@/services/mentor.service';
 import { useAuthStore } from '@/lib/store';
+import { useToastStore } from '@/lib/toast.store'; // 🟢 Import Store
 import { BrandHeader } from '@/lib/ui';
-import { Footer } from '@/components/Footer'; // 🟢 Import Footer
+import { Footer } from '@/components/Footer';
 
 export default function SignInScreen() {
   const router = useRouter();
-  const { width } = useWindowDimensions();
   const isWeb = Platform.OS === 'web';
+  const toast = useToastStore(); // 🟢 Init Toast
   
-  const {
-    setUser,
-    setProfile,
-    setCandidateProfile,
-    setMentorProfile,
-    setSession,
-  } = useAuthStore();
+  const { setUser, setProfile, setCandidateProfile, setMentorProfile, setSession } = useAuthStore();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // --- OAUTH HANDLER ---
   const handleOAuthSignIn = async (provider: 'google' | 'linkedin_oidc') => {
     try {
       setLoading(true);
       const { error } = await authService.signInWithOAuth(provider);
-      if (error) Alert.alert('Error', error.message);
+      if (error) toast.show(error.message, 'error');
     } catch (err: any) {
-      Alert.alert('Error', err.message);
+      toast.show(err.message, 'error');
     } finally {
       setLoading(false);
     }
   };
 
-  // --- EMAIL/PASSWORD HANDLER ---
   const handleSignIn = async () => {
     if (!email || !password) {
-      Alert.alert('Error', 'Please enter both email and password');
+      toast.show('Please enter both email and password', 'error');
       return;
     }
 
@@ -64,7 +56,7 @@ export default function SignInScreen() {
       const { user, session, error } = await authService.signIn(email, password);
       
       if (error || !user || !session) {
-        Alert.alert('Login Failed', error?.message || 'Invalid credentials');
+        toast.show(error?.message || 'Invalid credentials', 'error');
         setLoading(false);
         return;
       }
@@ -85,7 +77,7 @@ export default function SignInScreen() {
         if (roleLower === 'mentor') {
             const m = await mentorService.getMentorById(user.id);
             if (!m || !m.status || m.status !== 'approved') {
-                Alert.alert('Account Under Review', 'Your mentor application is still being reviewed.', [{ text: 'OK' }]);
+                toast.show('Your mentor application is still under review.', 'info');
                 await authService.signOut();
                 setLoading(false);
                 router.replace('/mentor/under-review');
@@ -112,7 +104,7 @@ export default function SignInScreen() {
       }
 
     } catch (err: any) {
-      Alert.alert('Error', err.message);
+      toast.show(err.message, 'error');
     } finally {
       setLoading(false);
     }
@@ -120,17 +112,10 @@ export default function SignInScreen() {
 
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.container}>
-      <ScrollView 
-        contentContainerStyle={styles.scrollContent} 
-        showsVerticalScrollIndicator={false}
-      >
-        
-        {/* 🟢 Wrapper to Center Form vertically */}
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.formWrapper}>
           <View style={styles.content}>
-            
             <BrandHeader />
-
             <View style={styles.spacer} />
 
             <View style={styles.section}>
@@ -173,7 +158,6 @@ export default function SignInScreen() {
                 <AntDesign name="google" size={24} color="#DB4437" />
                 <Text style={styles.socialBtnText}>Google</Text>
               </TouchableOpacity>
-
               <TouchableOpacity style={styles.socialBtn} onPress={() => handleOAuthSignIn('linkedin_oidc')}>
                 <AntDesign name="linkedin-square" size={24} color="#0077B5" />
                 <Text style={styles.socialBtnText}>LinkedIn</Text>
@@ -183,78 +167,34 @@ export default function SignInScreen() {
             <View style={styles.authFooter}>
               <Text style={styles.authFooterText}>Don't have an account? </Text>
               <Link href="/auth/sign-up" asChild>
-                <TouchableOpacity>
-                  <Text style={styles.authFooterLink}>Sign Up</Text>
-                </TouchableOpacity>
+                <TouchableOpacity><Text style={styles.authFooterLink}>Sign Up</Text></TouchableOpacity>
               </Link>
             </View>
           </View>
         </View>
-
-        {/* 🟢 Sticky Footer at bottom, full width */}
         {isWeb && <Footer />}
-
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8f5f0' }, // Matches global background
-  
-  // 🟢 Key Fix: flexGrow: 1 makes the ScrollView fill the screen
+  container: { flex: 1, backgroundColor: '#f8f5f0' },
   scrollContent: { flexGrow: 1, flexDirection: 'column' },
-  
-  // 🟢 Form Wrapper pushes footer down if content is short
-  formWrapper: {
-    flex: 1, // Takes all available space
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 60, // Add breathing room
-    width: '100%',
-  },
-  
-  content: { 
-    padding: 24, 
-    maxWidth: 400, 
-    width: '100%',
-    backgroundColor: 'transparent', // Ensure no white box artifact
-  },
-  
+  formWrapper: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 60, width: '100%' },
+  content: { padding: 24, maxWidth: 400, width: '100%', backgroundColor: 'transparent' },
   spacer: { marginBottom: 24 },
-  
   section: { marginBottom: 16 },
-  
-  label: { 
-    fontSize: 12, 
-    fontWeight: '600', 
-    marginBottom: 6, 
-    color: '#334155' 
-  },
-  
+  label: { fontSize: 12, fontWeight: '600', marginBottom: 6, color: '#334155' },
   input: { borderWidth: 1, borderColor: '#d1d5db', borderRadius: 10, padding: 12, backgroundColor: '#fff' },
   signInButton: { backgroundColor: '#0E9384', borderRadius: 999, alignItems: 'center', padding: 14, marginTop: 8 },
   signInButtonText: { color: '#fff', fontWeight: '700' },
-
   dividerContainer: { flexDirection: 'row', alignItems: 'center', marginVertical: 24 },
   dividerLine: { flex: 1, height: 1, backgroundColor: '#E2E8F0' },
   dividerText: { marginHorizontal: 12, color: '#94A3B8', fontSize: 12, fontWeight: '500' },
   socialRow: { flexDirection: 'row', gap: 12, marginBottom: 16 },
-  socialBtn: { 
-    flex: 1, 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    justifyContent: 'center', 
-    padding: 12, 
-    borderRadius: 10, 
-    borderWidth: 1, 
-    borderColor: '#E2E8F0', 
-    gap: 8,
-    backgroundColor: '#fff' 
-  },
+  socialBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: 12, borderRadius: 10, borderWidth: 1, borderColor: '#E2E8F0', gap: 8, backgroundColor: '#fff' },
   socialBtnText: { fontWeight: '600', color: '#334155' },
-
-  // Internal footer for "Sign Up" link
   authFooter: { flexDirection: 'row', justifyContent: 'center', marginTop: 16 },
   authFooterText: { color: '#6b7280' },
   authFooterLink: { color: '#0E9384', fontWeight: '700' },

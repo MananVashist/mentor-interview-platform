@@ -25,7 +25,7 @@ export default function LandingPage() {
   const { width } = useWindowDimensions();
   const isSmall = width < 900;
 
-  // 🟢 SEO: JSON-LD 
+  // ?? SEO: JSON-LD 
   useEffect(() => {
     if (Platform.OS === 'web') {
       const orgSchema = {
@@ -65,8 +65,8 @@ export default function LandingPage() {
           const toX = (Math.random() - 0.5) * maxMove;
           const toY = (Math.random() - 0.5) * maxMove;
           return [
-            Animated.timing(xVal, { toValue: toX, duration: 70, useNativeDriver: Platform.OS !== 'web' }),
-            Animated.timing(yVal, { toValue: toY, duration: 70, useNativeDriver: Platform.OS !== 'web' }),
+            Animated.timing(xVal, { toValue: toX, duration: 70, useNativeDriver: Platform.OS == 'web' }),
+            Animated.timing(yVal, { toValue: toY, duration: 70, useNativeDriver: Platform.OS == 'web' }),
           ];
         };
         Animated.parallel([...makeTwitch(leftEyeX, leftEyeY), ...makeTwitch(rightEyeX, rightEyeY)]).start();
@@ -79,29 +79,32 @@ export default function LandingPage() {
   }, [leftEyeX, leftEyeY, rightEyeX, rightEyeY]);
 
   if (Platform.OS !== 'web' && showSplash) return <SplashScreen />;
-
+  // 🟢 MODIFIED: After splash finishes, Native App goes to Sign In.
+  if (Platform.OS !== 'web') {
+    return <Redirect href="/auth/sign-in" />;
+  }
   // Roles Data
   const roles = [
-    { icon: '🚀', title: 'Product Management', desc: 'Master Product Sense, Execution, and Strategy with FAANG PMs.' },
-    { icon: '📊', title: 'Data Analyst / BA', desc: 'Sharpen your SQL, Tableau, and Business Case skills.' },
-    { icon: '🤖', title: 'Data Scientist / ML', desc: 'Deep dive into Modeling, System Design, and Python.' },
-    { icon: '👥', title: 'HR & Behavioral', desc: 'Perfect the STAR method and salary negotiation strategies.' },
+    { icon: '??', title: 'Product Management', desc: 'Master Product Sense, Execution, and Strategy with FAANG PMs.' },
+    { icon: '??', title: 'Data Analyst / BA', desc: 'Sharpen your SQL, Tableau, and Business Case skills.' },
+    { icon: '??', title: 'Data Scientist / ML', desc: 'Deep dive into Modeling, System Design, and Python.' },
+    { icon: '??', title: 'HR & Behavioral', desc: 'Perfect the STAR method and salary negotiation strategies.' },
   ];
 
   // Features Data
   const features = [
     { 
-      icon: '🕵️', 
+      icon: '???', 
       title: 'Anonymous & Private', 
       desc: 'Practice without fear of judgment. Our anonymous booking system protects your identity, ensuring unbiased feedback solely on your skills.' 
     },
     { 
-      icon: '⚡', 
+      icon: '?', 
       title: 'Fully Integrated', 
       desc: 'No messy email threads or external links. Scheduling, payments, and video calls are handled seamlessly inside our platform.' 
     },
     { 
-      icon: '🛡️', 
+      icon: '???', 
       title: '100% Refund Guarantee', 
       desc: 'Your time is valuable. If a mentor cancels or doesn\'t show up, you receive an automatic 100% refund immediately.' 
     },
@@ -117,7 +120,7 @@ export default function LandingPage() {
       <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
         
         {/* Header */}
-        <View style={styles.header} accessibilityRole="banner">
+        <View style={styles.header} accessibilityRole="header">
           <View style={[styles.headerInner, isSmall && styles.headerInnerMobile]}>
             <View style={[styles.brand, isSmall && styles.brandMobile]}>
               {!isSmall && (
@@ -137,7 +140,7 @@ export default function LandingPage() {
               </View>
             </View>
 
-            <View style={[styles.navRight, isSmall && styles.navRightMobile]} accessibilityRole="navigation">
+            <View style={[styles.navRight, isSmall && styles.navRightMobile]} accessibilityRole="header">
               <TouchableOpacity style={[styles.btn, styles.btnSecondary, isSmall && styles.btnMobile]} onPress={() => router.push('/auth/sign-in')}>
                 <Text style={[styles.btnText, isSmall && styles.btnTextMobile]}>LOGIN</Text>
               </TouchableOpacity>
@@ -149,7 +152,7 @@ export default function LandingPage() {
         </View>
 
         {/* Hero */}
-        <View style={styles.heroSection} accessibilityRole="main">
+        <View style={styles.heroSection} accessibilityRole="none">
           <View style={[styles.heroCard, isSmall && styles.heroCardMobile]}>
             <View style={styles.heroContent}>
               <Text style={[styles.heroTitle, isSmall && styles.heroTitleMobile]} accessibilityRole="header" aria-level={2}>
@@ -239,13 +242,13 @@ const styles = StyleSheet.create({
   brand: { flexDirection: 'row', alignItems: 'center' },
   brandMobile: {},
   
-  // 🟢 UPDATED: System Fonts for Logo
+  // ?? UPDATED: System Fonts for Logo
   logoMain: { fontSize: 36, fontWeight: '900', color: '#333', letterSpacing: -1 },
   logoMainCrack: { color: '#333' },
   logoMainJobs: { color: CTA_TEAL },
   logoMainMobile: { fontSize: 24 },
   
-  // 🟢 UPDATED: System Fonts for Tagline
+  // ?? UPDATED: System Fonts for Tagline
   logoTagline: { fontSize: 16, fontWeight: '700', color: CTA_TEAL, marginTop: 0, letterSpacing: 0.5 },
   logoTaglineMobile: { fontSize: 12 },
   
@@ -275,7 +278,7 @@ const styles = StyleSheet.create({
   heroCardMobile: { padding: 32, flexDirection: 'column', alignItems: 'center' },
   heroContent: { maxWidth: 650, zIndex: 1 },
   
-  // 🟢 UPDATED: System Fonts for Hero Title
+  // ?? UPDATED: System Fonts for Hero Title
   heroTitle: { fontSize: 46, fontWeight: '600', color: '#f58742', marginBottom: 16, lineHeight: 64, letterSpacing: -1.5 },
   heroTitleMobile: { fontSize: 36, textAlign: 'center', lineHeight: 42 },
   
@@ -295,7 +298,7 @@ const styles = StyleSheet.create({
   },
   sectionWrapperMobile: { marginTop: 24 },
   
-  // 🟢 UPDATED: System Fonts for Headers
+  // ?? UPDATED: System Fonts for Headers
   sectionHeader: { fontSize: 32, fontWeight: '600', color: '#333', marginBottom: 32, textAlign: 'center', letterSpacing: -0.5 },
   
   gridRow: { 
@@ -342,7 +345,7 @@ const styles = StyleSheet.create({
   roleIcon: { fontSize: 68, marginBottom: 12 },
   featureIcon: { fontSize: 68, marginBottom: 16 },
   
-  // 🟢 UPDATED: System Fonts for Card Titles
+  // ?? UPDATED: System Fonts for Card Titles
   cardTitle: { fontSize: 20, fontWeight: '800', color: '#333', marginBottom: 8, textAlign: 'center' },
   cardDesc: { fontSize: 15, color: '#555', lineHeight: 24, textAlign: 'center', fontWeight: '400' },
 
@@ -357,7 +360,7 @@ const styles = StyleSheet.create({
   },
   missionContent: { maxWidth: 800 },
   
-  // 🟢 UPDATED: System Fonts for Mission (Added Italic for quote style)
+  // ?? UPDATED: System Fonts for Mission (Added Italic for quote style)
   missionText: {
     fontSize: 28,
     fontWeight: '500',
@@ -371,7 +374,7 @@ const styles = StyleSheet.create({
   // CTA
   ctaSection: { paddingVertical: 80, alignItems: 'center', backgroundColor: '#f8f5f0', paddingHorizontal: 20 },
   
-  // 🟢 UPDATED: System Fonts for CTA Title
+  // ?? UPDATED: System Fonts for CTA Title
   ctaTitle: { fontSize: 32, fontWeight: '600', color: '#333', marginBottom: 32, textAlign: 'center', letterSpacing: -1 },
   ctaTitleMobile: { fontSize: 32 },
   

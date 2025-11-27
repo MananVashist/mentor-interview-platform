@@ -37,7 +37,6 @@ export default function MentorLayout() {
 
       // 3. Get fresh mentor status from DB (don't trust store)
       let currentMentor = null;
-      
       try {
         currentMentor = await mentorService.getMentorById(user.id);
         
@@ -53,8 +52,6 @@ export default function MentorLayout() {
 
       // 4. STRICT CHECK - Only 'approved' status allowed
       const isUnderReviewPage = pathname.includes('/under-review');
-      
-      // ✅ FIX: Only check 'status' column (ignore deprecated is_approved)
       const isApproved = currentMentor?.status === 'approved';
 
       if (!isApproved && !isUnderReviewPage) {
@@ -177,6 +174,11 @@ export default function MentorLayout() {
               <Text style={{ marginTop: 12, color: '#6B7280' }}>Verifying account status...</Text>
           </View>
       );
+  }
+
+  // 🟢 SPECIAL CASE: Hide Sidebar for Under Review screen
+  if (pathname.includes('/under-review')) {
+    return <Slot />;
   }
 
   return (

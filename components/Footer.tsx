@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 
@@ -13,7 +13,7 @@ export const Footer = () => {
   );
 
   return (
-    <View style={styles.footer} accessibilityRole="contentinfo">
+    <View style={styles.footer} accessibilityRole="none">
       <View style={[styles.footerContent, isSmall && styles.footerContentMobile]}>
         
         <TouchableOpacity onPress={() => router.push('/')} accessibilityRole="link">
@@ -86,7 +86,7 @@ const styles = StyleSheet.create({
     fontSize: 14, 
     textDecorationLine: 'none' 
   },
-  // 🟢 We draw the dot manually using CSS styles instead of a text character
+  // ?? We draw the dot manually using CSS styles instead of a text character
   dotSeparator: {
     width: 4,
     height: 4,
