@@ -1,4 +1,4 @@
-// app/mentor/profile.tsx
+ï»¿// app/mentor/profile.tsx
 import { useState, useEffect } from 'react';
 import { View, ScrollView, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -60,7 +60,7 @@ export default function MentorProfileScreen() {
         // 1) Load mentor row - We now SELECT the new profile_ids column
         const { data: mentor, error: mentorError } = await supabase
           .from('mentors')
-          .select('id, professional_title, experience_description, years_of_experience, bio, profile_ids')
+          .select('id, professional_title, experience_description, years_of_experience, description, profile_ids')
           .eq('profile_id', profile.id)
           .maybeSingle();
 
@@ -183,7 +183,7 @@ export default function MentorProfileScreen() {
         <Section style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
           <ActivityIndicator color={colors.primary} size="large" />
           <AppText style={{ marginTop: spacing.md, color: colors.textSecondary, fontSize: typography.size.md }}>
-            Loading your profile…
+            Loading your profileâ€¦
           </AppText>
         </Section>
       </ScreenBackground>
@@ -396,7 +396,7 @@ export default function MentorProfileScreen() {
         {/* Save button */}
         <Section>
           <Button
-            title={saving ? 'Saving Changes…' : 'Save Profile'}
+            title={saving ? 'Saving Changesâ€¦' : 'Save Profile'}
             onPress={handleSave}
             disabled={saving || !mentorId}
             style={styles.saveButton}

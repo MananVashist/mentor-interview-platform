@@ -159,9 +159,6 @@ export default function BookingsScreen() {
             ListEmptyComponent={
                 <View style={styles.center}>
                     <Text style={styles.emptyText}>No bookings found.</Text>
-                    <TouchableOpacity onPress={() => router.push('/candidate')} style={{ marginTop: 12 }}>
-                        <Text style={{ color: '#2563eb', fontWeight: 'bold' }}>Book a Session</Text>
-                    </TouchableOpacity>
                 </View>
             }
         />

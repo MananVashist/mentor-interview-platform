@@ -1,4 +1,4 @@
-// app/admin/templates.tsx
+﻿// app/admin/templates.tsx
 import React, { useState, useEffect } from 'react';
 import { 
   View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity, 
@@ -8,19 +8,19 @@ import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/lib/supabase/client';
 
 export default function TemplateBuilder() {
-  const [questions, setQuestions] = useState<any[]>([]);
+  const [groupedQuestions, setGroupedQuestions] = useState<any[]>([]); 
   const [profiles, setProfiles] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   
-  // Filter / Form State
+  // Filter State
   const [selectedProfile, setSelectedProfile] = useState('');
-  const [selectedRound, setSelectedRound] = useState('round_1'); // round_1, round_2, hr_round
+  const [selectedRound, setSelectedRound] = useState('round_1'); 
   
-  // New Question Form
-  const [section, setSection] = useState('');
-  const [desc, setDesc] = useState('');
-  const [example, setExample] = useState('');
-  const [type, setType] = useState('boolean'); // boolean, rating, text
+  // Form State
+  const [questionTitle, setQuestionTitle] = useState(''); // Acts as Parent Question
+  const [criteriaDesc, setCriteriaDesc] = useState('');   // Acts as Criteria
+  const [criteriaExample, setCriteriaExample] = useState('');
+  const [criteriaType, setCriteriaType] = useState('boolean'); // boolean, rating, text
 
   useEffect(() => {
     fetchMeta();
@@ -30,17 +30,15 @@ export default function TemplateBuilder() {
     if (selectedProfile) fetchQuestions();
   }, [selectedProfile, selectedRound]);
 
-  // 1. Fetch available profiles for dropdown logic
   const fetchMeta = async () => {
     const { data } = await supabase.from('interview_profiles_admin').select('name').eq('is_active', true);
     if (data && data.length > 0) {
         const names = data.map(d => d.name);
         setProfiles(names);
-        setSelectedProfile(names[0]); // Default to first
+        setSelectedProfile(names[0]);
     }
   };
 
-  // 2. Fetch Questions for current selection
   const fetchQuestions = async () => {
     setLoading(true);
     const { data, error } = await supabase
@@ -48,31 +46,43 @@ export default function TemplateBuilder() {
       .select('*')
       .eq('target_profile', selectedProfile)
       .eq('round', selectedRound)
-      .order('section_title', { ascending: true })
-      .order('order_index', { ascending: true });
+      .order('created_at', { ascending: false }); // Most recent first
       
-    if (!error) setQuestions(data || []);
+    if (!error && data) {
+        // Group by 'section_title' (Parent Question)
+        const grouped = data.reduce((acc: any, item) => {
+            const key = item.section_title;
+            if (!acc[key]) acc[key] = [];
+            acc[key].push(item);
+            return acc;
+        }, {});
+        
+        setGroupedQuestions(Object.keys(grouped).map(key => ({
+            title: key,
+            data: grouped[key]
+        })));
+    }
     setLoading(false);
   };
 
-  const handleAdd = async () => {
-    if (!desc || !section) return Alert.alert("Error", "Description and Section are required");
+  const handleAddCriteria = async () => {
+    if (!questionTitle || !criteriaDesc) return Alert.alert("Error", "Question Title and Criteria Description are required");
 
     const { error } = await supabase.from('feedback_questions').insert({
       target_profile: selectedProfile,
       round: selectedRound,
-      section_title: section,
-      description: desc,
-      example_text: example,
-      question_type: type,
-      order_index: questions.length + 1
+      section_title: questionTitle.trim(),
+      description: criteriaDesc.trim(),
+      example_text: criteriaExample,
+      question_type: criteriaType,
     });
 
     if (error) Alert.alert("Error", error.message);
     else {
-      setDesc('');
-      setExample('');
-      fetchQuestions(); // Refresh list
+      setCriteriaDesc('');
+      setCriteriaExample('');
+      // Keep questionTitle so you can add more criteria to the same question easily
+      fetchQuestions(); 
     }
   };
 
@@ -81,25 +91,33 @@ export default function TemplateBuilder() {
     fetchQuestions();
   };
 
-  const renderQuestion = ({ item }: { item: any }) => (
-    <View style={styles.itemCard}>
-        <View style={{flex: 1}}>
-            <Text style={styles.itemSection}>{item.section_title}</Text>
-            <Text style={styles.itemDesc}>{item.description}</Text>
-            {item.example_text && <Text style={styles.itemExample}>Ex: {item.example_text}</Text>}
-            <View style={styles.badgeRow}>
-                <Text style={styles.itemType}>{item.question_type}</Text>
-            </View>
+  const renderGroup = ({ item }: { item: any }) => (
+    <View style={styles.groupCard}>
+        <View style={styles.groupHeader}>
+            <Ionicons name="help-circle" size={18} color="#2563eb" />
+            <Text style={styles.groupTitle}>{item.title}</Text>
         </View>
-        <TouchableOpacity onPress={() => handleDelete(item.id)} style={{padding: 8}}>
-            <Ionicons name="trash-outline" size={20} color="#EF4444" />
-        </TouchableOpacity>
+        
+        {item.data.map((criteria: any) => (
+            <View key={criteria.id} style={styles.criteriaRow}>
+                <View style={styles.criteriaInfo}>
+                    <Text style={styles.criteriaText}>• {criteria.description}</Text>
+                    {criteria.example_text ? <Text style={styles.exampleText}>Guide: {criteria.example_text}</Text> : null}
+                    <View style={styles.typeBadge}>
+                         <Text style={styles.typeBadgeText}>{criteria.question_type}</Text>
+                    </View>
+                </View>
+                <TouchableOpacity onPress={() => handleDelete(criteria.id)}>
+                    <Ionicons name="trash-outline" size={18} color="#EF4444" />
+                </TouchableOpacity>
+            </View>
+        ))}
     </View>
   );
 
   return (
     <View style={styles.container}>
-      <Text style={styles.headerTitle}>Checklist Builder</Text>
+      <Text style={styles.headerTitle}>Template Builder</Text>
       
       {/* 1. Filters (Profile & Round) */}
       <View style={styles.filterRow}>
@@ -129,13 +147,13 @@ export default function TemplateBuilder() {
       </View>
 
       <View style={styles.contentRow}>
-          {/* LEFT: List */}
+          {/* LEFT: Hierarchical List */}
           <View style={styles.listContainer}>
              {loading ? <ActivityIndicator color="#2563eb" /> : (
                  <FlatList 
-                    data={questions} 
-                    renderItem={renderQuestion}
-                    keyExtractor={item => item.id}
+                    data={groupedQuestions} 
+                    renderItem={renderGroup}
+                    keyExtractor={item => item.title}
                     ListEmptyComponent={<Text style={styles.empty}>No questions added yet.</Text>}
                  />
              )}
@@ -144,28 +162,44 @@ export default function TemplateBuilder() {
           {/* RIGHT: Add Form */}
           <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.formContainer}>
             <ScrollView>
-                <Text style={styles.cardTitle}>Add Question</Text>
+                <Text style={styles.cardTitle}>Add Criteria</Text>
                 
-                <Text style={styles.label}>Section Title</Text>
-                <TextInput style={styles.input} value={section} onChangeText={setSection} placeholder="e.g. Problem Solving" />
+                <Text style={styles.label}>Parent Question</Text>
+                <TextInput 
+                    style={styles.input} 
+                    value={questionTitle} 
+                    onChangeText={setQuestionTitle} 
+                    placeholder="e.g. Root Cause Analysis" 
+                />
 
-                <Text style={styles.label}>Question</Text>
-                <TextInput style={styles.input} value={desc} onChangeText={setDesc} placeholder="Did they identify the root cause?" />
+                <Text style={styles.label}>Evaluation Criteria</Text>
+                <TextInput 
+                    style={styles.input} 
+                    value={criteriaDesc} 
+                    onChangeText={setCriteriaDesc} 
+                    placeholder="e.g. Did they drill down to the root?" 
+                    multiline
+                />
 
-                <Text style={styles.label}>Mentor Guide (Example)</Text>
-                <TextInput style={styles.input} value={example} onChangeText={setExample} placeholder="Look for 5 Whys framework" />
+                <Text style={styles.label}>Mentor Guide (Optional)</Text>
+                <TextInput 
+                    style={styles.input} 
+                    value={criteriaExample} 
+                    onChangeText={setCriteriaExample} 
+                    placeholder="Look for 5 Whys" 
+                />
 
-                <Text style={styles.label}>Response Type</Text>
+                <Text style={styles.label}>Criteria Type</Text>
                 <View style={styles.typeRow}>
                     {['boolean', 'rating', 'text'].map(t => (
-                        <TouchableOpacity key={t} onPress={() => setType(t)} style={[styles.typeChip, type === t && styles.typeChipActive]}>
-                            <Text style={[styles.typeText, type === t && styles.textWhite]}>{t.toUpperCase()}</Text>
+                        <TouchableOpacity key={t} onPress={() => setCriteriaType(t)} style={[styles.typeChip, criteriaType === t && styles.typeChipActive]}>
+                            <Text style={[styles.typeText, criteriaType === t && styles.textWhite]}>{t.toUpperCase()}</Text>
                         </TouchableOpacity>
                     ))}
                 </View>
 
-                <TouchableOpacity style={styles.addBtn} onPress={handleAdd}>
-                    <Text style={styles.addBtnText}>+ Add to Checklist</Text>
+                <TouchableOpacity style={styles.addBtn} onPress={handleAddCriteria}>
+                    <Text style={styles.addBtnText}>+ Add Criteria</Text>
                 </TouchableOpacity>
             </ScrollView>
           </KeyboardAvoidingView>
@@ -190,12 +224,16 @@ const styles = StyleSheet.create({
   listContainer: { flex: 2 },
   empty: { textAlign: 'center', marginTop: 40, color: '#94a3b8' },
 
-  itemCard: { backgroundColor: '#FFF', padding: 12, borderRadius: 8, marginBottom: 8, flexDirection: 'row', alignItems: 'center', shadowColor: '#000', shadowOpacity: 0.05, elevation: 1 },
-  itemSection: { fontSize: 10, fontWeight: '800', color: '#2563eb', textTransform: 'uppercase', marginBottom: 2 },
-  itemDesc: { fontSize: 14, fontWeight: '600', color: '#1e293b' },
-  itemExample: { fontSize: 12, color: '#64748b', fontStyle: 'italic', marginTop: 2 },
-  badgeRow: { flexDirection: 'row', marginTop: 6 },
-  itemType: { fontSize: 10, backgroundColor: '#F1F5F9', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, overflow: 'hidden', color: '#475569' },
+  groupCard: { backgroundColor: '#FFF', borderRadius: 8, marginBottom: 12, padding: 12, borderLeftWidth: 4, borderLeftColor: '#2563eb', shadowColor: '#000', shadowOpacity: 0.05, elevation: 1 },
+  groupHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12, paddingBottom: 8, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
+  groupTitle: { fontSize: 16, fontWeight: '700', color: '#1e293b' },
+  
+  criteriaRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12, paddingLeft: 8 },
+  criteriaInfo: { flex: 1, marginRight: 8 },
+  criteriaText: { fontSize: 14, color: '#334155', fontWeight: '500' },
+  exampleText: { fontSize: 12, color: '#64748b', fontStyle: 'italic', marginTop: 2, marginLeft: 8 },
+  typeBadge: { alignSelf: 'flex-start', backgroundColor: '#F1F5F9', borderRadius: 4, paddingHorizontal: 4, paddingVertical: 2, marginTop: 4, marginLeft: 8 },
+  typeBadgeText: { fontSize: 10, color: '#64748b', fontWeight: '700', textTransform: 'uppercase' },
 
   formContainer: { flex: 1, backgroundColor: '#FFF', padding: 16, borderRadius: 12, shadowColor: '#000', shadowOpacity: 0.05, elevation: 1 },
   cardTitle: { fontSize: 18, fontWeight: '700', marginBottom: 16 },

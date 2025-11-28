@@ -1,11 +1,12 @@
 ﻿import React, { useEffect, useState } from 'react';
 import { 
   View, ScrollView, StyleSheet, ActivityIndicator, 
-  TouchableOpacity, RefreshControl, StatusBar, Alert, Linking, Platform
+  TouchableOpacity, RefreshControl, StatusBar, Alert, Linking, Platform, Modal
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { DateTime } from 'luxon';
 import { useRouter } from 'expo-router';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 // Libs
 import { supabase } from '@/lib/supabase/client';
@@ -13,6 +14,162 @@ import { theme } from '@/lib/theme';
 import { Heading, AppText, Card, Section, ScreenBackground } from '@/lib/ui';
 import { useAuthStore } from '@/lib/store';
 
+// --- SUB-COMPONENT: SMART BOOKING CARD ---
+// This handles the 4 states: Approval, Scheduled, Join, Post
+const BookingCard = ({ session, onAccept, onReschedule, onViewDetails, onJoin, onEvaluate }: any) => {
+  const date = DateTime.fromISO(session.scheduled_at);
+  const diffMinutes = date.diffNow('minutes').minutes; 
+  // diffMinutes > 0 = Future | diffMinutes < 0 = Past
+
+  // 🧠 LOGIC: Determine UI State
+  let uiState = 'SCHEDULED';
+  
+  if (session.status === 'pending') {
+    uiState = 'APPROVAL';
+  } else if (session.status === 'completed') {
+    uiState = 'POST';
+  } else {
+    // Status is 'confirmed'/'scheduled', checking time:
+    if (diffMinutes <= 15 && diffMinutes > -60) {
+      // Starts in 15 mins OR started less than an hour ago
+      uiState = 'JOIN';
+    } else if (diffMinutes <= -60) {
+      // Meeting happened over an hour ago
+      uiState = 'POST';
+    } else {
+      uiState = 'SCHEDULED';
+    }
+  }
+
+  // --- RENDER HELPERS ---
+  const professionalTitle = session.candidate?.professional_title || 'Candidate'; 
+  const targetProfile = session.package?.target_profile || 'Interview';
+  const mentorPayout = session.package?.mentor_payout_inr || 0;
+  
+  // Extract round number from round string (e.g., "round_1" -> "1")
+  const roundNumber = session.round ? session.round.match(/\d+/)?.[0] || '1' : '1';
+
+  return (
+    <Card style={styles.sessionCard}>
+      {/* Split Layout Container */}
+      <View style={styles.splitContainer}>
+        
+        {/* LEFT SIDE: Interview Info */}
+        <View style={styles.leftSection}>
+          {/* Main Title */}
+          <Heading level={4} style={styles.cardTitle}>
+            {targetProfile} interview with {professionalTitle}
+          </Heading>
+          
+          {/* Round Info */}
+          <View style={styles.infoRow}>
+            <Ionicons name="layers-outline" size={14} color="#6B7280" />
+            <AppText style={styles.infoText}>Round {roundNumber}</AppText>
+          </View>
+
+          {/* Date & Time */}
+          <View style={styles.infoRow}>
+            <Ionicons name="calendar-outline" size={14} color="#6B7280" />
+            <AppText style={styles.infoText}>
+              {date.toFormat('MMM dd, yyyy')} • {date.toFormat('h:mm a')}
+            </AppText>
+          </View>
+
+          {/* Duration */}
+          <View style={styles.infoRow}>
+            <Ionicons name="time-outline" size={14} color="#6B7280" />
+            <AppText style={styles.infoText}>2 x 55 min (45 min interview + 10 min Q&A)</AppText>
+          </View>
+
+          {/* Payout */}
+          <View style={styles.payoutRow}>
+            <Ionicons name="wallet-outline" size={14} color="#059669" />
+            <AppText style={styles.payoutText}>₹{mentorPayout.toLocaleString()}</AppText>
+            <AppText style={styles.platformFee}>(Platform takes 20%)</AppText>
+          </View>
+        </View>
+
+        {/* RIGHT SIDE: Badge */}
+        <View style={styles.rightSection}>
+          <Badge state={uiState} />
+        </View>
+      </View>
+
+      <View style={styles.cardDivider} />
+
+      {/* --- DYNAMIC ACTIONS BASED ON STATE --- */}
+
+      {/* 1. APPROVAL STATE */}
+      {uiState === 'APPROVAL' && (
+        <View style={styles.actionRowFull}>
+          <TouchableOpacity style={[styles.btnFull, styles.btnOutline]} onPress={() => onReschedule(session)}>
+            <AppText style={styles.textPrimary}>Reschedule</AppText>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.btnFull, styles.btnPrimary]} onPress={() => onAccept(session.id)}>
+            <AppText style={styles.textWhite}>Accept</AppText>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* 2. SCHEDULED STATE */}
+      {uiState === 'SCHEDULED' && (
+        <View style={styles.actionRowFull}>
+          <TouchableOpacity 
+            style={[styles.btnFull, styles.btnSecondary]} 
+            onPress={() => onViewDetails(session.interview_details || "No details provided by admin.")}
+          >
+            <AppText style={styles.textPrimary}>View Details</AppText>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* 3. JOIN MEETING STATE (Active 15 mins before) */}
+      {uiState === 'JOIN' && (
+        <View style={styles.actionRowFull}>
+          <TouchableOpacity style={[styles.btnFull, styles.btnGreen]} onPress={() => onJoin(session.meeting_link)}>
+            <Ionicons name="videocam" size={18} color="#fff" style={{marginRight:4}}/>
+            <AppText style={styles.textWhite}>Join Meeting</AppText>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.btnFull, styles.btnPrimary]} onPress={() => onEvaluate(session.id, 'edit')}>
+            <AppText style={styles.textWhite}>Evaluate</AppText>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* 4. POST MEETING STATE */}
+      {uiState === 'POST' && (
+        <View style={styles.actionRowFull}>
+          <TouchableOpacity 
+            style={[styles.btnFull, session.status === 'completed' ? styles.btnSecondary : styles.btnPrimary]} 
+            onPress={() => onEvaluate(session.id, session.status === 'completed' ? 'read' : 'edit')}
+          >
+            <AppText style={session.status === 'completed' ? styles.textPrimary : styles.textWhite}>
+              {session.status === 'completed' ? 'View Evaluation' : 'Submit Evaluation'}
+            </AppText>
+          </TouchableOpacity>
+        </View>
+      )}
+    </Card>
+  );
+};
+
+// Helper for the Status Badge
+const Badge = ({ state }: { state: string }) => {
+    let bg = '#E5E7EB'; let text = '#374151'; let label = state;
+    if(state === 'APPROVAL') { bg = '#FEF3C7'; text = '#B45309'; label = 'Needs Approval'; }
+    if(state === 'SCHEDULED') { bg = '#DBEAFE'; text = '#1E40AF'; label = 'Scheduled'; }
+    if(state === 'JOIN') { bg = '#D1FAE5'; text = '#047857'; label = 'Join Now'; }
+    if(state === 'POST') { bg = '#F3F4F6'; text = '#6B7280'; label = 'Finished'; }
+    
+    return (
+        <View style={{ backgroundColor: bg, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 }}>
+            <AppText style={{ color: text, fontSize: 10, fontWeight: '700', textTransform: 'uppercase' }}>{label}</AppText>
+        </View>
+    );
+};
+
+
+// --- MAIN SCREEN ---
 export default function MentorBookingsScreen() {
   const { user } = useAuthStore();
   const router = useRouter();
@@ -22,51 +179,41 @@ export default function MentorBookingsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [stats, setStats] = useState({ upcoming: 0, completed: 0, earnings: 0 });
 
+  // Modal States
+  const [detailModalVisible, setDetailModalVisible] = useState(false);
+  const [detailContent, setDetailContent] = useState("");
+  
+  const [rescheduleModalVisible, setRescheduleModalVisible] = useState(false);
+  const [selectedSession, setSelectedSession] = useState<any>(null);
+  const [newDate, setNewDate] = useState(new Date());
+
   const fetchSessions = async () => {
     if (!user) return;
-    console.log("Fetching mentor sessions...");
-
     try {
-      // 1. Fetch Sessions linked to this Mentor
       const { data, error } = await supabase
         .from('interview_sessions')
         .select(`
-          id,
-          scheduled_at,
-          status,
-          round,
-          meeting_link, 
-          package:interview_packages (
-            total_amount_inr,
-            mentor_payout_inr
-          ),
+          id, scheduled_at, status, round, meeting_link,
+          package:interview_packages (total_amount_inr, mentor_payout_inr, target_profile),
           candidate:candidates (
+            professional_title, 
             profile:profiles ( full_name, email )
           )
         `)
         .eq('mentor_id', user.id)
-        // 🎯 FIX: Sort by Created Date (Newest First) to find your test booking
-        .order('created_at', { ascending: false });
+        .order('scheduled_at', { ascending: true }); // Order by schedule time for better flow
 
       if (error) throw error;
 
-      const rawSessions = data || [];
-      setSessions(rawSessions);
-
-      // 2. Calculate Stats
-      let upcoming = 0;
-      let completed = 0;
-      let earnings = 0;
-
-      rawSessions.forEach(s => {
-        if (s.status === 'scheduled' || s.status === 'confirmed') upcoming++;
+      setSessions(data || []);
+      
+      // Calculate Stats
+      let upcoming = 0; let completed = 0; let earnings = 0;
+      (data || []).forEach(s => {
+        if (s.status === 'scheduled') upcoming++;
         if (s.status === 'completed') completed++;
-        
-        if (s.status !== 'cancelled' && s.package?.mentor_payout_inr) {
-           earnings += (s.package.mentor_payout_inr / 2);
-        }
+        if (s.status !== 'cancelled' && s.package?.mentor_payout_inr) earnings += (s.package.mentor_payout_inr / 2);
       });
-
       setStats({ upcoming, completed, earnings });
 
     } catch (err) {
@@ -77,66 +224,66 @@ export default function MentorBookingsScreen() {
     }
   };
 
-  useEffect(() => {
-    fetchSessions();
-  }, [user]);
+  useEffect(() => { fetchSessions(); }, [user]);
+  const onRefresh = () => { setRefreshing(true); fetchSessions(); };
 
-  const onRefresh = () => {
-    setRefreshing(true);
-    fetchSessions();
+  // --- ACTIONS ---
+
+  const handleAccept = async (id: string) => {
+    Alert.alert("Confirm", "Accept this interview request?", [
+        { text: "Cancel", style: "cancel" },
+        { text: "Accept", onPress: async () => {
+            const { error } = await supabase.from('interview_sessions').update({ status: 'scheduled' }).eq('id', id);
+            if (!error) fetchSessions();
+        }}
+    ]);
   };
 
-  // Join Meeting Function
-  const handleJoin = (link: string) => {
-    if (!link) {
-        Alert.alert("No Link", "Meeting link is not ready yet.");
-        return;
-    }
+  const handleRescheduleStart = (session: any) => {
+    setSelectedSession(session);
+    setNewDate(new Date(session.scheduled_at));
+    setRescheduleModalVisible(true);
+  };
+
+  const handleRescheduleConfirm = async () => {
+    if (!selectedSession) return;
+    const { error } = await supabase
+        .from('interview_sessions')
+        .update({ status: 'scheduled', scheduled_at: newDate.toISOString() })
+        .eq('id', selectedSession.id);
     
-    if (Platform.OS === 'web') {
-        const win = window.open(link, '_blank');
-        if (!win) Alert.alert("Popup Blocked", "Please allow popups.");
+    setRescheduleModalVisible(false);
+    if (!error) {
+        Alert.alert("Success", "Meeting rescheduled and confirmed.");
+        fetchSessions();
     } else {
-        Linking.openURL(link).catch(err => {
-            console.error("Linking error:", err);
-            Alert.alert("Error", "Could not open link.");
-        });
+        Alert.alert("Error", "Failed to reschedule.");
     }
   };
 
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-      </View>
-    );
-  }
-
-  const getStatusStyle = (status: string) => {
-    switch (status) {
-      case 'scheduled':
-      case 'confirmed': 
-        return { bg: '#ECFDF5', text: '#059669', icon: 'videocam' };
-      case 'completed': 
-        return { bg: '#F3F4F6', text: '#6B7280', icon: 'checkmark-circle' };
-      case 'cancelled': 
-        return { bg: '#FEF2F2', text: '#DC2626', icon: 'close-circle' };
-      default: 
-        return { bg: '#FFF7ED', text: '#D97706', icon: 'time' };
-    }
+  const handleJoin = (link: string) => {
+    if (!link) return Alert.alert("No Link", "Meeting link is not ready yet.");
+    Linking.openURL(link).catch(() => Alert.alert("Error", "Could not open link."));
   };
+
+  const handleViewDetails = (details: string) => {
+    setDetailContent(details);
+    setDetailModalVisible(true);
+  };
+
+  const handleEvaluate = (sessionId: string, mode: 'edit' | 'read') => {
+    router.push({ pathname: `/mentor/session/${sessionId}`, params: { mode } });
+  };
+
+  if (loading) return <View style={styles.loadingContainer}><ActivityIndicator size="large" color={theme.colors.primary} /></View>;
 
   return (
     <ScreenBackground style={styles.container}>
       <StatusBar barStyle="dark-content" />
-      <ScrollView 
-        contentContainerStyle={styles.scrollContent}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-      >
+      <ScrollView contentContainerStyle={styles.scrollContent} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
+        
+        {/* Header */}
         <Section style={styles.header}>
-          <View style={styles.headerIcon}>
-            <Ionicons name="briefcase" size={32} color={theme.colors.primary} />
-          </View>
           <Heading level={1} style={{textAlign: 'center'}}>Mentor Dashboard</Heading>
           <AppText style={styles.headerSub}>Manage your upcoming interviews</AppText>
         </Section>
@@ -144,37 +291,25 @@ export default function MentorBookingsScreen() {
         {/* Stats Grid */}
         <View style={styles.statsGrid}>
           <Card style={styles.statCard}>
-            <Ionicons name="calendar" size={24} color={theme.colors.primary} />
             <AppText style={styles.statValue}>{stats.upcoming}</AppText>
             <AppText style={styles.statLabel}>Upcoming</AppText>
           </Card>
           <Card style={styles.statCard}>
-            <Ionicons name="checkmark-done-circle" size={24} color="#059669" />
             <AppText style={styles.statValue}>{stats.completed}</AppText>
             <AppText style={styles.statLabel}>Completed</AppText>
           </Card>
           <Card style={[styles.statCard, styles.earningsCard]}>
-            <Ionicons name="cash" size={24} color="#FFF" />
-            <AppText style={[styles.statValue, {color:'#FFF'}]}>
-              ₹{stats.earnings.toLocaleString()}
-            </AppText>
-            <AppText style={[styles.statLabel, {color: 'rgba(255,255,255,0.8)'}]}>
-              Earnings
-            </AppText>
+            <AppText style={[styles.statValue, {color:'#FFF'}]}>₹{stats.earnings.toLocaleString()}</AppText>
+            <AppText style={[styles.statLabel, {color: 'rgba(255,255,255,0.8)'}]}>Earnings</AppText>
           </Card>
         </View>
 
-        {/* --- NEW BUTTON: Manage Availability --- */}
-        <TouchableOpacity 
-          style={styles.availabilityBtn}
-          onPress={() => router.push('/mentor/availability')}
-        >
+        <TouchableOpacity style={styles.availabilityBtn} onPress={() => router.push('/mentor/availability')}>
           <Ionicons name="time-outline" size={22} color="#FFF" />
           <AppText style={styles.availabilityBtnText}>Manage Availability</AppText>
         </TouchableOpacity>
 
         <View style={styles.divider} />
-
         <Heading level={3} style={styles.sectionTitle}>Your Schedule</Heading>
         
         {sessions.length === 0 ? (
@@ -184,69 +319,63 @@ export default function MentorBookingsScreen() {
           </View>
         ) : (
           <View style={styles.list}>
-            {sessions.map((session) => {
-              const date = DateTime.fromISO(session.scheduled_at);
-              const config = getStatusStyle(session.status);
-              const candidateName = session.candidate?.profile?.full_name || 'Candidate';
-              const isActionable = session.status === 'confirmed' || session.status === 'scheduled';
-              const isCompleted = session.status === 'completed';
-
-              return (
-                <Card key={session.id} style={styles.sessionCard}>
-                  <View style={styles.dateBox}>
-                    <AppText style={styles.dateMonth}>{date.toFormat('MMM')}</AppText>
-                    <AppText style={styles.dateDay}>{date.toFormat('dd')}</AppText>
-                  </View>
-
-                  <View style={styles.infoCol}>
-                    <View style={styles.row}>
-                      <AppText style={styles.timeText}>
-                        {date.toFormat('h:mm a')} • {date.toFormat('cccc')}
-                      </AppText>
-                      <View style={[styles.statusChip, { backgroundColor: config.bg }]}>
-                        <AppText style={[styles.statusText, { color: config.text }]}>
-                          {session.status}
-                        </AppText>
-                      </View>
-                    </View>
-
-                    <Heading level={4} style={styles.candidateName}>
-                      {candidateName}
-                    </Heading>
-                    
-                    <AppText style={styles.roundName}>
-                      {session.round ? session.round.replace('_', ' ') : 'Interview'}
-                    </AppText>
-
-                    <View style={styles.actionRow}>
-                        {isActionable && (
-                        <TouchableOpacity 
-                            style={styles.joinBtn}
-                            onPress={() => handleJoin(session.meeting_link)}
-                        >
-                            <Ionicons name="videocam" size={16} color="#FFF" />
-                            <AppText style={styles.joinBtnText}>Start Call</AppText>
-                        </TouchableOpacity>
-                        )}
-
-                        <TouchableOpacity 
-                            style={[styles.evalBtn, isCompleted && styles.evalBtnCompleted]}
-                            onPress={() => router.push(`/mentor/session/${session.id}`)}
-                        >
-                            <AppText style={[styles.evalBtnText, isCompleted && {color: '#6B7280'}]}>
-                                {isCompleted ? 'View Feedback' : 'Evaluate'}
-                            </AppText>
-                            <Ionicons name="chevron-forward" size={16} color={isCompleted ? '#6B7280' : theme.colors.primary} />
-                        </TouchableOpacity>
-                    </View>
-
-                  </View>
-                </Card>
-              );
-            })}
+            {sessions.map((session) => (
+                <BookingCard 
+                    key={session.id} 
+                    session={session}
+                    onAccept={handleAccept}
+                    onReschedule={handleRescheduleStart}
+                    onViewDetails={handleViewDetails}
+                    onJoin={handleJoin}
+                    onEvaluate={handleEvaluate}
+                />
+            ))}
           </View>
         )}
       </ScrollView>
+
+      {/* --- MODAL 1: VIEW DETAILS --- */}
+      <Modal visible={detailModalVisible} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+                <Heading level={3} style={{marginBottom:12}}>Interview Details</Heading>
+                <AppText style={{marginBottom: 20, lineHeight: 22}}>{detailContent}</AppText>
+                <TouchableOpacity onPress={() => setDetailModalVisible(false)} style={styles.modalCloseBtn}>
+                    <AppText style={styles.textWhite}>Close</AppText>
+                </TouchableOpacity>
+            </View>
+        </View>
+      </Modal>
+
+      {/* --- MODAL 2: RESCHEDULE --- */}
+      <Modal visible={rescheduleModalVisible} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+                <Heading level={3} style={{marginBottom:12}}>Reschedule Interview</Heading>
+                <AppText style={{marginBottom: 20}}>Select a new date and time for this candidate.</AppText>
+                
+                <View style={{alignItems:'center', marginBottom: 20}}>
+                     <DateTimePicker
+                        value={newDate}
+                        mode="datetime"
+                        display="spinner"
+                        onChange={(e, date) => date && setNewDate(date)}
+                        textColor="black"
+                     />
+                </View>
+
+                <View style={styles.actionRow}>
+                    <TouchableOpacity onPress={() => setRescheduleModalVisible(false)} style={[styles.btn, styles.btnOutline, {flex:1}]}>
+                        <AppText style={styles.textPrimary}>Cancel</AppText>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={handleRescheduleConfirm} style={[styles.btn, styles.btnPrimary, {flex:1}]}>
+                        <AppText style={styles.textWhite}>Confirm</AppText>
+                    </TouchableOpacity>
+                </View>
+            </View>
+        </View>
+      </Modal>
+
     </ScreenBackground>
   );
 }
@@ -255,70 +384,64 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.colors.background },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   scrollContent: { padding: 20, paddingBottom: 40 },
-  
   header: { alignItems: 'center', marginBottom: 24 },
-  headerIcon: { width: 64, height: 64, borderRadius: 32, backgroundColor: '#E0F2FE', alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
   headerSub: { color: theme.colors.text.light, marginTop: 4 },
-
+  
+  // Stats
   statsGrid: { flexDirection: 'row', gap: 12, marginBottom: 24 },
   statCard: { flex: 1, alignItems: 'center', padding: 16, borderRadius: 16, backgroundColor: '#FFF', borderWidth: 1, borderColor: theme.colors.border },
   earningsCard: { backgroundColor: theme.colors.primary, borderWidth: 0 },
   statValue: { fontSize: 20, fontWeight: '700', color: theme.colors.text.main, marginTop: 8 },
   statLabel: { fontSize: 12, color: theme.colors.text.light },
 
-  // --- NEW STYLES FOR AVAILABILITY BUTTON ---
-  availabilityBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#0E9384', // Primary color
-    paddingVertical: 14,
-    borderRadius: 12,
-    marginBottom: 24,
-    gap: 8,
-    // Optional shadow for depth
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  availabilityBtnText: {
-    color: '#FFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  // ----------------------------------------
+  // Availability Btn
+  availabilityBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#0E9384', paddingVertical: 14, borderRadius: 12, marginBottom: 24, gap: 8 },
+  availabilityBtnText: { color: '#FFF', fontSize: 16, fontWeight: '600' },
 
   divider: { height: 1, backgroundColor: theme.colors.border, marginBottom: 24 },
   sectionTitle: { marginBottom: 16 },
-
   list: { gap: 16 },
-  sessionCard: { flexDirection: 'row', padding: 16, borderRadius: 16, backgroundColor: '#FFF', borderWidth: 1, borderColor: theme.colors.border },
-  
-  dateBox: { alignItems: 'center', justifyContent: 'center', paddingRight: 16, borderRightWidth: 1, borderRightColor: '#F3F4F6', marginRight: 16 },
-  dateMonth: { fontSize: 12, fontWeight: '700', color: '#9CA3AF', textTransform: 'uppercase' },
-  dateDay: { fontSize: 24, fontWeight: '700', color: theme.colors.text.main },
-
-  infoCol: { flex: 1, gap: 4 },
-  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  timeText: { fontSize: 13, color: theme.colors.text.light, fontWeight: '500' },
-  
-  statusChip: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4 },
-  statusText: { fontSize: 10, fontWeight: '700', textTransform: 'uppercase' },
-
-  candidateName: { fontSize: 16, fontWeight: '700', color: theme.colors.text.main },
-  roundName: { fontSize: 13, color: theme.colors.text.body, marginBottom: 8 },
-
-  actionRow: { flexDirection: 'row', gap: 10, marginTop: 8 },
-  joinBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: theme.colors.primary, paddingVertical: 8, borderRadius: 8 },
-  joinBtnText: { color: '#FFF', fontWeight: '600', fontSize: 13 },
-  
-  evalBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: '#EFF6FF', paddingVertical: 8, borderRadius: 8 },
-  evalBtnCompleted: { backgroundColor: '#F3F4F6' },
-  evalBtnText: { color: theme.colors.primary, fontWeight: '600', fontSize: 13 },
-
   emptyState: { alignItems: 'center', marginTop: 40 },
   emptyText: { marginTop: 16, fontSize: 16, fontWeight: '600', color: theme.colors.text.main },
-  emptySub: { marginTop: 4, color: theme.colors.text.light },
+
+  // --- CARD STYLES ---
+  sessionCard: { padding: 16, borderRadius: 16, backgroundColor: '#FFF', borderWidth: 1, borderColor: theme.colors.border },
+  
+  // Split Layout
+  splitContainer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 },
+  leftSection: { flex: 1, paddingRight: 12 },
+  rightSection: { paddingTop: 2 },
+  
+  // Card Content
+  cardTitle: { fontSize: 16, fontWeight: '700', color: theme.colors.text.main, marginBottom: 12, lineHeight: 22 },
+  
+  infoRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 },
+  infoText: { fontSize: 13, color: '#6B7280', fontWeight: '500' },
+  
+  payoutRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: '#F3F4F6' },
+  payoutText: { fontSize: 14, fontWeight: '700', color: '#059669' },
+  platformFee: { fontSize: 11, color: '#9CA3AF', fontStyle: 'italic' },
+  
+  cardDivider: { height: 1, backgroundColor: theme.colors.border, marginBottom: 12 },
+  
+  // Action Rows
+  actionRowFull: { flexDirection: 'row', gap: 10, justifyContent: 'space-between' },
+  
+  // Buttons - Full Width
+  btnFull: { flex: 1, paddingVertical: 12, paddingHorizontal: 16, borderRadius: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+  btnPrimary: { backgroundColor: theme.colors.primary },
+  btnSecondary: { backgroundColor: '#eff6ff' },
+  btnGreen: { backgroundColor: '#059669' },
+  btnOutline: { borderWidth: 1, borderColor: theme.colors.primary, backgroundColor: 'transparent' },
+  btnDisabled: { backgroundColor: '#f3f4f6' },
+
+  // Text inside buttons
+  textWhite: { color: '#fff', fontWeight: '600', fontSize: 13 },
+  textPrimary: { color: theme.colors.primary, fontWeight: '600', fontSize: 13 },
+  textGray: { color: '#666', fontSize: 13 },
+
+  // Modals
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20 },
+  modalContent: { backgroundColor: '#fff', padding: 24, borderRadius: 16 },
+  modalCloseBtn: { backgroundColor: theme.colors.primary, padding: 12, borderRadius: 8, alignItems: 'center', marginTop: 10 },
 });

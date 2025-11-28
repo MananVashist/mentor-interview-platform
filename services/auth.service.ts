@@ -38,18 +38,47 @@ async function withTiming<T>(label: string, fn: () => Promise<T>): Promise<T> {
  */
 async function signIn(email: string, password: string) {
   console.log('================ SIGN IN (SDK) ================');
+  console.log('🔐 Attempting sign in for:', email);
+  
   try {
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
+    console.log('📱 Sign in response:', {
+      hasUser: !!data?.user,
+      hasSession: !!data?.session,
+      userId: data?.user?.id,
+      error: error?.message
+    });
+
     if (error) {
       console.log('[AUTH DBG] Sign in error:', error.message);
       return { user: null, session: null, error };
     }
+
+    // CRITICAL: Verify session was saved
+    console.log('✅ Sign in successful, verifying session storage...');
+    
+    // Wait a bit for storage to complete
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    const { data: { session: storedSession } } = await supabase.auth.getSession();
+    console.log('📦 Session verification after sign in:', {
+      hasStoredSession: !!storedSession,
+      storedUserId: storedSession?.user?.id,
+      matches: storedSession?.user?.id === data.user?.id
+    });
+
+    if (!storedSession) {
+      console.error('❌ WARNING: Session was not persisted to storage!');
+      console.error('This could be a storage permission or configuration issue');
+    }
+
     return { user: data.user, session: data.session, error: null };
   } catch (err: any) {
+    console.error('❌ Sign in exception:', err);
     return { user: null, session: null, error: { message: err?.message || 'Network/auth error' } };
   }
 }

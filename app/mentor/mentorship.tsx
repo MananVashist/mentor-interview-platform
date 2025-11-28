@@ -51,7 +51,7 @@ export default function MentorshipScreen() {
         const { data, error } = await supabase
           .from('mentors')
           .select('*') 
-          .eq('profile_id', profile.id)
+          .eq('profile_ids', profile.id)
           .maybeSingle();
 
         if (error) {

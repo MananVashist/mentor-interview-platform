@@ -157,8 +157,9 @@ export default function SignUpScreen() {
 
       // 3. Create Role Specific Entry
       if (role === 'mentor') {
+        // For mentors, the id IS the user id in your schema
         const { error: mentorError } = await supabase.from('mentors').insert({
-          profile_id: user.id,
+          id: user.id,
           status: 'pending',
           professional_title: professionalTitle.trim(),
           linkedin_url: linkedinUrl.trim(),
@@ -171,9 +172,10 @@ export default function SignUpScreen() {
         });
         if (mentorError) throw new Error(`Mentor profile failed: ${mentorError.message}`);
       } else {
+        // For candidates, the id IS the user id in your schema
         const { error: candidateError } = await supabase.from('candidates').insert({
-          profile_id: user.id,
-          current_role: candidateTitle.trim(),
+          id: user.id,
+          professional_title: candidateTitle.trim(),
         });
         if (candidateError) throw new Error(`Candidate profile failed: ${candidateError.message}`);
       }
