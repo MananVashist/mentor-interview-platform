@@ -7,7 +7,7 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   TextInput,
-  Platform, // Ensure Platform is imported
+  Platform, 
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
@@ -15,44 +15,109 @@ import * as DocumentPicker from 'expo-document-picker';
 import { theme } from '@/lib/theme';
 import { Heading, AppText, ScreenBackground } from '@/lib/ui';
 import { useAuthStore } from '@/lib/store';
-import { candidateService } from '@/services/candidate.service';
 import { supabase } from '@/lib/supabase/client';
 
 export default function ProfileScreen() {
-  const { profile, candidateProfile, setCandidateProfile } = useAuthStore();
+  const { profile, candidateProfile, setCandidateProfile, setProfile } = useAuthStore();
 
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
 
   // Form state
-  const [fullName, setFullName] = useState(profile?.full_name || '');
-  const [professionalTitle, setProfessionalTitle] = useState(candidateProfile?.professional_title || '');
-  const [resumeUrl, setResumeUrl] = useState(candidateProfile?.resume_url || '');
+  const [fullName, setFullName] = useState('');
+  const [professionalTitle, setProfessionalTitle] = useState('');
+  const [resumeUrl, setResumeUrl] = useState('');
 
-  // Keep local form fields in sync if store updates
+  // --- 1. FETCH DATA ON MOUNT ---
   useEffect(() => {
-    setFullName(profile?.full_name || '');
-    setProfessionalTitle(candidateProfile?.professional_title || '');
-    setResumeUrl(candidateProfile?.resume_url || '');
-  }, [profile, candidateProfile]);
+    let mounted = true;
+
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        
+        // --- STEP 1: RESOLVE USER ID ---
+        let userId = profile?.id;
+
+        if (!userId) {
+          console.log('[ProfileScreen] Store empty, checking Supabase session...');
+          const { data: { user }, error: authError } = await supabase.auth.getUser();
+          
+          if (authError || !user) {
+            console.warn('[ProfileScreen] No active session.');
+            if (mounted) setLoading(false);
+            return;
+          }
+          userId = user.id;
+        }
+
+        console.log('[ProfileScreen] Fetching details for:', userId);
+
+        // --- STEP 2: FETCH DATA ---
+        
+        // A. Fetch Core Profile
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('id, full_name, email') // Select ID to ensure we have it for store
+          .eq('id', userId)
+          .single();
+
+        if (profileError) throw profileError;
+
+        // B. Fetch Candidate Details
+        const { data: candidateData, error: candidateError } = await supabase
+          .from('candidates')
+          .select('professional_title, resume_url')
+          .eq('id', userId)
+          .maybeSingle();
+
+        if (candidateError) console.warn('[Profile] Candidate fetch warning:', candidateError);
+
+        if (mounted) {
+          // Update Local Form State
+          setFullName(profileData?.full_name || '');
+          setProfessionalTitle(candidateData?.professional_title || '');
+          setResumeUrl(candidateData?.resume_url || '');
+
+          // Update Global Store (Critical for hydration)
+          // We manually reconstruct the profile object if it was missing
+          if (profileData) {
+             setProfile({
+                 id: profileData.id,
+                 email: profileData.email,
+                 full_name: profileData.full_name,
+                 user_type: profile?.user_type || 'candidate', // Preserve type if known
+                 created_at: profile?.created_at || new Date().toISOString()
+             });
+          }
+          
+          if (candidateData) {
+             setCandidateProfile(candidateData as any);
+          }
+        }
+      } catch (err) {
+        console.error('[ProfileScreen] Load error:', err);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+
+    fetchData();
+
+    return () => { mounted = false; };
+  }, []); // Run once on mount (we handle store sync internally)
 
   const handlePickDocument = async () => {
     try {
-      console.log('[Upload] Starting document picker...');
       const result = await DocumentPicker.getDocumentAsync({
         type: 'application/pdf',
         copyToCacheDirectory: true,
       });
 
-      if (result.canceled) {
-        console.log('[Upload] Cancelled by user');
-        return;
-      }
+      if (result.canceled) return;
       
       const file = result.assets[0];
-      console.log('[Upload] File selected:', { name: file.name, size: file.size, uri: file.uri });
       
-      // Validate size (e.g., max 5MB)
       if (file.size && file.size > 5 * 1024 * 1024) {
         Alert.alert('Error', 'File size must be under 5MB');
         return;
@@ -60,29 +125,21 @@ export default function ProfileScreen() {
 
       setUploading(true);
 
-      // --- CRITICAL FIX: Get the REAL Auth ID directly from session ---
+      // Auth Check (Get ID directly from session for upload path)
       const { data: { user }, error: authError } = await supabase.auth.getUser();
-      
       if (authError || !user) {
-        console.error('[Upload] Auth Error:', authError);
-        Alert.alert('Error', 'Authentication session lost. Please log in again.');
+        Alert.alert('Error', 'Session lost. Please log in again.');
         setUploading(false);
         return;
       }
 
-      console.log('[Upload] Authenticated User ID:', user.id);
-      console.log('[Upload] Profile Store ID:', profile?.id);
-
-      // 1. Prepare file body based on Platform
+      // Prepare File
       let fileBody;
-
       if (Platform.OS === 'web') {
-        console.log('[Upload] Processing for WEB (Blob)...');
         const req = await fetch(file.uri);
         const blob = await req.blob();
         fileBody = blob; 
       } else {
-        console.log('[Upload] Processing for MOBILE (FormData)...');
         const formData = new FormData();
         formData.append('file', {
           uri: file.uri,
@@ -92,41 +149,42 @@ export default function ProfileScreen() {
         fileBody = formData;
       }
 
-      // 2. Define path using the AUTH USER ID (Guarantees RLS match)
+      // Upload
       const fileExt = file.name.split('.').pop();
       const filePath = `${user.id}/resume.${fileExt}`;
-      console.log('[Upload] Target Path:', filePath);
 
-      // 3. Upload to Supabase Storage
-      const { data, error: uploadError } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('resumes')
         .upload(filePath, fileBody, {
           upsert: true,
-          contentType: 'application/pdf', // Force PDF content type
+          contentType: 'application/pdf',
         });
 
-      if (uploadError) {
-        console.error('[Upload] Supabase Error:', uploadError);
-        throw uploadError;
-      }
+      if (uploadError) throw uploadError;
 
-      console.log('[Upload] Success:', data);
-
-      // 4. Save Path
       setResumeUrl(filePath); 
-      
       Alert.alert('Success', 'Resume uploaded. Click Save to finish.');
 
     } catch (error: any) {
-      console.error('[Upload] Final Catch:', error);
-      Alert.alert('Error', error.message || 'Failed to upload resume.');
+      console.error('[Upload] Error:', error);
+      Alert.alert('Error', 'Failed to upload resume.');
     } finally {
       setUploading(false);
     }
   };
 
   const handleSave = async () => {
-    if (!profile?.id) return;
+    // Robust check: Get ID from store OR session
+    let userId = profile?.id;
+    if (!userId) {
+       const { data } = await supabase.auth.getUser();
+       userId = data.user?.id;
+    }
+
+    if (!userId) {
+        Alert.alert("Error", "No user session found.");
+        return;
+    }
 
     if (!fullName.trim()) {
       Alert.alert('Error', 'Full name is required');
@@ -135,52 +193,48 @@ export default function ProfileScreen() {
 
     setLoading(true);
     try {
-      console.log('[Save] Starting update for user:', profile.id);
-
-      // 1. Update Core Profile (Full Name) - Direct Supabase Call
+      // 1. Update Core Profile
       const { error: profileError } = await supabase
         .from('profiles')
         .update({ full_name: fullName })
-        .eq('id', profile.id);
+        .eq('id', userId);
 
-      if (profileError) {
-        console.error('[Save] Profile Table Error:', profileError);
-        throw profileError;
-      }
+      if (profileError) throw profileError;
 
-      // 2. Update Candidate Details (Title & Resume) - Direct Supabase Call
+      // 2. Update Candidate Details
       const updatedCandidate = {
         professional_title: professionalTitle || null,
         resume_url: resumeUrl || null,
-        updated_at: new Date(), // Good practice to update timestamp
+        updated_at: new Date(),
       };
 
       const { error: candidateError } = await supabase
         .from('candidates')
-        .update(updatedCandidate)
-        .eq('id', profile.id);
+        .upsert({ id: userId, ...updatedCandidate });
 
-      if (candidateError) {
-        console.error('[Save] Candidate Table Error:', candidateError);
-        throw candidateError;
-      }
+      if (candidateError) throw candidateError;
 
-      // 3. Update Local State (Zustand Store)
-      // Update candidate specific fields
+      // 3. Update Local Store
+      if (profile) setProfile({ ...profile, full_name: fullName });
       setCandidateProfile({ ...candidateProfile, ...updatedCandidate } as any);
-      
-      // Update core profile fields
-      useAuthStore.getState().setProfile({ ...profile, full_name: fullName });
 
       Alert.alert('Success', 'Profile updated successfully!');
-      
     } catch (error: any) {
-      console.error('[Save] Final Error:', error);
-      Alert.alert('Error', error.message || 'Failed to update profile');
+      console.error('[Save] Error:', error);
+      Alert.alert('Error', 'Failed to update profile');
     } finally {
       setLoading(false);
     }
   };
+
+  if (loading) {
+    return (
+      <View style={{flex:1, justifyContent:'center', alignItems:'center', backgroundColor: '#f8f5f0'}}>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
+        <AppText style={{marginTop: 12, color: theme.colors.text.light}}>Loading Profile...</AppText>
+      </View>
+    );
+  }
 
   return (
     <ScreenBackground style={styles.container}>
@@ -219,14 +273,13 @@ export default function ProfileScreen() {
                   onChangeText={setFullName}
                   placeholder="John Doe"
                   placeholderTextColor="#9CA3AF"
-                  editable={!loading}
                 />
               </View>
 
               <View style={styles.inputGroup}>
                 <AppText style={styles.label}>Email Address</AppText>
                 <View style={[styles.input, styles.inputDisabled]}>
-                  <AppText style={{ color: theme.colors.text.light }}>{profile?.email}</AppText>
+                  <AppText style={{ color: theme.colors.text.light }}>{profile?.email || 'Loading...'}</AppText>
                   <Ionicons name="lock-closed" size={14} color={theme.colors.text.light} />
                 </View>
               </View>
@@ -253,7 +306,6 @@ export default function ProfileScreen() {
                   onChangeText={setProfessionalTitle}
                   placeholder="e.g. Senior Product Manager"
                   placeholderTextColor="#9CA3AF"
-                  editable={!loading}
                 />
                 <AppText style={styles.inputHint}>
                   This is the primary title mentors will see.

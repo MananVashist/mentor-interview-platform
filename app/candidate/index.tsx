@@ -16,7 +16,6 @@ import {
   Card,
   ScreenBackground,
 } from "@/lib/ui";
-import { calculateMentorTier } from "@/lib/logic";
 import { theme } from "@/lib/theme";
 
 const SUPABASE_URL = "https://rcbaaiiawrglvyzmawvr.supabase.co";
@@ -31,11 +30,11 @@ type Mentor = {
   session_price_inr?: number | null; 
   session_price?: number | null;
   total_sessions?: number;
+  years_of_experience?: number | null;
 };
 
 export default function CandidateDashboard() {
   const { width } = useWindowDimensions();
-  const isDesktop = width > 768; 
   const isMobile = width <= 768;
 
   const router = useRouter();
@@ -89,15 +88,6 @@ export default function CandidateDashboard() {
     router.push({ pathname: "/candidate/[id]", params: { id } });
   };
 
-  const getBadgeStyle = (tier: string) => {
-    switch (tier) {
-      case 'Gold': return { bg: theme.colors.pricing.goldBg, text: theme.colors.pricing.goldText, border: theme.colors.pricing.goldBorder };
-      case 'Silver': return { bg: theme.colors.pricing.silverBg, text: theme.colors.pricing.silverText, border: theme.colors.pricing.silverBorder };
-      case 'Bronze': return { bg: theme.colors.badge.bronze.bg, text: theme.colors.badge.bronze.text, border: theme.colors.badge.bronze.border };
-      default: return { bg: theme.colors.pricing.blueBg, text: theme.colors.pricing.blueText, border: theme.colors.pricing.blueBorder };
-    }
-  };
-
   return (
     <ScreenBackground style={styles.container}>
       <ScrollView
@@ -113,8 +103,6 @@ export default function CandidateDashboard() {
               Select a profile below and connect with experienced professionals
             </AppText>
           </View>
-          
-          {/* 🟢 REMOVED: Search Bar completely */}
         </View>
 
         <View style={styles.headerDivider} />
@@ -161,70 +149,51 @@ export default function CandidateDashboard() {
             mentors.map((m) => {
               const price = m.session_price_inr ?? m.session_price ?? 0;
               const displayPrice = price ? Math.round(price * 1.2) : 0;
-              
-              const tier = calculateMentorTier(m.total_sessions);
-              const badgeStyle = getBadgeStyle(tier);
-              const isNew = tier === 'New';
 
               return (
                 <Card key={m.id} style={styles.card}>
-                  <View style={isDesktop ? styles.cardRow : styles.cardCol}>
+                  <View style={styles.cardContent}>
                     
-                    {/* LEFT: Info */}
-                    <View style={styles.cardLeft}>
-                      <AppText style={styles.mentorName}>
-                        {m.professional_title || "Backend Engineer (Node/Java)"}
-                      </AppText>
-                      
-                      <View style={styles.tagsRow}>
-                        <View style={styles.expPill}>
-                          <AppText style={styles.expText}>5 years exp</AppText>
+                    {/* 1. Professional Title & Badge */}
+                    <View style={styles.topRow}>
+                        <View style={styles.identityGroup}>
+                            <AppText style={styles.mentorName}>
+                                {m.professional_title || "Senior Mentor"}
+                            </AppText>
+                            {/* Verified Badge */}
+                            <Ionicons name="checkmark-circle" size={18} color="#3B82F6" />
                         </View>
                         
-                        <View style={[styles.badge, { backgroundColor: badgeStyle.bg, borderColor: badgeStyle.border }]}>
-                          <Ionicons 
-                            name={isNew ? "sparkles" : "trophy"} 
-                            size={10} 
-                            color={badgeStyle.text} 
-                            style={{ marginRight: 4 }} 
-                          />
-                          <AppText style={[styles.badgeText, { color: badgeStyle.text }]}>
-                            {isNew ? 'NEW' : tier.toUpperCase()}
-                          </AppText>
-                        </View>
-                      </View>
-
-                      <AppText style={styles.description} numberOfLines={3}>
-                        {m.experience_description || "Covers API design, REST fundamentals, auth, SQL/NoSQL choices, caching and debugging."}
-                      </AppText>
+                        {/* 2. Years of Experience */}
+                        {m.years_of_experience != null && (
+                            <View style={styles.expBadge}>
+                                <Ionicons name="briefcase-outline" size={12} color={theme.colors.text.main} style={{marginRight:4}} />
+                                <AppText style={styles.expText}>{m.years_of_experience} yrs exp</AppText>
+                            </View>
+                        )}
                     </View>
 
-                    {/* RIGHT: Price + Actions */}
-                    <View style={[styles.cardRight, isMobile && styles.cardRightMobile]}>
-                      {isMobile && <View style={styles.mobileDivider} />}
-                      
-                      <View style={styles.priceBlock}>
-                         <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
-                            <AppText style={styles.priceText}>
-                              ₹{displayPrice.toLocaleString("en-IN")}
-                            </AppText>
-                            <AppText style={styles.perSessionText}> / booking</AppText>
-                         </View>
-                         {/* 🟢 IMPROVED TYPOGRAPHY */}
-                         <View style={styles.includesBadge}>
-                           <Ionicons name="videocam-outline" size={12} color={theme.colors.primary} style={{ marginRight: 4 }} />
-                           <AppText style={styles.feeText}>Includes 2 × 1-hour sessions</AppText>
-                         </View>
-                      </View>
+                    <View style={styles.dividerLine} />
 
-                      <View style={[styles.buttonStack, isMobile && { flexDirection: 'row' }]}>
-                        <TouchableOpacity style={[styles.solidBtn, isMobile && {flex: 1}]} onPress={() => handleViewMentor(m.id)}>
-                          <AppText style={styles.solidBtnText}>Book</AppText>
+                    {/* 3. Price per booking */}
+                    <View style={styles.detailsRow}>
+                        <View>
+                            <View style={{flexDirection: 'row', alignItems: 'baseline'}}>
+                                <AppText style={styles.priceText}>₹{displayPrice.toLocaleString("en-IN")}</AppText>
+                                <AppText style={styles.perBookingText}> / booking</AppText>
+                            </View>
+                            
+                            {/* 4. Includes Text */}
+                            <View style={styles.includesRow}>
+                                <Ionicons name="checkmark-circle-outline" size={14} color={theme.colors.primary} style={{marginRight: 4}} />
+                                <AppText style={styles.includesText}>Includes 2 x 1-hour sessions</AppText>
+                            </View>
+                        </View>
+
+                        {/* 5. Book Button */}
+                        <TouchableOpacity style={styles.bookBtn} onPress={() => handleViewMentor(m.id)}>
+                            <AppText style={styles.bookBtnText}>Book</AppText>
                         </TouchableOpacity>
-                        <TouchableOpacity style={[styles.outlineBtn, isMobile && {flex: 1}]} onPress={() => handleViewMentor(m.id)}>
-                          <AppText style={styles.outlineBtnText}>Details</AppText>
-                        </TouchableOpacity>
-                      </View>
                     </View>
 
                   </View>
@@ -240,7 +209,7 @@ export default function CandidateDashboard() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#f8f5f0" },
-  scrollContent: { paddingBottom: 0 },
+  scrollContent: { paddingBottom: 40 },
   
   // Header
   headerContainer: {
@@ -277,54 +246,32 @@ const styles = StyleSheet.create({
 
   // List
   listContainer: { paddingHorizontal: 32, gap: 16, paddingBottom: 24 },
-  card: { backgroundColor: theme.white, borderRadius: 16, padding: 24, borderWidth: 1, borderColor: "#E5E7EB" },
   
-  cardRow: { flexDirection: "row", gap: 32 },
-  cardCol: { flexDirection: "column", gap: 16 },
-
-  cardLeft: { flex: 1 },
-  mentorName: { fontSize: 18, fontWeight: "bold", color: theme.colors.text.main, marginBottom: 10 },
-  tagsRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 },
-  expPill: { backgroundColor: theme.colors.gray[100], paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 },
-  expText: { fontSize: 13, fontWeight: "500", color: theme.colors.text.body },
-  badge: { flexDirection: "row", alignItems: "center", borderWidth: 1, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 },
-  badgeText: { fontSize: 11, fontWeight: "800", letterSpacing: 0.5 },
-  description: { fontSize: 14, color: "#4B5563", lineHeight: 24 },
-
-  cardRight: {
-    minWidth: 200, borderLeftWidth: 1, borderLeftColor: "#F3F4F6", paddingLeft: 24,
-    justifyContent: "space-between",
-  },
-  cardRightMobile: { minWidth: "100%", borderLeftWidth: 0, paddingLeft: 0, flexDirection: 'column' },
-  mobileDivider: { height: 1, backgroundColor: '#F3F4F6', width: '100%', marginVertical: 16 },
+  // Cleaned Up Card Styles
+  card: { backgroundColor: theme.white, borderRadius: 12, padding: 20, borderWidth: 1, borderColor: "#E5E7EB" },
+  cardContent: { gap: 12 },
   
-  priceBlock: { marginBottom: 16 },
-  priceText: { fontSize: 24, fontWeight: "800", color: theme.colors.text.main },
-  perSessionText: { fontSize: 12, color: "#9CA3AF" },
+  topRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 8 },
   
-  // 🟢 IMPROVED TYPOGRAPHY STYLES
-  includesBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#ECFDF5', // Very light green bg
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-    alignSelf: 'flex-start',
-    marginTop: 6,
-  },
-  feeText: { 
-    fontSize: 12, 
-    color: theme.colors.primary, 
-    fontWeight: '600',
-    letterSpacing: 0.2
-  },
+  // New Identity Group container for Name + Badge
+  identityGroup: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6 },
+  mentorName: { fontSize: 18, fontWeight: "bold", color: theme.colors.text.main, flexShrink: 1 },
+  
+  expBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.colors.gray[100], paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
+  expText: { fontSize: 12, fontWeight: "600", color: theme.colors.text.body },
 
-  buttonStack: { gap: 10 },
-  solidBtn: { width: "100%", paddingVertical: 12, borderRadius: 8, backgroundColor: theme.colors.primary, alignItems: "center", justifyContent: "center" },
-  solidBtnText: { fontSize: 14, fontWeight: "600", color: "#FFF" },
-  outlineBtn: { width: "100%", paddingVertical: 12, borderRadius: 8, borderWidth: 1, borderColor: "#E5E7EB", backgroundColor: "#FFF", alignItems: "center", justifyContent: "center" },
-  outlineBtnText: { fontSize: 14, fontWeight: "600", color: theme.colors.text.main },
+  dividerLine: { height: 1, backgroundColor: '#F3F4F6', width: '100%' },
+
+  detailsRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 },
+  
+  priceText: { fontSize: 20, fontWeight: "800", color: theme.colors.text.main },
+  perBookingText: { fontSize: 12, color: "#9CA3AF" },
+  
+  includesRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
+  includesText: { fontSize: 12, color: theme.colors.text.light, fontWeight: '500' },
+
+  bookBtn: { backgroundColor: theme.colors.primary, paddingVertical: 10, paddingHorizontal: 24, borderRadius: 8 },
+  bookBtnText: { color: '#FFF', fontWeight: '600', fontSize: 14 },
 
   emptyState: { alignItems: 'center', padding: 40 },
   emptyText: { marginTop: 10, color: theme.colors.text.light },
