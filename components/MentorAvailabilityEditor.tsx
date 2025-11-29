@@ -155,7 +155,7 @@ export default function MentorAvailabilityEditor({ mentorId }: Props) {
       setLoadingUnavailability(true);
       const today = new Date().toISOString();
       const { data, error } = await supabase
-        .from('mentor_unavailability')
+        .from('mentor_availability')
         .select('*')
         .eq('mentor_id', mentorId)
         .gte('end_at', today) // Only future exceptions

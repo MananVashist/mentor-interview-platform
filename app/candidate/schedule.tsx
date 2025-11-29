@@ -1,5 +1,4 @@
-﻿// app/candidate/schedule.tsx
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { 
   View, StyleSheet, ScrollView, TouchableOpacity, 
   ActivityIndicator, Alert, StatusBar 
@@ -12,7 +11,7 @@ import { theme } from '@/lib/theme';
 import { Heading, AppText } from '@/lib/ui';
 import { supabase } from '@/lib/supabase/client';
 import { paymentService } from '@/services/payment.service';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthStore } from '@/lib/store';
 
 type TimeSlot = {
   time: string;
@@ -23,30 +22,40 @@ export default function ScheduleScreen() {
   const router = useRouter();
   const params = useLocalSearchParams(); 
   const mentorId = Array.isArray(params.mentorId) ? params.mentorId[0] : params.mentorId;
-  const { user } = useAuth();
+  
+  // 1. RECEIVE PROFILE PARAMS
+  const profileIdParam = Array.isArray(params.profileId) ? params.profileId[0] : params.profileId;
+  const profileNameParam = Array.isArray(params.profileName) ? params.profileName[0] : params.profileName;
+
+  const authStore = useAuthStore();
+  const { user, setUser } = authStore;
 
   const [isLoading, setIsLoading] = useState(true);
   const [mentor, setMentor] = useState<any>(null);
-  
-  // Initialize Date in Indian Standard Time (IST)
-  const [selectedDate, setSelectedDate] = useState(
-    DateTime.now().setZone('Asia/Kolkata').plus({ days: 1 }) // Start from tomorrow
-  );
-  
-  const [slots, setSlots] = useState<TimeSlot[]>([]);
-  const [loadingSlots, setLoadingSlots] = useState(false);
-  
-  // Selection State
-  const [session1, setSession1] = useState<string | null>(null);
-  const [session2, setSession2] = useState<string | null>(null);
-  const [activeField, setActiveField] = useState<'session1' | 'session2'>('session1');
-  const [bookingInProgress, setBookingInProgress] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  // Initialize Auth
+  useEffect(() => {
+    let mounted = true;
+    async function initializeAuth() {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user && mounted) {
+          setCurrentUserId(session.user.id);
+          setUser(session.user as any);
+        }
+      } catch (error) {
+        console.error('Auth check failed:', error);
+      }
+    }
+    initializeAuth();
+    return () => { mounted = false; };
+  }, []);
 
   // Fetch mentor info
   useEffect(() => {
     async function fetchMentor() {
       if (!mentorId) return;
-
       try {
         const { data, error } = await supabase
           .from('mentors')
@@ -68,9 +77,20 @@ export default function ScheduleScreen() {
         setIsLoading(false);
       }
     }
-
     fetchMentor();
   }, [mentorId]);
+
+  // Date & Slot Logic
+  const [selectedDate, setSelectedDate] = useState(
+    DateTime.now().setZone('Asia/Kolkata').plus({ days: 1 })
+  );
+  const [slots, setSlots] = useState<TimeSlot[]>([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+  
+  const [session1, setSession1] = useState<string | null>(null);
+  const [session2, setSession2] = useState<string | null>(null);
+  const [activeField, setActiveField] = useState<'session1' | 'session2'>('session1');
+  const [bookingInProgress, setBookingInProgress] = useState(false);
 
   // Generate available slots
   useEffect(() => {
@@ -79,13 +99,11 @@ export default function ScheduleScreen() {
 
   const generateSlots = async () => {
     setLoadingSlots(true);
-    
     try {
       const timeSlots = [
         '09:00', '10:00', '11:00', '14:00', '15:00', 
         '16:00', '17:00', '18:00', '19:00', '20:00'
       ];
-
       const dateStr = selectedDate.toISODate();
       if (!dateStr) return;
 
@@ -132,16 +150,29 @@ export default function ScheduleScreen() {
     }
   };
 
-  // 🟢 🟢 🟢 UPDATED HANDLE PROCEED 🟢 🟢 🟢
   const handleProceed = async () => {
     if (!session1 || !session2) {
       Alert.alert("Select Slots", "Please select 2 time slots to proceed.");
       return;
     }
 
-    if (!user?.id || !mentorId || !mentor) {
-      Alert.alert('Error', 'Missing required information. Please try again.');
+    // Auth Check
+    let activeUserId = currentUserId || user?.id;
+    if (!activeUserId) {
+        // Fallback fetch
+        const { data: { session } } = await supabase.auth.getSession();
+        activeUserId = session?.user?.id;
+    }
+
+    if (!activeUserId || !mentorId || !mentor) {
+      Alert.alert('Error', 'You must be logged in to book. Please sign in.');
       return;
+    }
+
+    // 2. VALIDATE PROFILE ID (Critical)
+    if (!profileIdParam) {
+        Alert.alert('Error', 'Missing interview profile info. Please go back and select a profile.');
+        return;
     }
     
     const dateStr = selectedDate.toISODate();
@@ -150,54 +181,47 @@ export default function ScheduleScreen() {
     setBookingInProgress(true);
 
     try {
-      console.log('🔵 Starting booking process...');
-
-      // Construct ISO timestamps in IST
+      const candidateId = activeUserId;
+      
+      // Construct Timestamps
       const dt1 = DateTime.fromFormat(`${dateStr} ${session1}`, "yyyy-MM-dd HH:mm", { zone: 'Asia/Kolkata' });
       const dt2 = DateTime.fromFormat(`${dateStr} ${session2}`, "yyyy-MM-dd HH:mm", { zone: 'Asia/Kolkata' });
       const selectedSlots = [dt1.toISO(), dt2.toISO()].filter(Boolean) as string[];
 
-      const totalPrice = mentor.price + 300; // mentor price + platform fee
-
-      // 1. Create Package in Database
+      const totalPrice = mentor.price + 300; 
+      
+      // 3. CREATE PACKAGE with PROFILE ID
       const { package: pkg, error } = await paymentService.createPackage(
-        user.id,
+        candidateId,
         mentorId as string,
-        'Software Engineer', 
+        Number(profileIdParam), // <--- Passing the ID
         totalPrice,
         selectedSlots
       );
 
       if (error || !pkg) throw new Error(error?.message || 'Failed to create booking');
 
-      console.log('✅ Booking Package Created. ID:', pkg.id, 'Status:', pkg.payment_status);
-
-      // 🟢 2. CHECK STATUS & REDIRECT CORRECTLY
+      // Redirect based on status
       if (pkg.payment_status === 'pending_payment') {
-        // ==> RAZORPAY FLOW
-        console.log('🔵 Redirecting to Payment Gateway...');
         router.replace({
             pathname: '/candidate/pgscreen',
             params: { 
                 packageId: pkg.id, 
                 amount: totalPrice,
-                // Pass orderId if it exists, otherwise PGScreen will generate mock order
                 orderId: pkg.razorpay_payment_id 
             }
         });
       } else {
-        // ==> AUTO-CONFIRM FLOW (MVP/Fallback)
         Alert.alert(
           '🎉 Booking Confirmed!',
-          'Your sessions are ready. Redirecting to My Bookings...',
+          'Redirecting to My Bookings...',
           [{ text: 'OK', onPress: () => router.replace('/candidate/bookings') }],
           { cancelable: false }
         );
       }
 
     } catch (error: any) {
-      console.error('❌ Booking error:', error);
-      Alert.alert('Booking Failed', error.message || 'Something went wrong. Please try again.');
+      Alert.alert('Booking Failed', error.message || 'Something went wrong.');
     } finally {
       setBookingInProgress(false);
     }
@@ -251,7 +275,7 @@ export default function ScheduleScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Calendar Navigation */}
+        {/* Calendar */}
         <View style={styles.calendarSection}>
           <View style={styles.dateNav}>
             <TouchableOpacity style={styles.navBtn} onPress={() => setSelectedDate(d => d.minus({ days: 1 }))}>
@@ -271,7 +295,7 @@ export default function ScheduleScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* Slots Grid */}
+          {/* Slots */}
           <View style={styles.slotsContainer}>
             {loadingSlots ? (
               <ActivityIndicator color={theme.colors.primary} style={{ margin: 20 }} />

@@ -9,13 +9,11 @@ async function sendMeetingInvite(email: string, meetingLink: string, slotTime: s
     console.log(`📧 [Email Service] Sending Invite to: ${email}`);
     console.log(`   🔗 Link: ${meetingLink}`);
     console.log(`   ⏰ Time: ${slotTime}`);
-    // TODO: Replace with real email API call later
 }
 
 export const paymentService = {
   /**
    * Helper to check for existing confirmed/pending sessions at the requested times.
-   * Throws an error if a conflict is found.
    */
   async checkBookingConflict(mentorId: string, selectedSlots: string[]) {
     if (!selectedSlots || selectedSlots.length === 0) return;
@@ -24,7 +22,6 @@ export const paymentService = {
       .from('interview_sessions')
       .select('scheduled_at')
       .eq('mentor_id', mentorId)
-      // Check for any session that is NOT cancelled or rejected
       .in('status', ['pending', 'confirmed', 'completed'])
       .in('scheduled_at', selectedSlots);
 
@@ -34,19 +31,18 @@ export const paymentService = {
     }
 
     if (data && data.length > 0) {
-      throw new Error('One or more selected slots have just been booked by another user. Please choose different times.');
+      throw new Error('One or more selected slots have just been booked by another user.');
     }
   },
 
   /**
    * Creates the booking package.
-   * - If ENABLE_RAZORPAY is true: Creates PENDING package -> UI redirects to PG.
-   * - If ENABLE_RAZORPAY is false: Creates CONFIRMED package -> UI shows success.
+   * Uses interviewProfileId for database normalization.
    */
   async createPackage(
     candidateId: string,
     mentorId: string,
-    targetProfile: string,
+    interviewProfileId: number, // <--- ID Linking to interview_profiles_admin
     totalPrice: number,
     selectedSlots: string[]
   ) {
@@ -55,11 +51,11 @@ export const paymentService = {
     // 1. PRE-CHECK: Ensure no double booking occurred
     await this.checkBookingConflict(mentorId, selectedSlots);
 
-    const platformFee = Math.round(totalPrice * 0.5);
+    // Calculate splits explicitly
+    const platformFee = Math.round(totalPrice * 0.2); // 20% platform fee
     const mentorPayout = totalPrice - platformFee;
 
     try {
-      // 🟢 DECIDE STATUS BASED ON FLAG
       const initialStatus = ENABLE_RAZORPAY ? 'pending_payment' : 'held_in_escrow';
       const paymentId = ENABLE_RAZORPAY ? null : `mvp_mock_${Date.now()}`;
 
@@ -69,12 +65,12 @@ export const paymentService = {
         .insert({
           candidate_id: candidateId,
           mentor_id: mentorId,
-          target_profile: targetProfile,
+          interview_profile_id: interviewProfileId, // <--- Saving the profile ID
           total_amount_inr: totalPrice,
           platform_fee_inr: platformFee,
           mentor_payout_inr: mentorPayout,
           payment_status: initialStatus,
-          razorpay_payment_id: paymentId
+          razorpay_payment_id: paymentId,
         })
         .select()
         .single();
@@ -87,27 +83,19 @@ export const paymentService = {
       const packageId = pkg.id;
       console.log("✅ Package created:", packageId, "Status:", initialStatus);
 
-      // 3. IF MVP (Auto-Confirm): Generate Meeting Link Immediately
+      // 3. IF MVP (Auto-Confirm): Generate Link
       let meetingLink = null;
       if (!ENABLE_RAZORPAY) {
         meetingLink = `https://meet.jit.si/interview-${packageId}-${Date.now()}`;
-        try {
-            // Attempt to fetch from Edge Function, fallback to local logic if fails
-            const { data } = await supabase.functions.invoke('create-meeting', { body: { pkgId: packageId } });
-            if (data?.meetingLink) meetingLink = data.meetingLink;
-        } catch (e) { /* ignore */ }
       }
 
       // 4. Insert Sessions
-      // If Razorpay: Status 'pending', Link NULL
-      // If MVP: Status 'confirmed', Link 'https://...'
       const sessionStatus = ENABLE_RAZORPAY ? 'pending' : 'confirmed';
       
       const sessionsData = selectedSlots.map((slot, index) => {
-        let roundName;
-        if (index === 0) roundName = 'round_1';
-        else if (index === 1) roundName = 'round_2';
-        else roundName = 'hr_round';
+        let roundName = 'round_1';
+        if (index === 1) roundName = 'round_2';
+        else if (index === 2) roundName = 'hr_round';
 
         return {
           package_id: packageId,
@@ -116,11 +104,11 @@ export const paymentService = {
           round: roundName,
           scheduled_at: slot,
           status: sessionStatus,
-          meeting_link: meetingLink // Will be null for Razorpay flow initially
+          meeting_link: meetingLink
         };
       });
 
-      const { data: sessions, error: sessionError } = await supabase
+      const { error: sessionError } = await supabase
         .from('interview_sessions')
         .insert(sessionsData)
         .select();
@@ -130,7 +118,7 @@ export const paymentService = {
         throw sessionError;
       }
 
-      // 5. IF MVP (Auto-Confirm): Send Email Immediately
+      // 5. IF MVP: Send Email
       if (!ENABLE_RAZORPAY && meetingLink) {
         this.triggerEmailNotification(packageId, meetingLink);
       }
@@ -144,50 +132,46 @@ export const paymentService = {
   },
 
   /**
-   * Generates Razorpay Order ID.
-   * - In Prod: Calls backend to get real ID.
-   * - In Test Mode: Returns a fake ID (Razorpay allows this for generic payments).
+   * Generates Razorpay Order ID AND updates the package with it.
    */
   async createRazorpayOrder(amount: number, pkgId: string) {
     if (ENABLE_RAZORPAY) {
         console.log("🔵 Generating Mock Order for Test Mode...");
-        // Simulate network delay
         await new Promise(resolve => setTimeout(resolve, 500));
         
-        // Return Mock Order. This works because Razorpay SDK accepts generic payments
-        // if order_id is NOT strictly enforced on your dashboard settings.
+        const mockOrderId = `order_mock_${Date.now()}`;
+
+        // IMPORTANT: Save the Order ID to the package now
+        await supabase
+          .from('interview_packages')
+          .update({ razorpay_order_id: mockOrderId })
+          .eq('id', pkgId);
+
         return { 
-            order_id: `order_mock_${Date.now()}`, 
+            order_id: mockOrderId, 
             amount: amount * 100 // Convert to paise
         };
     } else {
-        // Fallback (shouldn't be reached if logic is correct)
         return { order_id: `order_skip_${Date.now()}`, amount: amount * 100 };
     }
   },
 
   /**
    * Verify payment and confirm booking.
-   * Called by PGScreen after successful Razorpay transaction.
    */
   async verifyPayment(pkgId: string, orderId: string, payId: string, sig: string) {
     console.log("🔵 Payment Verified. Finalizing Booking...");
 
     // 1. Generate Link
     let meetingLink = `https://meet.jit.si/interview-${pkgId}-${Date.now()}`;
-    try {
-      const { data } = await supabase.functions.invoke('create-meeting', { body: { pkgId } });
-      if (data?.meetingLink) meetingLink = data.meetingLink;
-    } catch (err) { 
-        console.warn("Jitsi gen failed, using fallback link"); 
-    }
 
     // 2. Update Package to CONFIRMED
     await supabase
       .from('interview_packages')
       .update({
         payment_status: 'held_in_escrow',
-        razorpay_payment_id: payId
+        razorpay_payment_id: payId,
+        razorpay_signature: sig 
       })
       .eq('id', pkgId);
 
@@ -207,7 +191,7 @@ export const paymentService = {
   },
 
   /**
-   * Helper to trigger email notification by fetching mentor details first.
+   * Helper to trigger email notification
    */
   async triggerEmailNotification(pkgId: string, link: string) {
     try {
@@ -220,7 +204,6 @@ export const paymentService = {
         const mentorEmail = (pkgData as any)?.mentor?.profile?.email;
         if (mentorEmail) {
           await sendMeetingInvite(mentorEmail, link, "Scheduled Time");
-          console.log("✅ Email notification sent.");
         }
       } catch (err) {
         console.warn("⚠️ Email trigger failed:", err);
