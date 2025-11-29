@@ -159,9 +159,6 @@ export default function BookingsScreen() {
             ListEmptyComponent={
                 <View style={styles.center}>
                     <Text style={styles.emptyText}>No bookings found.</Text>
-                    <TouchableOpacity onPress={() => router.push('/candidate')} style={{ marginTop: 12 }}>
-                        <Text style={{ color: '#2563eb', fontWeight: 'bold' }}>Book a Session</Text>
-                    </TouchableOpacity>
                 </View>
             }
         />
@@ -171,13 +168,13 @@ export default function BookingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F9FAFB' },
+  container: { flex: 1, backgroundColor: '#f8f5f0' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 50 },
   topBar: { 
       flexDirection: 'row', 
       alignItems: 'center', 
       padding: 20, 
-      backgroundColor: '#fff', 
+      backgroundColor: '#f8f5f0', 
       borderBottomWidth: 1, 
       borderBottomColor: '#eee',
       paddingTop: Platform.OS === 'ios' ? 60 : 20 

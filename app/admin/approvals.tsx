@@ -13,13 +13,27 @@ export default function ApprovalsScreen() {
 
   const fetchPendingMentors = async () => {
     setLoading(true);
+    
     const { data, error } = await supabase
       .from('mentors')
+      // Use the alias 'profile:' to map the relationship cleanly
       .select('*, profile:profiles(full_name, email, phone)')
       .eq('status', 'pending');
 
-    if (error) console.error(error);
-    setMentors(data || []);
+    if (error) {
+      console.error("Supabase Error:", error.message);
+      Alert.alert("Error", "Failed to fetch pending mentors.");
+      setMentors([]);
+    } else {
+      // Safety check: Ensure 'profile' is always an object, even if Supabase returns a 1-item array
+      const formattedData = data?.map((item: any) => ({
+        ...item,
+        profile: Array.isArray(item.profile) ? item.profile[0] : item.profile
+      }));
+      
+      setMentors(formattedData || []);
+    }
+    
     setLoading(false);
   };
 

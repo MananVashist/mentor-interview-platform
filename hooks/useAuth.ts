@@ -1,49 +1,50 @@
-﻿// hooks/useAuth.ts
-import { useEffect, useState } from 'react';
-// 🎯 NOTICE: Relative paths (..) instead of @/
-import { useAuthStore } from '../lib/store';
-import { authService } from '../services/auth.service';
+﻿import { useEffect } from 'react';
+import { supabase } from '@/lib/supabase/client';
+import { useAuthStore } from '@/lib/store';
 
 export function useAuth() {
-  const { user, profile, session, setProfile, clearAll } = useAuthStore();
-  const [isLoading, setIsLoading] = useState(true);
-
-  const refreshProfile = async () => {
-    const p = await authService.getCurrentUserProfile();
-    if (p) {
-      setProfile(p);
-      return p;
-    }
-    return null;
-  };
+  // Get the state and actions from your Zustand store
+  const session = useAuthStore((state) => state.session);
+  const user = useAuthStore((state) => state.user);
+  const profile = useAuthStore((state) => state.profile);
+  const isLoading = useAuthStore((state) => state.isLoading);
+  
+  // Get the setters to update store when Supabase changes
+  const setSession = useAuthStore((state) => state.setSession);
+  const setUser = useAuthStore((state) => state.setUser);
+  const clear = useAuthStore((state) => state.clear); // ✅ Get 'clear', not 'clearAll'
 
   useEffect(() => {
-    const initializeAuth = async () => {
-      if (session && !profile) {
-        await refreshProfile();
-      }
-      setIsLoading(false);
-    };
-
-    initializeAuth();
-
-    const { data: authListener } = authService.onAuthStateChange((event, _) => {
-        if (event === 'SIGNED_OUT') {
-            clearAll();
-        }
+    // 1. Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
     });
 
-    return () => {
-      authListener?.subscription?.unsubscribe();
-    };
-  }, [session, profile, setProfile, clearAll]);
+    // 2. Listen for auth changes (Sign In / Sign Out)
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log(`[Auth] Event fired: ${event}`);
+
+      if (event === 'SIGNED_IN' && session) {
+        setSession(session);
+        setUser(session.user);
+      } else if (event === 'SIGNED_OUT') {
+        // 🛑 THIS IS WHERE YOUR ERROR WAS
+        // The function is named 'clear', NOT 'clearAll'
+        await clear(); 
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   return {
-    isAuthenticated: !!user && !!profile,
-    isLoading,
+    session,
     user,
     profile,
-    session,
-    refreshProfile,
+    isLoading,
+    isAuthenticated: !!session?.user,
   };
 }

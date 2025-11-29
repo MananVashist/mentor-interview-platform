@@ -12,7 +12,7 @@ export default function UnderReviewScreen() {
   const handleLogout = async () => {
     await authService.signOut();
     clear();
-    router.replace('/(auth)/sign-in');
+    router.replace('/auth/sign-in');
   };
 
   return (

@@ -1,6 +1,6 @@
 ﻿// app/mentor/mentorship.tsx
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, ActivityIndicator, ScrollView } from 'react-native';
+import { View, StyleSheet, ActivityIndicator, ScrollView, TouchableOpacity, Linking, Alert } from 'react-native';
 import { useAuthStore } from '@/lib/store';
 import { supabase } from '@/lib/supabase/client';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,10 +16,15 @@ import {
 } from '@/lib/ui';
 import { NotificationBanner } from '@/lib/ui/NotificationBanner';
 
+// --- CONFIGURATION ---
+const SLACK_INVITE_LINK = "https://join.slack.com/t/YOUR_WORKSPACE/shared_invite/zt-YOUR-TOKEN"; // Replace with real link
+const LINKEDIN_SHARE_BASE = "https://www.linkedin.com/feed/?shareActive=true&text=";
+
 type MentorRow = {
   id: string;
   profile_id: string;
   session_price_inr: number | null;
+  bookings_count?: number;
   [key: string]: any;
 };
 
@@ -45,8 +50,8 @@ export default function MentorshipScreen() {
 
         const { data, error } = await supabase
           .from('mentors')
-          .select('*')
-          .eq('profile_id', profile.id)
+          .select('*') 
+          .eq('profile_ids', profile.id)
           .maybeSingle();
 
         if (error) {
@@ -130,6 +135,17 @@ export default function MentorshipScreen() {
     }
   };
 
+  // --- AUTOMATION HANDLERS ---
+  const handleClaim = (type: 'slack' | 'linkedin', tier: string) => {
+      if (type === 'slack') {
+          Linking.openURL(SLACK_INVITE_LINK).catch(() => Alert.alert("Error", "Could not open Slack. Please verify you have the app installed."));
+      } else if (type === 'linkedin') {
+          const text = `Excited to announce I've reached ${tier} Mentor status on CrackJobs! 🚀 #Mentorship #CareerGrowth`;
+          const url = `${LINKEDIN_SHARE_BASE}${encodeURIComponent(text)}`;
+          Linking.openURL(url).catch(() => Alert.alert("Error", "Could not open LinkedIn."));
+      }
+  };
+
   if (loading) {
     return (
       <ScreenBackground>
@@ -154,9 +170,26 @@ export default function MentorshipScreen() {
   const candidatePrice = basePriceNum > 0 ? Math.round(basePriceNum * 1.2) : 0;
   const platformFee = basePriceNum > 0 ? candidatePrice - basePriceNum : 0;
 
-  // Tier calculation
-  const bookingsCount = (mentor as any)?.bookings_count ?? 0;
-  const currentTier = bookingsCount >= 10 ? 'silver' : bookingsCount >= 1 ? 'bronze' : 'new';
+  // Tier calculation logic
+  const bookingsCount = (mentor as any)?.total_sessions ?? (mentor as any)?.bookings_count ?? 0;
+  
+  let currentTier = 'new';
+  let nextTier = 'Bronze';
+  let target = 1;
+  
+  if (bookingsCount >= 21) {
+      currentTier = 'gold';
+      nextTier = 'Platinum';
+      target = 50;
+  } else if (bookingsCount >= 11) {
+      currentTier = 'silver';
+      nextTier = 'Gold';
+      target = 21;
+  } else if (bookingsCount >= 1) {
+      currentTier = 'bronze';
+      nextTier = 'Silver';
+      target = 11;
+  }
 
   return (
     <ScreenBackground>
@@ -185,20 +218,23 @@ export default function MentorshipScreen() {
               <View style={styles.tierBadge}>
                 <Ionicons 
                   name={
+                    currentTier === 'gold' ? 'trophy' :
                     currentTier === 'silver' ? 'star' :
                     currentTier === 'bronze' ? 'medal' : 'rocket'
                   } 
                   size={24} 
                   color={
-                    currentTier === 'silver' ? '#C0C0C0' :
-                    currentTier === 'bronze' ? '#CD7F32' : colors.primary
+                    currentTier === 'gold' ? '#D97706' :
+                    currentTier === 'silver' ? '#9CA3AF' :
+                    currentTier === 'bronze' ? '#B45309' : colors.primary
                   } 
                 />
               </View>
               <View style={styles.tierInfo}>
                 <AppText style={styles.tierLabel}>Current Level</AppText>
                 <AppText style={styles.tierName}>
-                  {currentTier === 'silver' ? 'Silver Mentor' :
+                  {currentTier === 'gold' ? 'Gold Mentor' :
+                   currentTier === 'silver' ? 'Silver Mentor' :
                    currentTier === 'bronze' ? 'Bronze Mentor' : 'New Mentor'}
                 </AppText>
               </View>
@@ -210,16 +246,23 @@ export default function MentorshipScreen() {
                   style={[
                     styles.progressFill, 
                     { 
-                      width: `${Math.min((bookingsCount / 10) * 100, 100)}%`,
-                      backgroundColor: currentTier === 'silver' ? '#C0C0C0' : 
-                                     currentTier === 'bronze' ? '#CD7F32' : colors.primary
+                      width: `${Math.min((bookingsCount / target) * 100, 100)}%`,
+                      backgroundColor: 
+                        currentTier === 'gold' ? '#D97706' :
+                        currentTier === 'silver' ? '#9CA3AF' : 
+                        currentTier === 'bronze' ? '#B45309' : colors.primary
                     }
                   ]} 
                 />
               </View>
-              <AppText style={styles.progressText}>
-                {bookingsCount} / 10 bookings completed
-              </AppText>
+              <View style={{flexDirection: 'row', justifyContent: 'space-between', marginTop: 4}}>
+                <AppText style={styles.progressText}>
+                    {bookingsCount} / {target} bookings
+                </AppText>
+                <AppText style={styles.progressText}>
+                    Next: {nextTier}
+                </AppText>
+              </View>
             </View>
           </Card>
         </Section>
@@ -310,7 +353,7 @@ export default function MentorshipScreen() {
           </Card>
         </Section>
 
-        {/* Mentor Levels */}
+        {/* Mentor Levels & Perks */}
         <Section>
           <Card style={[styles.card, shadows.card as any]}>
             <View style={styles.cardHeader}>
@@ -318,10 +361,10 @@ export default function MentorshipScreen() {
               <Heading level={2} style={styles.cardTitle}>Mentor Levels & Perks</Heading>
             </View>
             <AppText style={styles.cardDescription}>
-              Progress through levels as you complete more bookings and unlock exclusive benefits
+              Unlock exclusive benefits by completing sessions.
             </AppText>
 
-            {/* New Mentor */}
+            {/* NEW MENTOR */}
             <View style={[styles.levelCard, currentTier === 'new' && styles.levelCardActive]}>
               <View style={styles.levelHeader}>
                 <View style={[styles.levelIcon, { backgroundColor: 'rgba(14,147,132,0.1)' }]}>
@@ -338,11 +381,11 @@ export default function MentorshipScreen() {
                 )}
               </View>
               <AppText style={styles.levelDescription}>
-                Welcome to CrackJobs! Start your mentoring journey by setting competitive pricing and delivering quality sessions.
+                Start your journey. Complete your first session to reach Bronze.
               </AppText>
             </View>
 
-            {/* Bronze Mentor */}
+            {/* ✅ FIX #8: BRONZE MENTOR - Updated Benefits */}
             <View style={[styles.levelCard, currentTier === 'bronze' && styles.levelCardActive]}>
               <View style={styles.levelHeader}>
                 <View style={[styles.levelIcon, { backgroundColor: '#FDF2E9' }]}>
@@ -350,7 +393,7 @@ export default function MentorshipScreen() {
                 </View>
                 <View style={styles.levelInfo}>
                   <AppText style={styles.levelTitle}>Bronze Mentor</AppText>
-                  <AppText style={styles.levelRequirement}>1+ bookings</AppText>
+                  <AppText style={styles.levelRequirement}>1-10 sessions</AppText>
                 </View>
                 {currentTier === 'bronze' && (
                   <View style={styles.currentBadge}>
@@ -358,30 +401,53 @@ export default function MentorshipScreen() {
                   </View>
                 )}
               </View>
-              <AppText style={styles.levelDescription}>
-                After your first completed booking, receive a LinkedIn badge and appreciation post from CrackJobs.
-              </AppText>
+              
+              {/* ✅ SPECIFIC BENEFITS */}
+              <View style={styles.benefitsList}>
+                <View style={styles.benefitItem}>
+                  <Ionicons name="checkmark-circle" size={16} color="#CD7F32" />
+                  <AppText style={styles.benefitText}>Verified Mentor Badge</AppText>
+                </View>
+                <View style={styles.benefitItem}>
+                  <Ionicons name="checkmark-circle" size={16} color="#CD7F32" />
+                  <AppText style={styles.benefitText}>LinkedIn Appreciation Post</AppText>
+                </View>
+              </View>
+              
               <View style={styles.levelPerks}>
-                <View style={styles.perkItem}>
-                  <Ionicons name="checkmark-circle" size={16} color="#CD7F32" />
-                  <AppText style={styles.perkText}>LinkedIn verification badge</AppText>
-                </View>
-                <View style={styles.perkItem}>
-                  <Ionicons name="checkmark-circle" size={16} color="#CD7F32" />
-                  <AppText style={styles.perkText}>Appreciation post</AppText>
-                </View>
+                <TouchableOpacity 
+                    onPress={() => handleClaim('slack', 'Bronze')}
+                    style={[styles.actionBtn, { borderColor: '#CD7F32' }]}
+                    disabled={bookingsCount < 1}
+                >
+                  <Ionicons name="logo-slack" size={16} color={bookingsCount < 1 ? '#9CA3AF' : '#CD7F32'} />
+                  <AppText style={[styles.actionBtnText, {color: bookingsCount < 1 ? '#9CA3AF' : '#CD7F32'}]}>
+                      {bookingsCount < 1 ? "Locked: Join Slack" : "Join Slack Community"}
+                  </AppText>
+                </TouchableOpacity>
+
+                <TouchableOpacity 
+                    onPress={() => handleClaim('linkedin', 'Bronze')}
+                    style={[styles.actionBtn, { borderColor: '#0077B5' }]}
+                    disabled={bookingsCount < 1}
+                >
+                  <Ionicons name="logo-linkedin" size={16} color={bookingsCount < 1 ? '#9CA3AF' : '#0077B5'} />
+                  <AppText style={[styles.actionBtnText, {color: bookingsCount < 1 ? '#9CA3AF' : '#0077B5'}]}>
+                      {bookingsCount < 1 ? "Locked: Share Badge" : "Share Bronze Badge"}
+                  </AppText>
+                </TouchableOpacity>
               </View>
             </View>
 
-            {/* Silver Mentor */}
+            {/* ✅ FIX #8: SILVER MENTOR - Updated Benefits */}
             <View style={[styles.levelCard, currentTier === 'silver' && styles.levelCardActive]}>
               <View style={styles.levelHeader}>
                 <View style={[styles.levelIcon, { backgroundColor: '#F3F4F6' }]}>
-                  <Ionicons name="star" size={20} color="#C0C0C0" />
+                  <Ionicons name="star" size={20} color="#9CA3AF" />
                 </View>
                 <View style={styles.levelInfo}>
                   <AppText style={styles.levelTitle}>Silver Mentor</AppText>
-                  <AppText style={styles.levelRequirement}>10+ bookings</AppText>
+                  <AppText style={styles.levelRequirement}>11-20 sessions</AppText>
                 </View>
                 {currentTier === 'silver' && (
                   <View style={styles.currentBadge}>
@@ -389,29 +455,80 @@ export default function MentorshipScreen() {
                   </View>
                 )}
               </View>
-              <AppText style={styles.levelDescription}>
-                Reach 10 completed bookings to unlock Silver status with exclusive networking opportunities.
-              </AppText>
+              
+              {/* ✅ SPECIFIC BENEFITS */}
+              <View style={styles.benefitsList}>
+                <View style={styles.benefitItem}>
+                  <Ionicons name="checkmark-circle" size={16} color="#6B7280" />
+                  <AppText style={styles.benefitText}>Added to Silver Mentor Network</AppText>
+                </View>
+                <View style={styles.benefitItem}>
+                  <Ionicons name="checkmark-circle" size={16} color="#6B7280" />
+                  <AppText style={styles.benefitText}>Silver Badge</AppText>
+                </View>
+              </View>
+
               <View style={styles.levelPerks}>
-                <View style={styles.perkItem}>
-                  <Ionicons name="checkmark-circle" size={16} color="#C0C0C0" />
-                  <AppText style={styles.perkText}>Silver LinkedIn badge</AppText>
+                <TouchableOpacity 
+                    onPress={() => handleClaim('linkedin', 'Silver')}
+                    style={[styles.actionBtn, { borderColor: '#9CA3AF' }]}
+                    disabled={bookingsCount < 11}
+                >
+                   <Ionicons name="logo-linkedin" size={16} color={bookingsCount < 11 ? '#9CA3AF' : '#6B7280'} />
+                   <AppText style={[styles.actionBtnText, {color: bookingsCount < 11 ? '#9CA3AF' : '#6B7280'}]}>
+                       {bookingsCount < 11 ? "Locked: Silver Badge" : "Share Silver Badge"}
+                   </AppText>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* ✅ FIX #8: GOLD MENTOR - Updated Benefits */}
+            <View style={[styles.levelCard, currentTier === 'gold' && styles.levelCardActive]}>
+              <View style={styles.levelHeader}>
+                <View style={[styles.levelIcon, { backgroundColor: '#FFFBEB' }]}>
+                  <Ionicons name="trophy" size={20} color="#D97706" />
                 </View>
-                <View style={styles.perkItem}>
-                  <Ionicons name="checkmark-circle" size={16} color="#C0C0C0" />
-                  <AppText style={styles.perkText}>Special appreciation post</AppText>
+                <View style={styles.levelInfo}>
+                  <AppText style={styles.levelTitle}>Gold Mentor</AppText>
+                  <AppText style={styles.levelRequirement}>21+ sessions</AppText>
                 </View>
-                <View style={styles.perkItem}>
-                  <Ionicons name="checkmark-circle" size={16} color="#C0C0C0" />
-                  <AppText style={styles.perkText}>Exclusive WhatsApp community</AppText>
+                {currentTier === 'gold' && (
+                  <View style={styles.currentBadge}>
+                    <AppText style={styles.currentBadgeText}>Current</AppText>
+                  </View>
+                )}
+              </View>
+              
+              {/* ✅ SPECIFIC BENEFITS */}
+              <View style={styles.benefitsList}>
+                <View style={styles.benefitItem}>
+                  <Ionicons name="checkmark-circle" size={16} color="#D97706" />
+                  <AppText style={styles.benefitText}>Featured on Top of Browse List</AppText>
                 </View>
+                <View style={styles.benefitItem}>
+                  <Ionicons name="checkmark-circle" size={16} color="#D97706" />
+                  <AppText style={styles.benefitText}>Gold Badge</AppText>
+                </View>
+              </View>
+
+              <View style={styles.levelPerks}>
+                <TouchableOpacity 
+                    onPress={() => handleClaim('linkedin', 'Gold')}
+                    style={[styles.actionBtn, { borderColor: '#D97706' }]}
+                    disabled={bookingsCount < 21}
+                >
+                   <Ionicons name="logo-linkedin" size={16} color={bookingsCount < 21 ? '#9CA3AF' : '#D97706'} />
+                   <AppText style={[styles.actionBtnText, {color: bookingsCount < 21 ? '#9CA3AF' : '#D97706'}]}>
+                       {bookingsCount < 21 ? "Locked: Gold Badge" : "Share Gold Badge"}
+                   </AppText>
+                </TouchableOpacity>
               </View>
             </View>
 
             <View style={styles.levelFooter}>
               <Ionicons name="information-circle-outline" size={16} color={colors.textTertiary} />
               <AppText style={styles.levelFooterText}>
-                All perks are automatically granted when you reach each milestone
+                All perks are automatically unlocked when you reach the milestone.
               </AppText>
             </View>
           </Card>
@@ -435,8 +552,6 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
     textAlign: 'center',
   },
-
-  // Tier Card
   tierCard: {
     padding: spacing.lg,
     borderRadius: borderRadius.lg,
@@ -487,8 +602,6 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     fontWeight: '500',
   },
-
-  // Card
   card: {
     padding: spacing.lg,
     borderRadius: borderRadius.lg,
@@ -511,8 +624,6 @@ const styles = StyleSheet.create({
   bold: {
     fontWeight: '700',
   },
-
-  // Price Input
   priceInputSection: {
     marginBottom: spacing.md,
   },
@@ -550,8 +661,6 @@ const styles = StyleSheet.create({
     fontSize: typography.size.xs,
     color: colors.textTertiary,
   },
-
-  // Breakdown
   breakdown: {
     backgroundColor: colors.backgroundSecondary,
     padding: spacing.md,
@@ -598,12 +707,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.textPrimary,
   },
-
   saveButton: {
     marginTop: spacing.sm,
   },
-
-  // Level Cards
   levelCard: {
     padding: spacing.md,
     borderRadius: borderRadius.md,
@@ -658,8 +764,24 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     marginBottom: spacing.sm,
   },
+  // ✅ NEW: Benefits list styles
+  benefitsList: {
+    gap: 8,
+    marginBottom: spacing.sm,
+  },
+  benefitItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  benefitText: {
+    fontSize: typography.size.sm,
+    color: colors.textPrimary,
+    fontWeight: '500',
+  },
   levelPerks: {
     gap: spacing.xs,
+    marginTop: 12,
   },
   perkItem: {
     flexDirection: 'row',
@@ -684,4 +806,18 @@ const styles = StyleSheet.create({
     fontSize: typography.size.xs,
     color: colors.textTertiary,
   },
+  actionBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: 10,
+      borderWidth: 1,
+      borderRadius: 8,
+      gap: 8,
+      marginTop: 4,
+      justifyContent: 'center'
+  },
+  actionBtnText: {
+      fontSize: 12,
+      fontWeight: '600',
+  }
 });

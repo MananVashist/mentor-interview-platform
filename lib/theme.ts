@@ -4,7 +4,7 @@ export const colors = {
   // Main Brand Colors
   primary: "#11998e",
   primaryDark: "#0F766E",
-  background: "#F9FAFB",
+  background: "#f8f5f0", // 🟢 Cream background (consistent everywhere)
   surface: "#FFFFFF",
   border: "#E5E7EB",
 
@@ -44,6 +44,13 @@ export const colors = {
     greenBg: "#ECFDF5",
     blueIcon: "#3B82F6",
     blueBg: "#EFF6FF",
+    // Added Gold/Silver definitions to match usage in Candidate Dashboard
+    goldBg: "#FEFCE8",
+    goldText: "#854D0E",
+    goldBorder: "#FEF9C3",
+    silverBg: "#F3F4F6",
+    silverText: "#4B5563",
+    silverBorder: "#E5E7EB",
   }
 };
 
@@ -91,7 +98,7 @@ export const shadows = {
   }
 };
 
-// --- CRITICAL FIX: Export the combined object ---
+// --- Export the combined object ---
 const theme = {
   colors,
   typography,

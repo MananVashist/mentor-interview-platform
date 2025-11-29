@@ -10,31 +10,25 @@ import {
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
-  Image,
+  useWindowDimensions,
 } from 'react-native';
 import { Link, useRouter } from 'expo-router';
+import { AntDesign } from '@expo/vector-icons';
+
 import { authService } from '@/services/auth.service';
 import { candidateService } from '@/services/candidate.service';
 import { mentorService } from '@/services/mentor.service';
 import { useAuthStore } from '@/lib/store';
-import { logger } from '@/lib/debug';
-
-// OAuth imports
-import * as WebBrowser from 'expo-web-browser';
-import { makeRedirectUri } from 'expo-auth-session';
-import Constants from 'expo-constants';
-import { supabase } from '@/lib/supabase/client';
-
-WebBrowser.maybeCompleteAuthSession();
-
-const redirectTo = makeRedirectUri({
-  scheme: Constants.expoConfig?.scheme ?? 'mentorplatform',
-  path: 'auth-callback',
-  preferLocalhost: true,
-});
+import { BrandHeader } from '@/lib/ui';
+import { Footer } from '@/components/Footer';
+import { useNotification } from '@/lib/ui/NotificationBanner';
 
 export default function SignInScreen() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const isWeb = Platform.OS === 'web';
+  const { showNotification } = useNotification();
+  
   const {
     setUser,
     setProfile,
@@ -47,289 +41,229 @@ export default function SignInScreen() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const signInWithProvider = async (provider: 'google' | 'linkedin_oidc') => {
-    logger.info('[AUTH UI] sign-in with provider', { provider, redirectTo });
+  // --- OAUTH HANDLER ---
+  const handleOAuthSignIn = async (provider: 'google' | 'linkedin_oidc') => {
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider,
-        options: {
-          redirectTo,
-          skipBrowserRedirect: false,
-        },
-      });
+      setLoading(true);
+      const { error } = await authService.signInWithOAuth(provider);
       if (error) {
-        logger.warn('[AUTH UI] provider error', error);
-        Alert.alert('Error', error.message ?? 'OAuth failed');
+        showNotification(error.message, 'error');
       }
-    } catch (e: any) {
-      logger.error('[AUTH UI] provider exception', e);
-      Alert.alert('Error', 'Unexpected OAuth error');
+    } catch (err: any) {
+      showNotification(err.message, 'error');
+    } finally {
+      setLoading(false);
     }
   };
 
+  // --- EMAIL/PASSWORD HANDLER ---
   const handleSignIn = async () => {
-    console.log('🔵 [Sign-In] Button clicked for:', email);
     if (!email || !password) {
-      Alert.alert('Error', 'Please enter both email and password');
+      showNotification('Please enter both email and password', 'error');
       return;
     }
 
     setLoading(true);
     try {
-      // 1. Authenticate
       const { user, session, error } = await authService.signIn(email, password);
       
       if (error || !user || !session) {
-        Alert.alert('Login Failed', error?.message || 'Invalid credentials');
+        showNotification(error?.message || 'Invalid credentials', 'error');
         setLoading(false);
         return;
       }
 
-      setUser(user);
-      setSession(session);
-
-      // 2. Fetch Profile
-      console.log('🔵 [Sign-In] Authenticated. User ID:', user.id);
       let profile = await authService.getUserProfileById(user.id);
       
-      // DEBUG: Check raw result
-      if (!profile) {
-          console.warn('⚠️ [Sign-In] Profile is NULL. RLS might be blocking read, or row missing.');
-      } else {
-          console.log('✅ [Sign-In] Profile found:', profile);
-      }
-
-      // 3. SELF-HEALING: If profile missing, create it!
-      if (!profile) {
-        console.warn("🛠️ [Sign-In] Attempting to auto-create Mentor profile...");
-        
-        const { data: newProfile, error: createError } = await supabase
-          .from('profiles')
-          .insert({
-            id: user.id,
-            email: user.email,
-            full_name: 'New Mentor', 
-            role: 'mentor'           
-          })
-          .select()
-          .single();
-
-        if (createError) {
-            console.error("🔴 [Sign-In] Failed to auto-create profile:", createError);
-            // Even if this fails, we can't proceed without a role.
-            // We will fall through to the metadata check below.
-        } else {
-            console.log("✅ [Sign-In] Profile auto-created:", newProfile);
-            profile = newProfile; 
-        }
-      }
-
-      // 4. Route based on Role
       if (profile) {
-        setProfile(profile as any);
-        
-        // Handle specifics (Candidate/Mentor tables)
         const roleLower = (profile.role || '').toLowerCase().trim();
-        // 🎯 1. ADMIN CHECK
+        
         if (roleLower === 'admin' || profile.is_admin) { 
-             router.replace('/admin'); // Goes to Admin Dashboard
+             setUser(user);
+             setSession(session);
+             setProfile(profile as any);
+             showNotification('Welcome back, Admin!', 'success');
+             router.replace('/admin'); 
              return;
         }
 
-        // 🎯 2. MENTOR SCREENING CHECK
         if (roleLower === 'mentor') {
             const m = await mentorService.getMentorById(user.id);
-            setMentorProfile(m ?? null);
-
-            // If status is NOT approved, block them
-            // (Handles null status, 'pending', or 'rejected')
-            if (!m?.status || m.status === 'pending' || m.status === 'rejected') {
+            if (!m || !m.status || m.status !== 'approved') {
+                showNotification('Your mentor application is still being reviewed', 'error');
+                await authService.signOut();
+                setLoading(false);
                 router.replace('/mentor/under-review');
                 return;
             }
-            
-            // Approved -> Go to Dashboard
-            router.replace('/mentor');
+            setUser(user);
+            setSession(session);
+            setProfile(profile as any);
+            setMentorProfile(m ?? null);
+            showNotification('Welcome back!', 'success');
+            router.replace('/mentor/bookings');
             
         } else {
-            // Candidate Flow
             const c = await candidateService.getCandidateById(user.id);
+            setUser(user);
+            setSession(session);
+            setProfile(profile as any);
             setCandidateProfile(c ?? null);
+            showNotification('Welcome back!', 'success');
             router.replace('/candidate');
         }
-
       } else {
+        setUser(user);
+        setSession(session);
+        showNotification('Welcome!', 'success');
         router.replace('/candidate');
       }
 
     } catch (err: any) {
-      logger.error('[AUTH UI] Exception:', err);
-      Alert.alert('Error', err.message);
+      showNotification(err.message, 'error');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
-    >
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.container}>
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent} 
+        showsVerticalScrollIndicator={false}
       >
-        <View style={styles.content}>
-          <View style={styles.header}>
-            <Text style={styles.title}>Welcome back 👋</Text>
-            <Text style={styles.subtitle}>Sign in to continue your journey</Text>
-          </View>
+        
+        {/* Wrapper to Center Form vertically */}
+        <View style={styles.formWrapper}>
+          <View style={styles.content}>
+            
+            <BrandHeader />
 
-          {/* Email / Password */}
-          <View style={styles.section}>
-            <Text style={styles.label}>EMAIL ADDRESS</Text>
-            <TextInput
-              style={styles.input}
-              value={email}
-              onChangeText={setEmail}
-              autoCapitalize="none"
-              placeholder="you@example.com"
-              keyboardType="email-address"
-              textContentType="emailAddress"
-            />
-          </View>
+            <View style={styles.spacer} />
 
-          <View style={styles.section}>
-            <Text style={styles.label}>PASSWORD</Text>
-            <TextInput
-              style={styles.input}
-              value={password}
-              onChangeText={setPassword}
-              autoCapitalize="none"
-              secureTextEntry
-              placeholder="••••••••"
-              textContentType="password"
-            />
-          </View>
+            <View style={styles.section}>
+              <Text style={styles.label}>EMAIL ADDRESS</Text>
+              <TextInput
+                style={styles.input}
+                value={email}
+                onChangeText={setEmail}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                placeholder="name@work-email.com"
+                placeholderTextColor="#9CA3AF"
+              />
+            </View>
 
-          {/* Primary Sign In */}
-          <TouchableOpacity
-            onPress={handleSignIn}
-            disabled={loading}
-            style={[styles.signInButton, loading && styles.signInButtonDisabled]}
-          >
-            {loading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.signInButtonText}>Sign In</Text>
-            )}
-          </TouchableOpacity>
+            <View style={styles.section}>
+              <Text style={styles.label}>PASSWORD</Text>
+              <TextInput
+                style={styles.input}
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+                placeholder="••••••••"
+                placeholderTextColor="#9CA3AF"
+              />
+            </View>
 
-          {/* Divider “or” */}
-          <View style={styles.dividerRow}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>or</Text>
-            <View style={styles.dividerLine} />
-          </View>
-
-          {/* Social buttons */}
-          <View style={{ gap: 8, width: '100%', marginBottom: 12 }}>
-            <TouchableOpacity
-              onPress={() => signInWithProvider('google')}
-              style={[styles.oauthBtn, styles.googleBtn]}
-            >
-              <View style={styles.oauthInner}>
-                <Image
-                  source={{ uri: 'https://developers.google.com/identity/images/g-logo.png' }}
-                  style={styles.oauthIcon}
-                  resizeMode="contain"
-                />
-                <Text style={[styles.oauthText, styles.googleText]}>Continue with Google</Text>
-              </View>
+            <TouchableOpacity onPress={handleSignIn} disabled={loading} style={styles.signInButton}>
+              {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.signInButtonText}>Sign In</Text>}
             </TouchableOpacity>
 
-            <TouchableOpacity
-              onPress={() => signInWithProvider('linkedin_oidc')}
-              style={[styles.oauthBtn, styles.linkedinBtn]}
-            >
-              <View style={styles.oauthInner}>
-                <Image
-                  source={{
-                    uri: 'https://upload.wikimedia.org/wikipedia/commons/c/ca/LinkedIn_logo_initials.png',
-                  }}
-                  style={styles.oauthIcon}
-                  resizeMode="contain"
-                />
-                <Text style={[styles.oauthText, styles.linkedinText]}>Continue with LinkedIn</Text>
-              </View>
-            </TouchableOpacity>
-          </View>
+            <View style={styles.dividerContainer}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>Or continue with</Text>
+              <View style={styles.dividerLine} />
+            </View>
 
-          {/* Sign up link */}
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>Don’t have an account? </Text>
-            <Link href="/auth/sign-up" asChild>
-              <TouchableOpacity>
-                <Text style={styles.footerLink}>Sign Up</Text>
+            <View style={styles.socialRow}>
+              <TouchableOpacity style={styles.socialBtn} onPress={() => handleOAuthSignIn('google')}>
+                <AntDesign name="google" size={24} color="#DB4437" />
+                <Text style={styles.socialBtnText}>Google</Text>
               </TouchableOpacity>
-            </Link>
+
+              <TouchableOpacity style={styles.socialBtn} onPress={() => handleOAuthSignIn('linkedin_oidc')}>
+                <AntDesign name="linkedin-square" size={24} color="#0077B5" />
+                <Text style={styles.socialBtnText}>LinkedIn</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.authFooter}>
+              <Text style={styles.authFooterText}>Don't have an account? </Text>
+              <Link href="/auth/sign-up" asChild>
+                <TouchableOpacity>
+                  <Text style={styles.authFooterLink}>Sign Up</Text>
+                </TouchableOpacity>
+              </Link>
+            </View>
           </View>
         </View>
+
+        {/* Sticky Footer at bottom, full width */}
+        {isWeb && <Footer />}
+
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
-// --- HELPER FUNCTION FOR REDIRECTION ---
-function goToRole(router: any, role: string | null) {
-  console.log('🔄 [Redirection] Checking role:', role); 
-
-  if (!role) {
-    console.warn('⚠️ No role found, defaulting to candidate');
-    router.replace('/candidate');
-    return;
-  }
-
-  const normalizedRole = role.toLowerCase().trim();
-  
-  if (normalizedRole === 'mentor') {
-    console.log('✅ Redirecting to /mentor');
-    router.replace('/mentor');
-  } else if (normalizedRole === 'admin') {
-    router.replace('/(admin)');
-  } else {
-    console.log('✅ Redirecting to /candidate');
-    router.replace('/candidate');
-  }
-}
-
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
-  scrollView: { flex: 1 },
-  scrollContent: { flexGrow: 1 },
-  content: { flex: 1, justifyContent: 'center', padding: 24, maxWidth: 520, alignSelf: 'center', width: '100%' },
-  header: { marginBottom: 32, alignItems: 'center' },
-  title: { fontSize: 28, fontWeight: 'bold', color: '#0f172a' },
-  subtitle: { color: '#6b7280', marginTop: 4, textAlign: 'center' },
-  section: { marginBottom: 16, width: '100%' },
-  label: { fontSize: 12, fontWeight: '600', marginBottom: 6, color: '#334155' },
+  container: { flex: 1, backgroundColor: '#f8f5f0' }, // Matches global background
+  
+  // Key Fix: flexGrow: 1 makes the ScrollView fill the screen
+  scrollContent: { flexGrow: 1, flexDirection: 'column' },
+  
+  // Form Wrapper pushes footer down if content is short
+  formWrapper: {
+    flex: 1, // Takes all available space
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60, // Add breathing room
+    width: '100%',
+  },
+  
+  content: { 
+    padding: 24, 
+    maxWidth: 400, 
+    width: '100%',
+    backgroundColor: 'transparent', // Ensure no white box artifact
+  },
+  
+  spacer: { marginBottom: 24 },
+  
+  section: { marginBottom: 16 },
+  
+  label: { 
+    fontSize: 12, 
+    fontWeight: '600', 
+    marginBottom: 6, 
+    color: '#334155' 
+  },
+  
   input: { borderWidth: 1, borderColor: '#d1d5db', borderRadius: 10, padding: 12, backgroundColor: '#fff' },
   signInButton: { backgroundColor: '#0E9384', borderRadius: 999, alignItems: 'center', padding: 14, marginTop: 8 },
-  signInButtonDisabled: { backgroundColor: '#93c5fd' },
   signInButtonText: { color: '#fff', fontWeight: '700' },
-  dividerRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginVertical: 16 },
-  dividerLine: { flex: 1, height: 1, backgroundColor: '#e5e7eb' },
-  dividerText: { fontSize: 12, color: '#6b7280' },
-  oauthBtn: { borderRadius: 999, borderWidth: 1, overflow: 'hidden' },
-  oauthInner: { flexDirection: 'row', alignItems: 'center', gap: 10, justifyContent: 'center', paddingVertical: 12 },
-  oauthIcon: { width: 18, height: 18 },
-  oauthText: { fontSize: 14 },
-  googleBtn: { backgroundColor: '#fff', borderColor: '#e5e7eb' },
-  googleText: { color: '#111827', fontWeight: '700' },
-  linkedinBtn: { backgroundColor: '#0A66C2', borderColor: '#0A66C2' },
-  linkedinText: { color: '#fff', fontWeight: '700' },
-  footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 16 },
-  footerText: { color: '#6b7280' },
-  footerLink: { color: '#0E9384', fontWeight: '700' },
+
+  dividerContainer: { flexDirection: 'row', alignItems: 'center', marginVertical: 24 },
+  dividerLine: { flex: 1, height: 1, backgroundColor: '#E2E8F0' },
+  dividerText: { marginHorizontal: 12, color: '#94A3B8', fontSize: 12, fontWeight: '500' },
+  socialRow: { flexDirection: 'row', gap: 12, marginBottom: 16 },
+  socialBtn: { 
+    flex: 1, 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    padding: 12, 
+    borderRadius: 10, 
+    borderWidth: 1, 
+    borderColor: '#E2E8F0', 
+    gap: 8,
+    backgroundColor: '#fff' 
+  },
+  socialBtnText: { fontWeight: '600', color: '#334155' },
+
+  // Internal footer for "Sign Up" link
+  authFooter: { flexDirection: 'row', justifyContent: 'center', marginTop: 16 },
+  authFooterText: { color: '#6b7280' },
+  authFooterLink: { color: '#0E9384', fontWeight: '700' },
 });

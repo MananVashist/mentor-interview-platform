@@ -10,10 +10,11 @@ export default function AdminLayout() {
   const pathname = usePathname();
 
   const menu = [
-    // 🎯 FIX: Updated paths for 'admin' folder (no parentheses)
     { label: 'Overview', path: '/admin', icon: 'stats-chart' }, 
     { label: 'Approvals', path: '/admin/approvals', icon: 'checkmark-done-circle' },
     { label: 'Job Profiles', path: '/admin/profiles', icon: 'briefcase' },
+    // ✅ NEW ITEM
+    { label: 'Checklists', path: '/admin/templates', icon: 'list-circle' },
   ];
 
   const isActive = (path: string) => {

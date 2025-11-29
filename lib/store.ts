@@ -1,4 +1,5 @@
 ﻿import { create } from 'zustand';
+import AsyncStorage from '@react-native-async-storage/async-storage'; // ✅ Ensure this is imported
 import { Profile, Candidate, Mentor } from '@/lib/types';
 
 interface AuthState {
@@ -7,14 +8,14 @@ interface AuthState {
   candidateProfile: Candidate | null;
   mentorProfile: Mentor | null;
   isLoading: boolean;
-  session: any | null; // ✅ added
+  session: any | null;
   setUser: (user: any) => void;
   setProfile: (profile: Profile | null) => void;
   setCandidateProfile: (candidate: Candidate | null) => void;
   setMentorProfile: (mentor: Mentor | null) => void;
   setIsLoading: (loading: boolean) => void;
-  setSession: (session: any | null) => void; // ✅ added
-  clear: () => void;
+  setSession: (session: any | null) => void;
+  clear: () => Promise<void>; 
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -23,22 +24,42 @@ export const useAuthStore = create<AuthState>((set) => ({
   candidateProfile: null,
   mentorProfile: null,
   isLoading: true,
-  session: null, // ✅ added
+  session: null,
   setUser: (user) => set({ user }),
   setProfile: (profile) => set({ profile }),
   setCandidateProfile: (candidateProfile) => set({ candidateProfile }),
   setMentorProfile: (mentorProfile) => set({ mentorProfile }),
   setIsLoading: (isLoading) => set({ isLoading }),
-  setSession: (session) => set({ session }), // ✅ added
-  clear: () =>
+  setSession: (session) => set({ session }),
+
+  // 🔍 DEBUGGING ADDED HERE
+  clear: async () => {
+    console.log("🛑 [Store] Sign-out process started.");
+
+    try {
+      if (AsyncStorage) {
+        console.log("🧹 [Store] Clearing AsyncStorage...");
+        // ✅ The correct method is .clear(), NOT .clearAll()
+        await AsyncStorage.clear(); 
+        console.log("✅ [Store] AsyncStorage cleared successfully.");
+      } else {
+        console.warn("⚠️ [Store] AsyncStorage is undefined or unavailable.");
+      }
+    } catch (error) {
+      console.error("❌ [Store] Error while clearing storage:", error);
+    }
+    
+    console.log("🔄 [Store] Resetting Zustand state variables...");
     set({
       user: null,
       profile: null,
       candidateProfile: null,
       mentorProfile: null,
       isLoading: false,
-      session: null, // ✅ added
-    }),
+      session: null,
+    });
+    console.log("🏁 [Store] State reset complete.");
+  },
 }));
 
 interface NotificationState {

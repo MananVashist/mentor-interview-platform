@@ -1,18 +1,147 @@
-# CrackJobs robots.txt
-# Allow all crawlers
+# ================================================
+# robots.txt for CrackJobs
+# Interview Preparation Platform
+# ================================================
 
+# Default rule for all bots
 User-agent: *
-Allow: /
 
-# Block AI scrapers from training data
-User-agent: GPTBot
-Disallow: /
+# ================================================
+# ALLOW - Public Pages (SEO-friendly)
+# ================================================
 
-User-agent: CCBot
-Disallow: /
+# Homepage & Landing
+Allow: /$
+Allow: /landing$
+Allow: /about$
+Allow: /pricing$
+Allow: /how-it-works$
 
-User-agent: anthropic-ai
-Disallow: /
+# Public Content
+Allow: /mentors$
+Allow: /mentors?*
+Allow: /faq$
+Allow: /contact$
+Allow: /terms$
+Allow: /privacy$
 
-# Sitemap location
+# Role-specific landing pages
+Allow: /pm-interviews$
+Allow: /sde-interviews$
+Allow: /frontend-interviews$
+Allow: /backend-interviews$
+Allow: /data-science-interviews$
+Allow: /hr-interviews$
+
+# Blog (when created)
+Allow: /blog$
+Allow: /blog/*
+
+# Static assets
+Allow: /assets/*
+Allow: /*.css$
+Allow: /*.js$
+Allow: /*.png$
+Allow: /*.jpg$
+Allow: /*.jpeg$
+Allow: /*.svg$
+Allow: /*.webp$
+Allow: /*.ico$
+Allow: /*.woff$
+Allow: /*.woff2$
+
+# ================================================
+# DISALLOW - Private/Authenticated Pages
+# ================================================
+
+# Authentication pages (no value for SEO)
+Disallow: /auth/
+Disallow: /sign-in
+Disallow: /sign-up
+Disallow: /forgot-password
+Disallow: /reset-password
+
+# User dashboards (require authentication)
+Disallow: /candidate/
+Disallow: /mentor/
+Disallow: /(admin)/
+Disallow: /admin/
+
+# API endpoints (if any)
+Disallow: /api/
+Disallow: /_next/
+Disallow: /_expo/
+
+# Private user data
+Disallow: /profile/
+Disallow: /settings/
+Disallow: /sessions/
+Disallow: /bookings/
+Disallow: /payments/
+Disallow: /evaluations/
+
+# Search & filter parameters (avoid duplicate content)
+Disallow: /*?search=*
+Disallow: /*?filter=*
+Disallow: /*?page=*
+Disallow: /*?sort=*
+
+# Temporary/test pages
+Disallow: /test/
+Disallow: /demo/
+Disallow: /dev/
+
+# ================================================
+# SITEMAP
+# ================================================
+
 Sitemap: https://crackjobs.com/sitemap.xml
+
+# ================================================
+# CRAWL SETTINGS
+# ================================================
+
+# Polite crawl delay (1 second between requests)
+Crawl-delay: 1
+
+# ================================================
+# SPECIFIC BOT RULES (Optional)
+# ================================================
+
+# Google Bot (stricter rules if needed)
+User-agent: Googlebot
+Allow: /
+Disallow: /candidate/
+Disallow: /mentor/
+Disallow: /(admin)/
+Disallow: /auth/
+
+# Bing Bot
+User-agent: Bingbot
+Allow: /
+Disallow: /candidate/
+Disallow: /mentor/
+Disallow: /(admin)/
+Disallow: /auth/
+
+# Block bad bots (optional - uncomment if needed)
+# User-agent: AhrefsBot
+# Disallow: /
+
+# User-agent: SemrushBot
+# Disallow: /
+
+# User-agent: MJ12bot
+# Disallow: /
+
+# ================================================
+# NOTES FOR DEVELOPERS
+# ================================================
+# 
+# - Update this file when adding new public pages
+# - Keep private dashboards blocked
+# - Don't block CSS/JS/images (needed for rendering)
+# - Test changes with Google Search Console
+# - Monitor crawl stats regularly
+#
+# ================================================

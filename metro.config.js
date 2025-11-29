@@ -1,9 +1,10 @@
-﻿// metro.config.js
+﻿// Learn more https://docs.expo.io/guides/customizing-metro
 const { getDefaultConfig } = require('expo/metro-config');
 
+/** @type {import('expo/metro-config').MetroConfig} */
 const config = getDefaultConfig(__dirname);
 
-// Enable support for .mjs files (often used by libraries with import.meta)
-config.resolver.sourceExts.push('mjs');
+// Add support for CSS
+config.resolver.sourceExts.push('css');
 
 module.exports = config;

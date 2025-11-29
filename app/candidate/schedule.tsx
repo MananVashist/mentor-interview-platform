@@ -9,88 +9,226 @@ import { DateTime } from 'luxon';
 
 import { theme } from '@/lib/theme';
 import { Heading, AppText } from '@/lib/ui';
-import { availabilityService, TimeSlot } from '@/services/availability.service';
+import { supabase } from '@/lib/supabase/client';
+import { paymentService } from '@/services/payment.service';
+import { useAuthStore } from '@/lib/store';
+
+type TimeSlot = {
+  time: string;
+  isAvailable: boolean;
+};
 
 export default function ScheduleScreen() {
   const router = useRouter();
   const params = useLocalSearchParams(); 
   const mentorId = Array.isArray(params.mentorId) ? params.mentorId[0] : params.mentorId;
+  
+  // 1. RECEIVE PROFILE PARAMS
+  const profileIdParam = Array.isArray(params.profileId) ? params.profileId[0] : params.profileId;
+  const profileNameParam = Array.isArray(params.profileName) ? params.profileName[0] : params.profileName;
+
+  const authStore = useAuthStore();
+  const { user, setUser } = authStore;
 
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedDate, setSelectedDate] = useState(DateTime.now());
+  const [mentor, setMentor] = useState<any>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  // Initialize Auth
+  useEffect(() => {
+    let mounted = true;
+    async function initializeAuth() {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user && mounted) {
+          setCurrentUserId(session.user.id);
+          setUser(session.user as any);
+        }
+      } catch (error) {
+        console.error('Auth check failed:', error);
+      }
+    }
+    initializeAuth();
+    return () => { mounted = false; };
+  }, []);
+
+  // Fetch mentor info
+  useEffect(() => {
+    async function fetchMentor() {
+      if (!mentorId) return;
+      try {
+        const { data, error } = await supabase
+          .from('mentors')
+          .select('session_price_inr, professional_title, profile:profiles(full_name)')
+          .eq('id', mentorId)
+          .single();
+
+        if (error) throw error;
+        
+        setMentor({
+          id: mentorId,
+          name: data.profile?.full_name || 'Mentor',
+          title: data.professional_title || 'Senior Interviewer',
+          price: data.session_price_inr || 1000,
+        });
+      } catch (e) {
+        console.error('Error fetching mentor:', e);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchMentor();
+  }, [mentorId]);
+
+  // Date & Slot Logic
+  const [selectedDate, setSelectedDate] = useState(
+    DateTime.now().setZone('Asia/Kolkata').plus({ days: 1 })
+  );
   const [slots, setSlots] = useState<TimeSlot[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
   
-  // Selection State
   const [session1, setSession1] = useState<string | null>(null);
   const [session2, setSession2] = useState<string | null>(null);
   const [activeField, setActiveField] = useState<'session1' | 'session2'>('session1');
+  const [bookingInProgress, setBookingInProgress] = useState(false);
 
-  // 1. Fetch Slots
+  // Generate available slots
   useEffect(() => {
-    if (mentorId) fetchSlots();
-    setIsLoading(false);
+    if (mentorId) generateSlots();
   }, [selectedDate, mentorId]);
 
-  const fetchSlots = async () => {
+  const generateSlots = async () => {
     setLoadingSlots(true);
     try {
+      const timeSlots = [
+        '09:00', '10:00', '11:00', '14:00', '15:00', 
+        '16:00', '17:00', '18:00', '19:00', '20:00'
+      ];
       const dateStr = selectedDate.toISODate();
-      if (dateStr && mentorId) {
-        const data = await availabilityService.getSlotsForDate(mentorId, dateStr);
-        setSlots(data);
-      }
+      if (!dateStr) return;
+
+      const startOfDay = DateTime.fromISO(dateStr, { zone: 'Asia/Kolkata' }).startOf('day').toISO();
+      const endOfDay = DateTime.fromISO(dateStr, { zone: 'Asia/Kolkata' }).endOf('day').toISO();
+
+      const { data: bookedSessions } = await supabase
+        .from('interview_sessions')
+        .select('scheduled_at')
+        .eq('mentor_id', mentorId)
+        .gte('scheduled_at', startOfDay)
+        .lte('scheduled_at', endOfDay)
+        .in('status', ['pending', 'confirmed']);
+
+      const bookedTimes = new Set(
+        (bookedSessions || []).map(s => {
+          const dt = DateTime.fromISO(s.scheduled_at, { zone: 'Asia/Kolkata' });
+          return dt.toFormat('HH:mm');
+        })
+      );
+
+      const availableSlots: TimeSlot[] = timeSlots.map(time => ({
+        time,
+        isAvailable: !bookedTimes.has(time),
+      }));
+
+      setSlots(availableSlots);
     } catch (e) {
-      console.error(e);
+      console.error('Error generating slots:', e);
+      setSlots([]);
     } finally {
       setLoadingSlots(false);
     }
   };
 
-  // 2. Handle Slot Tap
   const handleSlotPress = (time: string) => {
     if (activeField === 'session1') {
-      if (session2 === time) setSession2(null); // Prevent duplicate
+      if (session2 === time) setSession2(null);
       setSession1(time);
-      setActiveField('session2'); // Auto-advance
+      setActiveField('session2');
     } else {
       if (session1 === time) setSession1(null);
       setSession2(time);
     }
   };
 
-  // 3. Proceed to Payment
-  const handleProceed = () => {
+  const handleProceed = async () => {
     if (!session1 || !session2) {
       Alert.alert("Select Slots", "Please select 2 time slots to proceed.");
       return;
+    }
+
+    // Auth Check
+    let activeUserId = currentUserId || user?.id;
+    if (!activeUserId) {
+        // Fallback fetch
+        const { data: { session } } = await supabase.auth.getSession();
+        activeUserId = session?.user?.id;
+    }
+
+    if (!activeUserId || !mentorId || !mentor) {
+      Alert.alert('Error', 'You must be logged in to book. Please sign in.');
+      return;
+    }
+
+    // 2. VALIDATE PROFILE ID (Critical)
+    if (!profileIdParam) {
+        Alert.alert('Error', 'Missing interview profile info. Please go back and select a profile.');
+        return;
     }
     
     const dateStr = selectedDate.toISODate();
     if (!dateStr) return;
 
-    // Create ISO Timestamps
-    const slot1ISO = `${dateStr}T${session1}:00`;
-    const slot2ISO = `${dateStr}T${session2}:00`;
+    setBookingInProgress(true);
 
-    // Navigate to Payment Screen
-    router.push({
-      pathname: '/candidate/payment',
-      params: { 
-        mentorId,
-        slot1: slot1ISO, 
-        slot2: slot2ISO 
+    try {
+      const candidateId = activeUserId;
+      
+      // Construct Timestamps
+      const dt1 = DateTime.fromFormat(`${dateStr} ${session1}`, "yyyy-MM-dd HH:mm", { zone: 'Asia/Kolkata' });
+      const dt2 = DateTime.fromFormat(`${dateStr} ${session2}`, "yyyy-MM-dd HH:mm", { zone: 'Asia/Kolkata' });
+      const selectedSlots = [dt1.toISO(), dt2.toISO()].filter(Boolean) as string[];
+
+      const totalPrice = mentor.price + 300; 
+      
+      // 3. CREATE PACKAGE with PROFILE ID
+      const { package: pkg, error } = await paymentService.createPackage(
+        candidateId,
+        mentorId as string,
+        Number(profileIdParam), // <--- Passing the ID
+        totalPrice,
+        selectedSlots
+      );
+
+      if (error || !pkg) throw new Error(error?.message || 'Failed to create booking');
+
+      // Redirect based on status
+      if (pkg.payment_status === 'pending_payment') {
+        router.replace({
+            pathname: '/candidate/pgscreen',
+            params: { 
+                packageId: pkg.id, 
+                amount: totalPrice,
+                orderId: pkg.razorpay_payment_id 
+            }
+        });
+      } else {
+        Alert.alert(
+          '🎉 Booking Confirmed!',
+          'Redirecting to My Bookings...',
+          [{ text: 'OK', onPress: () => router.replace('/candidate/bookings') }],
+          { cancelable: false }
+        );
       }
-    });
+
+    } catch (error: any) {
+      Alert.alert('Booking Failed', error.message || 'Something went wrong.');
+    } finally {
+      setBookingInProgress(false);
+    }
   };
 
-  if (isLoading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-      </View>
-    );
-  }
+  if (isLoading) return <View style={styles.loadingContainer}><ActivityIndicator size="large" color={theme.colors.primary} /></View>;
+  if (!mentor) return <View style={styles.loadingContainer}><AppText>Mentor not found</AppText></View>;
 
   return (
     <View style={styles.container}>
@@ -99,7 +237,9 @@ export default function ScheduleScreen() {
         
         <View style={styles.header}>
           <Heading level={1} style={styles.pageTitle}>Select Times</Heading>
-          <AppText style={styles.pageSubtitle}>Choose 2 slots for your sessions.</AppText>
+          <AppText style={styles.pageSubtitle}>
+            Book with {mentor.name} • ₹{(mentor.price + 300).toLocaleString()} total
+          </AppText>
         </View>
 
         {/* Selectors */}
@@ -109,7 +249,7 @@ export default function ScheduleScreen() {
             onPress={() => setActiveField('session1')}
             activeOpacity={0.9}
           >
-            <AppText style={styles.selectorLabel}>SESSION 1</AppText>
+            <AppText style={styles.selectorLabel}>SESSION 1 (IST)</AppText>
             <View style={styles.selectorValueRow}>
               <Ionicons name="time-outline" size={18} color={activeField === 'session1' ? theme.colors.primary : '#9CA3AF'} />
               <AppText style={[styles.selectorValue, !session1 && styles.placeholder]}>
@@ -125,7 +265,7 @@ export default function ScheduleScreen() {
             onPress={() => setActiveField('session2')}
             activeOpacity={0.9}
           >
-            <AppText style={styles.selectorLabel}>SESSION 2</AppText>
+            <AppText style={styles.selectorLabel}>SESSION 2 (IST)</AppText>
             <View style={styles.selectorValueRow}>
               <Ionicons name="time-outline" size={18} color={activeField === 'session2' ? theme.colors.primary : '#9CA3AF'} />
               <AppText style={[styles.selectorValue, !session2 && styles.placeholder]}>
@@ -135,22 +275,27 @@ export default function ScheduleScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Calendar Navigation */}
+        {/* Calendar */}
         <View style={styles.calendarSection}>
           <View style={styles.dateNav}>
             <TouchableOpacity style={styles.navBtn} onPress={() => setSelectedDate(d => d.minus({ days: 1 }))}>
               <Ionicons name="chevron-back" size={20} color={theme.colors.text.main} />
             </TouchableOpacity>
+            
             <View style={styles.dateDisplay}>
               <AppText style={styles.dateDay}>{selectedDate.toFormat('cccc')}</AppText>
-              <AppText style={styles.dateDate}>{selectedDate.toFormat('MMM d')}</AppText>
+              <View style={{flexDirection: 'row', alignItems: 'center', gap: 4}}>
+                <AppText style={styles.dateDate}>{selectedDate.toFormat('MMM d')}</AppText>
+                <View style={styles.istBadge}><AppText style={styles.istText}>IST</AppText></View>
+              </View>
             </View>
+
             <TouchableOpacity style={styles.navBtn} onPress={() => setSelectedDate(d => d.plus({ days: 1 }))}>
               <Ionicons name="chevron-forward" size={20} color={theme.colors.text.main} />
             </TouchableOpacity>
           </View>
 
-          {/* Slots Grid */}
+          {/* Slots */}
           <View style={styles.slotsContainer}>
             {loadingSlots ? (
               <ActivityIndicator color={theme.colors.primary} style={{ margin: 20 }} />
@@ -198,11 +343,18 @@ export default function ScheduleScreen() {
         {/* Footer */}
         <View style={styles.footerContainer}>
            <TouchableOpacity 
-            style={[styles.proceedBtn, (!session1 || !session2) && styles.proceedBtnDisabled]}
+            style={[styles.proceedBtn, ((!session1 || !session2) || bookingInProgress) && styles.proceedBtnDisabled]}
             onPress={handleProceed}
+            disabled={!session1 || !session2 || bookingInProgress}
           >
-            <AppText style={styles.proceedBtnText}>Proceed to Payment</AppText>
-            <Ionicons name="arrow-forward" size={18} color="#FFF" style={{ marginLeft: 8 }} />
+            {bookingInProgress ? (
+              <ActivityIndicator color="#FFF" />
+            ) : (
+              <>
+                <AppText style={styles.proceedBtnText}>Confirm Booking</AppText>
+                <Ionicons name="checkmark-circle" size={18} color="#FFF" style={{ marginLeft: 8 }} />
+              </>
+            )}
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -211,7 +363,7 @@ export default function ScheduleScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: theme.colors.background },
+  container: { flex: 1, backgroundColor: "#f8f5f0" },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   scrollContent: { padding: 20, paddingBottom: 100 },
   header: { marginBottom: 20 },
@@ -230,6 +382,8 @@ const styles = StyleSheet.create({
   dateDisplay: { alignItems: 'center' },
   dateDay: { fontSize: 13, color: theme.colors.text.light, fontWeight: '600', textTransform: 'uppercase' },
   dateDate: { fontSize: 18, color: theme.colors.text.main, fontWeight: '700' },
+  istBadge: { backgroundColor: '#ECFDF5', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, marginLeft: 6 },
+  istText: { fontSize: 10, color: '#059669', fontWeight: '800' },
   slotsContainer: { minHeight: 100, justifyContent: 'center' },
   slotsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   slotBadge: { flexGrow: 1, flexBasis: '30%', paddingVertical: 12, borderRadius: 10, backgroundColor: theme.colors.pricing.greenBg, borderWidth: 1, borderColor: theme.colors.pricing.greenText, alignItems: 'center', position: 'relative' },
@@ -242,8 +396,8 @@ const styles = StyleSheet.create({
   slotTextTaken: { color: theme.colors.text.main },
   emptyState: { alignItems: 'center', padding: 20 },
   emptyText: { marginTop: 8, color: theme.colors.text.light, fontSize: 14 },
-  footerContainer: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: '#FFF', padding: 20, borderTopWidth: 1, borderTopColor: theme.colors.border },
+  footerContainer: { marginTop: 24 },
   proceedBtn: { flexDirection: 'row', backgroundColor: theme.colors.text.main, paddingVertical: 16, borderRadius: 12, alignItems: 'center', justifyContent: 'center', shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 3 },
   proceedBtnDisabled: { backgroundColor: '#9CA3AF', shadowOpacity: 0, elevation: 0 },
-  proceedBtnText: { color: "#FFF", fontSize: 16, fontWeight: '700', marginRight: 8 },
+  proceedBtnText: { color: "#FFF", fontSize: 16, fontWeight: '700' },
 });
