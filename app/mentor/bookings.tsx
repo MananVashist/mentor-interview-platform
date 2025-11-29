@@ -42,10 +42,11 @@ const BookingCard = ({ session, onAccept, onReschedule, onViewDetails, onJoin, o
   }
 
   // --- RENDER HELPERS ---
-  const professionalTitle = session.candidate?.professional_title || 'Candidate'; 
-  const targetProfile = session.package?.target_profile || 'Interview';
-  const mentorPayout = session.package?.mentor_payout_inr || 0;
-  
+  const professionalTitle = session.candidate?.professional_title || 'Candidate';
+  // Now using the enriched field set in fetchSessions
+  const targetProfile = session.package?.interview_profile_name || 'Interview';
+  const mentorPayout = session.package?.mentor_payout_inr || 0; // kept for earnings UI
+
   // Extract round number from round string (e.g., "round_1" -> "1")
   const roundNumber = session.round ? session.round.match(/\d+/)?.[0] || '1' : '1';
 
@@ -190,34 +191,99 @@ export default function MentorBookingsScreen() {
   const fetchSessions = async () => {
     if (!user) return;
     try {
+      // 1) Get sessions + package (with interview_profile_id) + candidate title
       const { data, error } = await supabase
         .from('interview_sessions')
         .select(`
-          id, scheduled_at, status, round, meeting_link,
-          package:interview_packages (total_amount_inr, mentor_payout_inr, target_profile),
-          candidate:candidates (
-            professional_title, 
-            profile:profiles ( full_name, email )
+          id,
+          scheduled_at,
+          status,
+          round,
+          meeting_link,
+          package:interview_packages!package_id (
+            id,
+            mentor_payout_inr,
+            interview_profile_id
+          ),
+          candidate:candidates!candidate_id (
+            professional_title
           )
         `)
         .eq('mentor_id', user.id)
-        .order('scheduled_at', { ascending: true }); // Order by schedule time for better flow
+        .order('scheduled_at', { ascending: true });
 
       if (error) throw error;
 
-      setSessions(data || []);
+      const rawSessions = data || [];
+
+      // 2) Collect unique interview_profile_ids
+      const profileIds = Array.from(
+        new Set(
+          rawSessions
+            .map((s: any) => s.package?.interview_profile_id)
+            .filter((id: any) => id != null)
+        )
+      );
+
+      let profileMap: Record<string, string> = {};
+
+      if (profileIds.length > 0) {
+        // 3) Fetch interview_profiles_admin for those IDs
+        const { data: profiles, error: profileError } = await supabase
+          .from('interview_profiles_admin')
+          .select('id, name')
+          .in('id', profileIds);
+
+        if (profileError) {
+          console.error('Error loading interview profiles:', profileError);
+        } else if (profiles) {
+          profileMap = Object.fromEntries(
+            profiles.map((p: any) => [String(p.id), p.name])
+          );
+        }
+      }
+
+      // 4) Enrich sessions with interview_profile_name
+      const enrichedSessions = rawSessions.map((s: any) => {
+        const profileId = s.package?.interview_profile_id;
+        const profileName =
+          profileId != null ? profileMap[String(profileId)] ?? null : null;
+
+        return {
+          ...s,
+          package: s.package
+            ? {
+                ...s.package,
+                interview_profile_name: profileName,
+              }
+            : null,
+        };
+      });
+
+      setSessions(enrichedSessions);
       
-      // Calculate Stats
-      let upcoming = 0; let completed = 0; let earnings = 0;
-      (data || []).forEach(s => {
+      // 5) Calculate Stats (keep earnings based on mentor_payout_inr)
+      let upcoming = 0;
+      let completed = 0;
+      let earnings = 0;
+
+      enrichedSessions.forEach((s: any) => {
         if (s.status === 'scheduled') upcoming++;
         if (s.status === 'completed') completed++;
-        if (s.status !== 'cancelled' && s.package?.mentor_payout_inr) earnings += (s.package.mentor_payout_inr / 2);
+        if (s.status !== 'cancelled' && s.package?.mentor_payout_inr) {
+          earnings += s.package.mentor_payout_inr / 2;
+        }
       });
+
       setStats({ upcoming, completed, earnings });
 
-    } catch (err) {
-      console.error('Error loading mentor bookings:', err);
+    } catch (err: any) {
+      console.error('Error loading mentor bookings:', {
+        message: err?.message,
+        details: err?.details,
+        hint: err?.hint,
+        code: err?.code,
+      });
     } finally {
       setLoading(false);
       setRefreshing(false);
