@@ -106,7 +106,17 @@ const BookingCard = ({ session, onAccept, onReschedule, onViewDetails, onJoin, o
           <TouchableOpacity style={[styles.btnFull, styles.btnOutline]} onPress={() => onReschedule(session)}>
             <AppText style={styles.textPrimary}>Reschedule</AppText>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.btnFull, styles.btnPrimary]} onPress={() => onAccept(session.id)}>
+          <TouchableOpacity
+            style={[styles.btnFull, styles.btnPrimary]}
+            onPress={() => {
+              console.log('[BookingCard] Accept pressed', {
+                id: session.id,
+                status: session.status,
+                scheduled_at: session.scheduled_at,
+              });
+              onAccept(session.id);
+            }}
+          >
             <AppText style={styles.textWhite}>Accept</AppText>
           </TouchableOpacity>
         </View>
@@ -117,7 +127,12 @@ const BookingCard = ({ session, onAccept, onReschedule, onViewDetails, onJoin, o
         <View style={styles.actionRowFull}>
           <TouchableOpacity 
             style={[styles.btnFull, styles.btnSecondary]} 
-            onPress={() => onViewDetails(session.interview_details || "No details provided by admin.")}
+            onPress={() =>
+              onViewDetails(
+                session.package?.interview_profile_description ||
+                  "No details provided by admin."
+              )
+            }
           >
             <AppText style={styles.textPrimary}>View Details</AppText>
           </TouchableOpacity>
@@ -156,17 +171,17 @@ const BookingCard = ({ session, onAccept, onReschedule, onViewDetails, onJoin, o
 
 // Helper for the Status Badge
 const Badge = ({ state }: { state: string }) => {
-    let bg = '#E5E7EB'; let text = '#374151'; let label = state;
-    if(state === 'APPROVAL') { bg = '#FEF3C7'; text = '#B45309'; label = 'Needs Approval'; }
-    if(state === 'SCHEDULED') { bg = '#DBEAFE'; text = '#1E40AF'; label = 'Scheduled'; }
-    if(state === 'JOIN') { bg = '#D1FAE5'; text = '#047857'; label = 'Join Now'; }
-    if(state === 'POST') { bg = '#F3F4F6'; text = '#6B7280'; label = 'Finished'; }
-    
-    return (
-        <View style={{ backgroundColor: bg, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 }}>
-            <AppText style={{ color: text, fontSize: 10, fontWeight: '700', textTransform: 'uppercase' }}>{label}</AppText>
-        </View>
-    );
+  let bg = '#E5E7EB'; let text = '#374151'; let label = state;
+  if(state === 'APPROVAL') { bg = '#FEF3C7'; text = '#B45309'; label = 'Needs Approval'; }
+  if(state === 'SCHEDULED') { bg = '#DBEAFE'; text = '#1E40AF'; label = 'Scheduled'; }
+  if(state === 'JOIN') { bg = '#D1FAE5'; text = '#047857'; label = 'Join Now'; }
+  if(state === 'POST') { bg = '#F3F4F6'; text = '#6B7280'; label = 'Finished'; }
+  
+  return (
+    <View style={{ backgroundColor: bg, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 }}>
+      <AppText style={{ color: text, fontSize: 10, fontWeight: '700', textTransform: 'uppercase' }}>{label}</AppText>
+    </View>
+  );
 };
 
 
@@ -188,107 +203,155 @@ export default function MentorBookingsScreen() {
   const [selectedSession, setSelectedSession] = useState<any>(null);
   const [newDate, setNewDate] = useState(new Date());
 
-  const fetchSessions = async () => {
-    if (!user) return;
-    try {
-      // 1) Get sessions + package (with interview_profile_id) + candidate title
-      const { data, error } = await supabase
-        .from('interview_sessions')
-        .select(`
+ const fetchSessions = async () => {
+  if (!user) return;
+  console.log('[MentorBookings] fetchSessions start for mentor:', user.id);
+
+  try {
+    // 1) Get sessions + package (with interview_profile_id) + candidate title
+    const { data, error } = await supabase
+      .from('interview_sessions')
+      .select(`
+        id,
+        scheduled_at,
+        status,
+        round,
+        meeting_link,
+        package:interview_packages!package_id (
           id,
-          scheduled_at,
-          status,
-          round,
-          meeting_link,
-          package:interview_packages!package_id (
-            id,
-            mentor_payout_inr,
-            interview_profile_id
-          ),
-          candidate:candidates!candidate_id (
-            professional_title
-          )
-        `)
-        .eq('mentor_id', user.id)
-        .order('scheduled_at', { ascending: true });
-
-      if (error) throw error;
-
-      const rawSessions = data || [];
-
-      // 2) Collect unique interview_profile_ids
-      const profileIds = Array.from(
-        new Set(
-          rawSessions
-            .map((s: any) => s.package?.interview_profile_id)
-            .filter((id: any) => id != null)
+          mentor_payout_inr,
+          interview_profile_id
+        ),
+        candidate:candidates!candidate_id (
+          professional_title
         )
-      );
+      `)
+      .eq('mentor_id', user.id)
+      .order('scheduled_at', { ascending: true });
 
-      let profileMap: Record<string, string> = {};
+    if (error) {
+      console.error('[MentorBookings] fetchSessions query error:', error);
+      throw error;
+    }
 
-      if (profileIds.length > 0) {
-        // 3) Fetch interview_profiles_admin for those IDs
-        const { data: profiles, error: profileError } = await supabase
-          .from('interview_profiles_admin')
-          .select('id, name')
-          .in('id', profileIds);
+    const rawSessions = data || [];
+    console.log(
+      '[MentorBookings] rawSessions:',
+      rawSessions.map((s: any) => ({
+        id: s.id,
+        status: s.status,
+        scheduled_at: s.scheduled_at,
+        interview_profile_id: s.package?.interview_profile_id,
+      }))
+    );
 
-        if (profileError) {
-          console.error('Error loading interview profiles:', profileError);
-        } else if (profiles) {
-          profileMap = Object.fromEntries(
-            profiles.map((p: any) => [String(p.id), p.name])
-          );
-        }
+    // 2) Collect unique interview_profile_ids from packages
+    const profileIds = Array.from(
+      new Set(
+        rawSessions
+          .map((s: any) => s.package?.interview_profile_id)
+          .filter((id: any) => id != null)
+      )
+    );
+
+    let profileMap: Record<string, { name: string; description: string | null }> = {};
+
+    if (profileIds.length > 0) {
+      // 3) Fetch interview_profiles_admin rows for those IDs
+      const { data: profiles, error: profileError } = await supabase
+        .from('interview_profiles_admin')
+        .select('id, name, description')
+        .in('id', profileIds);
+
+      if (profileError) {
+        console.error('[MentorBookings] Error loading interview profiles:', profileError);
+      } else if (profiles) {
+        profileMap = Object.fromEntries(
+          profiles.map((p: any) => [
+            String(p.id),
+            { name: p.name, description: p.description ?? null },
+          ])
+        );
+      }
+    }
+
+    // 4) Enrich sessions with interview_profile_name + description
+    const enrichedSessions = rawSessions.map((s: any) => {
+      const profileId = s.package?.interview_profile_id;
+      const profileMeta =
+        profileId != null ? profileMap[String(profileId)] ?? null : null;
+
+      return {
+        ...s,
+        package: s.package
+          ? {
+              ...s.package,
+              ...(profileMeta
+                ? {
+                    interview_profile_name: profileMeta.name,
+                    interview_profile_description: profileMeta.description,
+                  }
+                : {
+                    interview_profile_name: null,
+                    interview_profile_description: null,
+                  }),
+            }
+          : null,
+      };
+    });
+
+    console.log(
+      '[MentorBookings] enrichedSessions (first 5):',
+      enrichedSessions.slice(0, 5).map((s: any) => ({
+        id: s.id,
+        status: s.status,
+        profileName: s.package?.interview_profile_name,
+      }))
+    );
+
+    setSessions(enrichedSessions);
+
+    // 5) Calculate Stats
+    let upcoming = 0;
+    let completed = 0;
+    let earnings = 0;
+
+    enrichedSessions.forEach((s: any) => {
+      if (s.status === 'confirmed') {
+        upcoming++;
       }
 
-      // 4) Enrich sessions with interview_profile_name
-      const enrichedSessions = rawSessions.map((s: any) => {
-        const profileId = s.package?.interview_profile_id;
-        const profileName =
-          profileId != null ? profileMap[String(profileId)] ?? null : null;
+      if (s.status === 'completed') {
+        completed++;
 
-        return {
-          ...s,
-          package: s.package
-            ? {
-                ...s.package,
-                interview_profile_name: profileName,
-              }
-            : null,
-        };
-      });
-
-      setSessions(enrichedSessions);
-      
-      // 5) Calculate Stats (keep earnings based on mentor_payout_inr)
-      let upcoming = 0;
-      let completed = 0;
-      let earnings = 0;
-
-      enrichedSessions.forEach((s: any) => {
-        if (s.status === 'scheduled') upcoming++;
-        if (s.status === 'completed') completed++;
-        if (s.status !== 'cancelled' && s.package?.mentor_payout_inr) {
-          earnings += s.package.mentor_payout_inr / 2;
+        if (s.package?.mentor_payout_inr) {
+          earnings += s.package.mentor_payout_inr * 1.2;
         }
-      });
+      }
+    });
 
-      setStats({ upcoming, completed, earnings });
+    console.log('[MentorBookings] FINAL STATS:', {
+      upcoming,
+      completed,
+      earnings,
+    });
 
-    } catch (err: any) {
-      console.error('Error loading mentor bookings:', {
-        message: err?.message,
-        details: err?.details,
-        hint: err?.hint,
-        code: err?.code,
-      });
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
+    setStats({ upcoming, completed, earnings });
+
+  } catch (err: any) {
+    console.error('Error loading mentor bookings:', {
+      message: err?.message,
+      details: err?.details,
+      hint: err?.hint,
+      code: err?.code,
+    });
+  } finally {
+    setLoading(false);
+    setRefreshing(false);
+  }
+};
+
+
 
   useEffect(() => { fetchSessions(); }, [user]);
   const onRefresh = () => { setRefreshing(true); fetchSessions(); };
@@ -296,13 +359,43 @@ export default function MentorBookingsScreen() {
   // --- ACTIONS ---
 
   const handleAccept = async (id: string) => {
-    Alert.alert("Confirm", "Accept this interview request?", [
-        { text: "Cancel", style: "cancel" },
-        { text: "Accept", onPress: async () => {
-            const { error } = await supabase.from('interview_sessions').update({ status: 'scheduled' }).eq('id', id);
-            if (!error) fetchSessions();
-        }}
-    ]);
+    console.log('[handleAccept] DIRECT accept for ID:', id);
+
+    try {
+      console.log('[handleAccept] Sending Supabase update:', {
+        id,
+        newStatus: 'confirmed',
+      });
+
+      const { data, error } = await supabase
+        .from('interview_sessions')
+        .update({ status: 'confirmed' })
+        .eq('id', id)
+        .select('id, status, scheduled_at')
+        .single();
+
+      console.log('[handleAccept] Supabase raw result:', { data, error });
+
+      if (error) {
+        console.error('[handleAccept] Supabase UPDATE error:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code,
+        });
+        Alert.alert('Error', error.message || 'Could not accept this interview.');
+        return;
+      }
+
+      console.log('[handleAccept] SUCCESS — updated row:', data);
+      Alert.alert('Accepted', 'This interview has been confirmed.');
+
+      console.log('[handleAccept] Calling fetchSessions() after accept...');
+      fetchSessions();
+    } catch (e: any) {
+      console.error('[handleAccept] Unexpected error:', e);
+      Alert.alert('Error', e?.message || 'Unexpected error while accepting.');
+    }
   };
 
   const handleRescheduleStart = (session: any) => {
@@ -333,6 +426,7 @@ export default function MentorBookingsScreen() {
   };
 
   const handleViewDetails = (details: string) => {
+    console.log('[MentorBookings] handleViewDetails called with:', details);
     setDetailContent(details);
     setDetailModalVisible(true);
   };
@@ -386,15 +480,15 @@ export default function MentorBookingsScreen() {
         ) : (
           <View style={styles.list}>
             {sessions.map((session) => (
-                <BookingCard 
-                    key={session.id} 
-                    session={session}
-                    onAccept={handleAccept}
-                    onReschedule={handleRescheduleStart}
-                    onViewDetails={handleViewDetails}
-                    onJoin={handleJoin}
-                    onEvaluate={handleEvaluate}
-                />
+              <BookingCard 
+                key={session.id} 
+                session={session}
+                onAccept={handleAccept}
+                onReschedule={handleRescheduleStart}
+                onViewDetails={handleViewDetails}
+                onJoin={handleJoin}
+                onEvaluate={handleEvaluate}
+              />
             ))}
           </View>
         )}
@@ -403,42 +497,42 @@ export default function MentorBookingsScreen() {
       {/* --- MODAL 1: VIEW DETAILS --- */}
       <Modal visible={detailModalVisible} transparent animationType="fade">
         <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-                <Heading level={3} style={{marginBottom:12}}>Interview Details</Heading>
-                <AppText style={{marginBottom: 20, lineHeight: 22}}>{detailContent}</AppText>
-                <TouchableOpacity onPress={() => setDetailModalVisible(false)} style={styles.modalCloseBtn}>
-                    <AppText style={styles.textWhite}>Close</AppText>
-                </TouchableOpacity>
-            </View>
+          <View style={styles.modalContent}>
+            <Heading level={3} style={{marginBottom:12}}>Interview Details</Heading>
+            <AppText style={{marginBottom: 20, lineHeight: 22}}>{detailContent}</AppText>
+            <TouchableOpacity onPress={() => setDetailModalVisible(false)} style={styles.modalCloseBtn}>
+              <AppText style={styles.textWhite}>Close</AppText>
+            </TouchableOpacity>
+          </View>
         </View>
       </Modal>
 
       {/* --- MODAL 2: RESCHEDULE --- */}
       <Modal visible={rescheduleModalVisible} transparent animationType="slide">
         <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-                <Heading level={3} style={{marginBottom:12}}>Reschedule Interview</Heading>
-                <AppText style={{marginBottom: 20}}>Select a new date and time for this candidate.</AppText>
-                
-                <View style={{alignItems:'center', marginBottom: 20}}>
-                     <DateTimePicker
-                        value={newDate}
-                        mode="datetime"
-                        display="spinner"
-                        onChange={(e, date) => date && setNewDate(date)}
-                        textColor="black"
-                     />
-                </View>
-
-                <View style={styles.actionRow}>
-                    <TouchableOpacity onPress={() => setRescheduleModalVisible(false)} style={[styles.btn, styles.btnOutline, {flex:1}]}>
-                        <AppText style={styles.textPrimary}>Cancel</AppText>
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={handleRescheduleConfirm} style={[styles.btn, styles.btnPrimary, {flex:1}]}>
-                        <AppText style={styles.textWhite}>Confirm</AppText>
-                    </TouchableOpacity>
-                </View>
+          <View style={styles.modalContent}>
+            <Heading level={3} style={{marginBottom:12}}>Reschedule Interview</Heading>
+            <AppText style={{marginBottom: 20}}>Select a new date and time for this candidate.</AppText>
+            
+            <View style={{alignItems:'center', marginBottom: 20}}>
+              <DateTimePicker
+                value={newDate}
+                mode="datetime"
+                display="spinner"
+                onChange={(e, date) => date && setNewDate(date)}
+                textColor="black"
+              />
             </View>
+
+            <View style={styles.actionRow}>
+              <TouchableOpacity onPress={() => setRescheduleModalVisible(false)} style={[styles.btn, styles.btnOutline, {flex:1}]}>
+                <AppText style={styles.textPrimary}>Cancel</AppText>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleRescheduleConfirm} style={[styles.btn, styles.btnPrimary, {flex:1}]}>
+                <AppText style={styles.textWhite}>Confirm</AppText>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
       </Modal>
 
@@ -492,6 +586,7 @@ const styles = StyleSheet.create({
   
   // Action Rows
   actionRowFull: { flexDirection: 'row', gap: 10, justifyContent: 'space-between' },
+  actionRow: { flexDirection: 'row', gap: 12, justifyContent: 'space-between', marginTop: 16 },
   
   // Buttons - Full Width
   btnFull: { flex: 1, paddingVertical: 12, paddingHorizontal: 16, borderRadius: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
