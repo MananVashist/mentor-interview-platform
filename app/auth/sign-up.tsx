@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useRef, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,6 @@ import {
   Platform,
   StyleSheet,
   ActivityIndicator,
-  Animated,
   Modal,
 } from 'react-native';
 import { Link, useRouter } from 'expo-router';
@@ -18,44 +17,15 @@ import { authService } from '@/services/auth.service';
 import { useAuthStore } from '@/lib/store';
 import { supabase } from '@/lib/supabase/client';
 import { BrandHeader } from '@/lib/ui';
+import { useNotification } from '@/lib/ui/NotificationBanner';
 
 // --- Types ---
 type InterviewProfile = { id: number; name: string };
 
-// --- Top Banner Component ---
-function TopBanner({ visible, message, type, onHide }: any) {
-  const slide = useRef(new Animated.Value(-80)).current;
-  useEffect(() => {
-    let timer: NodeJS.Timeout;
-    if (visible) {
-      Animated.timing(slide, { toValue: 0, duration: 220, useNativeDriver: true }).start(() => {
-        timer = setTimeout(() => {
-          Animated.timing(slide, { toValue: -80, duration: 180, useNativeDriver: true }).start(() => {
-            onHide && onHide();
-          });
-        }, 3500);
-      });
-    }
-    return () => clearTimeout(timer);
-  }, [visible, slide, onHide]);
-
-  if (!visible) return null;
-  return (
-    <Animated.View
-      style={[
-        styles.banner,
-        { backgroundColor: type === 'success' ? '#10B981' : '#EF4444', transform: [{ translateY: slide }] },
-      ]}
-    >
-      <Ionicons name={type === 'success' ? 'checkmark-circle' : 'alert-circle'} size={24} color="#fff" />
-      <Text style={styles.bannerText}>{message}</Text>
-    </Animated.View>
-  );
-}
-
 export default function SignUpScreen() {
   const router = useRouter();
   const { setUser, setProfile } = useAuthStore();
+  const { showNotification } = useNotification();
 
   // --- State ---
   const [role, setRole] = useState<'candidate' | 'mentor'>('candidate');
@@ -66,6 +36,9 @@ export default function SignUpScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  
+  // Conditional Fields
+  const [phone, setPhone] = useState(''); 
 
   // Candidate Specific
   const [candidateTitle, setCandidateTitle] = useState('');
@@ -74,17 +47,11 @@ export default function SignUpScreen() {
   const [linkedinUrl, setLinkedinUrl] = useState('');
   const [professionalTitle, setProfessionalTitle] = useState('');
   const [yearsOfExp, setYearsOfExp] = useState('');
-  const [description, setDescription] = useState('');
 
   // Mentor Profile Selection
   const [availableProfiles, setAvailableProfiles] = useState<InterviewProfile[]>([]);
   const [selectedProfiles, setSelectedProfiles] = useState<string[]>([]);
   const [profilesModalVisible, setProfilesModalVisible] = useState(false);
-
-  // Banner State
-  const [bannerVisible, setBannerVisible] = useState(false);
-  const [bannerMsg, setBannerMsg] = useState('');
-  const [bannerType, setBannerType] = useState<'success' | 'error'>('success');
 
   // --- Fetch Admin Profiles for Mentors ---
   useEffect(() => {
@@ -96,24 +63,24 @@ export default function SignUpScreen() {
     }
   }, [role]);
 
-  const showBanner = (msg: string, type: 'success' | 'error') => {
-    setBannerMsg(msg);
-    setBannerType(type);
-    setBannerVisible(true);
-  };
-
   // --- Validation ---
   const isCommonValid =
-    name.trim().length > 0 && email.trim().length > 0 && password.length >= 6 && password === confirmPassword;
+    name.trim().length > 0 && 
+    email.trim().length > 0 && 
+    password.length >= 6 && 
+    password === confirmPassword;
+
+  // Phone is only required for mentors
+  const isPhoneValid = role === 'mentor' ? phone.trim().length >= 10 : true;
 
   const isCandidateValid = isCommonValid && candidateTitle.trim().length > 0;
 
   const isMentorValid =
     isCommonValid &&
+    isPhoneValid && // <--- Only check phone for mentors
     linkedinUrl.trim().includes('linkedin.com') &&
     professionalTitle.trim().length > 0 &&
     yearsOfExp.trim().length > 0 &&
-    description.trim().length > 0 &&
     selectedProfiles.length > 0;
 
   const isFormValid = role === 'candidate' ? isCandidateValid : isMentorValid;
@@ -129,50 +96,47 @@ export default function SignUpScreen() {
 
   const handleSignUp = async () => {
     if (!isFormValid) {
-      showBanner('Please fill in all required fields correctly.', 'error');
+      showNotification('Please fill in all required fields.', 'error');
       return;
     }
 
     setLoading(true);
     try {
       // 1. Create Auth User
+      // Pass phone only if mentor, otherwise empty string or null
+      const phoneToSend = role === 'mentor' ? phone.trim() : '';
+
       const { user, error: authError } = await authService.signUp(
         email.trim(),
         password.trim(),
         name.trim(),
-        role
+        role,
+        phoneToSend
       );
+      
       if (authError) throw new Error(authError.message);
       if (!user) throw new Error('Signup failed. No user returned.');
 
-      // 2. Create Base Profile
-      const { error: profileError } = await supabase.from('profiles').insert({
-        id: user.id,
-        email: email.trim(),
-        full_name: name.trim(),
-        role: role,
-        is_admin: false,
-      });
-      if (profileError) throw new Error(`Profile creation failed: ${profileError.message}`);
-
-      // 3. Create Role Specific Entry
+      // 2. Create Role Specific Entry
       if (role === 'mentor') {
-        // For mentors, the id IS the user id in your schema
+        const profileIds = availableProfiles
+          .filter((p) => selectedProfiles.includes(p.name))
+          .map((p) => p.id);
+
         const { error: mentorError } = await supabase.from('mentors').insert({
           id: user.id,
           status: 'pending',
           professional_title: professionalTitle.trim(),
           linkedin_url: linkedinUrl.trim(),
           years_of_experience: parseInt(yearsOfExp) || 0,
-          experience_description: description.trim(),
-          expertise_profiles: selectedProfiles,
-          session_price_inr: 2000, // Default
+          expertise_profiles: selectedProfiles, 
+          profile_ids: profileIds,              
+          session_price_inr: 1500,
           total_sessions: 0,
-          is_hr_mentor: false,
         });
+        
         if (mentorError) throw new Error(`Mentor profile failed: ${mentorError.message}`);
       } else {
-        // For candidates, the id IS the user id in your schema
         const { error: candidateError } = await supabase.from('candidates').insert({
           id: user.id,
           professional_title: candidateTitle.trim(),
@@ -180,26 +144,30 @@ export default function SignUpScreen() {
         if (candidateError) throw new Error(`Candidate profile failed: ${candidateError.message}`);
       }
 
-      // 4. Success State
+      // 3. Success State
       setUser(user);
       setProfile({
         id: user.id,
         email: email.trim(),
         full_name: name.trim(),
         role,
+        phone: role === 'mentor' ? phone.trim() : null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-        phone: null,
         is_admin: false,
       });
-      showBanner('Account created successfully!', 'success');
+      showNotification('Account created successfully!', 'success');
 
       setTimeout(() => {
         if (role === 'candidate') router.replace('/candidate');
         else router.replace('/mentor/under-review');
       }, 1000);
     } catch (err: any) {
-      showBanner(err?.message ?? 'Sign up failed.', 'error');
+      if (err.message?.includes('already registered')) {
+        showNotification('This email is already registered. Please login.', 'error');
+      } else {
+        showNotification(err?.message ?? 'Sign up failed.', 'error');
+      }
     } finally {
       setLoading(false);
     }
@@ -207,8 +175,6 @@ export default function SignUpScreen() {
 
   return (
     <View style={styles.container}>
-      <TopBanner visible={bannerVisible} message={bannerMsg} type={bannerType} onHide={() => setBannerVisible(false)} />
-
       <KeyboardAvoidingView style={styles.flex1} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView
           contentContainerStyle={styles.scrollContent}
@@ -247,7 +213,7 @@ export default function SignUpScreen() {
 
               {/* --- COMMON FIELDS --- */}
               <View style={styles.section}>
-                <Text style={styles.label}>FULL NAME</Text>
+                <Text style={styles.label}>FULL NAME <Text style={styles.required}>*</Text></Text>
                 <TextInput
                   style={styles.input}
                   value={name}
@@ -258,7 +224,7 @@ export default function SignUpScreen() {
               </View>
 
               <View style={styles.section}>
-                <Text style={styles.label}>EMAIL ADDRESS</Text>
+                <Text style={styles.label}>EMAIL ADDRESS <Text style={styles.required}>*</Text></Text>
                 <TextInput
                   style={styles.input}
                   value={email}
@@ -271,7 +237,7 @@ export default function SignUpScreen() {
               </View>
 
               <View style={styles.section}>
-                <Text style={styles.label}>PASSWORD</Text>
+                <Text style={styles.label}>PASSWORD <Text style={styles.required}>*</Text></Text>
                 <TextInput
                   style={styles.input}
                   value={password}
@@ -283,7 +249,7 @@ export default function SignUpScreen() {
               </View>
 
               <View style={styles.section}>
-                <Text style={styles.label}>CONFIRM PASSWORD</Text>
+                <Text style={styles.label}>CONFIRM PASSWORD <Text style={styles.required}>*</Text></Text>
                 <TextInput
                   style={styles.input}
                   value={confirmPassword}
@@ -294,18 +260,32 @@ export default function SignUpScreen() {
                 />
               </View>
 
+              {/* --- PHONE NUMBER (MENTOR ONLY - AFTER PASSWORD) --- */}
+              {role === 'mentor' && (
+                <View style={styles.section}>
+                  <Text style={styles.label}>PHONE NUMBER <Text style={styles.required}>*</Text></Text>
+                  <TextInput
+                    style={styles.input}
+                    value={phone}
+                    onChangeText={setPhone}
+                    keyboardType="phone-pad"
+                    placeholder="+91 98765 43210"
+                    placeholderTextColor="#9CA3AF"
+                  />
+                </View>
+              )}
+
               {/* --- CANDIDATE SPECIFIC FIELDS --- */}
               {role === 'candidate' && (
                 <View style={styles.section}>
-                  <Text style={styles.label}>CURRENT ROLE / TITLE</Text>
+                  <Text style={styles.label}>PROFESSIONAL TITLE <Text style={styles.required}>*</Text></Text>
                   <TextInput
                     style={styles.input}
                     value={candidateTitle}
                     onChangeText={setCandidateTitle}
-                    placeholder="e.g., Software Engineer, Product Manager"
+                    placeholder="Software Engineer"
                     placeholderTextColor="#9CA3AF"
                   />
-                  <Text style={styles.hintText}>What role are you currently in or seeking?</Text>
                 </View>
               )}
 
@@ -313,89 +293,81 @@ export default function SignUpScreen() {
               {role === 'mentor' && (
                 <>
                   <View style={styles.section}>
-                    <Text style={styles.label}>PROFESSIONAL TITLE</Text>
+                    <Text style={styles.label}>PROFESSIONAL TITLE <Text style={styles.required}>*</Text></Text>
                     <TextInput
                       style={styles.input}
                       value={professionalTitle}
                       onChangeText={setProfessionalTitle}
-                      placeholder="e.g., Senior PM at Google"
+                      placeholder="Senior Product Manager at Google"
                       placeholderTextColor="#9CA3AF"
                     />
                   </View>
 
                   <View style={styles.section}>
-                    <Text style={styles.label}>LINKEDIN URL</Text>
+                    <Text style={styles.label}>LINKEDIN URL <Text style={styles.required}>*</Text></Text>
                     <TextInput
                       style={styles.input}
                       value={linkedinUrl}
                       onChangeText={setLinkedinUrl}
+                      autoCapitalize="none"
                       placeholder="https://linkedin.com/in/yourprofile"
                       placeholderTextColor="#9CA3AF"
-                      autoCapitalize="none"
                     />
                   </View>
 
                   <View style={styles.section}>
-                    <Text style={styles.label}>YEARS OF EXPERIENCE</Text>
+                    <Text style={styles.label}>YEARS OF EXPERIENCE <Text style={styles.required}>*</Text></Text>
                     <TextInput
                       style={styles.input}
                       value={yearsOfExp}
                       onChangeText={setYearsOfExp}
-                      placeholder="e.g., 5"
                       keyboardType="numeric"
+                      placeholder="5"
                       placeholderTextColor="#9CA3AF"
                     />
                   </View>
 
                   <View style={styles.section}>
-                    <Text style={styles.label}>EXPERIENCE DESCRIPTION</Text>
-                    <TextInput
-                      style={[styles.input, styles.textArea]}
-                      value={description}
-                      onChangeText={setDescription}
-                      placeholder="Brief summary of your professional experience..."
-                      placeholderTextColor="#9CA3AF"
-                      multiline
-                    />
-                  </View>
-
-                  <View style={styles.section}>
-                    <Text style={styles.label}>EXPERTISE / INTERVIEW PROFILES</Text>
-                    <TouchableOpacity style={styles.dropdownButton} onPress={() => setProfilesModalVisible(true)}>
-                      <Text style={[styles.dropdownText, selectedProfiles.length === 0 && { color: '#9CA3AF' }]}>
+                    <Text style={styles.label}>INTERVIEW EXPERTISE <Text style={styles.required}>*</Text></Text>
+                    <TouchableOpacity
+                      style={styles.dropdownButton}
+                      onPress={() => setProfilesModalVisible(true)}
+                    >
+                      <Text style={styles.dropdownText}>
                         {selectedProfiles.length > 0
-                          ? `${selectedProfiles.length} profile${selectedProfiles.length > 1 ? 's' : ''} selected`
-                          : 'Select profiles...'}
+                          ? `${selectedProfiles.length} profile(s) selected`
+                          : 'Select interview profiles'}
                       </Text>
                       <Ionicons name="chevron-down" size={20} color="#6B7280" />
                     </TouchableOpacity>
                     {selectedProfiles.length > 0 && (
                       <View style={styles.selectedProfilesContainer}>
-                        {selectedProfiles.map((profile, idx) => (
-                          <View key={idx} style={styles.selectedProfileChip}>
+                        {selectedProfiles.map((profile) => (
+                          <View key={profile} style={styles.selectedProfileChip}>
                             <Text style={styles.selectedProfileText}>{profile}</Text>
                           </View>
                         ))}
                       </View>
                     )}
+                    <Text style={styles.hintText}>Select the types of interviews you can conduct</Text>
                   </View>
                 </>
               )}
 
-              {/* --- SUBMIT BUTTON --- */}
+              {/* --- SIGN UP BUTTON --- */}
               <TouchableOpacity
-                style={[styles.signUpButton, (!isFormValid || loading) && styles.signUpButtonDisabled]}
                 onPress={handleSignUp}
                 disabled={!isFormValid || loading}
+                style={[styles.signUpButton, (!isFormValid || loading) && styles.signUpButtonDisabled]}
               >
                 {loading ? (
                   <ActivityIndicator color="#fff" />
                 ) : (
-                  <Text style={styles.signUpButtonText}>Create Account</Text>
+                  <Text style={styles.signUpButtonText}>Sign Up</Text>
                 )}
               </TouchableOpacity>
 
-              {/* --- FOOTER --- */}
+              {/* --- FOOTER LINK TO SIGN IN --- */}
               <View style={styles.authFooter}>
                 <Text style={styles.authFooterText}>Already have an account? </Text>
                 <Link href="/auth/sign-in" asChild>
@@ -409,14 +381,14 @@ export default function SignUpScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* --- MODAL FOR MENTOR PROFILES --- */}
-      <Modal visible={profilesModalVisible} animationType="fade" transparent={true}>
+      {/* --- PROFILES SELECTION MODAL --- */}
+      <Modal visible={profilesModalVisible} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Your Expertise</Text>
+              <Text style={styles.modalTitle}>Select Interview Profiles</Text>
               <TouchableOpacity onPress={() => setProfilesModalVisible(false)}>
-                <Ionicons name="close" size={24} color="#334155" />
+                <Ionicons name="close" size={24} color="#6B7280" />
               </TouchableOpacity>
             </View>
             <ScrollView style={{ maxHeight: 400 }}>
@@ -447,7 +419,7 @@ export default function SignUpScreen() {
 }
 
 const styles = StyleSheet.create({
-  // Main Container - Matches Sign-In
+  // Main Container
   container: { flex: 1, backgroundColor: '#f8f5f0' },
   flex1: { flex: 1 },
 
@@ -457,7 +429,7 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
   },
 
-  // Form Wrapper - Centered with max-width
+  // Form Wrapper
   formWrapper: {
     flex: 1,
     justifyContent: 'center',
@@ -477,12 +449,16 @@ const styles = StyleSheet.create({
 
   section: { marginBottom: 16 },
 
-  // Typography - Matches Sign-In
+  // Typography
   label: {
     fontSize: 12,
     fontWeight: '600',
     marginBottom: 6,
     color: '#334155',
+  },
+  
+  required: {
+    color: '#EF4444',
   },
 
   hintText: {
@@ -491,7 +467,7 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
 
-  // Inputs - Matches Sign-In
+  // Inputs
   input: {
     borderWidth: 1,
     borderColor: '#d1d5db',
@@ -578,7 +554,7 @@ const styles = StyleSheet.create({
     color: '#0E9384',
   },
 
-  // Sign Up Button - Matches Sign-In
+  // Sign Up Button
   signUpButton: {
     backgroundColor: '#0E9384',
     borderRadius: 999,
@@ -596,7 +572,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 
-  // Auth Footer - Matches Sign-In
+  // Auth Footer
   authFooter: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -610,28 +586,6 @@ const styles = StyleSheet.create({
   authFooterLink: {
     color: '#0E9384',
     fontWeight: '700',
-  },
-
-  // Banner (Top notification)
-  banner: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 200,
-    paddingVertical: 16,
-    paddingHorizontal: 18,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingTop: Platform.OS === 'ios' ? 50 : 16,
-  },
-
-  bannerText: {
-    color: '#fff',
-    fontWeight: '600',
-    flex: 1,
-    fontSize: 14,
   },
 
   // Modal Styles

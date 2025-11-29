@@ -10,6 +10,7 @@ import {
   Inter_700Bold, 
   Inter_800ExtraBold 
 } from '@expo-google-fonts/inter';
+import { NotificationProvider } from '@/lib/ui/NotificationBanner';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -33,8 +34,8 @@ export default function RootLayout() {
   }
 
   return (
-    <>
-      {/* Global Fallback SEO - Applies to all pages unless overridden */}
+    <NotificationProvider>
+      {/* Global Fallback SEO */}
       <Head>
         <title>CrackJobs - Ace Your Tech Interviews</title>
         <meta name="description" content="Master your interview skills with expert mentors from FAANG. Practice mock interviews for PM, SDE, and Engineering Manager roles." />
@@ -43,7 +44,9 @@ export default function RootLayout() {
         <meta property="og:type" content="website" />
         <meta name="twitter:card" content="summary_large_image" />
       </Head>
+      
+      {/* The Slot is now available to the Notification Context */}
       <Slot />
-    </>
+    </NotificationProvider>
   );
 }

@@ -20,12 +20,14 @@ import { candidateService } from '@/services/candidate.service';
 import { mentorService } from '@/services/mentor.service';
 import { useAuthStore } from '@/lib/store';
 import { BrandHeader } from '@/lib/ui';
-import { Footer } from '@/components/Footer'; // 🟢 Import Footer
+import { Footer } from '@/components/Footer';
+import { useNotification } from '@/lib/ui/NotificationBanner';
 
 export default function SignInScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const isWeb = Platform.OS === 'web';
+  const { showNotification } = useNotification();
   
   const {
     setUser,
@@ -44,9 +46,11 @@ export default function SignInScreen() {
     try {
       setLoading(true);
       const { error } = await authService.signInWithOAuth(provider);
-      if (error) Alert.alert('Error', error.message);
+      if (error) {
+        showNotification(error.message, 'error');
+      }
     } catch (err: any) {
-      Alert.alert('Error', err.message);
+      showNotification(err.message, 'error');
     } finally {
       setLoading(false);
     }
@@ -55,7 +59,7 @@ export default function SignInScreen() {
   // --- EMAIL/PASSWORD HANDLER ---
   const handleSignIn = async () => {
     if (!email || !password) {
-      Alert.alert('Error', 'Please enter both email and password');
+      showNotification('Please enter both email and password', 'error');
       return;
     }
 
@@ -64,7 +68,7 @@ export default function SignInScreen() {
       const { user, session, error } = await authService.signIn(email, password);
       
       if (error || !user || !session) {
-        Alert.alert('Login Failed', error?.message || 'Invalid credentials');
+        showNotification(error?.message || 'Invalid credentials', 'error');
         setLoading(false);
         return;
       }
@@ -78,6 +82,7 @@ export default function SignInScreen() {
              setUser(user);
              setSession(session);
              setProfile(profile as any);
+             showNotification('Welcome back, Admin!', 'success');
              router.replace('/admin'); 
              return;
         }
@@ -85,7 +90,7 @@ export default function SignInScreen() {
         if (roleLower === 'mentor') {
             const m = await mentorService.getMentorById(user.id);
             if (!m || !m.status || m.status !== 'approved') {
-                Alert.alert('Account Under Review', 'Your mentor application is still being reviewed.', [{ text: 'OK' }]);
+                showNotification('Your mentor application is still being reviewed', 'error');
                 await authService.signOut();
                 setLoading(false);
                 router.replace('/mentor/under-review');
@@ -95,6 +100,7 @@ export default function SignInScreen() {
             setSession(session);
             setProfile(profile as any);
             setMentorProfile(m ?? null);
+            showNotification('Welcome back!', 'success');
             router.replace('/mentor/bookings');
             
         } else {
@@ -103,16 +109,18 @@ export default function SignInScreen() {
             setSession(session);
             setProfile(profile as any);
             setCandidateProfile(c ?? null);
+            showNotification('Welcome back!', 'success');
             router.replace('/candidate');
         }
       } else {
         setUser(user);
         setSession(session);
+        showNotification('Welcome!', 'success');
         router.replace('/candidate');
       }
 
     } catch (err: any) {
-      Alert.alert('Error', err.message);
+      showNotification(err.message, 'error');
     } finally {
       setLoading(false);
     }
@@ -125,7 +133,7 @@ export default function SignInScreen() {
         showsVerticalScrollIndicator={false}
       >
         
-        {/* 🟢 Wrapper to Center Form vertically */}
+        {/* Wrapper to Center Form vertically */}
         <View style={styles.formWrapper}>
           <View style={styles.content}>
             
@@ -191,7 +199,7 @@ export default function SignInScreen() {
           </View>
         </View>
 
-        {/* 🟢 Sticky Footer at bottom, full width */}
+        {/* Sticky Footer at bottom, full width */}
         {isWeb && <Footer />}
 
       </ScrollView>
@@ -202,10 +210,10 @@ export default function SignInScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f8f5f0' }, // Matches global background
   
-  // 🟢 Key Fix: flexGrow: 1 makes the ScrollView fill the screen
+  // Key Fix: flexGrow: 1 makes the ScrollView fill the screen
   scrollContent: { flexGrow: 1, flexDirection: 'column' },
   
-  // 🟢 Form Wrapper pushes footer down if content is short
+  // Form Wrapper pushes footer down if content is short
   formWrapper: {
     flex: 1, // Takes all available space
     justifyContent: 'center',

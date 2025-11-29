@@ -129,8 +129,15 @@ async function signInWithOAuth(provider: 'google' | 'linkedin_oidc') {
 
 /**
  * SIGN UP (supabase-js)
+ * Updated to accept phone number for metadata
  */
-async function signUp(email: string, password: string, fullName: string, role: string) {
+async function signUp(
+  email: string, 
+  password: string, 
+  fullName: string, 
+  role: string, 
+  phone: string // <--- Added phone argument
+) {
   console.log('================ SIGN UP (service) ================');
   const { data, error } = await withTiming('supabase.auth.signUp', () =>
     supabase.auth.signUp({
@@ -141,6 +148,7 @@ async function signUp(email: string, password: string, fullName: string, role: s
           email,
           full_name: fullName,
           role,
+          phone, // <--- Passed to metadata
         },
       },
     })

@@ -8,14 +8,12 @@ import {
   SafeAreaView,
   StatusBar,
   Alert,
-  Platform,
 } from "react-native";
-import { useLocalSearchParams, useRouter, usePathname } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { AppText, Heading } from "@/lib/ui"; 
+import { AppText } from "@/lib/ui"; 
 import { supabase } from "@/lib/supabase/client";
 import { calculateMentorTier } from "@/lib/logic";
-// 🟢 1. Import Centralized Theme
 import { theme } from "@/lib/theme";
 
 export default function MentorDetailsScreen() {
@@ -31,9 +29,10 @@ export default function MentorDetailsScreen() {
       if (!id || id === 'schedule') return; 
 
       try {
+        // 1. UPDATE: Fetch 'profile_ids' alongside 'expertise_profiles'
         const { data, error } = await supabase
           .from('mentors')
-          .select('session_price_inr, professional_title, experience_description, expertise_profiles, total_sessions, profile:profiles(*)')
+          .select('session_price_inr, professional_title, experience_description, expertise_profiles, profile_ids, total_sessions, profile:profiles(*)')
           .eq('id', id)
           .single();
           
@@ -52,6 +51,7 @@ export default function MentorDetailsScreen() {
                 level: levelLabel,
                 about: data.experience_description || "No description provided.",
                 expertise: data.expertise_profiles || ["Software Engineer"],
+                profileIds: data.profile_ids || [], // 2. STORE: Save IDs array
                 totalPrice: totalPrice,
                 avatarChar: data.profile?.full_name?.charAt(0) || 'M'
             });
@@ -75,11 +75,18 @@ export default function MentorDetailsScreen() {
       Alert.alert("Selection Required", "Please select an interview profile to proceed.");
       return;
     }
+
+    // 3. LOGIC: Find the ID corresponding to the selected name
+    // We assume expertise_profiles and profile_ids are aligned by index
+    const index = mentor.expertise.indexOf(selectedProfile);
+    const selectedId = mentor.profileIds[index];
+
     router.push({
         pathname: '/candidate/schedule',
         params: { 
             mentorId: id,
-            profile: selectedProfile,
+            profileName: selectedProfile, // Name for display
+            profileId: selectedId,        // ID for Database
             price: mentor.totalPrice
         } 
     });
@@ -101,7 +108,7 @@ export default function MentorDetailsScreen() {
       
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         
-        {/* 🟢 1. BIO SECTION */}
+        {/* BIO SECTION */}
         <View style={styles.card}>
           <View style={styles.bioHeader}>
             <View style={styles.avatarPlaceholder}>
@@ -125,7 +132,7 @@ export default function MentorDetailsScreen() {
           <AppText style={styles.sectionBody}>{mentor.about}</AppText>
         </View>
 
-        {/* 🟢 2. PROFILE SELECTION */}
+        {/* PROFILE SELECTION */}
         <View style={styles.card}>
           <View style={styles.sectionHeader}>
              <Ionicons name="checkmark-circle-outline" size={20} color={theme.colors.text.light} style={{ marginRight: 8 }} />
@@ -151,7 +158,7 @@ export default function MentorDetailsScreen() {
           </View>
         </View>
 
-        {/* 🟢 3. PRICING */}
+        {/* PRICING */}
         <View style={styles.card}>
           <View style={styles.sectionHeader}>
              <Ionicons name="pricetag-outline" size={20} color={theme.colors.text.light} style={{ marginRight: 8 }} />
@@ -173,7 +180,7 @@ export default function MentorDetailsScreen() {
 
       </ScrollView>
 
-      {/* 🟢 4. FOOTER */}
+      {/* FOOTER */}
       <SafeAreaView style={styles.footerWrapper}>
         <View style={styles.footerContent}>
           <TouchableOpacity 
@@ -190,105 +197,40 @@ export default function MentorDetailsScreen() {
 }
 
 const styles = StyleSheet.create({
-  // 🟢 Background from Theme
-  container: { 
-    flex: 1, 
-    backgroundColor: "#f8f5f0" // #F8F9FA
-  },
+  container: { flex: 1, backgroundColor: "#f8f5f0" },
   loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
   scrollContent: { padding: 20, gap: 16, paddingBottom: 120 },
-  
-  // Card Style
   card: {
     backgroundColor: theme.colors.surface,
     borderRadius: 16,
     padding: 24,
     borderWidth: 1,
     borderColor: theme.colors.border,
-    // Optional shadow from theme
     ...theme.shadows.card,
   },
-
-  // Bio Section
   bioHeader: { flexDirection: "row", alignItems: "center", gap: 16, marginBottom: 16 },
-  avatarPlaceholder: { 
-    width: 56, height: 56, borderRadius: 28, 
-    backgroundColor: theme.colors.primary, 
-    alignItems: "center", justifyContent: "center" 
-  },
+  avatarPlaceholder: { width: 56, height: 56, borderRadius: 28, backgroundColor: theme.colors.primary, alignItems: "center", justifyContent: "center" },
   avatarText: { fontSize: 24, fontWeight: "700", color: "#FFF" },
   headerTitle: { fontSize: 20, fontWeight: "800", color: theme.colors.text.main, marginBottom: 6 },
-  
-  badge: { 
-    flexDirection: "row", alignItems: "center", 
-    backgroundColor: theme.colors.badge.bronze.bg, 
-    borderWidth: 1, borderColor: theme.colors.badge.bronze.border, 
-    paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, alignSelf: "flex-start" 
-  },
-  badgeText: { 
-    fontSize: 10, fontWeight: "800", 
-    color: theme.colors.badge.bronze.text, 
-    letterSpacing: 0.5, textTransform: "uppercase" 
-  },
-  
+  badge: { flexDirection: "row", alignItems: "center", backgroundColor: theme.colors.badge.bronze.bg, borderWidth: 1, borderColor: theme.colors.badge.bronze.border, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, alignSelf: "flex-start" },
+  badgeText: { fontSize: 10, fontWeight: "800", color: theme.colors.badge.bronze.text, letterSpacing: 0.5, textTransform: "uppercase" },
   divider: { height: 1, backgroundColor: theme.colors.border, marginBottom: 16 },
-
-  // Common Headers
   sectionHeader: { flexDirection: "row", alignItems: "center", marginBottom: 12 },
   sectionTitle: { fontSize: 16, fontWeight: "700", color: theme.colors.text.main },
   sectionBody: { fontSize: 15, color: theme.colors.text.body, lineHeight: 24 },
   subLabel: { fontSize: 14, color: theme.colors.text.light, marginBottom: 16 },
-
-  // Profile Pills
   tagsContainer: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
-  tag: { 
-    flexDirection: 'row', 
-    alignItems: 'center',
-    backgroundColor: theme.colors.surface, 
-    borderWidth: 1, 
-    borderColor: theme.colors.border, 
-    paddingHorizontal: 16, 
-    paddingVertical: 10, 
-    borderRadius: 999 
-  },
-  tagActive: {
-    backgroundColor: theme.colors.primary,
-    borderColor: theme.colors.primary,
-  },
+  tag: { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: theme.colors.border, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 999 },
+  tagActive: { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary },
   tagText: { fontSize: 14, color: theme.colors.text.body, fontWeight: "500" },
   tagTextActive: { color: "#FFF", fontWeight: "600" },
-
-  // Pricing
   priceContainer: { marginTop: 4 },
   priceRow: { flexDirection: "row", alignItems: "center" },
   priceMain: { fontSize: 32, fontWeight: "800", color: theme.colors.text.main, marginBottom: 8 },
-  includesBadge: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    backgroundColor: theme.colors.pricing.greenBg, 
-    paddingHorizontal: 10, 
-    paddingVertical: 6, 
-    borderRadius: 6, 
-    alignSelf: 'flex-start' 
-  },
+  includesBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.colors.pricing.greenBg, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6, alignSelf: 'flex-start' },
   includesText: { fontSize: 13, fontWeight: "600", color: theme.colors.primary },
-
-  // Sticky Footer
-  footerWrapper: { 
-    position: "absolute", bottom: 0, left: 0, right: 0, 
-    backgroundColor: "#f8f5f0", borderTopWidth: 1, borderTopColor: theme.colors.border 
-  },
+  footerWrapper: { position: "absolute", bottom: 0, left: 0, right: 0, backgroundColor: "#f8f5f0", borderTopWidth: 1, borderTopColor: theme.colors.border },
   footerContent: { paddingHorizontal: 24, paddingVertical: 16 },
-  scheduleButton: { 
-    backgroundColor: theme.colors.primary, 
-    paddingVertical: 16, borderRadius: 12, 
-    alignItems: "center", justifyContent: "center",
-    // Shadow
-    shadowColor: theme.colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
-  },
+  scheduleButton: { backgroundColor: theme.colors.primary, paddingVertical: 16, borderRadius: 12, alignItems: "center", justifyContent: "center", shadowColor: theme.colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 4 },
   scheduleButtonText: { fontSize: 16, fontWeight: "700", color: "#FFF" },
 });

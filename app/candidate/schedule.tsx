@@ -1,5 +1,4 @@
-﻿// app/candidate/schedule.tsx
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { 
   View, StyleSheet, ScrollView, TouchableOpacity, 
   ActivityIndicator, Alert, StatusBar 
@@ -24,147 +23,39 @@ export default function ScheduleScreen() {
   const params = useLocalSearchParams(); 
   const mentorId = Array.isArray(params.mentorId) ? params.mentorId[0] : params.mentorId;
   
-  // Get the entire auth store to debug
+  // 1. RECEIVE PROFILE PARAMS
+  const profileIdParam = Array.isArray(params.profileId) ? params.profileId[0] : params.profileId;
+  const profileNameParam = Array.isArray(params.profileName) ? params.profileName[0] : params.profileName;
+
   const authStore = useAuthStore();
   const { user, setUser } = authStore;
-
-  console.log('🔐 FULL Auth Store:', authStore);
-  console.log('🔐 Auth state on mount:', { user, userId: user?.id });
-  console.log('🔐 User object type:', typeof user);
-  console.log('🔐 User keys:', user ? Object.keys(user) : 'null');
 
   const [isLoading, setIsLoading] = useState(true);
   const [mentor, setMentor] = useState<any>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const [authChecked, setAuthChecked] = useState(false);
 
-  // CRITICAL: Initialize auth on mount with retry
+  // Initialize Auth
   useEffect(() => {
     let mounted = true;
-    
     async function initializeAuth() {
-      console.log('🔐 Initializing auth...');
-      
       try {
-        // Try multiple times in case session is loading
-        for (let attempt = 0; attempt < 3; attempt++) {
-          const { data: { session }, error } = await supabase.auth.getSession();
-          
-          console.log(`🔐 Auth attempt ${attempt + 1}:`, {
-            hasSession: !!session,
-            userId: session?.user?.id,
-            error
-          });
-          
-          if (session?.user) {
-            console.log('✅ Session found on attempt', attempt + 1);
-            if (mounted) {
-              setCurrentUserId(session.user.id);
-              // Also update the auth store
-              setUser(session.user as any);
-              setAuthChecked(true);
-            }
-            return;
-          }
-          
-          // Wait before retry
-          if (attempt < 2) {
-            await new Promise(resolve => setTimeout(resolve, 200));
-          }
-        }
-        
-        // After 3 attempts, no session found
-        console.log('❌ No session after 3 attempts');
-        if (mounted) {
-          setAuthChecked(true);
-          Alert.alert(
-            'Sign In Required',
-            'Please sign in to continue',
-            [{ text: 'OK', onPress: () => router.replace('/sign-in') }]
-          );
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user && mounted) {
+          setCurrentUserId(session.user.id);
+          setUser(session.user as any);
         }
       } catch (error) {
-        console.error('❌ Auth initialization error:', error);
-        if (mounted) setAuthChecked(true);
+        console.error('Auth check failed:', error);
       }
     }
-    
     initializeAuth();
-    
     return () => { mounted = false; };
   }, []);
-
-  // Check authentication on mount
-  useEffect(() => {
-    async function checkAuth() {
-      console.log('🔐 Checking authentication on mount...');
-      const { data: { session } } = await supabase.auth.getSession();
-      console.log('📱 Session on mount:', session);
-      
-      if (!session) {
-        console.log('❌ No session found - redirecting to sign-in...');
-        Alert.alert(
-          'Authentication Required',
-          'You need to be logged in to book sessions. Please sign in.',
-          [
-            {
-              text: 'Sign In',
-              onPress: () => router.replace('/sign-in')
-            }
-          ]
-        );
-      } else {
-        console.log('✅ Session found:', session.user.id);
-        setCurrentUserId(session.user.id);
-      }
-    }
-    
-    checkAuth();
-  }, []);
-
-  // Fallback: Get user from Supabase session if auth store is empty
-  useEffect(() => {
-    async function getCurrentUser() {
-      console.log('🔍 Checking Supabase session...');
-      const { data: { session } } = await supabase.auth.getSession();
-      console.log('📱 Supabase session:', session);
-      
-      if (session?.user) {
-        console.log('✅ User found in session:', session.user.id);
-        setCurrentUserId(session.user.id);
-      } else {
-        console.log('❌ No session found');
-      }
-    }
-    
-    if (!user?.id) {
-      console.log('⚠️ User not in auth store, fetching from Supabase...');
-      getCurrentUser();
-    } else {
-      console.log('✅ User already in auth store:', user.id);
-      setCurrentUserId(user.id);
-    }
-  }, [user]);
-  
-  // Initialize Date in Indian Standard Time (IST)
-  const [selectedDate, setSelectedDate] = useState(
-    DateTime.now().setZone('Asia/Kolkata').plus({ days: 1 }) // Start from tomorrow
-  );
-  
-  const [slots, setSlots] = useState<TimeSlot[]>([]);
-  const [loadingSlots, setLoadingSlots] = useState(false);
-  
-  // Selection State
-  const [session1, setSession1] = useState<string | null>(null);
-  const [session2, setSession2] = useState<string | null>(null);
-  const [activeField, setActiveField] = useState<'session1' | 'session2'>('session1');
-  const [bookingInProgress, setBookingInProgress] = useState(false);
 
   // Fetch mentor info
   useEffect(() => {
     async function fetchMentor() {
       if (!mentorId) return;
-
       try {
         const { data, error } = await supabase
           .from('mentors')
@@ -186,9 +77,20 @@ export default function ScheduleScreen() {
         setIsLoading(false);
       }
     }
-
     fetchMentor();
   }, [mentorId]);
+
+  // Date & Slot Logic
+  const [selectedDate, setSelectedDate] = useState(
+    DateTime.now().setZone('Asia/Kolkata').plus({ days: 1 })
+  );
+  const [slots, setSlots] = useState<TimeSlot[]>([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+  
+  const [session1, setSession1] = useState<string | null>(null);
+  const [session2, setSession2] = useState<string | null>(null);
+  const [activeField, setActiveField] = useState<'session1' | 'session2'>('session1');
+  const [bookingInProgress, setBookingInProgress] = useState(false);
 
   // Generate available slots
   useEffect(() => {
@@ -197,13 +99,11 @@ export default function ScheduleScreen() {
 
   const generateSlots = async () => {
     setLoadingSlots(true);
-    
     try {
       const timeSlots = [
         '09:00', '10:00', '11:00', '14:00', '15:00', 
         '16:00', '17:00', '18:00', '19:00', '20:00'
       ];
-
       const dateStr = selectedDate.toISODate();
       if (!dateStr) return;
 
@@ -250,190 +150,79 @@ export default function ScheduleScreen() {
     }
   };
 
-  // 🟢 🟢 🟢 UPDATED HANDLE PROCEED 🟢 🟢 🟢
   const handleProceed = async () => {
-    console.log('🚀 BUTTON CLICKED - handleProceed called');
-    console.log('📊 Current state:', { 
-      session1, 
-      session2, 
-      userId: user?.id, 
-      currentUserId,
-      mentorId, 
-      mentor 
-    });
-
     if (!session1 || !session2) {
-      console.log('❌ Validation failed: Missing time slots');
       Alert.alert("Select Slots", "Please select 2 time slots to proceed.");
       return;
     }
 
-    // Try to get user ID from multiple sources
+    // Auth Check
     let activeUserId = currentUserId || user?.id;
-    
-    // If still no user, try to get from Supabase session directly
     if (!activeUserId) {
-      console.log('⚠️ No user ID found, fetching from Supabase session immediately...');
-      try {
-        const { data, error: sessionError } = await supabase.auth.getSession();
-        console.log('📱 FULL Session data:', data);
-        console.log('📱 Session object:', data?.session);
-        console.log('📱 User object:', data?.session?.user);
-        console.log('📱 User ID:', data?.session?.user?.id);
-        console.log('📱 Session error:', sessionError);
-        
-        if (data?.session?.user?.id) {
-          activeUserId = data.session.user.id;
-          console.log('✅ Got user ID from session:', activeUserId);
-        } else {
-          console.log('❌ No user in session - checking auth state...');
-          const { data: { user: authUser } } = await supabase.auth.getUser();
-          console.log('👤 getUser result:', authUser);
-          if (authUser?.id) {
-            activeUserId = authUser.id;
-            console.log('✅ Got user ID from getUser:', activeUserId);
-          }
-        }
-      } catch (err) {
-        console.error('❌ Failed to get session:', err);
-      }
+        // Fallback fetch
+        const { data: { session } } = await supabase.auth.getSession();
+        activeUserId = session?.user?.id;
     }
-    
+
     if (!activeUserId || !mentorId || !mentor) {
-      console.log('❌ Validation failed: Missing required data', { 
-        hasActiveUserId: !!activeUserId,
-        hasUser: !!user?.id,
-        hasCurrentUserId: !!currentUserId,
-        hasMentorId: !!mentorId, 
-        hasMentor: !!mentor 
-      });
-      Alert.alert('Error', 'You must be logged in to book a session. Please sign in and try again.');
+      Alert.alert('Error', 'You must be logged in to book. Please sign in.');
       return;
+    }
+
+    // 2. VALIDATE PROFILE ID (Critical)
+    if (!profileIdParam) {
+        Alert.alert('Error', 'Missing interview profile info. Please go back and select a profile.');
+        return;
     }
     
     const dateStr = selectedDate.toISODate();
-    console.log('📅 Selected date ISO:', dateStr);
-    if (!dateStr) {
-      console.log('❌ Failed to get date string');
-      return;
-    }
+    if (!dateStr) return;
 
-    console.log('✅ All validations passed, starting booking process...');
     setBookingInProgress(true);
 
     try {
-      console.log('🔵 Step 1: Starting booking process...');
-      console.log('🔍 Using user ID as candidate ID:', activeUserId);
-
-      // In your schema, candidates.id IS the user_id (same UUID)
-      // So we can use the user ID directly as the candidate ID
       const candidateId = activeUserId;
-
-      // Optional: Verify the candidate record exists
-      const { data: candidateExists, error: candidateError } = await supabase
-        .from('candidates')
-        .select('id')
-        .eq('id', activeUserId)
-        .single();
-
-      console.log('📦 Candidate verification result:', { 
-        exists: !!candidateExists, 
-        candidateError 
-      });
-
-      if (candidateError || !candidateExists) {
-        console.error('❌ Candidate record not found:', candidateError);
-        throw new Error('Candidate profile not found. Please complete your profile first.');
-      }
-
-      console.log('✅ Candidate verified:', candidateId);
-
-      // Construct ISO timestamps in IST
-      console.log('🕐 Constructing timestamps...');
+      
+      // Construct Timestamps
       const dt1 = DateTime.fromFormat(`${dateStr} ${session1}`, "yyyy-MM-dd HH:mm", { zone: 'Asia/Kolkata' });
       const dt2 = DateTime.fromFormat(`${dateStr} ${session2}`, "yyyy-MM-dd HH:mm", { zone: 'Asia/Kolkata' });
       const selectedSlots = [dt1.toISO(), dt2.toISO()].filter(Boolean) as string[];
-      console.log('✅ Timestamps created:', selectedSlots);
 
-      const totalPrice = mentor.price + 300; // mentor price + platform fee
-      const targetProfile = mentor.title || 'Software Engineer';
+      const totalPrice = mentor.price + 300; 
       
-      console.log('💰 Package details:', {
-        candidateId: candidateId,
-        mentorId,
-        targetProfile,
-        totalPrice,
-        slots: selectedSlots
-      });
-
-      // 1. Create Package in Database (using candidate ID, not user ID)
-      console.log('🔵 Step 2: Calling paymentService.createPackage...');
+      // 3. CREATE PACKAGE with PROFILE ID
       const { package: pkg, error } = await paymentService.createPackage(
-        candidateId, // ✅ Use candidate ID (which is the same as user ID in your schema)
+        candidateId,
         mentorId as string,
-        targetProfile,
+        Number(profileIdParam), // <--- Passing the ID
         totalPrice,
         selectedSlots
       );
 
-      console.log('📦 createPackage response:', { pkg, error });
+      if (error || !pkg) throw new Error(error?.message || 'Failed to create booking');
 
-      if (error || !pkg) {
-        console.error('❌ Failed to create package:', error);
-        throw new Error(error?.message || 'Failed to create booking');
-      }
-
-      console.log('✅ Booking Package Created successfully!');
-      console.log('📋 Package details:', { 
-        id: pkg.id, 
-        status: pkg.payment_status,
-        razorpayId: pkg.razorpay_payment_id 
-      });
-
-      // 🟢 2. CHECK STATUS & REDIRECT CORRECTLY
+      // Redirect based on status
       if (pkg.payment_status === 'pending_payment') {
-        // ==> RAZORPAY FLOW
-        console.log('🔵 Step 3: Redirecting to Payment Gateway...');
-        console.log('🔗 Navigation params:', { 
-          packageId: pkg.id, 
-          amount: totalPrice,
-          orderId: pkg.razorpay_payment_id 
-        });
         router.replace({
             pathname: '/candidate/pgscreen',
             params: { 
                 packageId: pkg.id, 
                 amount: totalPrice,
-                // Pass orderId if it exists, otherwise PGScreen will generate mock order
                 orderId: pkg.razorpay_payment_id 
             }
         });
-        console.log('✅ Navigation triggered');
       } else {
-        // ==> AUTO-CONFIRM FLOW (MVP/Fallback)
-        console.log('✅ Auto-confirm flow - showing success alert');
         Alert.alert(
           '🎉 Booking Confirmed!',
-          'Your sessions are ready. Redirecting to My Bookings...',
+          'Redirecting to My Bookings...',
           [{ text: 'OK', onPress: () => router.replace('/candidate/bookings') }],
           { cancelable: false }
         );
       }
 
     } catch (error: any) {
-      console.error('❌❌❌ BOOKING ERROR CAUGHT ❌❌❌');
-      console.error('Error type:', typeof error);
-      console.error('Error object:', error);
-      console.error('Error message:', error?.message);
-      console.error('Error stack:', error?.stack);
-      
-      Alert.alert(
-        'Booking Failed', 
-        error.message || 'Something went wrong. Please try again.',
-        [{ text: 'OK' }]
-      );
+      Alert.alert('Booking Failed', error.message || 'Something went wrong.');
     } finally {
-      console.log('🔄 Finally block - resetting bookingInProgress');
       setBookingInProgress(false);
     }
   };
@@ -451,26 +240,6 @@ export default function ScheduleScreen() {
           <AppText style={styles.pageSubtitle}>
             Book with {mentor.name} • ₹{(mentor.price + 300).toLocaleString()} total
           </AppText>
-          
-          {/* DEBUG: Auth Test Button */}
-          <TouchableOpacity 
-            style={{ backgroundColor: '#EF4444', padding: 12, borderRadius: 8, marginTop: 12 }}
-            onPress={async () => {
-              console.log('🔍 MANUAL AUTH CHECK');
-              const { data: { session }, error } = await supabase.auth.getSession();
-              console.log('Session:', session);
-              console.log('Error:', error);
-              
-              const { data: { user } } = await supabase.auth.getUser();
-              console.log('User:', user);
-              
-              Alert.alert('Auth Status', `Session: ${session ? 'EXISTS' : 'NULL'}\nUser: ${user ? user.id : 'NULL'}`);
-            }}
-          >
-            <AppText style={{ color: '#FFF', fontWeight: 'bold', textAlign: 'center' }}>
-              🔐 TEST AUTH STATUS
-            </AppText>
-          </TouchableOpacity>
         </View>
 
         {/* Selectors */}
@@ -506,7 +275,7 @@ export default function ScheduleScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Calendar Navigation */}
+        {/* Calendar */}
         <View style={styles.calendarSection}>
           <View style={styles.dateNav}>
             <TouchableOpacity style={styles.navBtn} onPress={() => setSelectedDate(d => d.minus({ days: 1 }))}>
@@ -526,7 +295,7 @@ export default function ScheduleScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* Slots Grid */}
+          {/* Slots */}
           <View style={styles.slotsContainer}>
             {loadingSlots ? (
               <ActivityIndicator color={theme.colors.primary} style={{ margin: 20 }} />
@@ -575,16 +344,7 @@ export default function ScheduleScreen() {
         <View style={styles.footerContainer}>
            <TouchableOpacity 
             style={[styles.proceedBtn, ((!session1 || !session2) || bookingInProgress) && styles.proceedBtnDisabled]}
-            onPress={() => {
-              console.log('🎯 BUTTON PHYSICALLY PRESSED');
-              console.log('Button state:', { 
-                session1, 
-                session2, 
-                bookingInProgress,
-                disabled: !session1 || !session2 || bookingInProgress 
-              });
-              handleProceed();
-            }}
+            onPress={handleProceed}
             disabled={!session1 || !session2 || bookingInProgress}
           >
             {bookingInProgress ? (
