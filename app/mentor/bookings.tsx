@@ -1,7 +1,7 @@
 ﻿import React, { useEffect, useState } from 'react';
 import { 
   View, ScrollView, StyleSheet, ActivityIndicator, 
-  TouchableOpacity, RefreshControl, StatusBar, Alert, Linking, Platform, Modal
+  TouchableOpacity, RefreshControl, StatusBar, Alert, Linking, Modal
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { DateTime } from 'luxon';
@@ -15,12 +15,10 @@ import { Heading, AppText, Card, Section, ScreenBackground } from '@/lib/ui';
 import { useAuthStore } from '@/lib/store';
 
 // --- SUB-COMPONENT: SMART BOOKING CARD ---
-// This handles the 4 states: Approval, Scheduled, Join, Post
-const BookingCard = ({ session, onAccept, onReschedule, onViewDetails, onJoin, onEvaluate }: any) => {
+const BookingCard = ({ session, onAccept, onReschedule, onViewDetails, onJoin, onEvaluate, onViewResume }: any) => {
   const date = DateTime.fromISO(session.scheduled_at);
   const diffMinutes = date.diffNow('minutes').minutes; 
-  // diffMinutes > 0 = Future | diffMinutes < 0 = Past
-
+  
   // 🧠 LOGIC: Determine UI State
   let uiState = 'SCHEDULED';
   
@@ -31,10 +29,8 @@ const BookingCard = ({ session, onAccept, onReschedule, onViewDetails, onJoin, o
   } else {
     // Status is 'confirmed'/'scheduled', checking time:
     if (diffMinutes <= 15 && diffMinutes > -60) {
-      // Starts in 15 mins OR started less than an hour ago
       uiState = 'JOIN';
     } else if (diffMinutes <= -60) {
-      // Meeting happened over an hour ago
       uiState = 'POST';
     } else {
       uiState = 'SCHEDULED';
@@ -43,12 +39,10 @@ const BookingCard = ({ session, onAccept, onReschedule, onViewDetails, onJoin, o
 
   // --- RENDER HELPERS ---
   const professionalTitle = session.candidate?.professional_title || 'Candidate';
-  // Now using the enriched field set in fetchSessions
   const targetProfile = session.package?.interview_profile_name || 'Interview';
-  const mentorPayout = session.package?.mentor_payout_inr || 0; // kept for earnings UI
-
-  // Extract round number from round string (e.g., "round_1" -> "1")
+  const mentorPayout = session.package?.mentor_payout_inr || 0; 
   const roundNumber = session.round ? session.round.match(/\d+/)?.[0] || '1' : '1';
+  const hasResume = !!session.candidate?.resume_url;
 
   return (
     <Card style={styles.sessionCard}>
@@ -57,18 +51,15 @@ const BookingCard = ({ session, onAccept, onReschedule, onViewDetails, onJoin, o
         
         {/* LEFT SIDE: Interview Info */}
         <View style={styles.leftSection}>
-          {/* Main Title */}
           <Heading level={4} style={styles.cardTitle}>
             {targetProfile} interview with {professionalTitle}
           </Heading>
           
-          {/* Round Info */}
           <View style={styles.infoRow}>
             <Ionicons name="layers-outline" size={14} color="#6B7280" />
             <AppText style={styles.infoText}>Round {roundNumber}</AppText>
           </View>
 
-          {/* Date & Time */}
           <View style={styles.infoRow}>
             <Ionicons name="calendar-outline" size={14} color="#6B7280" />
             <AppText style={styles.infoText}>
@@ -76,13 +67,11 @@ const BookingCard = ({ session, onAccept, onReschedule, onViewDetails, onJoin, o
             </AppText>
           </View>
 
-          {/* Duration */}
           <View style={styles.infoRow}>
             <Ionicons name="time-outline" size={14} color="#6B7280" />
             <AppText style={styles.infoText}>2 x 55 min (45 min interview + 10 min Q&A)</AppText>
           </View>
 
-          {/* Payout */}
           <View style={styles.payoutRow}>
             <Ionicons name="wallet-outline" size={14} color="#059669" />
             <AppText style={styles.payoutText}>₹{mentorPayout.toLocaleString()}</AppText>
@@ -107,14 +96,7 @@ const BookingCard = ({ session, onAccept, onReschedule, onViewDetails, onJoin, o
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.btnFull, styles.btnPrimary]}
-            onPress={() => {
-              console.log('[BookingCard] Accept pressed', {
-                id: session.id,
-                status: session.status,
-                scheduled_at: session.scheduled_at,
-              });
-              onAccept(session.id);
-            }}
+            onPress={() => onAccept(session.id)}
           >
             <AppText style={styles.textWhite}>Accept</AppText>
           </TouchableOpacity>
@@ -124,6 +106,18 @@ const BookingCard = ({ session, onAccept, onReschedule, onViewDetails, onJoin, o
       {/* 2. SCHEDULED STATE */}
       {uiState === 'SCHEDULED' && (
         <View style={styles.actionRowFull}>
+          {/* Resume Button - Only shown if resume exists */}
+          {hasResume && (
+            <TouchableOpacity 
+              style={[styles.btnFull, styles.btnOutline]} 
+              onPress={() => onViewResume(session.candidate?.resume_url)}
+            >
+              <Ionicons name="document-text-outline" size={16} color={theme.colors.primary} style={{marginRight: 4}} />
+              <AppText style={styles.textPrimary}>Resume</AppText>
+            </TouchableOpacity>
+          )}
+
+          {/* View Details Button - Expands if resume is missing */}
           <TouchableOpacity 
             style={[styles.btnFull, styles.btnSecondary]} 
             onPress={() =>
@@ -138,13 +132,16 @@ const BookingCard = ({ session, onAccept, onReschedule, onViewDetails, onJoin, o
         </View>
       )}
 
-      {/* 3. JOIN MEETING STATE (Active 15 mins before) */}
+      {/* 3. JOIN MEETING STATE */}
       {uiState === 'JOIN' && (
         <View style={styles.actionRowFull}>
-          <TouchableOpacity style={[styles.btnFull, styles.btnGreen]} onPress={() => onJoin(session.meeting_link)}>
+           {/* Join Button */}
+           <TouchableOpacity style={[styles.btnFull, styles.btnGreen]} onPress={() => onJoin(session.meeting_link)}>
             <Ionicons name="videocam" size={18} color="#fff" style={{marginRight:4}}/>
             <AppText style={styles.textWhite}>Join Meeting</AppText>
           </TouchableOpacity>
+
+          {/* Evaluate Button */}
           <TouchableOpacity style={[styles.btnFull, styles.btnPrimary]} onPress={() => onEvaluate(session.id, 'edit')}>
             <AppText style={styles.textWhite}>Evaluate</AppText>
           </TouchableOpacity>
@@ -183,7 +180,6 @@ const Badge = ({ state }: { state: string }) => {
   );
 };
 
-
 // --- MAIN SCREEN ---
 export default function MentorBookingsScreen() {
   const { user } = useAuthStore();
@@ -204,10 +200,9 @@ export default function MentorBookingsScreen() {
 
  const fetchSessions = async () => {
   if (!user) return;
-  console.log('[MentorBookings] fetchSessions start for mentor:', user.id);
 
   try {
-    // 1) Get sessions + package (with interview_profile_id) + candidate title
+    // 1) Get sessions + package + candidate info (INCLUDING RESUME URL)
     const { data, error } = await supabase
       .from('interview_sessions')
       .select(`
@@ -222,7 +217,8 @@ export default function MentorBookingsScreen() {
           interview_profile_id
         ),
         candidate:candidates!candidate_id (
-          professional_title
+          professional_title,
+          resume_url
         )
       `)
       .eq('mentor_id', user.id)
@@ -234,17 +230,8 @@ export default function MentorBookingsScreen() {
     }
 
     const rawSessions = data || [];
-    console.log(
-      '[MentorBookings] rawSessions:',
-      rawSessions.map((s: any) => ({
-        id: s.id,
-        status: s.status,
-        scheduled_at: s.scheduled_at,
-        interview_profile_id: s.package?.interview_profile_id,
-      }))
-    );
 
-    // 2) Collect unique interview_profile_ids from packages
+    // 2) Collect unique interview_profile_ids
     const profileIds = Array.from(
       new Set(
         rawSessions
@@ -256,7 +243,6 @@ export default function MentorBookingsScreen() {
     let profileMap: Record<string, { name: string; description: string | null }> = {};
 
     if (profileIds.length > 0) {
-      // 3) Fetch interview_profiles_admin rows for those IDs
       const { data: profiles, error: profileError } = await supabase
         .from('interview_profiles_admin')
         .select('id, name, description')
@@ -274,7 +260,7 @@ export default function MentorBookingsScreen() {
       }
     }
 
-    // 4) Enrich sessions with interview_profile_name + description
+    // 4) Enrich sessions
     const enrichedSessions = rawSessions.map((s: any) => {
       const profileId = s.package?.interview_profile_id;
       const profileMeta =
@@ -299,15 +285,6 @@ export default function MentorBookingsScreen() {
       };
     });
 
-    console.log(
-      '[MentorBookings] enrichedSessions (first 5):',
-      enrichedSessions.slice(0, 5).map((s: any) => ({
-        id: s.id,
-        status: s.status,
-        profileName: s.package?.interview_profile_name,
-      }))
-    );
-
     setSessions(enrichedSessions);
 
     // 5) Calculate Stats
@@ -316,41 +293,22 @@ export default function MentorBookingsScreen() {
     let earnings = 0;
 
     enrichedSessions.forEach((s: any) => {
-      if (s.status === 'confirmed') {
-        upcoming++;
-      }
-
+      if (s.status === 'confirmed') upcoming++;
       if (s.status === 'completed') {
         completed++;
-
-        if (s.package?.mentor_payout_inr) {
-          earnings += s.package.mentor_payout_inr * 1.2;
-        }
+        if (s.package?.mentor_payout_inr) earnings += s.package.mentor_payout_inr * 1.2;
       }
-    });
-
-    console.log('[MentorBookings] FINAL STATS:', {
-      upcoming,
-      completed,
-      earnings,
     });
 
     setStats({ upcoming, completed, earnings });
 
   } catch (err: any) {
-    console.error('Error loading mentor bookings:', {
-      message: err?.message,
-      details: err?.details,
-      hint: err?.hint,
-      code: err?.code,
-    });
+    console.error('Error loading mentor bookings:', err);
   } finally {
     setLoading(false);
     setRefreshing(false);
   }
 };
-
-
 
   useEffect(() => { fetchSessions(); }, [user]);
   const onRefresh = () => { setRefreshing(true); fetchSessions(); };
@@ -358,42 +316,17 @@ export default function MentorBookingsScreen() {
   // --- ACTIONS ---
 
   const handleAccept = async (id: string) => {
-    console.log('[handleAccept] DIRECT accept for ID:', id);
-
     try {
-      console.log('[handleAccept] Sending Supabase update:', {
-        id,
-        newStatus: 'confirmed',
-      });
-
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('interview_sessions')
         .update({ status: 'confirmed' })
-        .eq('id', id)
-        .select('id, status, scheduled_at')
-        .single();
+        .eq('id', id);
 
-      console.log('[handleAccept] Supabase raw result:', { data, error });
-
-      if (error) {
-        console.error('[handleAccept] Supabase UPDATE error:', {
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code,
-        });
-        Alert.alert('Error', error.message || 'Could not accept this interview.');
-        return;
-      }
-
-      console.log('[handleAccept] SUCCESS — updated row:', data);
+      if (error) throw error;
       Alert.alert('Accepted', 'This interview has been confirmed.');
-
-      console.log('[handleAccept] Calling fetchSessions() after accept...');
       fetchSessions();
     } catch (e: any) {
-      console.error('[handleAccept] Unexpected error:', e);
-      Alert.alert('Error', e?.message || 'Unexpected error while accepting.');
+      Alert.alert('Error', e?.message || 'Could not accept this interview.');
     }
   };
 
@@ -425,9 +358,33 @@ export default function MentorBookingsScreen() {
   };
 
   const handleViewDetails = (details: string) => {
-    console.log('[MentorBookings] handleViewDetails called with:', details);
     setDetailContent(details);
     setDetailModalVisible(true);
+  };
+  
+  // NEW: Handle Resume Viewing (Fetches from Storage Bucket)
+  const handleViewResume = async (path: string) => {
+    if (!path) {
+      Alert.alert('No Resume', 'The candidate has not uploaded a resume yet.');
+      return;
+    }
+    
+    try {
+      // Create Signed URL (Valid for 1 hour)
+      const { data, error } = await supabase.storage
+        .from('resumes')
+        .createSignedUrl(path, 3600);
+
+      if (error || !data?.signedUrl) throw error;
+      
+      // Open in Browser/Native PDF Viewer
+      Linking.openURL(data.signedUrl).catch(() => 
+        Alert.alert('Error', 'Could not open resume link.')
+      );
+    } catch (e) {
+      console.error('Resume view error:', e);
+      Alert.alert('Error', 'Could not load resume.');
+    }
   };
 
   const handleEvaluate = (sessionId: string, mode: 'edit' | 'read') => {
@@ -485,6 +442,7 @@ export default function MentorBookingsScreen() {
                 onAccept={handleAccept}
                 onReschedule={handleRescheduleStart}
                 onViewDetails={handleViewDetails}
+                onViewResume={handleViewResume} // Pass handler
                 onJoin={handleJoin}
                 onEvaluate={handleEvaluate}
               />
@@ -587,8 +545,10 @@ const styles = StyleSheet.create({
   actionRowFull: { flexDirection: 'row', gap: 10, justifyContent: 'space-between' },
   actionRow: { flexDirection: 'row', gap: 12, justifyContent: 'space-between', marginTop: 16 },
   
-  // Buttons - Full Width
+  // Buttons
   btnFull: { flex: 1, paddingVertical: 12, paddingHorizontal: 16, borderRadius: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+  btn: { paddingVertical: 12, paddingHorizontal: 16, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  
   btnPrimary: { backgroundColor: theme.colors.primary },
   btnSecondary: { backgroundColor: '#eff6ff' },
   btnGreen: { backgroundColor: '#059669' },
