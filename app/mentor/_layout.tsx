@@ -67,7 +67,6 @@ export default function MentorLayout() {
   // Mentor Menu
   const mentorMenuItems = [
     { name: 'My Profile', path: '/mentor/profile', icon: 'person-outline' as const },
-    { name: 'Mentorship', path: '/mentor/mentorship', icon: 'school-outline' as const },
     { name: 'My Bookings', path: '/mentor/bookings', icon: 'calendar-outline' as const },
   ];
 

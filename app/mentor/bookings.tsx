@@ -86,7 +86,6 @@ const BookingCard = ({ session, onAccept, onReschedule, onViewDetails, onJoin, o
           <View style={styles.payoutRow}>
             <Ionicons name="wallet-outline" size={14} color="#059669" />
             <AppText style={styles.payoutText}>₹{mentorPayout.toLocaleString()}</AppText>
-            <AppText style={styles.platformFee}>(Platform takes 20%)</AppText>
           </View>
         </View>
 

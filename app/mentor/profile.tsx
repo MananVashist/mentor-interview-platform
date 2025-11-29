@@ -9,14 +9,13 @@ import { colors, spacing, borderRadius, typography, shadows } from '@/lib/theme'
 import { Heading, AppText, Section, Card, Button, Input, ScreenBackground, Label } from '@/lib/ui';
 import { NotificationBanner } from '@/lib/ui/NotificationBanner';
 
+// Updated to match your DB Schema
 type MentorRow = {
-  id: string;
-  profile_id: string;
+  id: string; // This is the PK and FK to profiles(id)
   professional_title: string | null;
-  experience_description: string | null;
-  years_of_experience: number | null;
-  bio: string | null;
-  profile_ids: number[] | null; // <--- This now exists in the DB
+  years_of_experience: number | null; 
+  profile_ids: number[] | null; // Integer array for expertise IDs
+  session_price_inr: number | null;    
 };
 
 type InterviewProfile = {
@@ -31,21 +30,18 @@ export default function MentorProfileScreen() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [mentorId, setMentorId] = useState<string | null>(null);
+  
+  // 1. Price State
+  const [sessionPrice, setSessionPrice] = useState('');
 
-  // PUBLIC (shown to candidates)
-  const [professionalTitle, setProfessionalTitle] = useState('');
-  const [experienceDescription, setExperienceDescription] = useState('');
-  const [yearsOfExperience, setYearsOfExperience] = useState('');
-
-  // Optional internal bio
-  const [bio, setBio] = useState('');
-
-  // Interview profiles selection
+  // 2. Expertise State
   const [availableProfiles, setAvailableProfiles] = useState<InterviewProfile[]>([]);
   const [selectedProfiles, setSelectedProfiles] = useState<number[]>([]);
 
-  // Slider banner
+  // 3. Public Profile State
+  const [professionalTitle, setProfessionalTitle] = useState('');
+  const [yearsOfExperience, setYearsOfExperience] = useState('');
+
   const [banner, setBanner] = useState<BannerState>(null);
 
   useEffect(() => {
@@ -57,36 +53,31 @@ export default function MentorProfileScreen() {
       try {
         setLoading(true);
 
-        // 1) Load mentor row - We now SELECT the new profile_ids column
+        // A. Load mentor row
+        // Query by 'id' which matches the user's profile.id
         const { data: mentor, error: mentorError } = await supabase
           .from('mentors')
-          .select('id, professional_title, experience_description, years_of_experience, description, profile_ids')
-          .eq('profile_id', profile.id)
+          .select('id, professional_title, years_of_experience, profile_ids, session_price_inr')
+          .eq('id', profile.id) 
           .maybeSingle();
 
         if (mentorError) {
           console.log('[mentor/profile] load mentor error', mentorError);
-          if (mounted) {
-            setBanner({
-              type: 'error',
-              message: 'Failed to load mentor settings.',
-            });
-          }
-        } else if (mentor && mounted) {
+          // Don't show error banner yet, user might just be new
+        } 
+        
+        if (mentor && mounted) {
           const m = mentor as MentorRow;
-          setMentorId(m.id);
+          
           setProfessionalTitle(m.professional_title ?? '');
-          setExperienceDescription(m.experience_description ?? '');
-          setYearsOfExperience(
-            m.years_of_experience != null ? String(m.years_of_experience) : ''
-          );
-          setBio(m.bio ?? '');
-          setSelectedProfiles(m.profile_ids ?? []); // Load the array of IDs
+          setYearsOfExperience(m.years_of_experience != null ? String(m.years_of_experience) : '');
+          setSelectedProfiles(m.profile_ids ?? []);
+          setSessionPrice(m.session_price_inr != null ? String(m.session_price_inr) : '');
         }
 
-        // 2) Load available interview profiles (from the ADMIN table)
+        // B. Load available interview profiles
         const { data: profilesData, error: profilesError } = await supabase
-          .from('interview_profiles_admin') // Use the table that exists
+          .from('interview_profiles_admin')
           .select('id, name')
           .order('name', { ascending: true });
 
@@ -97,12 +88,6 @@ export default function MentorProfileScreen() {
         }
       } catch (e) {
         console.log('[mentor/profile] unexpected error', e);
-        if (mounted) {
-          setBanner({
-            type: 'error',
-            message: 'Something went wrong while loading your profile.',
-          });
-        }
       } finally {
         if (mounted) setLoading(false);
       }
@@ -120,52 +105,45 @@ export default function MentorProfileScreen() {
   };
 
   const handleSave = async () => {
-    if (!mentorId) return;
+    if (!profile?.id) return;
 
-    const yrs = yearsOfExperience.trim()
-      ? Number(yearsOfExperience.trim())
-      : null;
+    const yrs = yearsOfExperience.trim() ? Number(yearsOfExperience.trim()) : null;
+    const price = sessionPrice.trim() ? Number(sessionPrice.trim()) : null;
 
     if (yrs != null && (isNaN(yrs) || yrs < 0 || yrs > 60)) {
-      setBanner({
-        type: 'error',
-        message: 'Enter a valid years of experience between 0 and 60.',
-      });
+      setBanner({ type: 'error', message: 'Enter a valid years of experience (0-60).' });
       return;
+    }
+    
+    if (price != null && (isNaN(price) || price < 0)) {
+        setBanner({ type: 'error', message: 'Price cannot be negative.' });
+        return;
     }
 
     try {
       setSaving(true);
 
+      // Upsert: Create or Update based on 'id'
       const { error } = await supabase
         .from('mentors')
-        .update({
+        .upsert({
+          id: profile.id, // The PK is the user's ID
           professional_title: professionalTitle.trim() || null,
-          experience_description: experienceDescription.trim() || null,
           years_of_experience: yrs,
-          bio: bio.trim() || null,
-          profile_ids: selectedProfiles, // <--- WRITE NOW WORKS
-        })
-        .eq('id', mentorId);
+          profile_ids: selectedProfiles,
+          session_price_inr: price,
+          updated_at: new Date(),
+        });
 
       if (error) {
         console.log('[mentor/profile] save error', error);
-        setBanner({
-          type: 'error',
-          message: 'Could not save profile. Please try again.',
-        });
+        setBanner({ type: 'error', message: 'Could not save profile.' });
       } else {
-        setBanner({
-          type: 'success',
-          message: 'Profile details saved successfully.',
-        });
+        setBanner({ type: 'success', message: 'Profile saved successfully.' });
       }
     } catch (e) {
       console.log('[mentor/profile] unexpected save error', e);
-      setBanner({
-        type: 'error',
-        message: 'Unexpected error while saving profile.',
-      });
+      setBanner({ type: 'error', message: 'Unexpected error while saving.' });
     } finally {
       setSaving(false);
     }
@@ -174,17 +152,8 @@ export default function MentorProfileScreen() {
   if (loading) {
     return (
       <ScreenBackground>
-        <NotificationBanner
-          visible={!!banner}
-          type={banner?.type}
-          message={banner?.message ?? ''}
-          onHide={() => setBanner(null)}
-        />
         <Section style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
           <ActivityIndicator color={colors.primary} size="large" />
-          <AppText style={{ marginTop: spacing.md, color: colors.textSecondary, fontSize: typography.size.md }}>
-            Loading your profile…
-          </AppText>
         </Section>
       </ScreenBackground>
     );
@@ -198,157 +167,56 @@ export default function MentorProfileScreen() {
         message={banner?.message ?? ''}
         onHide={() => setBanner(null)}
       />
+      
       <ScrollView contentContainerStyle={{ paddingBottom: spacing.xl }}>
         {/* Header */}
         <Section style={styles.header}>
           <View style={styles.headerIcon}>
-            <Ionicons name="person-circle-outline" size={32} color={colors.primary} />
+            <Ionicons name="settings-outline" size={32} color={colors.primary} />
           </View>
-          <Heading level={1}>My Mentor Profile</Heading>
-          <AppText style={styles.headerSub}>
-            Manage your professional information and expertise
-          </AppText>
+          <Heading level={1}>My profile</Heading>
         </Section>
 
-        {/* Private identity card */}
+        {/* SECTION 1: PRICE SETTING */}
         <Section>
           <Card style={[styles.card, shadows.card as any]}>
             <View style={styles.cardHeader}>
-              <Ionicons name="lock-closed" size={20} color={colors.textTertiary} />
-              <Heading level={2} style={styles.cardTitle}>Private Information</Heading>
+              <Ionicons name="cash-outline" size={20} color={colors.primary} />
+              <Heading level={2} style={styles.cardTitle}>Pricing</Heading>
             </View>
             <AppText style={styles.cardDescription}>
-              Your real name and email are for internal use only and never shown to candidates.
+              Set your fee for a complete mock interview booking (includes 2 sessions).
             </AppText>
 
-            <View style={styles.infoRow}>
-              <View style={styles.infoIcon}>
-                <Ionicons name="person-outline" size={18} color={colors.primary} />
+            <View style={styles.inputGroup}>
+              <Label style={styles.inputLabel}>Price per Booking (INR)</Label>
+              <View style={styles.currencyInputContainer}>
+                <AppText style={styles.currencySymbol}>₹</AppText>
+                <Input
+                  value={sessionPrice}
+                  onChangeText={setSessionPrice}
+                  keyboardType="number-pad"
+                  placeholder="e.g. 2000"
+                  style={styles.currencyInput}
+                />
               </View>
-              <View style={styles.infoContent}>
-                <AppText style={styles.infoLabel}>Full Name</AppText>
-                <AppText style={styles.infoValue}>{profile?.full_name || 'Mentor'}</AppText>
-              </View>
-            </View>
-
-            {profile?.email && (
-              <View style={styles.infoRow}>
-                <View style={styles.infoIcon}>
-                  <Ionicons name="mail-outline" size={18} color={colors.primary} />
-                </View>
-                <View style={styles.infoContent}>
-                  <AppText style={styles.infoLabel}>Email Address</AppText>
-                  <AppText style={styles.infoValue}>{profile.email}</AppText>
-                </View>
-              </View>
-            )}
-
-            <View style={styles.privacyNotice}>
-              <Ionicons name="shield-checkmark" size={16} color={colors.success} />
-              <AppText style={styles.privacyText}>
-                This information is kept private and secure
-              </AppText>
             </View>
           </Card>
         </Section>
 
-        {/* Public profile card */}
+        {/* SECTION 2: INTERVIEW EXPERTISE */}
         <Section>
           <Card style={[styles.card, shadows.card as any]}>
             <View style={styles.cardHeader}>
-              <Ionicons name="eye-outline" size={20} color={colors.textTertiary} />
-              <Heading level={2} style={styles.cardTitle}>Public Profile</Heading>
-            </View>
-            <AppText style={styles.cardDescription}>
-              This information is visible to candidates browsing mentors
-            </AppText>
-
-            <View style={styles.inputGroup}>
-              <Label style={styles.inputLabel}>
-                <Ionicons name="briefcase-outline" size={14} color={colors.textSecondary} style={{ marginRight: 4 }} />
-                Professional Title
-              </Label>
-              <Input
-                value={professionalTitle}
-                onChangeText={setProfessionalTitle}
-                placeholder="e.g., Senior Engineering Manager at Google"
-                style={styles.input}
-              />
-              <AppText style={styles.inputHint}>
-                Your current role and company
-              </AppText>
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Label style={styles.inputLabel}>
-                <Ionicons name="document-text-outline" size={14} color={colors.textSecondary} style={{ marginRight: 4 }} />
-                About You
-              </Label>
-              <Input
-                value={experienceDescription}
-                onChangeText={setExperienceDescription}
-                placeholder="Describe your interview expertise and how you help candidates succeed..."
-                style={[styles.input, styles.textarea]}
-                multiline
-                numberOfLines={4}
-              />
-              <AppText style={styles.inputHint}>
-                What makes you a great mentor? What's your interview style?
-              </AppText>
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Label style={styles.inputLabel}>
-                <Ionicons name="time-outline" size={14} color={colors.textSecondary} style={{ marginRight: 4 }} />
-                Years of Experience
-              </Label>
-              <Input
-                value={yearsOfExperience}
-                onChangeText={setYearsOfExperience}
-                keyboardType="number-pad"
-                placeholder="e.g., 10"
-                style={[styles.input, { maxWidth: 120 }]}
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Label style={styles.inputLabel}>
-                <Ionicons name="create-outline" size={14} color={colors.textSecondary} style={{ marginRight: 4 }} />
-                Internal Notes (Optional)
-              </Label>
-              <Input
-                value={bio}
-                onChangeText={setBio}
-                placeholder="Additional background notes for your own reference..."
-                style={[styles.input, styles.textarea]}
-                multiline
-                numberOfLines={3}
-              />
-              <AppText style={styles.inputHint}>
-                Private notes, not shown to candidates
-              </AppText>
-            </View>
-          </Card>
-        </Section>
-
-        {/* Interview profiles card */}
-        <Section>
-          <Card style={[styles.card, shadows.card as any]}>
-            <View style={styles.cardHeader}>
-              <Ionicons name="checkmark-circle-outline" size={20} color={colors.textTertiary} />
+              <Ionicons name="ribbon-outline" size={20} color={colors.primary} />
               <Heading level={2} style={styles.cardTitle}>Interview Expertise</Heading>
             </View>
             <AppText style={styles.cardDescription}>
-              Select the roles you can conduct mock interviews for. Candidates will find you when searching for these profiles.
+              Select the roles you are qualified to interview.
             </AppText>
 
             {availableProfiles.length === 0 ? (
-              <View style={styles.emptyState}>
-                <Ionicons name="albums-outline" size={32} color={colors.textTertiary} />
-                <AppText style={styles.emptyText}>
-                  No interview profiles available yet. Contact the CrackJobs team to get set up.
-                </AppText>
-              </View>
+              <AppText style={styles.emptyText}>No profiles loaded.</AppText>
             ) : (
               <View style={styles.profilesGrid}>
                 {availableProfiles.map((p) => {
@@ -383,28 +251,86 @@ export default function MentorProfileScreen() {
                 })}
               </View>
             )}
+          </Card>
+        </Section>
 
-            <View style={styles.profilesFooter}>
-              <Ionicons name="information-circle-outline" size={16} color={colors.textTertiary} />
-              <AppText style={styles.profilesFooterText}>
-                Select all profiles you're comfortable interviewing for
-              </AppText>
+        {/* SECTION 3: PRIVATE DETAILS */}
+        <Section>
+          <Card style={[styles.card, shadows.card as any]}>
+            <View style={styles.cardHeader}>
+              <Ionicons name="lock-closed-outline" size={20} color={colors.textTertiary} />
+              <Heading level={2} style={styles.cardTitle}>Private Details</Heading>
+            </View>
+            
+            <View style={styles.infoRow}>
+                <View style={styles.infoContent}>
+                <AppText style={styles.infoLabel}>Full Name</AppText>
+                <AppText style={styles.infoValue}>{profile?.full_name || 'Mentor'}</AppText>
+                </View>
+            </View>
+
+            {profile?.email && (
+                <View style={styles.infoRow}>
+                <View style={styles.infoContent}>
+                    <AppText style={styles.infoLabel}>Email</AppText>
+                    <AppText style={styles.infoValue}>{profile.email}</AppText>
+                </View>
+                </View>
+            )}
+
+            <View style={styles.privacyNotice}>
+               <Ionicons name="shield-checkmark" size={14} color={colors.success} />
+               <AppText style={styles.privacyText}>
+                 Not visible to candidates
+               </AppText>
             </View>
           </Card>
         </Section>
 
-        {/* Save button */}
+        {/* SECTION 4: PUBLIC PROFILE */}
+        <Section>
+          <Card style={[styles.card, shadows.card as any]}>
+            <View style={styles.cardHeader}>
+              <Ionicons name="id-card-outline" size={20} color={colors.textTertiary} />
+              <Heading level={2} style={styles.cardTitle}>Public Profile</Heading>
+            </View>
+            <AppText style={styles.cardDescription}>
+               Basic information shown on your mentor card.
+            </AppText>
+
+            <View style={styles.inputGroup}>
+              <Label style={styles.inputLabel}>Professional Title</Label>
+              <Input
+                value={professionalTitle}
+                onChangeText={setProfessionalTitle}
+                placeholder="e.g., Sr Product Manager at TechCorp"
+                style={styles.input}
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Label style={styles.inputLabel}>Years of Experience</Label>
+              <Input
+                value={yearsOfExperience}
+                onChangeText={setYearsOfExperience}
+                keyboardType="number-pad"
+                placeholder="e.g., 8"
+                style={[styles.input, { maxWidth: 100 }]}
+              />
+            </View>
+          </Card>
+        </Section>
+
+        {/* Save Button */}
         <Section>
           <Button
-            title={saving ? 'Saving Changes…' : 'Save Profile'}
+            title={saving ? 'Saving...' : 'Save Settings'}
             onPress={handleSave}
-            disabled={saving || !mentorId}
+            disabled={saving}
             style={styles.saveButton}
           />
-          <AppText style={styles.saveHint}>
-            Remember to save your changes before leaving this page
-          </AppText>
         </Section>
+
       </ScrollView>
     </ScreenBackground>
   );
@@ -418,13 +344,11 @@ const styles = StyleSheet.create({
   },
   headerIcon: {
     marginBottom: spacing.sm,
+    backgroundColor: 'rgba(14,147,132,0.1)',
+    width: 60, height: 60,
+    borderRadius: 30,
+    alignItems: 'center', justifyContent: 'center'
   },
-  headerSub: {
-    color: colors.textSecondary,
-    marginTop: spacing.xs,
-    textAlign: 'center',
-  },
-
   card: {
     padding: spacing.lg,
     borderRadius: borderRadius.lg,
@@ -441,93 +365,89 @@ const styles = StyleSheet.create({
   cardDescription: {
     color: colors.textSecondary,
     fontSize: typography.size.sm,
-    lineHeight: 20,
     marginBottom: spacing.md,
   },
-
-  infoRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    padding: spacing.md,
-    backgroundColor: colors.backgroundSecondary,
-    borderRadius: borderRadius.md,
-    marginTop: spacing.sm,
-  },
-  infoIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(14,147,132,0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: spacing.sm,
-  },
-  infoContent: {
-    flex: 1,
-  },
-  infoLabel: {
-    fontSize: typography.size.xs,
-    color: colors.textTertiary,
-    marginBottom: 2,
-  },
-  infoValue: {
-    fontSize: typography.size.md,
-    fontWeight: '600',
-    color: colors.textPrimary,
-  },
-
-  privacyNotice: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    marginTop: spacing.md,
-    padding: spacing.sm,
-    backgroundColor: 'rgba(16,185,192,0.08)',
-    borderRadius: borderRadius.sm,
-  },
-  privacyText: {
-    fontSize: typography.size.xs,
-    color: colors.success,
-    fontWeight: '500',
-  },
-
+  
+  // Inputs
   inputGroup: {
-    marginBottom: spacing.lg,
+    marginBottom: spacing.md,
   },
   inputLabel: {
-    flexDirection: 'row',
-    alignItems: 'center',
     marginBottom: spacing.xs,
+    color: colors.textSecondary,
   },
   input: {
     marginTop: 0,
   },
-  textarea: {
-    height: 100,
-    paddingTop: spacing.sm,
+  
+  // Currency
+  currencyInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  inputHint: {
-    fontSize: typography.size.xs,
-    color: colors.textTertiary,
-    marginTop: spacing.xs,
+  currencySymbol: {
+    fontSize: typography.size.lg,
+    fontWeight: '600',
+    color: colors.textPrimary,
+    marginRight: spacing.sm,
+  },
+  currencyInput: {
+    flex: 1,
+    marginTop: 0,
   },
 
+  // Info Rows (Private)
+  infoRow: {
+    paddingVertical: spacing.xs,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    marginBottom: spacing.sm,
+  },
+  infoContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  infoLabel: {
+    fontSize: typography.size.sm,
+    color: colors.textTertiary,
+  },
+  infoValue: {
+    fontSize: typography.size.md,
+    fontWeight: '500',
+    color: colors.textPrimary,
+  },
+  privacyNotice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginTop: spacing.sm,
+    backgroundColor: '#f0fdf4',
+    padding: spacing.xs,
+    borderRadius: borderRadius.sm,
+    alignSelf: 'flex-start'
+  },
+  privacyText: {
+    fontSize: typography.size.xs,
+    color: colors.success,
+  },
+
+  // Profiles Grid
   profilesGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.sm,
-    marginTop: spacing.sm,
   },
   profileCard: {
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: borderRadius.md,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
+    borderRadius: borderRadius.full, // Pill shape
+    paddingVertical: 8,
+    paddingHorizontal: 16,
     backgroundColor: colors.background,
   },
   profileCardSelected: {
-    backgroundColor: 'rgba(14,147,132,0.08)',
+    backgroundColor: colors.primary,
     borderColor: colors.primary,
   },
   profileCardContent: {
@@ -536,60 +456,25 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   profileCheckbox: {
-    width: 20,
-    height: 20,
-    borderRadius: 4,
-    borderWidth: 2,
-    borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
+    display: 'none',
   },
   profileCheckboxSelected: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
+    display: 'flex', 
   },
   profileName: {
     fontSize: typography.size.sm,
-    fontWeight: '500',
     color: colors.textSecondary,
   },
   profileNameSelected: {
-    color: colors.primary,
+    color: 'white',
     fontWeight: '600',
   },
-
-  profilesFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    marginTop: spacing.md,
-    padding: spacing.sm,
-    backgroundColor: colors.backgroundSecondary,
-    borderRadius: borderRadius.sm,
-  },
-  profilesFooterText: {
-    flex: 1,
-    fontSize: typography.size.xs,
-    color: colors.textTertiary,
-  },
-
-  emptyState: {
-    alignItems: 'center',
-    padding: spacing.xl,
-  },
   emptyText: {
-    marginTop: spacing.sm,
-    color: colors.textSecondary,
-    textAlign: 'center',
+    color: colors.textTertiary,
+    fontStyle: 'italic',
   },
 
   saveButton: {
     marginTop: spacing.sm,
-  },
-  saveHint: {
-    marginTop: spacing.sm,
-    fontSize: typography.size.xs,
-    color: colors.textTertiary,
-    textAlign: 'center',
   },
 });
