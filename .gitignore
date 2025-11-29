@@ -25,14 +25,7 @@ ios/
 .DS_Store
 Thumbs.db
 
-# editor
+# editor / IDE
 .vscode/
 .idea/
-
-.vs/
-
-.vs/
-
-.vs/
-
 .vs/
