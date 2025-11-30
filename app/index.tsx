@@ -96,7 +96,7 @@ export default function LandingPage() {
   useEffect(() => {
     const animateEyes = () => {
       const randomMove = () => {
-        const maxMove = 10;
+        const maxMove = 5;
         const makeTwitch = (xVal: Animated.Value, yVal: Animated.Value) => {
           const toX = (Math.random() - 0.5) * maxMove;
           const toY = (Math.random() - 0.5) * maxMove;
@@ -553,7 +553,7 @@ const styles = StyleSheet.create({
     gap: 24,
   },
   heroCardMobile: {
-    padding: 28,
+    padding: 8,
     flexDirection: 'column',
     alignItems: 'center',
     paddingRight: 28, // Reset padding for mobile
@@ -624,8 +624,8 @@ const styles = StyleSheet.create({
     height: 210,
     position: 'relative', // Mobile keeps relative positioning
     marginTop: 24,
-        right: 0, // Align to right
-        bottom: -40, // Align to bottom
+        right: -10, // Align to right
+        bottom: 20, // Align to bottom
   },
 
   // Section headings
