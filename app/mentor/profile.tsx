@@ -105,17 +105,30 @@ export default function MentorProfileScreen() {
   };
 
   const handleSave = async () => {
-    if (!profile?.id) return;
+    console.log('[handleSave] Starting save process...');
+    
+    if (!profile?.id) {
+      console.error('[handleSave] No profile ID found in store.');
+      setBanner({ type: 'error', message: 'User session not found.' });
+      return;
+    }
 
-    const yrs = yearsOfExperience.trim() ? Number(yearsOfExperience.trim()) : null;
-    const price = sessionPrice.trim() ? Number(sessionPrice.trim()) : null;
+    // Validation inputs
+    const yrsInput = yearsOfExperience.trim();
+    const priceInput = sessionPrice.trim();
+    console.log('[handleSave] Raw inputs:', { yrsInput, priceInput, professionalTitle, selectedProfiles });
+
+    const yrs = yrsInput ? Number(yrsInput) : null;
+    const price = priceInput ? Number(priceInput) : null;
 
     if (yrs != null && (isNaN(yrs) || yrs < 0 || yrs > 60)) {
+      console.warn('[handleSave] Invalid years of experience:', yrs);
       setBanner({ type: 'error', message: 'Enter a valid years of experience (0-60).' });
       return;
     }
     
     if (price != null && (isNaN(price) || price < 0)) {
+        console.warn('[handleSave] Invalid price:', price);
         setBanner({ type: 'error', message: 'Price cannot be negative.' });
         return;
     }
@@ -123,29 +136,36 @@ export default function MentorProfileScreen() {
     try {
       setSaving(true);
 
+      const payload = {
+        id: profile.id, // The PK is the user's ID
+        professional_title: professionalTitle.trim() || null,
+        years_of_experience: yrs,
+        profile_ids: selectedProfiles,
+        session_price_inr: price,
+        updated_at: new Date(),
+      };
+
+      console.log('[handleSave] Sending upsert payload to Supabase:', payload);
+
       // Upsert: Create or Update based on 'id'
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('mentors')
-        .upsert({
-          id: profile.id, // The PK is the user's ID
-          professional_title: professionalTitle.trim() || null,
-          years_of_experience: yrs,
-          profile_ids: selectedProfiles,
-          session_price_inr: price,
-          updated_at: new Date(),
-        });
+        .upsert(payload)
+        .select(); // Selecting returned data can help verify the write
 
       if (error) {
-        console.log('[mentor/profile] save error', error);
-        setBanner({ type: 'error', message: 'Could not save profile.' });
+        console.error('[handleSave] Supabase upsert error:', error);
+        setBanner({ type: 'error', message: 'Could not save profile: ' + error.message });
       } else {
+        console.log('[handleSave] Success! Returned data:', data);
         setBanner({ type: 'success', message: 'Profile saved successfully.' });
       }
-    } catch (e) {
-      console.log('[mentor/profile] unexpected save error', e);
-      setBanner({ type: 'error', message: 'Unexpected error while saving.' });
+    } catch (e: any) {
+      console.error('[handleSave] Unexpected exception:', e);
+      setBanner({ type: 'error', message: 'Unexpected error while saving: ' + e.message });
     } finally {
       setSaving(false);
+      console.log('[handleSave] Process finished.');
     }
   };
 
