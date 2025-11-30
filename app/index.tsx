@@ -438,7 +438,7 @@ export default function LandingPage() {
           <View style={styles.howCtaWrapper}>
             <TouchableOpacity
               style={styles.howCta}
-              onPress={() => router.push('/auth-sign-up')}
+              onPress={() => router.push('/auth/sign-up')}
             >
               <Text style={styles.howCtaText}>Get started</Text>
             </TouchableOpacity>
