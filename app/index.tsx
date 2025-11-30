@@ -171,8 +171,8 @@ export default function LandingPage() {
     <>
       <Head>
         <title>
-          Mock Interviews for Product Manager, Data Analyst, Data Scientist &
-          HR | CrackJobs
+          CrackJobs | Mock Interviews for Product Manager, Data Analyst, Data Scientist &
+          HR
         </title>
         <meta
           name="description"
@@ -438,7 +438,7 @@ export default function LandingPage() {
           <View style={styles.howCtaWrapper}>
             <TouchableOpacity
               style={styles.howCta}
-              onPress={() => router.push('/auth-sign-up')}
+              onPress={() => router.push('/auth/sign-up')}
             >
               <Text style={styles.howCtaText}>Get started</Text>
             </TouchableOpacity>
