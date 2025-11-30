@@ -41,16 +41,113 @@ export default function SignInScreen() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
+  /**
+   * Shared logic after a successful auth (email/password or OAuth).
+   * - Fetches user profile
+   * - Determines role (admin / mentor / candidate)
+   * - Loads mentor/candidate entities
+   * - Sets store
+   * - Routes to correct dashboard
+   */
+  const handlePostAuth = async (user: any, session: any) => {
+    if (!user || !session) {
+      showNotification('Login failed: missing session information', 'error');
+      return;
+    }
+
+    try {
+      let profile = await authService.getUserProfileById(user.id);
+
+      if (profile) {
+        const roleLower = (profile.role || '').toLowerCase().trim();
+
+        // --- ADMIN FLOW ---
+        if (roleLower === 'admin' || profile.is_admin) {
+          setUser(user);
+          setSession(session);
+          setProfile(profile as any);
+          showNotification('Welcome back, Admin!', 'success');
+          router.replace('/admin');
+          return;
+        }
+
+        // --- MENTOR FLOW ---
+        if (roleLower === 'mentor') {
+          const m = await mentorService.getMentorById(user.id);
+
+          if (!m || !m.status || m.status !== 'approved') {
+            showNotification('Your mentor application is still being reviewed', 'error');
+            await authService.signOut();
+            router.replace('/mentor/under-review');
+            return;
+          }
+
+          setUser(user);
+          setSession(session);
+          setProfile(profile as any);
+          setMentorProfile(m ?? null);
+          showNotification('Welcome back!', 'success');
+          router.replace('/mentor/bookings');
+          return;
+        }
+
+        // --- DEFAULT: CANDIDATE FLOW ---
+        const c = await candidateService.getCandidateById(user.id);
+        setUser(user);
+        setSession(session);
+        setProfile(profile as any);
+        setCandidateProfile(c ?? null);
+        showNotification('Welcome back!', 'success');
+        router.replace('/candidate');
+      } else {
+        // No profile row yet, treat as candidate by default
+        setUser(user);
+        setSession(session);
+        showNotification('Welcome!', 'success');
+        router.replace('/candidate');
+      }
+    } catch (err: any) {
+      console.error('[SignIn] handlePostAuth error:', err);
+      showNotification(err.message || 'Something went wrong after sign in', 'error');
+    }
+  };
+
   // --- OAUTH HANDLER ---
   const handleOAuthSignIn = async (provider: 'google' | 'linkedin_oidc') => {
     try {
       setLoading(true);
-      const { error } = await authService.signInWithOAuth(provider);
+
+      // Expectation: authService.signInWithOAuth should, after successful OAuth,
+      // resolve with { user, session, error } similar to email/password.
+      const result: any = await authService.signInWithOAuth(provider);
+
+      // If your current implementation *only* redirects (no return),
+      // you can safely keep the old behaviour and handle post-auth
+      // in your OAuth callback screen instead.
+      if (!result || (result && !result.user && !result.session && !result.error)) {
+        // Fallback to old behaviour: just rely on redirect / callback handling.
+        // Remove this block once signInWithOAuth is updated to return user+session.
+        return;
+      }
+
+      const { user, session, error } = result;
+
       if (error) {
         showNotification(error.message, 'error');
+        return;
       }
+
+      if (!user || !session) {
+        showNotification('OAuth sign-in failed: no user/session returned', 'error');
+        return;
+      }
+
+      // ✅ Same post-login behaviour as email/password:
+      await handlePostAuth(user, session);
+
     } catch (err: any) {
-      showNotification(err.message, 'error');
+      console.error('[SignIn] handleOAuthSignIn error:', err);
+      showNotification(err.message || 'OAuth sign-in failed', 'error');
     } finally {
       setLoading(false);
     }
@@ -73,53 +170,11 @@ export default function SignInScreen() {
         return;
       }
 
-      let profile = await authService.getUserProfileById(user.id);
-      
-      if (profile) {
-        const roleLower = (profile.role || '').toLowerCase().trim();
-        
-        if (roleLower === 'admin' || profile.is_admin) { 
-             setUser(user);
-             setSession(session);
-             setProfile(profile as any);
-             showNotification('Welcome back, Admin!', 'success');
-             router.replace('/admin'); 
-             return;
-        }
-
-        if (roleLower === 'mentor') {
-            const m = await mentorService.getMentorById(user.id);
-            if (!m || !m.status || m.status !== 'approved') {
-                showNotification('Your mentor application is still being reviewed', 'error');
-                await authService.signOut();
-                setLoading(false);
-                router.replace('/mentor/under-review');
-                return;
-            }
-            setUser(user);
-            setSession(session);
-            setProfile(profile as any);
-            setMentorProfile(m ?? null);
-            showNotification('Welcome back!', 'success');
-            router.replace('/mentor/bookings');
-            
-        } else {
-            const c = await candidateService.getCandidateById(user.id);
-            setUser(user);
-            setSession(session);
-            setProfile(profile as any);
-            setCandidateProfile(c ?? null);
-            showNotification('Welcome back!', 'success');
-            router.replace('/candidate');
-        }
-      } else {
-        setUser(user);
-        setSession(session);
-        showNotification('Welcome!', 'success');
-        router.replace('/candidate');
-      }
+      // ✅ Reuse same flow for role detection + routing:
+      await handlePostAuth(user, session);
 
     } catch (err: any) {
+      console.error('[SignIn] handleSignIn error:', err);
       showNotification(err.message, 'error');
     } finally {
       setLoading(false);
@@ -127,21 +182,22 @@ export default function SignInScreen() {
   };
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.container}>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      style={styles.container}
+    >
       <ScrollView 
         contentContainerStyle={styles.scrollContent} 
         showsVerticalScrollIndicator={false}
       >
-        
         {/* Wrapper to Center Form vertically */}
         <View style={styles.formWrapper}>
           <View style={styles.content}>
-            
             <BrandHeader />
 
             <View style={styles.spacer} />
 
-            <View style={styles.section}>
+            <View className="section">
               <Text style={styles.label}>EMAIL ADDRESS</Text>
               <TextInput
                 style={styles.input}
@@ -166,26 +222,22 @@ export default function SignInScreen() {
               />
             </View>
 
-            <TouchableOpacity onPress={handleSignIn} disabled={loading} style={styles.signInButton}>
-              {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.signInButtonText}>Sign In</Text>}
+            <TouchableOpacity
+              onPress={handleSignIn}
+              disabled={loading}
+              style={styles.signInButton}
+            >
+              {loading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.signInButtonText}>Sign In</Text>
+              )}
             </TouchableOpacity>
 
             <View style={styles.dividerContainer}>
               <View style={styles.dividerLine} />
               <Text style={styles.dividerText}>Or continue with</Text>
               <View style={styles.dividerLine} />
-            </View>
-
-            <View style={styles.socialRow}>
-              <TouchableOpacity style={styles.socialBtn} onPress={() => handleOAuthSignIn('google')}>
-                <AntDesign name="google" size={24} color="#DB4437" />
-                <Text style={styles.socialBtnText}>Google</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.socialBtn} onPress={() => handleOAuthSignIn('linkedin_oidc')}>
-                <AntDesign name="linkedin-square" size={24} color="#0077B5" />
-                <Text style={styles.socialBtnText}>LinkedIn</Text>
-              </TouchableOpacity>
             </View>
 
             <View style={styles.authFooter}>
@@ -201,7 +253,6 @@ export default function SignInScreen() {
 
         {/* Sticky Footer at bottom, full width */}
         {isWeb && <Footer />}
-
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -226,7 +277,7 @@ const styles = StyleSheet.create({
     padding: 24, 
     maxWidth: 400, 
     width: '100%',
-    backgroundColor: 'transparent', // Ensure no white box artifact
+    backgroundColor: 'transparent',
   },
   
   spacer: { marginBottom: 24 },
@@ -240,13 +291,36 @@ const styles = StyleSheet.create({
     color: '#334155' 
   },
   
-  input: { borderWidth: 1, borderColor: '#d1d5db', borderRadius: 10, padding: 12, backgroundColor: '#fff' },
-  signInButton: { backgroundColor: '#0E9384', borderRadius: 999, alignItems: 'center', padding: 14, marginTop: 8 },
+  input: {
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 10,
+    padding: 12,
+    backgroundColor: '#fff',
+  },
+
+  signInButton: {
+    backgroundColor: '#0E9384',
+    borderRadius: 999,
+    alignItems: 'center',
+    padding: 14,
+    marginTop: 8,
+  },
   signInButtonText: { color: '#fff', fontWeight: '700' },
 
-  dividerContainer: { flexDirection: 'row', alignItems: 'center', marginVertical: 24 },
+  dividerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 24,
+  },
   dividerLine: { flex: 1, height: 1, backgroundColor: '#E2E8F0' },
-  dividerText: { marginHorizontal: 12, color: '#94A3B8', fontSize: 12, fontWeight: '500' },
+  dividerText: {
+    marginHorizontal: 12,
+    color: '#94A3B8',
+    fontSize: 12,
+    fontWeight: '500',
+  },
+
   socialRow: { flexDirection: 'row', gap: 12, marginBottom: 16 },
   socialBtn: { 
     flex: 1, 
@@ -258,12 +332,16 @@ const styles = StyleSheet.create({
     borderWidth: 1, 
     borderColor: '#E2E8F0', 
     gap: 8,
-    backgroundColor: '#fff' 
+    backgroundColor: '#fff',
   },
   socialBtnText: { fontWeight: '600', color: '#334155' },
 
   // Internal footer for "Sign Up" link
-  authFooter: { flexDirection: 'row', justifyContent: 'center', marginTop: 16 },
+  authFooter: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 16,
+  },
   authFooterText: { color: '#6b7280' },
   authFooterLink: { color: '#0E9384', fontWeight: '700' },
 });

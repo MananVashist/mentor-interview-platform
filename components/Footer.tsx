@@ -16,11 +16,13 @@ export const Footer = () => {
     <View style={styles.footer} accessibilityRole="contentinfo">
       <View style={[styles.footerContent, isSmall && styles.footerContentMobile]}>
         
+        {/* --- ADDED HOME LINK --- */}
         <TouchableOpacity onPress={() => router.push('/')} accessibilityRole="link">
           <Text style={styles.footerLink}>Home</Text>
         </TouchableOpacity>
 
         <Separator />
+        {/* --- END ADDITION --- */}
 
         <TouchableOpacity onPress={() => router.push('/how-it-works')} accessibilityRole="link">
           <Text style={styles.footerLink}>How It Works</Text>
@@ -48,6 +50,12 @@ export const Footer = () => {
 
         <TouchableOpacity onPress={() => router.push('/privacy')} accessibilityRole="link">
           <Text style={styles.footerLink}>Privacy Policy</Text>
+        </TouchableOpacity>
+
+        <Separator />
+
+        <TouchableOpacity onPress={() => router.push('/cancellation-policy')} accessibilityRole="link">
+          <Text style={styles.footerLink}>Cancellation Policy</Text>
         </TouchableOpacity>
 
         <Separator />
@@ -86,11 +94,10 @@ const styles = StyleSheet.create({
     fontSize: 14, 
     textDecorationLine: 'none' 
   },
-  // 🟢 We draw the dot manually using CSS styles instead of a text character
   dotSeparator: {
     width: 4,
     height: 4,
-    borderRadius: 2, // Makes it a perfect circle
+    borderRadius: 2,
     backgroundColor: '#666',
   },
 });
