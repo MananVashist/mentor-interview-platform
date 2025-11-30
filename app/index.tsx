@@ -171,8 +171,8 @@ export default function LandingPage() {
     <>
       <Head>
         <title>
-          Mock Interviews for Product Manager, Data Analyst, Data Scientist &
-          HR | CrackJobs
+          CrackJobs | Mock Interviews for Product Manager, Data Analyst, Data Scientist &
+          HR
         </title>
         <meta
           name="description"
