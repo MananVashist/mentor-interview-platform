@@ -387,7 +387,8 @@ export default function LandingPage() {
         </View>
 
         {/* How it works (Punchy, less body text) */}
-        <View style={styles.howSection}>
+        <View style={styles.featuresSection}>
+          <Text style={styles.sectionKicker}>Easy as 1-2-3</Text>
           <Text
             style={[
               styles.sectionTitle,
@@ -398,53 +399,33 @@ export default function LandingPage() {
           </Text>
           <View
             style={[
-              styles.stepsGrid,
-              isSmall && styles.stepsGridMobile,
+              styles.featuresGrid,
+              isSmall && styles.featuresGridMobile,
             ]}
           >
-            <View style={styles.stepCard}>
-              <View style={styles.stepBadge}>
-                <Text style={styles.stepBadgeText}>1</Text>
-              </View>
-              <Text style={styles.stepTitle}>
-                Book Your Mentor
-              </Text>
-              <Text style={styles.stepBody}>
-                Choose a mentor, select 2 time slots, and complete payment in a single flow.
+            <View style={styles.featureCard}>
+              <Text style={styles.featureIcon}>1️⃣</Text> {/* Simplified icon */}
+              <Text style={styles.featureTitle}>Browse and Book</Text>
+              <Text style={styles.featureBody}>
+                Browse a list of available mentors to find an interviewer aligned with your needs
               </Text>
             </View>
-            <View style={styles.stepCard}>
-              <View style={styles.stepBadge}>
-                <Text style={styles.stepBadgeText}>2</Text>
-              </View>
-              <Text style={styles.stepTitle}>
-                Attend 2 Rounds
-              </Text>
-              <Text style={styles.stepBody}>
-                Join a video meeting and experience a real interview environment.
+            <View style={styles.featureCard}>
+              <Text style={styles.featureIcon}>2️⃣</Text> {/* Simplified icon */}
+              <Text style={styles.featureTitle}>Attend mock interview</Text>
+              <Text style={styles.featureBody}>
+                Schedule and attend the mock interview through the platform. 
               </Text>
             </View>
-            <View style={styles.stepCard}>
-              <View style={styles.stepBadge}>
-                <Text style={styles.stepBadgeText}>3</Text>
-              </View>
-              <Text style={styles.stepTitle}>Get Detailed Feedback</Text>
-              <Text style={styles.stepBody}>
-                Receive written scores and actionable next steps.
+            <View style={styles.featureCard}>
+              <Text style={styles.featureIcon}>3️⃣</Text> {/* Simplified icon */}
+              <Text style={styles.featureTitle}>Get detailed feedback</Text>
+              <Text style={styles.featureBody}>
+                Mentors will provide you with detailed feedback after the session based on standard templates. No AI, No BS. 
               </Text>
             </View>
-          </View>
-
-          <View style={styles.howCtaWrapper}>
-            <TouchableOpacity
-              style={styles.howCta}
-              onPress={() => router.push('/auth/sign-up')}
-            >
-              <Text style={styles.howCtaText}>Get started</Text>
-            </TouchableOpacity>
           </View>
         </View>
-
         {/* Footer */}
         <Footer />
       </ScrollView>
