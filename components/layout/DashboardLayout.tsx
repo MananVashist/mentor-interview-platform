@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { 
   View, 
   Text, 
@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { theme } from '@/lib/theme'; // Ensure this path is correct
+import { theme } from '@/lib/theme'; 
 
 const CTA_TEAL = '#18a7a7';
 
@@ -23,10 +23,10 @@ type MenuItem = {
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
-  userProfile: any; // Replace with your Profile type
+  userProfile: any;
   menuItems: MenuItem[];
   onSignOut: () => void;
-  brandSubtitle?: string; // e.g., "Mentor" or "Candidate"
+  brandSubtitle?: string;
 }
 
 export function DashboardLayout({ 
@@ -56,11 +56,19 @@ export function DashboardLayout({
           </View>
         </TouchableOpacity>
         
+        {/* --- WELCOME SECTION --- */}
         <View style={styles.welcomeContainer}>
-          <Text style={styles.welcomeLabel}>Welcome back,</Text>
-          <Text style={styles.welcomeName} numberOfLines={1}>
-            {userProfile?.full_name?.split(' ')[0] || 'User'}
-          </Text>
+          <View style={styles.avatarCircle}>
+            <Text style={styles.avatarText}>
+              {userProfile?.full_name ? userProfile.full_name[0].toUpperCase() : 'U'}
+            </Text>
+          </View>
+          <View style={styles.welcomeTextGroup}>
+            <Text style={styles.welcomeLabel}>Welcome back,</Text>
+            <Text style={styles.welcomeName} numberOfLines={1}>
+              {userProfile?.full_name?.split(' ')[0] || 'User'}
+            </Text>
+          </View>
         </View>
       </View>
 
@@ -71,8 +79,24 @@ export function DashboardLayout({
           showsVerticalScrollIndicator={false}
         >
           {menuItems.map((item) => {
-            // Check if active (handle sub-routes if needed)
-            const active = pathname === item.path || pathname.startsWith(`${item.path}/`);
+            // 🧠 SMART ACTIVE LOGIC 🧠
+            // 1. Is it an exact match?
+            const isExact = pathname === item.path;
+            
+            // 2. Is it a sub-path? (e.g. /candidate/123 starts with /candidate)
+            const isSub = pathname.startsWith(`${item.path}/`);
+
+            // 3. Is there a "better" match? 
+            // (e.g. if we are on /candidate/profile, "Profile" is a better match than "Candidate")
+            const betterMatchExists = menuItems.some(other => 
+              other.path !== item.path && 
+              pathname.startsWith(other.path) && 
+              other.path.length > item.path.length
+            );
+
+            // Active if: Exact match OR (Sub-path AND no better match exists)
+            const active = isExact || (isSub && !betterMatchExists);
+
             return (
               <TouchableOpacity
                 key={item.path}
@@ -201,23 +225,47 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     ...(Platform.OS === 'web' && { WebkitTextStroke: `0.5px ${CTA_TEAL}` })
   },
+  
+  // Welcome Styles
   welcomeContainer: {
-    marginTop: 24,
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
+    marginTop: 32,
+    paddingHorizontal: 20,
+    width: '100%',
+    gap: 12,
+  },
+  avatarCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: theme.colors.pricing.greenBg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: theme.colors.primary,
+  },
+  avatarText: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: theme.colors.primary,
+    fontFamily: theme.typography.fontFamily.bold,
+  },
+  welcomeTextGroup: {
+    flex: 1,
   },
   welcomeLabel: {
-    fontSize: 22,
+    fontSize: 12,
     color: theme.colors.text.light,
     fontFamily: theme.typography.fontFamily.medium,
-    marginBottom: 4,
-    textAlign: 'center',
+    marginBottom: 2,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   welcomeName: { 
-    fontFamily: theme.typography.fontFamily.medium,
-    color: theme.colors.text.body,
+    fontFamily: theme.typography.fontFamily.bold,
+    color: theme.colors.text.main,
     fontSize: 16,
-    textAlign: 'center',
   },
 
   // Navigation
@@ -227,7 +275,7 @@ const styles = StyleSheet.create({
   },
   menuScrollContent: { 
     paddingHorizontal: 16, 
-    paddingTop: 32, 
+    paddingTop: 24, 
     paddingBottom: 20,
     gap: 4 
   },

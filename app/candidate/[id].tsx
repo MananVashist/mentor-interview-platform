@@ -13,7 +13,6 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { AppText } from "@/lib/ui"; 
 import { supabase } from "@/lib/supabase/client";
-import { calculateMentorTier } from "@/lib/logic";
 import { theme } from "@/lib/theme";
 
 export default function MentorDetailsScreen() {
@@ -29,10 +28,10 @@ export default function MentorDetailsScreen() {
       if (!id || id === 'schedule') return; 
 
       try {
-        // 1. UPDATE: Fetch 'profile_ids' alongside 'expertise_profiles'
+        // 1. UPDATE: Fetch 'years_of_experience'
         const { data, error } = await supabase
           .from('mentors')
-          .select('session_price_inr, professional_title, experience_description, expertise_profiles, profile_ids, total_sessions, profile:profiles(*)')
+          .select('session_price_inr, professional_title, experience_description, expertise_profiles, profile_ids, years_of_experience, profile:profiles(*)')
           .eq('id', id)
           .single();
           
@@ -42,16 +41,19 @@ export default function MentorDetailsScreen() {
             const basePrice = data.session_price_inr || 1000;
             const totalPrice = Math.round(basePrice * 1.2);
             
-            const tier = calculateMentorTier(data.total_sessions);
-            const levelLabel = tier === 'New' ? "NEW MENTOR" : `${tier.toUpperCase()} MENTOR`;
+            // 2. LOGIC: Fallback description
+            const profilesList = data.expertise_profiles?.join(", ") || "Tech";
+            const aboutText = data.experience_description 
+              ? data.experience_description 
+              : `Specializes in ${profilesList} interviews.`;
 
             setMentor({
                 id: id, 
                 title: data.professional_title || "Senior Interviewer",
-                level: levelLabel,
-                about: data.experience_description || "No description provided.",
+                exp: data.years_of_experience, // Store Experience
+                about: aboutText,
                 expertise: data.expertise_profiles || ["Software Engineer"],
-                profileIds: data.profile_ids || [], // 2. STORE: Save IDs array
+                profileIds: data.profile_ids || [], 
                 totalPrice: totalPrice,
                 avatarChar: data.profile?.full_name?.charAt(0) || 'M'
             });
@@ -76,8 +78,6 @@ export default function MentorDetailsScreen() {
       return;
     }
 
-    // 3. LOGIC: Find the ID corresponding to the selected name
-    // We assume expertise_profiles and profile_ids are aligned by index
     const index = mentor.expertise.indexOf(selectedProfile);
     const selectedId = mentor.profileIds[index];
 
@@ -85,8 +85,8 @@ export default function MentorDetailsScreen() {
         pathname: '/candidate/schedule',
         params: { 
             mentorId: id,
-            profileName: selectedProfile, // Name for display
-            profileId: selectedId,        // ID for Database
+            profileName: selectedProfile, 
+            profileId: selectedId,        
             price: mentor.totalPrice
         } 
     });
@@ -116,10 +116,14 @@ export default function MentorDetailsScreen() {
             </View>
             <View style={{ flex: 1 }}>
                 <AppText style={styles.headerTitle}>{mentor.title}</AppText>
-                <View style={styles.badge}>
-                    <Ionicons name="trophy" size={10} color={theme.colors.badge.bronze.text} style={{ marginRight: 4 }} />
-                    <AppText style={styles.badgeText}>{mentor.level}</AppText>
-                </View>
+                
+                {/* 3. UI: Updated Badge to show Years of Exp */}
+                {mentor.exp != null && (
+                  <View style={styles.badge}>
+                      <Ionicons name="briefcase" size={10} color={theme.colors.text.body} style={{ marginRight: 4 }} />
+                      <AppText style={styles.badgeText}>{mentor.exp} Years Exp</AppText>
+                  </View>
+                )}
             </View>
           </View>
           
@@ -212,8 +216,8 @@ const styles = StyleSheet.create({
   avatarPlaceholder: { width: 56, height: 56, borderRadius: 28, backgroundColor: theme.colors.primary, alignItems: "center", justifyContent: "center" },
   avatarText: { fontSize: 24, fontWeight: "700", color: "#FFF" },
   headerTitle: { fontSize: 20, fontWeight: "800", color: theme.colors.text.main, marginBottom: 6 },
-  badge: { flexDirection: "row", alignItems: "center", backgroundColor: theme.colors.badge.bronze.bg, borderWidth: 1, borderColor: theme.colors.badge.bronze.border, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, alignSelf: "flex-start" },
-  badgeText: { fontSize: 10, fontWeight: "800", color: theme.colors.badge.bronze.text, letterSpacing: 0.5, textTransform: "uppercase" },
+  badge: { flexDirection: "row", alignItems: "center", backgroundColor: theme.colors.gray[100], borderWidth: 0, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, alignSelf: "flex-start" },
+  badgeText: { fontSize: 11, fontWeight: "700", color: theme.colors.text.body, letterSpacing: 0.5 },
   divider: { height: 1, backgroundColor: theme.colors.border, marginBottom: 16 },
   sectionHeader: { flexDirection: "row", alignItems: "center", marginBottom: 12 },
   sectionTitle: { fontSize: 16, fontWeight: "700", color: theme.colors.text.main },

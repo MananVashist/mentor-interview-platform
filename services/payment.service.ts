@@ -38,12 +38,14 @@ export const paymentService = {
   /**
    * Creates the booking package.
    * Uses interviewProfileId for database normalization.
+   * * UPDATED: Fetches price from DB source of truth.
+   * - Mentor Payout = session_price_inr
+   * - Total Price = session_price_inr * 1.2
    */
   async createPackage(
     candidateId: string,
     mentorId: string,
     interviewProfileId: number, // <--- ID Linking to interview_profiles_admin
-    totalPrice: number,
     selectedSlots: string[]
   ) {
     console.log(`🔵 Creating Booking Package (Razorpay Enabled: ${ENABLE_RAZORPAY})...`);
@@ -51,21 +53,37 @@ export const paymentService = {
     // 1. PRE-CHECK: Ensure no double booking occurred
     await this.checkBookingConflict(mentorId, selectedSlots);
 
-    // Calculate splits explicitly
-    const platformFee = Math.round(totalPrice * 0.2); // 20% platform fee
-    const mentorPayout = totalPrice - platformFee;
+    // 2. FETCH PRICING: Get the mentor's base session price
+    const { data: mentorData, error: mentorError } = await supabase
+      .from('mentors')
+      .select('session_price_inr')
+      .eq('id', mentorId)
+      .single();
+
+    if (mentorError || !mentorData) {
+      console.error("❌ Failed to fetch mentor pricing:", mentorError);
+      throw new Error("Unable to retrieve mentor pricing details.");
+    }
+
+    const basePrice = mentorData.session_price_inr || 0; // This is the Mentor's Payout
+    
+    // Calculate splits explicitly based on requirements
+    // Total Price = Base Price * 1.2
+    const totalPrice = Math.round(basePrice * 1.2); 
+    const mentorPayout = basePrice;
+    const platformFee = totalPrice - mentorPayout;
 
     try {
       const initialStatus = ENABLE_RAZORPAY ? 'pending_payment' : 'held_in_escrow';
       const paymentId = ENABLE_RAZORPAY ? null : `mvp_mock_${Date.now()}`;
 
-      // 2. Insert Package
+      // 3. Insert Package
       const { data: pkg, error: pkgError } = await supabase
         .from('interview_packages')
         .insert({
           candidate_id: candidateId,
           mentor_id: mentorId,
-          interview_profile_id: interviewProfileId, // <--- Saving the profile ID
+          interview_profile_id: interviewProfileId,
           total_amount_inr: totalPrice,
           platform_fee_inr: platformFee,
           mentor_payout_inr: mentorPayout,
@@ -83,13 +101,13 @@ export const paymentService = {
       const packageId = pkg.id;
       console.log("✅ Package created:", packageId, "Status:", initialStatus);
 
-      // 3. IF MVP (Auto-Confirm): Generate Link
+      // 4. IF MVP (Auto-Confirm): Generate Link
       let meetingLink = null;
       if (!ENABLE_RAZORPAY) {
         meetingLink = `https://meet.jit.si/interview-${packageId}-${Date.now()}`;
       }
 
-      // 4. Insert Sessions
+      // 5. Insert Sessions
       const sessionStatus = ENABLE_RAZORPAY ? 'pending' : 'confirmed';
       
       const sessionsData = selectedSlots.map((slot, index) => {
@@ -118,7 +136,7 @@ export const paymentService = {
         throw sessionError;
       }
 
-      // 5. IF MVP: Send Email
+      // 6. IF MVP: Send Email
       if (!ENABLE_RAZORPAY && meetingLink) {
         this.triggerEmailNotification(packageId, meetingLink);
       }
