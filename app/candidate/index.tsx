@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   RefreshControl,
   useWindowDimensions,
+  Platform, // Added Platform for shadow logic
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -35,6 +36,7 @@ type Mentor = {
 
 export default function CandidateDashboard() {
   const { width } = useWindowDimensions();
+  const isDesktop = width > 768; 
   const isMobile = width <= 768;
 
   const router = useRouter();
@@ -150,6 +152,12 @@ export default function CandidateDashboard() {
               const price = m.session_price_inr ?? m.session_price ?? 0;
               const displayPrice = price ? Math.round(price * 1.2) : 0;
 
+              // Fallback Logic: Use 'expertise_profiles' (names) if no description
+              const profilesList = m.expertise_profiles?.join(", ") || "Tech";
+              const descriptionText = m.experience_description 
+                ? m.experience_description 
+                : `Specializes in ${profilesList} interviews.`;
+
               return (
                 <Card key={m.id} style={styles.card}>
                   <View style={styles.cardContent}>
@@ -248,7 +256,18 @@ const styles = StyleSheet.create({
   listContainer: { paddingHorizontal: 32, gap: 16, paddingBottom: 24 },
   
   // Cleaned Up Card Styles
-  card: { backgroundColor: theme.white, borderRadius: 12, padding: 20, borderWidth: 1, borderColor: "#E5E7EB" },
+  card: { 
+    backgroundColor: theme.white, 
+    borderRadius: 12, 
+    padding: 20, 
+    borderWidth: 0.5, // <--- Thinner Border
+    borderColor: "#F3F4F6", // <--- Much Lighter Gray
+    // Add subtle shadow for depth
+    ...Platform.select({
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4 },
+      android: { elevation: 2 }
+    })
+  },
   cardContent: { gap: 12 },
   
   topRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 8 },

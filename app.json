@@ -34,6 +34,10 @@
         "CAMERA",
         "RECORD_AUDIO",
         "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "CAMERA",
+        "RECORD_AUDIO",
+        "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE"
       ]
     },
@@ -50,7 +54,11 @@
       "startUrl": "/",
       "display": "standalone",
       "orientation": "portrait-primary",
-      "categories": ["education", "business", "productivity"],
+      "categories": [
+        "education",
+        "business",
+        "productivity"
+      ],
       "screenshots": [],
       "related_applications": [],
       "prefer_related_applications": false,
@@ -84,7 +92,7 @@
         "origin": false
       },
       "eas": {
-        "projectId": "b4bb97e0-d7da-494a-86e0-04f5f41faebe"
+        "projectId": "ecaacc3d-80b3-4cd6-b148-87ab80b8246f"
       }
     },
     "owner": "mananvashist",
@@ -107,6 +115,12 @@
       "data science interviews",
       "interview skills",
       "job coaching"
-    ]
+    ],
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/ecaacc3d-80b3-4cd6-b148-87ab80b8246f"
+    }
   }
 }

@@ -62,6 +62,7 @@
     "expo-router": "~3.5.23",
     "expo-secure-store": "~13.0.2",
     "expo-status-bar": "~1.12.1",
+    "expo-updates": "~0.25.28",
     "expo-web-browser": "~13.0.3",
     "luxon": "^3.4.4",
     "nativewind": "^2.0.11",
