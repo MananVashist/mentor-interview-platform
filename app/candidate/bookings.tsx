@@ -236,8 +236,8 @@ export default function CandidateBookingsScreen() {
       const mentorIds = [...new Set(sessionsData.map((s: any) => s.mentor_id))];
       
       const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, full_name')
+        .from('mentors')
+        .select('id, professional_title')
         .in('id', mentorIds);
       
       const profileMap = (profiles || []).reduce((acc: any, p: any) => {
@@ -266,7 +266,7 @@ export default function CandidateBookingsScreen() {
           const profileMeta = s.package ? interviewProfileMap[s.package.interview_profile_id] : null;
           return {
             ...s,
-            mentor_name: profileMap[s.mentor_id]?.full_name || 'Mentor',
+            mentor_name: profileMap[s.mentor_id]?.professional_title || 'Mentor',
             package: s.package ? {
                 ...s.package,
                 interview_profile_name: profileMeta?.name || 'Mock Interview',
