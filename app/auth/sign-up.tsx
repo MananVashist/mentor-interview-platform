@@ -172,7 +172,27 @@ export default function SignUpScreen() {
       setLoading(false);
     }
   };
-
+  // --- DEBUGGING: LOG VALIDATION STATE ---
+  console.log("--- FORM DEBUG ---");
+  console.log("Role:", role);
+  console.log("Name valid?", name.trim().length > 0);
+  console.log("Email valid?", email.trim().length > 0);
+  console.log("Pass length?", password.length >= 6);
+  console.log("Pass Match?", password === confirmPassword);
+  
+  if (role === 'mentor') {
+      console.log("Phone valid?", phone.trim().length >= 10, `(Current: '${phone}')`);
+      console.log("LinkedIn valid?", linkedinUrl.trim().includes('linkedin.com'));
+      console.log("Title valid?", professionalTitle.trim().length > 0);
+      console.log("Exp valid?", yearsOfExp.trim().length > 0);
+      console.log("Profiles selected?", selectedProfiles.length > 0, `(Count: ${selectedProfiles.length})`);
+      console.log("IS MENTOR VALID?", isMentorValid);
+  } else {
+      console.log("Candidate Title valid?", candidateTitle.trim().length > 0);
+      console.log("IS CANDIDATE VALID?", isCandidateValid);
+  }
+  console.log("IS FORM VALID?", isFormValid);
+  console.log("------------------");
   return (
     <View style={styles.container}>
       <KeyboardAvoidingView style={styles.flex1} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>

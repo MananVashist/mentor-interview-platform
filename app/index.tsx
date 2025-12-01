@@ -238,7 +238,7 @@ export default function LandingPage() {
                     isSmall && styles.logoTaglineMobile,
                   ]}
                 >
-                  Mad skills! Dream job!
+                  Mad skills. Dream job!
                 </Text>
               </View>
             </View>
@@ -274,7 +274,7 @@ export default function LandingPage() {
                 onPress={() => router.push('/auth/sign-up')}
               >
                 <Text
-                  style={[styles.btnText, isSmall && styles.btnTextMobile]}
+                  style={[styles.btnText, isSmall && styles.btnTextMobile,styles.btnTextWhite]}
                 >
                   SIGN UP
                 </Text>
@@ -326,9 +326,7 @@ export default function LandingPage() {
         {/* --- REDESIGNED SECTIONS --- */}
 
         {/* Role Cards (More visual, condensed text) */}
-        <View
-          style={[styles.rolesSection, isSmall && styles.rolesSectionMobile]}
-        >
+        <View style={styles.featuresSection}>
           <Text style={styles.sectionKicker}>Choose your track</Text>
           <Text
             style={[
@@ -338,10 +336,38 @@ export default function LandingPage() {
           >
             Role-based interviews
           </Text>
-          <View style={[styles.rolesGrid, isSmall && styles.rolesGridMobile]}>
-            {roles.map((role) => (
-              <RoleCard key={role.title} role={role} isSmall={isSmall} />
-            ))}
+          <View
+            style={[
+              styles.featuresGrid,
+              isSmall && styles.featuresGridMobile,
+            ]}
+          >
+            <View style={styles.featureCard}>
+              <Text style={styles.featureIcon}>🚀</Text> {/* Simplified icon */}
+              <Text style={styles.featureTitle}>Product Manager</Text>
+              <Text style={styles.featureBody}>
+                Product sense, execution, metrics, and strategy.             
+              </Text>
+            </View>
+            <View style={styles.featureCard}>
+              <Text style={styles.featureIcon}>📊</Text> {/* Simplified icon */}
+              <Text style={styles.featureTitle}>Data Analyst/ Business Analyst</Text>
+              <Text style={styles.featureBody}>SQL, case studies, and business problem-solving.</Text>
+            </View>
+            <View style={styles.featureCard}>
+              <Text style={styles.featureIcon}>🤖</Text> {/* Simplified icon */}
+              <Text style={styles.featureTitle}>Data scientist/ ML engineer</Text>
+              <Text style={styles.featureBody}>
+                Modeling, experimentation, and ML system design.              
+              </Text>
+            </View>
+            <View style={styles.featureCard}>
+              <Text style={styles.featureIcon}>👥</Text> {/* Simplified icon */}
+              <Text style={styles.featureTitle}>HR/ Talent acquisition</Text>
+              <Text style={styles.featureBody}>
+                Behavioral, culture, and hiring alignment. 
+              </Text>
+            </View>
           </View>
         </View>
 
@@ -385,7 +411,18 @@ export default function LandingPage() {
             </View>
           </View>
         </View>
-
+        {/* Bottom CTA Section */}
+        <View style={styles.bottomCtaSection}>
+          <Text style={styles.bottomCtaTitle}>
+            Ready to dive in?
+          </Text>
+          <TouchableOpacity
+            style={styles.bottomCtaButton}
+            onPress={() => router.push('/auth/sign-up')}
+          >
+            <Text style={styles.bottomCtaButtonText}>Get started</Text>
+          </TouchableOpacity>
+        </View>
         {/* How it works (Punchy, less body text) */}
         <View style={styles.featuresSection}>
           <Text style={styles.sectionKicker}>Easy as 1-2-3</Text>
@@ -426,6 +463,7 @@ export default function LandingPage() {
             </View>
           </View>
         </View>
+        
         {/* Footer */}
         <Footer />
       </ScrollView>
@@ -486,7 +524,7 @@ const styles = StyleSheet.create({
   // lighter tagline
   logoTagline: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '400',
     color: CTA_TEAL,
     marginTop: -2,
     opacity: 0.7,
@@ -509,8 +547,11 @@ const styles = StyleSheet.create({
   btnPrimary: { backgroundColor: CTA_TEAL, borderColor: CTA_TEAL },
   btnSecondary: { backgroundColor: 'transparent', borderColor: '#333' }, // Cleaner border
   btnMobile: { paddingHorizontal: 18, paddingVertical: 8 },
-  btnText: { fontWeight: '700', fontSize: 14, letterSpacing: 1 },
+  btnText: { fontWeight: '700', fontSize: 14, letterSpacing: 1},
   btnTextMobile: { fontSize: 11, letterSpacing: 0.5 },
+  btnTextWhite: {
+    color: '#FFFFFF',
+  },
 
   // Hero
   heroSection: {
@@ -519,6 +560,7 @@ const styles = StyleSheet.create({
     maxWidth: 1400,
     width: '100%',
     marginHorizontal: 'auto',
+
   },
   heroCard: {
     backgroundColor: '#d3d3d3',
@@ -537,7 +579,8 @@ const styles = StyleSheet.create({
     padding: 8,
     flexDirection: 'column',
     alignItems: 'center',
-    paddingRight: 28, // Reset padding for mobile
+    justifyContent: 'center',
+    paddingRight: 2, // Reset padding for mobile
   },
   heroContent: { flex: 1, maxWidth: 650, zIndex: 1 },
 
@@ -548,7 +591,7 @@ const styles = StyleSheet.create({
     color: '#333',
     marginBottom: 10,
   },
-  heroKickerMobile: { textAlign: 'center' },
+  heroKickerMobile: { textAlign: 'center',width: '100%',  },
 
   heroTitle: {
     fontSize: 40,
@@ -789,5 +832,33 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontSize: 14,
     letterSpacing: 1,
+  },
+  // Bottom CTA
+  bottomCtaSection: {
+    paddingVertical: 60,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f58742',
+    width: '100%',
+  },
+  bottomCtaTitle: {
+    fontSize: 32,
+    fontWeight: '500',
+    color: '#fff', // Orange accent
+    marginBottom: 24,
+    textAlign: 'center',
+  },
+  bottomCtaButton: {
+    backgroundColor: CTA_TEAL,
+    paddingHorizontal: 36,
+    paddingVertical: 16,
+    borderRadius: 999,
+  },
+  bottomCtaButtonText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 16,
+    letterSpacing: 0.5,
   },
 });
