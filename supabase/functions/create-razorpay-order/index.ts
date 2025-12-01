@@ -50,8 +50,12 @@ serve(async (req) => {
     }
 
     // 6. Return Order ID to Client
+   // 6. Return Order ID AND Key ID to Client
     return new Response(
-      JSON.stringify(razorpayData),
+      JSON.stringify({
+        ...razorpayData,
+        key_id: RZP_KEY // <--- THIS IS THE MISSING PIECE
+      }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
