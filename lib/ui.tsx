@@ -130,7 +130,8 @@ export const BrandHeader = ({ style, small = false }: BrandHeaderProps) => {
 
   return (
     <View style={[styles.brandContainer, style]}>
-      <View style={styles.eyesWrapper}>
+    {!small && (  
+    <View style={styles.eyesWrapper}>
         <View style={styles.eye}>
           <Animated.View
             style={[
@@ -148,7 +149,7 @@ export const BrandHeader = ({ style, small = false }: BrandHeaderProps) => {
           />
         </View>
       </View>
-
+    )};
       <View>
         <Text style={[styles.logoMain, small && styles.logoMainSmall]}>
           <Text style={styles.logoMainCrack}>Crack</Text>
@@ -338,7 +339,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   logoMain: {
-    fontFamily: 'DancingScript',
+    fontFamily: theme.typography.fontFamily.bold,
     fontSize: 32,
     fontWeight: '900',
     lineHeight: 38,
@@ -350,14 +351,14 @@ const styles = StyleSheet.create({
   logoMainCrack: { color: '#333' },
   logoMainJobs: { color: '#18a7a7' },
   logoTagline: {
-    fontFamily: 'DancingScript',
-    fontSize: 18,
+    fontFamily: theme.typography.fontFamily.bold,
+    fontSize: 14,
     fontWeight: '900',
     color: '#18a7a7',
     marginTop: -4,
   },
   logoTaglineSmall: {
-    fontSize: 14,
+    fontSize: 12,
   },
 
   // Typography
