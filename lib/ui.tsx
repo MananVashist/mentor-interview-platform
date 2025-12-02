@@ -149,7 +149,7 @@ export const BrandHeader = ({ style, small = false }: BrandHeaderProps) => {
           />
         </View>
       </View>
-    )};
+    )}
       <View>
         <Text style={[styles.logoMain, small && styles.logoMainSmall]}>
           <Text style={styles.logoMainCrack}>Crack</Text>

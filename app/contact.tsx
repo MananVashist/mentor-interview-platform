@@ -40,23 +40,7 @@ export default function Contact() {
             <Text style={styles.icon}>💬</Text>
             <Text style={styles.cardTitle}>General Inquiries</Text>
             <TouchableOpacity onPress={() => handleEmail('hello@crackjobs.com')}>
-              <Text style={styles.email}>hello@crackjobs.com</Text>
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.card}>
-            <Text style={styles.icon}>🛟</Text>
-            <Text style={styles.cardTitle}>Support</Text>
-            <TouchableOpacity onPress={() => handleEmail('support@crackjobs.com')}>
-              <Text style={styles.email}>support@crackjobs.com</Text>
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.card}>
-            <Text style={styles.icon}>👨‍🏫</Text>
-            <Text style={styles.cardTitle}>Mentors</Text>
-            <TouchableOpacity onPress={() => handleEmail('mentors@crackjobs.com')}>
-              <Text style={styles.email}>mentors@crackjobs.com</Text>
+              <Text style={styles.email}>crackjobshelpdesk@gmail.com</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -66,7 +50,7 @@ export default function Contact() {
 }
 
 const styles = StyleSheet.create({
-  content: { maxWidth: 1000, width: '100%', marginHorizontal: 'auto', paddingHorizontal: 40, paddingVertical: 60 },
+  content: { maxWidth: 1000, width: '100%', marginHorizontal: 'auto', paddingHorizontal: 40, paddingTop: 60 , paddingBottom: 220     },
   contentMobile: { paddingHorizontal: 20 },
   pageTitle: { fontFamily: theme.typography.fontFamily.extrabold, fontSize: 48, color: theme.colors.text.main, textAlign: 'center' },
   pageTitleMobile: { fontSize: 32 },

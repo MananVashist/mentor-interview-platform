@@ -30,8 +30,7 @@ const useStructuredData = () => {
                 '@type': 'Organization',
                 name: 'CrackJobs',
                 url: 'https://crackjobs.com',
-                logo: 'https://crackjobs.com/logo.png',
-                sameAs: ['https://twitter.com/crackjobs', 'https://linkedin.com/company/crackjobs'],
+                logo: 'https://crackjobs.com/logo.png'
             };
             const cleanup = injectMultipleSchemas([orgSchema]);
             return () => cleanup && cleanup();

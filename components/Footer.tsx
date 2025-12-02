@@ -1,4 +1,5 @@
-﻿import React from 'react';
+﻿// components/Footer.tsx
+import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 
@@ -16,13 +17,11 @@ export const Footer = () => {
     <View style={styles.footer} accessibilityRole="contentinfo">
       <View style={[styles.footerContent, isSmall && styles.footerContentMobile]}>
         
-        {/* --- ADDED HOME LINK --- */}
         <TouchableOpacity onPress={() => router.push('/')} accessibilityRole="link">
           <Text style={styles.footerLink}>Home</Text>
         </TouchableOpacity>
 
         <Separator />
-        {/* --- END ADDITION --- */}
 
         <TouchableOpacity onPress={() => router.push('/how-it-works')} accessibilityRole="link">
           <Text style={styles.footerLink}>How It Works</Text>
@@ -74,7 +73,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#333', 
     paddingVertical: 32, 
     paddingHorizontal: 40,
-    marginTop: 'auto' 
+    marginTop: 'auto', // Pushes footer to bottom
+    marginBottom: 0,   // ✅ CRITICAL: No bottom margin
   },
   footerContent: { 
     flexDirection: 'row', 
