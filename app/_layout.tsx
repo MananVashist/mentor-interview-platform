@@ -39,7 +39,7 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <NotificationProvider>
         <Head>
-          <title>CrackJobs - Ace Your Tech Interviews</title>
+          <title>CrackJobs | Mock Interviews for Product Manager, Data Analyst, Data Scientist & HR</title>
           <meta name="description" content="Master your interview skills with expert mentors from FAANG." />
           <meta name="theme-color" content="#11998e" />
           <meta property="og:site_name" content="CrackJobs" />

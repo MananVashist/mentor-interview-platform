@@ -58,7 +58,6 @@ export const SplashScreen = () => {
   };
 
   return (
-    // Changed to a simple View with white background
     <View style={styles.container}>
       <View style={styles.content}>
         
@@ -93,7 +92,7 @@ const styles = StyleSheet.create({
     flex: 1,
     width: width,
     height: height,
-    backgroundColor: '#ffffff', // ✅ Pure white background
+    backgroundColor: '#f8f5f0', // ✅ Pure white background
   },
   content: {
     flex: 1,
