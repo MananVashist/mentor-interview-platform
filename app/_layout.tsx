@@ -1,4 +1,5 @@
 ﻿import { useEffect } from 'react';
+import { Platform } from 'react-native'; // 1. Import Platform
 import { Slot, SplashScreen } from 'expo-router';
 import Head from 'expo-router/head';
 import { SafeAreaProvider } from 'react-native-safe-area-context'; 
@@ -12,10 +13,6 @@ import {
 } from '@expo-google-fonts/inter';
 import { NotificationProvider } from '@/lib/ui/NotificationBanner';
 
-// 1. Import your custom splash screen component (Renamed to avoid conflict)
-import { SplashScreen as CustomSplash } from '../components/SplashScreen';
-
-// Keep the native splash screen visible while we load resources
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
@@ -29,19 +26,23 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (fontsLoaded) {
-      // Hide the native white screen once fonts are ready
-      // (Your CustomSplash will have already been showing)
       SplashScreen.hideAsync();
     }
   }, [fontsLoaded]);
 
-  // 2. THE FIX: Show your Custom Splash Screen while fonts load.
-  // Since CustomSplash uses system fonts (Courier), it renders INSTANTLY (0ms).
-  // This counts as "Content" for Lighthouse, fixing the "Font display" penalty.
-  if (!fontsLoaded) {
-    return <CustomSplash />;
+  // ---------------------------------------------------------
+  // THE LOGIC SPLIT
+  // ---------------------------------------------------------
+  
+  // Mobile: We MUST wait for fonts, or the app will crash/look broken.
+  // We return 'null' to keep the native white splash screen visible until fonts are ready.
+  if (!fontsLoaded && Platform.OS !== 'web') {
+    return null;
   }
 
+  // Web: We do NOT wait. 
+  // Even if !fontsLoaded, we render the <Slot /> immediately.
+  // Because 'index.tsx' uses System Fonts, it will look perfect instantly.
   return (
     <SafeAreaProvider>
       <NotificationProvider>
