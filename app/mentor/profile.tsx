@@ -182,8 +182,9 @@ export default function MentorProfileScreen() {
   return (
     <ScreenBackground>
       <NotificationBanner
+        key={banner ? `${banner.type}-${banner.message}` : 'no-banner'}
         visible={!!banner}
-        type={banner?.type}
+        type={banner?.type ?? 'success'}
         message={banner?.message ?? ''}
         onHide={() => setBanner(null)}
       />
