@@ -1,487 +1,484 @@
-// components/ui.tsx
-// Reusable UI components using centralized theme
-
-import React from 'react';
+﻿// lib/ui.tsx
+import React, { useEffect, useRef } from "react";
 import {
   Text,
-  TextInput,
-  TouchableOpacity,
   View,
   StyleSheet,
+  TouchableOpacity,
+  ViewStyle,
+  TextStyle,
   ActivityIndicator,
+  SafeAreaView,
+  StatusBar,
+  TextInput,
   TextInputProps,
-  TouchableOpacityProps,
-  TextProps,
-  ViewProps,
-} from 'react-native';
-import { theme } from '@/lib/theme';
+  Animated,
+  Platform,
+  Easing, 
+} from "react-native";
+import { theme } from "./theme";
 
-// ============================================
-// Button Component
-// ============================================
-interface ButtonProps extends TouchableOpacityProps {
-  title: string;
-  variant?: 'primary' | 'secondary' | 'outline' | 'ghost';
-  size?: 'sm' | 'md' | 'lg';
-  isLoading?: boolean;
-  fullWidth?: boolean;
+// 🔥 1. Define the System Font Stack (Same as your homepage)
+const SYSTEM_FONT = Platform.select({
+  web: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif",
+  ios: "System",
+  android: "Roboto",
+  default: "System"
+});
+
+// --- Types ---
+interface HeadingProps {
+  level?: 1 | 2 | 3 | 4;
+  children: React.ReactNode;
+  style?: TextStyle;
 }
 
-export function Button({
-  title,
-  variant = 'primary',
-  size = 'md',
-  isLoading = false,
-  fullWidth = false,
-  disabled,
-  style,
-  ...props
-}: ButtonProps) {
-  const buttonStyle = [
-    styles.button,
-    styles[`button_${variant}`],
-    styles[`button_${size}`],
-    fullWidth && styles.button_fullWidth,
-    disabled && styles.button_disabled,
-    style,
-  ];
+interface AppTextProps {
+  children: React.ReactNode;
+  style?: TextStyle;
+  numberOfLines?: number;
+}
 
-  const textStyle = [
-    styles.buttonText,
-    styles[`buttonText_${variant}`],
-    styles[`buttonText_${size}`],
-    disabled && styles.buttonText_disabled,
-  ];
+interface CardProps {
+  children: React.ReactNode;
+  style?: ViewStyle | ViewStyle[];
+}
+
+interface ButtonProps {
+  title: string;
+  onPress: () => void;
+  variant?: "primary" | "outline" | "ghost";
+  size?: "sm" | "md" | "lg";
+  style?: ViewStyle;
+  textStyle?: TextStyle;
+  disabled?: boolean;
+  loading?: boolean;
+}
+
+interface BrandHeaderProps {
+  style?: ViewStyle;
+  small?: boolean;
+}
+
+// --- Components ---
+
+// 🟢 BRAND HEADER: FIXED & SMOOTH
+export const BrandHeader = ({ style, small = false }: BrandHeaderProps) => {
+  const leftEyeX = useRef(new Animated.Value(0)).current;
+  const leftEyeY = useRef(new Animated.Value(0)).current;
+  const rightEyeX = useRef(new Animated.Value(0)).current;
+  const rightEyeY = useRef(new Animated.Value(0)).current;
+
+  // Track current position to calculate distance -> duration
+  const leftPos = useRef({ x: 0, y: 0 });
+  const rightPos = useRef({ x: 0, y: 0 });
+
+  useEffect(() => {
+    const randomRange = (min: number, max: number) => Math.random() * (max - min) + min;
+    
+    // 🔥 CRAZY EYES: Continuous smooth motion in random directions
+    const SPEED = 0.04; // Pixels per ms
+    const MIN_DISTANCE = 8; // Minimum travel distance
+    const MAX_DISTANCE = 12; // Maximum travel distance
+
+    const moveEye = (
+      animX: Animated.Value, 
+      animY: Animated.Value, 
+      currentPos: { x: number, y: number }
+    ) => {
+      // Pick a random angle (in radians) for direction
+      const angle = Math.random() * Math.PI * 2;
+      
+      // Pick a random distance
+      const distance = randomRange(MIN_DISTANCE, MAX_DISTANCE);
+      
+      // Calculate target using polar coordinates
+      let targetX = currentPos.x + Math.cos(angle) * distance;
+      let targetY = currentPos.y + Math.sin(angle) * distance;
+      
+      // Keep within bounds (-10 to 10)
+      targetX = Math.max(-10, Math.min(10, targetX));
+      targetY = Math.max(-10, Math.min(10, targetY));
+      
+      // Calculate actual distance to target
+      const dx = targetX - currentPos.x;
+      const dy = targetY - currentPos.y;
+      const actualDistance = Math.sqrt(dx * dx + dy * dy);
+      
+      // Calculate duration for smooth constant speed
+      const duration = Math.max(300, actualDistance / SPEED);
+      
+      // Move with smooth easing
+      Animated.parallel([
+        Animated.timing(animX, {
+          toValue: targetX,
+          duration: duration,
+          easing: Easing.inOut(Easing.ease), // Smooth acceleration/deceleration
+          useNativeDriver: true,
+        }),
+        Animated.timing(animY, {
+          toValue: targetY,
+          duration: duration,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        // Update position and immediately move to next target (continuous motion)
+        currentPos.x = targetX;
+        currentPos.y = targetY;
+        moveEye(animX, animY, currentPos);
+      });
+    };
+
+    // Start both eyes independently for unsynchronized crazy motion
+    moveEye(leftEyeX, leftEyeY, leftPos.current);
+    moveEye(rightEyeX, rightEyeY, rightPos.current);
+
+  }, []);
+
+  return (
+    <View style={[styles.brandContainer, style]}>
+    {!small && (  
+    <View style={styles.eyesWrapper}>
+        <View style={styles.eye}>
+          <Animated.View
+            style={[
+              styles.pupil,
+              { transform: [{ translateX: leftEyeX }, { translateY: leftEyeY }] },
+            ]}
+          />
+        </View>
+        <View style={styles.eye}>
+          <Animated.View
+            style={[
+              styles.pupil,
+              { transform: [{ translateX: rightEyeX }, { translateY: rightEyeY }] },
+            ]}
+          />
+        </View>
+      </View>
+    )}
+      <View>
+        <Text style={[styles.logoMain, small && styles.logoMainSmall]}>
+          <Text style={styles.logoMainCrack}>Crack</Text>
+          <Text style={styles.logoMainJobs}>Jobs</Text>
+        </Text>
+        <Text style={[styles.logoTagline, small && styles.logoTaglineSmall]}>
+          Mad skills. Dream job.
+        </Text>
+      </View>
+    </View>
+  );
+};
+
+export const ScreenBackground = ({
+  children,
+  style,
+}: {
+  children: React.ReactNode;
+  style?: ViewStyle;
+}) => (
+  <SafeAreaView style={[styles.screen, style]}>
+    <StatusBar barStyle="dark-content" backgroundColor={theme.colors.background} />
+    <View style={{ flex: 1 }}>{children}</View>
+  </SafeAreaView>
+);
+
+export const Section = ({
+  children,
+  style,
+}: {
+  children: React.ReactNode;
+  style?: ViewStyle;
+}) => <View style={[styles.section, style]}>{children}</View>;
+
+export const Heading = ({ level = 1, children, style }: HeadingProps) => {
+  const getStyle = () => {
+    switch (level) {
+      case 1:
+        return styles.h1;
+      case 2:
+        return styles.h2;
+      case 3:
+        return styles.h3;
+      default:
+        return styles.h4;
+    }
+  };
+  return <Text style={[getStyle(), style]}>{children}</Text>;
+};
+
+export const AppText = ({ children, style, numberOfLines }: AppTextProps) => (
+  <Text style={[styles.text, style]} numberOfLines={numberOfLines}>
+    {children}
+  </Text>
+);
+
+export const Label = ({ children, style }: { children: React.ReactNode, style?: TextStyle }) => (
+  <Text style={[styles.label, style]}>{children}</Text>
+);
+
+export const Input = ({ style, ...props }: TextInputProps & { style?: TextStyle }) => (
+  <TextInput 
+    placeholderTextColor={theme.colors.gray[400]}
+    style={[styles.input, style]} 
+    {...props} 
+  />
+);
+
+export const Card = ({ children, style }: CardProps) => (
+  <View style={[styles.card, style]}>{children}</View>
+);
+
+export const Button = ({
+  title,
+  onPress,
+  variant = "primary",
+  size = "md",
+  style,
+  textStyle,
+  disabled,
+  loading,
+}: ButtonProps) => {
+  const getVariantStyle = () => {
+    switch (variant) {
+      case "outline":
+        return styles.btnOutline;
+      case "ghost":
+        return styles.btnGhost;
+      default:
+        return styles.btnPrimary;
+    }
+  };
+
+  const getVariantTextStyle = () => {
+    switch (variant) {
+      case "outline":
+        return styles.btnTextOutline;
+      case "ghost":
+        return styles.btnTextGhost;
+      default:
+        return styles.btnTextPrimary;
+    }
+  };
+
+  const getSizeStyle = () => {
+    switch (size) {
+      case "sm":
+        return { paddingVertical: 8, paddingHorizontal: 12 };
+      case "lg":
+        return { paddingVertical: 16, paddingHorizontal: 32 };
+      default:
+        return { paddingVertical: 12, paddingHorizontal: 24 };
+    }
+  };
 
   return (
     <TouchableOpacity
-      style={buttonStyle}
-      disabled={disabled || isLoading}
-      {...props}
+      onPress={onPress}
+      disabled={disabled || loading}
+      activeOpacity={0.8}
+      style={[
+        styles.buttonBase,
+        getVariantStyle(),
+        getSizeStyle(),
+        disabled && styles.btnDisabled,
+        style,
+      ]}
     >
-      {isLoading ? (
-        <ActivityIndicator 
-          color={variant === 'outline' || variant === 'ghost' ? theme.colors.primary : theme.colors.background} 
+      {loading ? (
+        <ActivityIndicator
+          color={variant === "primary" ? "#FFF" : theme.colors.primary}
         />
       ) : (
-        <Text style={textStyle}>{title}</Text>
+        <Text
+          style={[
+            styles.btnTextBase,
+            getVariantTextStyle(),
+            disabled && styles.btnTextDisabled,
+            textStyle,
+          ]}
+        >
+          {title}
+        </Text>
       )}
     </TouchableOpacity>
   );
-}
+};
 
-// ============================================
-// Input Component
-// ============================================
-interface InputProps extends TextInputProps {
-  label?: string;
-  error?: string;
-  leftIcon?: React.ReactNode;
-  rightIcon?: React.ReactNode;
-}
-
-export function Input({
-  label,
-  error,
-  leftIcon,
-  rightIcon,
-  style,
-  ...props
-}: InputProps) {
-  return (
-    <View style={styles.inputContainer}>
-      {label && <Text style={styles.inputLabel}>{label}</Text>}
-      
-      <View style={[styles.inputWrapper, error && styles.inputWrapper_error]}>
-        {leftIcon && <View style={styles.inputIcon}>{leftIcon}</View>}
-        
-        <TextInput
-          style={[
-            styles.input,
-            leftIcon && styles.input_withLeftIcon,
-            rightIcon && styles.input_withRightIcon,
-            style,
-          ]}
-          placeholderTextColor={theme.colors.textTertiary}
-          {...props}
-        />
-        
-        {rightIcon && <View style={styles.inputIcon}>{rightIcon}</View>}
-      </View>
-      
-      {error && <Text style={styles.inputError}>{error}</Text>}
-    </View>
-  );
-}
-
-// ============================================
-// Label Component
-// ============================================
-interface LabelProps extends TextProps {
-  required?: boolean;
-}
-
-export function Label({ children, required, style, ...props }: LabelProps) {
-  return (
-    <Text style={[styles.label, style]} {...props}>
-      {children}
-      {required && <Text style={styles.labelRequired}> *</Text>}
-    </Text>
-  );
-}
-
-// ============================================
-// Card Component
-// ============================================
-interface CardProps extends ViewProps {
-  variant?: 'default' | 'bordered' | 'elevated';
-}
-
-export function Card({ variant = 'default', style, children, ...props }: CardProps) {
-  return (
-    <View 
-      style={[
-        styles.card,
-        variant === 'bordered' && styles.card_bordered,
-        variant === 'elevated' && styles.card_elevated,
-        style,
-      ]} 
-      {...props}
-    >
-      {children}
-    </View>
-  );
-}
-
-// ============================================
-// Divider Component
-// ============================================
-interface DividerProps extends ViewProps {
-  orientation?: 'horizontal' | 'vertical';
-}
-
-export function Divider({ orientation = 'horizontal', style, ...props }: DividerProps) {
-  return (
-    <View
-      style={[
-        styles.divider,
-        orientation === 'vertical' && styles.divider_vertical,
-        style,
-      ]}
-      {...props}
-    />
-  );
-}
-
-// ============================================
-// Badge Component
-// ============================================
-interface BadgeProps extends ViewProps {
-  variant?: 'primary' | 'success' | 'warning' | 'error' | 'info';
-  size?: 'sm' | 'md';
-}
-
-export function Badge({ variant = 'primary', size = 'md', style, children, ...props }: BadgeProps) {
-  return (
-    <View
-      style={[
-        styles.badge,
-        styles[`badge_${variant}`],
-        styles[`badge_${size}`],
-        style,
-      ]}
-      {...props}
-    >
-      {typeof children === 'string' ? (
-        <Text style={[styles.badgeText, styles[`badgeText_${variant}`], styles[`badgeText_${size}`]]}>
-          {children}
-        </Text>
-      ) : (
-        children
-      )}
-    </View>
-  );
-}
-
-// ============================================
-// Role Toggle Component (for auth screens)
-// ============================================
-interface RoleToggleProps {
-  value: 'candidate' | 'mentor' | 'admin';
-  onChange: (role: 'candidate' | 'mentor' | 'admin') => void;
-  disabled?: boolean;
-}
-
-export function RoleToggle({ value, onChange, disabled }: RoleToggleProps) {
-  const roles: Array<{ key: 'candidate' | 'mentor' | 'admin'; label: string }> = [
-    { key: 'candidate', label: 'Candidate' },
-    { key: 'mentor', label: 'Mentor' },
-    { key: 'admin', label: 'Admin' },
-  ];
-
-  return (
-    <View style={styles.roleToggle}>
-      {roles.map((role) => (
-        <TouchableOpacity
-          key={role.key}
-          style={[
-            styles.roleButton,
-            value === role.key && styles.roleButton_active,
-            disabled && styles.roleButton_disabled,
-          ]}
-          onPress={() => !disabled && onChange(role.key)}
-          disabled={disabled}
-        >
-          <Text
-            style={[
-              styles.roleButtonText,
-              value === role.key && styles.roleButtonText_active,
-            ]}
-          >
-            {role.label}
-          </Text>
-        </TouchableOpacity>
-      ))}
-    </View>
-  );
-}
-
-// ============================================
-// Styles
-// ============================================
+// --- Styles ---
 const styles = StyleSheet.create({
-  // Button styles
-  button: {
+  screen: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+  },
+  section: {
+    marginBottom: theme.spacing.lg,
+    paddingHorizontal: theme.spacing.md,
+  },
+  
+  // Brand Styles
+  brandContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: theme.borderRadius.round,
-    paddingVertical: theme.spacing.md,
-    paddingHorizontal: theme.spacing.lg,
+    marginBottom: 32,
   },
-  button_primary: {
-    backgroundColor: theme.colors.primary,
+  eyesWrapper: { 
+    flexDirection: 'row', 
+    gap: 6, 
+    marginRight: 12 
   },
-  button_secondary: {
-    backgroundColor: theme.colors.backgroundSecondary,
+  eye: {
+    width: 32,
+    height: 32,
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    borderWidth: 2.5,
+    borderColor: '#333',
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden', 
   },
-  button_outline: {
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: theme.colors.border,
+  pupil: {
+    width: 12,
+    height: 12,
+    backgroundColor: '#333',
+    borderRadius: 6,
   },
-  button_ghost: {
-    backgroundColor: 'transparent',
+  logoMain: {
+    // 🟢 WEB: System Font | NATIVE: Custom Font
+    fontFamily: Platform.select({ web: SYSTEM_FONT, default: theme.typography.fontFamily.bold }),
+    fontSize: 32,
+    fontWeight: '900', // Keeps it super bold on all platforms
+    lineHeight: 38,
   },
-  button_sm: {
-    paddingVertical: theme.spacing.sm,
-    paddingHorizontal: theme.spacing.md,
+  logoMainSmall: {
+    fontSize: 24,
+    lineHeight: 30,
   },
-  button_md: {
-    paddingVertical: theme.spacing.md,
-    paddingHorizontal: theme.spacing.lg,
+  logoMainCrack: { color: '#333' },
+  logoMainJobs: { color: '#18a7a7' },
+  logoTagline: {
+    // 🟢 WEB: System Font | NATIVE: Custom Font
+    fontFamily: Platform.select({ web: SYSTEM_FONT, default: theme.typography.fontFamily.bold }),
+    fontSize: 14,
+    fontWeight: '900',
+    color: '#18a7a7',
+    marginTop: -4,
   },
-  button_lg: {
-    paddingVertical: theme.spacing.lg,
-    paddingHorizontal: theme.spacing.xl,
-  },
-  button_fullWidth: {
-    width: '100%',
-  },
-  button_disabled: {
-    opacity: 0.5,
-  },
-  buttonText: {
-    fontWeight: '700',
-    textAlign: 'center',
-  },
-  buttonText_primary: {
-    color: theme.colors.background,
-  },
-  buttonText_secondary: {
-    color: theme.colors.text,
-  },
-  buttonText_outline: {
-    color: theme.colors.primary,
-  },
-  buttonText_ghost: {
-    color: theme.colors.primary,
-  },
-  buttonText_sm: {
-    fontSize: theme.typography.fontSize.sm,
-  },
-  buttonText_md: {
-    fontSize: theme.typography.fontSize.base,
-  },
-  buttonText_lg: {
-    fontSize: theme.typography.fontSize.lg,
-  },
-  buttonText_disabled: {
-    opacity: 0.5,
+  logoTaglineSmall: {
+    fontSize: 12,
   },
 
-  // Input styles
-  inputContainer: {
-    marginBottom: theme.spacing.md,
-  },
-  inputLabel: {
-    fontSize: theme.typography.fontSize.sm,
-    fontWeight: '600',
-    color: theme.colors.text,
+  // Typography
+  h1: {
+    // 🟢 WEB: System Font | NATIVE: Custom Font
+    fontFamily: Platform.select({ web: SYSTEM_FONT, default: theme.typography.fontFamily.bold }),
+    fontWeight: '700', // Added explicit weight for system font
+    fontSize: theme.typography.size.xxl,
+    color: theme.colors.text.main,
     marginBottom: theme.spacing.xs,
   },
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    borderRadius: theme.borderRadius.md,
-    backgroundColor: theme.colors.background,
+  h2: {
+    fontFamily: Platform.select({ web: SYSTEM_FONT, default: theme.typography.fontFamily.semibold }),
+    fontWeight: '600', // Added explicit weight
+    fontSize: theme.typography.size.xl,
+    color: theme.colors.text.main,
+    marginBottom: theme.spacing.xs,
   },
-  inputWrapper_error: {
-    borderColor: theme.colors.error,
+  h3: {
+    fontFamily: Platform.select({ web: SYSTEM_FONT, default: theme.typography.fontFamily.semibold }),
+    fontWeight: '600',
+    fontSize: theme.typography.size.lg,
+    color: theme.colors.text.main,
+    marginBottom: theme.spacing.xs,
   },
-  input: {
-    flex: 1,
-    padding: theme.spacing.md,
-    fontSize: theme.typography.fontSize.base,
-    color: theme.colors.text,
+  h4: {
+    fontFamily: Platform.select({ web: SYSTEM_FONT, default: theme.typography.fontFamily.medium }),
+    fontWeight: '500',
+    fontSize: theme.typography.size.md,
+    color: theme.colors.text.main,
   },
-  input_withLeftIcon: {
-    paddingLeft: theme.spacing.sm,
+  text: {
+    fontFamily: Platform.select({ web: SYSTEM_FONT, default: theme.typography.fontFamily.regular }),
+    fontWeight: '400',
+    fontSize: theme.typography.size.sm,
+    color: theme.colors.text.body,
   },
-  input_withRightIcon: {
-    paddingRight: theme.spacing.sm,
-  },
-  inputIcon: {
-    paddingHorizontal: theme.spacing.md,
-  },
-  inputError: {
-    fontSize: theme.typography.fontSize.xs,
-    color: theme.colors.error,
-    marginTop: theme.spacing.xs,
-  },
-
-  // Label styles
   label: {
-    fontSize: theme.typography.fontSize.sm,
-    fontWeight: '600',
-    color: theme.colors.text,
-    marginBottom: theme.spacing.xs,
-  },
-  labelRequired: {
-    color: theme.colors.error,
+    fontFamily: Platform.select({ web: SYSTEM_FONT, default: theme.typography.fontFamily.medium }),
+    fontWeight: '500',
+    fontSize: theme.typography.size.xs,
+    color: theme.colors.text.light,
+    marginBottom: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
 
-  // Card styles
-  card: {
-    backgroundColor: theme.colors.background,
-    borderRadius: theme.borderRadius.lg,
-    padding: theme.spacing.lg,
-  },
-  card_bordered: {
+  // Forms
+  input: {
+    fontFamily: Platform.select({ web: SYSTEM_FONT, default: theme.typography.fontFamily.regular }),
+    fontWeight: '400',
+    fontSize: theme.typography.size.md,
+    color: theme.colors.text.main,
     borderWidth: 1,
     borderColor: theme.colors.border,
-  },
-  card_elevated: {
-    ...theme.shadows.md,
-  },
-
-  // Divider styles
-  divider: {
-    height: 1,
-    backgroundColor: theme.colors.border,
-  },
-  divider_vertical: {
-    width: 1,
-    height: '100%',
-  },
-
-  // Badge styles
-  badge: {
-    paddingVertical: theme.spacing.xs,
-    paddingHorizontal: theme.spacing.sm,
     borderRadius: theme.borderRadius.md,
-    alignSelf: 'flex-start',
-  },
-  badge_primary: {
-    backgroundColor: theme.colors.primary,
-  },
-  badge_success: {
-    backgroundColor: theme.colors.success,
-  },
-  badge_warning: {
-    backgroundColor: theme.colors.warning,
-  },
-  badge_error: {
-    backgroundColor: theme.colors.error,
-  },
-  badge_info: {
-    backgroundColor: theme.colors.info,
-  },
-  badge_sm: {
-    paddingVertical: 2,
-    paddingHorizontal: theme.spacing.xs,
-  },
-  badge_md: {
-    paddingVertical: theme.spacing.xs,
-    paddingHorizontal: theme.spacing.sm,
-  },
-  badgeText: {
-    fontSize: theme.typography.fontSize.xs,
-    fontWeight: '600',
-    color: theme.colors.background,
-  },
-  badgeText_primary: {
-    color: theme.colors.background,
-  },
-  badgeText_success: {
-    color: theme.colors.background,
-  },
-  badgeText_warning: {
-    color: theme.colors.background,
-  },
-  badgeText_error: {
-    color: theme.colors.background,
-  },
-  badgeText_info: {
-    color: theme.colors.background,
-  },
-  badgeText_sm: {
-    fontSize: 10,
-  },
-  badgeText_md: {
-    fontSize: theme.typography.fontSize.xs,
-  },
-
-  // Role toggle styles
-  roleToggle: {
-    flexDirection: 'row',
-    borderRadius: theme.borderRadius.md,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    padding: 4,
-    backgroundColor: theme.colors.backgroundSecondary,
-  },
-  roleButton: {
-    flex: 1,
-    paddingVertical: theme.spacing.sm,
     paddingHorizontal: theme.spacing.md,
-    borderRadius: theme.borderRadius.sm,
-    alignItems: 'center',
+    paddingVertical: 12,
+    backgroundColor: theme.colors.surface,
   },
-  roleButton_active: {
+
+  // Cards
+  card: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.md,
+    ...theme.shadows.card,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+
+  // Buttons
+  buttonBase: {
+    borderRadius: theme.borderRadius.md,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+  },
+  btnPrimary: {
     backgroundColor: theme.colors.primary,
   },
-  roleButton_disabled: {
-    opacity: 0.5,
+  btnOutline: {
+    backgroundColor: "transparent",
+    borderWidth: 1,
+    borderColor: theme.colors.border,
   },
-  roleButtonText: {
-    fontSize: theme.typography.fontSize.sm,
-    fontWeight: '600',
-    color: theme.colors.textSecondary,
+  btnGhost: {
+    backgroundColor: "transparent",
   },
-  roleButtonText_active: {
-    color: theme.colors.background,
+  btnDisabled: {
+    backgroundColor: theme.colors.gray[200],
+    borderColor: theme.colors.gray[200],
+  },
+
+  // Button Text
+  btnTextBase: {
+    fontFamily: Platform.select({ web: SYSTEM_FONT, default: theme.typography.fontFamily.semibold }),
+    fontWeight: '600', // Semibold weight
+    fontSize: theme.typography.size.sm,
+  },
+  btnTextPrimary: {
+    color: "#FFFFFF",
+  },
+  btnTextOutline: {
+    color: theme.colors.text.main,
+  },
+  btnTextGhost: {
+    color: theme.colors.primary,
+  },
+  btnTextDisabled: {
+    color: theme.colors.gray[500],
   },
 });

@@ -1,14 +1,18 @@
 ﻿// components/Footer.tsx
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, useWindowDimensions } from 'react-native';
-import { useRouter } from 'expo-router';
+import { 
+  View, 
+  StyleSheet, 
+  useWindowDimensions,
+  Platform,
+  ViewStyle 
+} from 'react-native';
+import { Link } from 'expo-router'; // 👈 SEO Magic: Imports Link
 
 export const Footer = () => {
-  const router = useRouter();
   const { width } = useWindowDimensions();
   const isSmall = width < 900;
 
-  // Helper component for the dot separator
   const Separator = () => (
     !isSmall ? <View style={styles.dotSeparator} /> : null
   );
@@ -17,70 +21,54 @@ export const Footer = () => {
     <View style={styles.footer} accessibilityRole="contentinfo">
       <View style={[styles.footerContent, isSmall && styles.footerContentMobile]}>
         
-        <TouchableOpacity onPress={() => router.push('/')} accessibilityRole="link">
-          <Text style={styles.footerLink}>Home</Text>
-        </TouchableOpacity>
-
+        {/* ✅ SEO FIX: Using <Link> generates real <a href="..."> tags */}
+        
+        <Link href="/" style={styles.footerLink}>Home</Link>
         <Separator />
 
-        <TouchableOpacity onPress={() => router.push('/how-it-works')} accessibilityRole="link">
-          <Text style={styles.footerLink}>How It Works</Text>
-        </TouchableOpacity>
-
+        <Link href="/how-it-works" style={styles.footerLink}>How It Works</Link>
         <Separator />
 
-        <TouchableOpacity onPress={() => router.push('/about')} accessibilityRole="link">
-          <Text style={styles.footerLink}>About</Text>
-        </TouchableOpacity>
-
+        <Link href="/about" style={styles.footerLink}>About</Link>
         <Separator />
 
-        <TouchableOpacity onPress={() => router.push('/blog')} accessibilityRole="link">
-          <Text style={styles.footerLink}>Blog</Text>
-        </TouchableOpacity>
-
+        <Link href="/blog" style={styles.footerLink}>Blog</Link>
         <Separator />
 
-        <TouchableOpacity onPress={() => router.push('/faq')} accessibilityRole="link">
-          <Text style={styles.footerLink}>FAQ</Text>
-        </TouchableOpacity>
-
+        <Link href="/faq" style={styles.footerLink}>FAQ</Link>
         <Separator />
 
-        <TouchableOpacity onPress={() => router.push('/contact')} accessibilityRole="link">
-          <Text style={styles.footerLink}>Contact</Text>
-        </TouchableOpacity>
-
+        <Link href="/contact" style={styles.footerLink}>Contact</Link>
         <Separator />
 
-        <TouchableOpacity onPress={() => router.push('/privacy')} accessibilityRole="link">
-          <Text style={styles.footerLink}>Privacy Policy</Text>
-        </TouchableOpacity>
-
+        <Link href="/privacy" style={styles.footerLink}>Privacy Policy</Link>
         <Separator />
 
-        <TouchableOpacity onPress={() => router.push('/cancellation-policy')} accessibilityRole="link">
-          <Text style={styles.footerLink}>Cancellation Policy</Text>
-        </TouchableOpacity>
-
+        <Link href="/cancellation-policy" style={styles.footerLink}>Cancellation Policy</Link>
         <Separator />
 
-        <TouchableOpacity onPress={() => router.push('/terms')} accessibilityRole="link">
-          <Text style={styles.footerLink}>Terms & Conditions</Text>
-        </TouchableOpacity>
+        <Link href="/terms" style={styles.footerLink}>Terms & Conditions</Link>
         
       </View>
     </View>
   );
 };
 
+// 🔥 System Font Stack (Performance)
+const SYSTEM_FONT = Platform.select({
+  web: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif",
+  ios: "System",
+  android: "Roboto",
+  default: "System"
+});
+
 const styles = StyleSheet.create({
   footer: { 
     backgroundColor: '#333', 
     paddingVertical: 32, 
     paddingHorizontal: 40,
-    marginTop: 'auto', // Pushes footer to bottom
-    marginBottom: 0,   // ✅ CRITICAL: No bottom margin
+    marginTop: 'auto', 
+    marginBottom: 0, 
   },
   footerContent: { 
     flexDirection: 'row', 
@@ -96,9 +84,13 @@ const styles = StyleSheet.create({
     gap: 12 
   },
   footerLink: { 
+    // 🟢 WEB: Force System Font (0ms load)
+    fontFamily: SYSTEM_FONT,
     color: '#fff', 
     fontSize: 14, 
-    textDecorationLine: 'none' 
+    textDecorationLine: 'none',
+    // On web, Link behaves like text, but let's ensure it's clickable area is nice
+    padding: 4, 
   },
   dotSeparator: {
     width: 4,
