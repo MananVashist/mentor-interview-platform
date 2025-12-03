@@ -15,20 +15,32 @@ import { NotificationProvider } from '@/lib/ui/NotificationBanner';
 
 SplashScreen.preventAutoHideAsync();
 
+// app/_layout.tsx
+
+// ... keep your imports ...
+
 export default function RootLayout() {
-  const [fontsLoaded] = useFonts({
-    Inter_400Regular,
-    Inter_500Medium,
-    Inter_600SemiBold,
-    Inter_700Bold,
-    Inter_800ExtraBold,
-  });
+  // 🟢 FIX: Pass an EMPTY object on Web.
+  // This stops the browser from downloading the files in your screenshot.
+  const [fontsLoaded] = useFonts(
+    Platform.OS === 'web'
+      ? {} 
+      : {
+          Inter_400Regular,
+          Inter_500Medium,
+          Inter_600SemiBold,
+          Inter_700Bold,
+          Inter_800ExtraBold,
+        }
+  );
 
   useEffect(() => {
     if (fontsLoaded) {
       SplashScreen.hideAsync();
     }
   }, [fontsLoaded]);
+
+  // ... keep the rest of your code ...
 
   // ---------------------------------------------------------
   // THE LOGIC SPLIT
