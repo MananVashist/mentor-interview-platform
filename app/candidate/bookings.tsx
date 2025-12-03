@@ -254,7 +254,7 @@ export default function CandidateBookingsScreen() {
   };
 
   const handleViewEvaluation = (sessionId: string) => {
-    router.push({ pathname: `/candidate/session/${sessionId}`, params: { mode: 'read' } });
+    router.push({ pathname: `/candidate/session/[id]`, params: { id: sessionId, mode:'read' } });
   };
 
   if (loading && !refreshing) {
