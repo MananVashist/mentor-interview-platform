@@ -11,7 +11,7 @@ import { supabase } from '@/lib/supabase/client';
 import { MASTER_TEMPLATES } from '@/lib/evaluation-templates';
 
 export default function SessionFeedback() {
-  const { id } = useLocalSearchParams();
+  const { id, mode } = useLocalSearchParams();
   const router = useRouter();
   
   const [loading, setLoading] = useState(true);
@@ -79,7 +79,19 @@ export default function SessionFeedback() {
 
     console.log(`🔎 Loaded Template for: [${profile}] - [${round}]`);
     setTemplate(roundQuestions);
-
+    // 4. If viewing existing evaluation, fetch it
+if (mode === 'read') {
+  const { data: evaluation } = await supabase
+    .from('session_evaluations')
+    .select('*')
+    .eq('session_id', String(id))
+    .single();
+  
+  if (evaluation?.checklist_data) {
+    setAnswers(evaluation.checklist_data.answers || {});
+    setFeedback(evaluation.checklist_data.summary_feedback || '');
+  }
+}
   } catch (e) {
     console.error('Load error:', e);
     Alert.alert("Error", "Failed to load session details.");
