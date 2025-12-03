@@ -15,28 +15,60 @@ import Head from 'expo-router/head';
 import { SplashScreen } from '../components/SplashScreen';
 import { injectMultipleSchemas } from '@/lib/structured-data';
 import { Footer } from '@/components/Footer';
-// ✅ IMPORT FROM LIB/UI (The source of truth)
 import { BrandHeader } from '@/lib/ui';
 
 const CTA_TEAL = '#18a7a7';
-const FONT_WEIGHT_BOLD = '600'; 
+const FONT_WEIGHT_BOLD = '700'; // Increased slightly for better readability without custom fonts
 
-// Custom Hook for SEO
+// --- SEO & STRUCTURED DATA CONFIGURATION ---
+const SITE_URL = 'https://crackjobs.com';
+const SITE_TITLE = 'CrackJobs | Mock Interviews for Product Managers, Data Scientists & HR';
+const SITE_DESCRIPTION = 'Master your tech interview. Anonymous 1:1 mock interviews with vetted mentors from top tech companies. Specialized tracks for PM, Data Science, and HR roles.';
+const SITE_IMAGE = 'https://crackjobs.com/opengraph-image.png'; // Ensure this image exists in your public folder
+
 const useStructuredData = () => {
-    useEffect(() => {
-        if (Platform.OS === 'web') {
-            const orgSchema = {
-                '@context': 'https://schema.org',
-                '@type': 'Organization',
-                name: 'CrackJobs',
-                url: 'https://crackjobs.com',
-                logo: 'https://crackjobs.com/logo.png'
-            };
-            const cleanup = injectMultipleSchemas([orgSchema]);
-            return () => cleanup && cleanup();
+  useEffect(() => {
+    if (Platform.OS === 'web') {
+      const schemas = [
+        // 1. Organization Schema
+        {
+          '@context': 'https://schema.org',
+          '@type': 'Organization',
+          name: 'CrackJobs',
+          url: SITE_URL,
+          logo: `${SITE_URL}/logo.png`
+        },
+        // 2. WebSite Schema (Search Box targeting)
+        {
+          '@context': 'https://schema.org',
+          '@type': 'WebSite',
+          name: 'CrackJobs',
+          url: SITE_URL,
+          potentialAction: {
+            '@type': 'SearchAction',
+            target: `${SITE_URL}/search?q={search_term_string}`,
+            'query-input': 'required name=search_term_string'
+          }
+        },
+        // 3. Service Schema
+        {
+          '@context': 'https://schema.org',
+          '@type': 'Service',
+          serviceType: 'Mock Interviews',
+          provider: {
+            '@type': 'Organization',
+            name: 'CrackJobs'
+          },
+          areaServed: 'Worldwide',
+          description: 'Anonymous, role-specific mock interviews for Product Management and Data Science roles.'
         }
-    }, []);
-}
+      ];
+
+      const cleanup = injectMultipleSchemas(schemas);
+      return () => cleanup && cleanup();
+    }
+  }, []);
+};
 
 export default function LandingPage() {
   const [showSplash, setShowSplash] = useState(Platform.OS !== 'web');
@@ -60,8 +92,25 @@ export default function LandingPage() {
   return (
     <>
       <Head>
-        <title>CrackJobs | Mock Interviews for Product Manager, Data Analyst, Data Scientist & HR</title>
-        <meta name="description" content="CrackJobs offers anonymous, role-aligned mock interviews..." />
+        <title>{SITE_TITLE}</title>
+        <meta name="description" content={SITE_DESCRIPTION} />
+        <meta name="keywords" content="mock interview, product manager interview, data scientist interview, anonymous interview, tech interview prep, system design mock interview" />
+        <meta name="robots" content="index, follow" />
+        <link rel="canonical" href={SITE_URL} />
+
+        {/* Open Graph / Facebook */}
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content={SITE_URL} />
+        <meta property="og:title" content={SITE_TITLE} />
+        <meta property="og:description" content={SITE_DESCRIPTION} />
+        <meta property="og:image" content={SITE_IMAGE} />
+
+        {/* Twitter */}
+        <meta property="twitter:card" content="summary_large_image" />
+        <meta property="twitter:url" content={SITE_URL} />
+        <meta property="twitter:title" content={SITE_TITLE} />
+        <meta property="twitter:description" content={SITE_DESCRIPTION} />
+        <meta property="twitter:image" content={SITE_IMAGE} />
       </Head>
 
       <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
@@ -69,8 +118,6 @@ export default function LandingPage() {
         <View style={styles.header} accessibilityRole="banner">
           <View style={[styles.headerInner, isSmall && styles.headerInnerMobile]}>
             
-            {/* ✅ Using Shared BrandHeader from lib/ui */}
-            {/* We override marginBottom because ui.tsx has default spacing for Sign In page */}
             <BrandHeader style={{ marginBottom: 0 }} small={isSmall} />
 
             {/* Navigation Buttons */}
@@ -99,7 +146,7 @@ export default function LandingPage() {
                 Practice makes perfect!
               </Text>
               <Text style={[styles.heroSubtitle, isSmall && styles.heroSubtitleMobile]}>
-                1:1 anonymous mock interviews with vetted professionals
+                1:1 anonymous mock interviews with vetted professionals. Master your pitch before the real deal.
               </Text>
             </View>
             <Image
@@ -232,7 +279,17 @@ const styles = StyleSheet.create({
   heroCardMobile: { padding: 8, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', paddingRight: 2 },
   heroContent: { flex: 1, maxWidth: 650, zIndex: 1 },
 
-  heroTitle: { fontSize: 40, fontWeight: FONT_WEIGHT_BOLD, color: '#f58742', marginBottom: 12, textShadowColor: 'rgba(0,0,0,0.1)', textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 4, ...(Platform.OS === 'web' && { WebkitTextStroke: '0.5px #f58742' }) },
+  // Updated to remove "dancing" or outline effects for a cleaner look
+  heroTitle: { 
+    fontSize: 40, 
+    fontWeight: FONT_WEIGHT_BOLD, 
+    color: '#f58742', 
+    marginBottom: 12, 
+    // Subtle shadow for legibility without being cartoonish
+    textShadowColor: 'rgba(0,0,0,0.05)', 
+    textShadowOffset: { width: 0, height: 1 }, 
+    textShadowRadius: 2,
+  },
   heroTitleMobile: { marginTop: 10, fontSize: 30, textAlign: 'center' },
   heroSubtitle: { fontSize: 16, color: '#333', lineHeight: 26 },
   heroSubtitleMobile: { fontSize: 14, lineHeight: 22, textAlign: 'center' },
