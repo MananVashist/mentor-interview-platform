@@ -44,9 +44,9 @@
     "web": {
       "favicon": "./assets/favicon.png",
       "bundler": "metro",
-      "name": "CrackJobs - Ace Your Next Interview",
+      "name": "CrackJobs - Mock interviews so you ace Your Next Interview",
       "shortName": "CrackJobs",
-      "description": "Master your interview skills with expert mentors. Practice mock interviews across PM, SDE, HR roles, get personalized feedback, and land your dream job. 3-round structured interview preparation platform.",
+      "description": "Master your interview skills with expert mentors. Practice mock interviews across PM, DA/DS, HR roles, get personalized feedback, and land your dream job. 2-round structured interview preparation platform.",
       "themeColor": "#11998e",
       "backgroundColor": "#ffffff",
       "lang": "en",

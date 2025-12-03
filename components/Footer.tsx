@@ -41,6 +41,12 @@ export const Footer = () => {
 
         <Separator />
 
+        <TouchableOpacity onPress={() => router.push('/faq')} accessibilityRole="link">
+          <Text style={styles.footerLink}>FAQ</Text>
+        </TouchableOpacity>
+
+        <Separator />
+
         <TouchableOpacity onPress={() => router.push('/contact')} accessibilityRole="link">
           <Text style={styles.footerLink}>Contact</Text>
         </TouchableOpacity>
