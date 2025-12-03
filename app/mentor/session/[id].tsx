@@ -22,45 +22,72 @@ export default function SessionFeedback() {
   const [sessionInfo, setSessionInfo] = useState({ profile: '', round: '' });
 
   useEffect(() => {
-    if (id) loadSessionAndTemplate();
-  }, [id]);
+  console.log('Session ID received:', id);
+  if (id && id !== 'undefined') {
+    loadSessionAndTemplate();
+  } else {
+    Alert.alert('Error', 'Invalid session ID');
+    router.back();
+  }
+}, [id]);
 
   const loadSessionAndTemplate = async () => {
-    try {
-      // 1. Fetch Session Info
-      const { data: session, error } = await supabase
-        .from('interview_sessions')
-        .select(`
-            *, 
-            package:interview_packages(target_profile),
-            candidate:candidates(target_profile)
-        `)
-        .eq('id', id)
-        .single();
-
-      if (error) throw error;
-
-      // 2. Determine Profile & Round
-      const profile = session.package?.target_profile || session.candidate?.target_profile || 'Product Manager';
-      const round = session.round || 'round_1'; // Ensure DB uses 'round_1', 'round_2'
-
-      setSessionInfo({ profile, round });
-
-      // 3. Pick the correct template from the Central File
-      // Try exact match, otherwise fallback to Product Manager
-      const profileTemplates = MASTER_TEMPLATES[profile] || MASTER_TEMPLATES["Product Manager"];
-      const roundQuestions = profileTemplates[round] || profileTemplates["round_1"];
-
-      console.log(`🔎 Loaded Template for: [${profile}] - [${round}]`);
-      setTemplate(roundQuestions);
-
-    } catch (e) {
-      console.error(e);
-      Alert.alert("Error", "Failed to load session details.");
-    } finally {
-      setLoading(false);
+  try {
+    // Validate ID first
+    if (!id || id === 'undefined') {
+      throw new Error('Invalid session ID');
     }
-  };
+
+    // 1. Fetch Session Info
+    const { data: session, error } = await supabase
+      .from('interview_sessions')
+      .select(`
+          *,
+          package:interview_packages(
+            id,
+            interview_profile_id
+          ),
+          candidate:candidates(
+            id,
+            professional_title
+          )
+      `)
+      .eq('id', String(id))
+      .single();
+
+    if (error) throw error;
+    if (!session) throw new Error('Session not found');
+
+    // 2. Get the profile name separately
+    let profile = 'Product Manager';
+    if (session.package?.interview_profile_id) {
+      const { data: profileData } = await supabase
+        .from('interview_profiles_admin')
+        .select('name')
+        .eq('id', session.package.interview_profile_id)
+        .single();
+      
+      if (profileData) profile = profileData.name;
+    }
+
+    const round = session.round || 'round_1';
+    setSessionInfo({ profile, round });
+
+    // 3. Pick the correct template
+    const profileTemplates = MASTER_TEMPLATES[profile] || MASTER_TEMPLATES["Product Manager"];
+    const roundQuestions = profileTemplates[round] || profileTemplates["round_1"];
+
+    console.log(`🔎 Loaded Template for: [${profile}] - [${round}]`);
+    setTemplate(roundQuestions);
+
+  } catch (e) {
+    console.error('Load error:', e);
+    Alert.alert("Error", "Failed to load session details.");
+    router.back();
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleAnswer = (qId: string, val: any) => {
     setAnswers(prev => ({ ...prev, [qId]: val }));
