@@ -28,7 +28,7 @@ const BookingCard = ({ session, onAccept, onReschedule, onViewDetails, onJoin, o
     uiState = 'POST';
   } else {
     // Status is 'confirmed'/'scheduled', checking time:
-    if (diffMinutes <= 1500 && diffMinutes > -60) {
+    if (diffMinutes <= 15 && diffMinutes > -60) {
       uiState = 'JOIN';
     } else if (diffMinutes <= -60) {
       uiState = 'POST';

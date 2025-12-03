@@ -1,5 +1,4 @@
-﻿// app/candidate/bookings.tsx
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { 
   View, 
   ScrollView, 
@@ -36,13 +35,13 @@ const BookingCard = ({ session, onJoin, onViewDetails, onViewEvaluation }: any) 
   } else if (session.status === 'completed') {
     uiState = 'POST_COMPLETED'; 
   } else {
-    // Status is 'confirmed'
-    if (diffMinutes > 15) {
-      uiState = 'SCHEDULED';        // Future
-    } else if (diffMinutes <= 15 && diffMinutes > -60) {
-      uiState = 'JOIN';             // Now
+    // Status is 'confirmed' or 'scheduled'
+    if (diffMinutes <= 15 && diffMinutes > -60) {
+      uiState = 'JOIN';
+    } else if (diffMinutes <= -60) {
+      uiState = 'POST_PENDING'; 
     } else {
-      uiState = 'POST_PENDING';     // Past (Waiting for mentor eval)
+      uiState = 'SCHEDULED';
     }
   }
 
@@ -185,19 +184,29 @@ export default function CandidateBookingsScreen() {
   const [detailContent, setDetailContent] = useState<{name: string, desc: string} | null>(null);
 
   const fetchBookings = async () => {
+    console.log('[CandidateBookings] Fetch started...');
+    
+    // --- 1. ROBUST USER CHECK ---
     let currentUser = user;
+    
     if (!currentUser) {
+       console.log('[CandidateBookings] Store empty, checking Supabase directly...');
        const { data } = await supabase.auth.getUser();
        currentUser = data.user;
     }
 
     if (!currentUser) {
+        console.log('[CandidateBookings] No user found. Redirecting or stopping.');
         setLoading(false); 
         setRefreshing(false);
+        // Optional: router.replace('/login'); 
         return;
     }
     
     try {
+      console.log('[CandidateBookings] Fetching sessions for:', currentUser.id);
+
+      // 2. Fetch Sessions
       const { data: sessionsData, error } = await supabase
         .from('interview_sessions')
         .select(`
@@ -218,11 +227,14 @@ export default function CandidateBookingsScreen() {
       if (error) throw error;
 
       if (!sessionsData || sessionsData.length === 0) {
+          console.log('[CandidateBookings] No sessions found.');
           setSessions([]);
           return;
       }
 
+      // 3. Fetch Mentor Names
       const mentorIds = [...new Set(sessionsData.map((s: any) => s.mentor_id))];
+      
       const { data: profiles } = await supabase
         .from('mentors')
         .select('id, professional_title')
@@ -232,6 +244,7 @@ export default function CandidateBookingsScreen() {
           acc[p.id] = p; return acc;
       }, {});
 
+      // 4. Fetch Interview Profile Details
       const interviewProfileIds = [...new Set(sessionsData.map((s: any) => s.package?.interview_profile_id).filter(Boolean))];
       let interviewProfileMap: any = {};
       
@@ -248,6 +261,7 @@ export default function CandidateBookingsScreen() {
          }
       }
 
+      // 5. Merge Data
       const merged = sessionsData.map((s: any) => {
           const profileMeta = s.package ? interviewProfileMap[s.package.interview_profile_id] : null;
           return {
@@ -261,6 +275,7 @@ export default function CandidateBookingsScreen() {
           };
       });
 
+      // Sort
       const sorted = merged.sort((a, b) => {
          const isADone = a.status === 'completed';
          const isBDone = b.status === 'completed';
@@ -396,25 +411,37 @@ const styles = StyleSheet.create({
 
   // --- CARD STYLES ---
   sessionCard: { padding: 16, borderRadius: 16, backgroundColor: '#FFF', borderWidth: 1, borderColor: theme.colors.border },
+  
+  // Split Layout
   splitContainer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 },
   leftSection: { flex: 1, paddingRight: 12 },
   rightSection: { paddingTop: 2 },
+  
+  // Card Content
   cardTitle: { fontSize: 16, fontWeight: '700', color: theme.colors.text.main, marginBottom: 12, lineHeight: 22 },
+  
   infoRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 },
   infoText: { fontSize: 13, color: '#6B7280', fontWeight: '500' },
+  
   cardDivider: { height: 1, backgroundColor: theme.colors.border, marginBottom: 12 },
+  
+  // Action Rows
   actionRowFull: { flexDirection: 'row', gap: 10, justifyContent: 'space-between' },
   
+  // Buttons
   btnFull: { flex: 1, paddingVertical: 12, paddingHorizontal: 16, borderRadius: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+  
   btnPrimary: { backgroundColor: theme.colors.primary },
   btnSecondary: { backgroundColor: '#eff6ff' },
   btnGreen: { backgroundColor: '#059669' },
   btnDisabled: { backgroundColor: '#f3f4f6', borderWidth: 1, borderColor: '#e5e7eb' },
 
+  // Text inside buttons
   textWhite: { color: '#fff', fontWeight: '600', fontSize: 13 },
   textPrimary: { color: theme.colors.primary, fontWeight: '600', fontSize: 13 },
   textGray: { color: '#6B7280', fontSize: 13, fontWeight: '600' },
 
+  // Modals
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20 },
   modalContent: { backgroundColor: '#fff', padding: 24, borderRadius: 16 },
   modalCloseBtn: { backgroundColor: theme.colors.primary, padding: 12, borderRadius: 8, alignItems: 'center' },

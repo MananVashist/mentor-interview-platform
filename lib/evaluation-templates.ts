@@ -47,7 +47,7 @@ export const MASTER_TEMPLATES: Record<string, any> = {
       }
     ]
   },
-  "Data Analyst / BA": {
+  "Data Analyst / Business Analyst": {
     "round_1": [
       {
         title: "Q1 – SQL & Logic",
@@ -89,7 +89,7 @@ export const MASTER_TEMPLATES: Record<string, any> = {
       }
     ]
   },
-  "Data Scientist / MLE": {
+  "Data Scientist / ML Engineer (applied)": {
     "round_1": [
       {
         title: "Q1 – Problem Formulation",
@@ -131,7 +131,7 @@ export const MASTER_TEMPLATES: Record<string, any> = {
       }
     ]
   },
-  "HR – L&D": {
+  "HR / Talent Acquisition": {
     "round_1": [
       {
         title: "Q1 – Org Diagnosis",
