@@ -1,11 +1,18 @@
-// components/StandardPageTemplate.tsx
-import React, { useEffect, ReactNode } from 'react';
-import { View, Text, useWindowDimensions, Platform, TouchableOpacity } from 'react-native';
-import Head from 'expo-router/head';
+﻿// components/StandardPageTemplate.tsx - FIXED VERSION
+import React from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, useWindowDimensions, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
-import { PageLayout } from '@/components/PageLayout';
-import { LegalPageStyles } from '@/styles/LegalPageStyles';
-import { createBreadcrumbSchema, injectMultipleSchemas } from '@/lib/structured-data';
+import Head from 'expo-router/head'; // ✅ FIXED: Default import, not named import
+import { PageLayout } from './PageLayout';
+import { injectMultipleSchemas, createBreadcrumbSchema } from '@/lib/structured-data';
+
+// 🔥 System font stack - 0ms load time for SEO pages
+const SYSTEM_FONT = Platform.select({
+  web: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif",
+  ios: "System",
+  android: "Roboto",
+  default: "System"
+}) as string;
 
 interface RelatedPage {
   title: string;
@@ -15,22 +22,13 @@ interface RelatedPage {
 }
 
 interface StandardPageTemplateProps {
-  // SEO & Meta
   title: string;
   metaDescription: string;
-  pageUrl: string; // e.g., 'https://crackjobs.com/privacy'
-  
-  // Page Content
+  pageUrl: string;
   pageTitle: string;
-  lastUpdated?: string; // Optional, defaults to "November 25, 2024"
-  
-  // Content (sections)
-  children: ReactNode;
-  
-  // Optional: Additional schema (e.g., ContactPage schema)
-  additionalSchema?: any;
-  
-  // Optional: Related pages to show at bottom
+  lastUpdated?: string;
+  children: React.ReactNode;
+  additionalSchema?: Record<string, any>;
   relatedPages?: RelatedPage[];
 }
 
@@ -39,154 +37,285 @@ export const StandardPageTemplate = ({
   metaDescription,
   pageUrl,
   pageTitle,
-  lastUpdated = "November 25, 2024",
+  lastUpdated,
   children,
   additionalSchema,
   relatedPages,
 }: StandardPageTemplateProps) => {
+  const router = useRouter();
   const { width } = useWindowDimensions();
   const isSmall = width < 900;
-  const router = useRouter();
 
-  // SEO: Inject breadcrumb schema + any additional schema
-  useEffect(() => {
-    if (Platform.OS === 'web') {
-      const breadcrumb = createBreadcrumbSchema([
-        { name: 'Home', url: 'https://crackjobs.com' },
-        { name: pageTitle, url: pageUrl }
-      ]);
-      
-      const schemas = additionalSchema 
-        ? [breadcrumb, additionalSchema] 
-        : [breadcrumb];
-      
-      const cleanup = injectMultipleSchemas(schemas);
-      return () => cleanup && cleanup();
-    }
-  }, [pageTitle, pageUrl, additionalSchema]);
+  // Create breadcrumb schema
+  const breadcrumbSchema = createBreadcrumbSchema([
+    { name: 'Home', url: 'https://crackjobs.com' },
+    { name: pageTitle, url: pageUrl },
+  ]);
+
+  // Combine schemas
+  const schemas = additionalSchema 
+    ? [breadcrumbSchema, additionalSchema]
+    : [breadcrumbSchema];
 
   return (
     <PageLayout>
       <Head>
         <title>{title}</title>
         <meta name="description" content={metaDescription} />
+        <link rel="canonical" href={pageUrl} />
+        <meta property="og:title" content={title} />
+        <meta property="og:description" content={metaDescription} />
+        <meta property="og:url" content={pageUrl} />
+        <meta property="og:type" content="website" />
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:title" content={title} />
+        <meta name="twitter:description" content={metaDescription} />
+        {injectMultipleSchemas(schemas)}
       </Head>
 
-      <View style={[LegalPageStyles.content, isSmall && LegalPageStyles.contentMobile]}>
-        {/* Page Title */}
-        <Text 
-          style={[LegalPageStyles.pageTitle, isSmall && LegalPageStyles.pageTitleMobile]} 
-          accessibilityRole="header" 
-          aria-level={1}
-        >
-          {pageTitle}
-        </Text>
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+        <View style={[styles.content, isSmall && styles.contentMobile]}>
+          <Text style={[styles.pageTitle, isSmall && styles.pageTitleMobile]} accessibilityRole="header" aria-level={1}>
+            {pageTitle}
+          </Text>
+          
+          {lastUpdated && (
+            <Text style={styles.lastUpdated}>
+              Last Updated: {lastUpdated}
+            </Text>
+          )}
 
-        {/* Last Updated */}
-        <Text style={LegalPageStyles.lastUpdated}>Last Updated: {lastUpdated}</Text>
+          {children}
 
-        {/* Content Sections (passed as children) */}
-        {children}
-
-        {/* Related Pages Section (Optional) */}
-        {relatedPages && relatedPages.length > 0 && (
-          <View style={LegalPageStyles.relatedSection}>
-            <Text style={LegalPageStyles.relatedTitle}>Related Pages</Text>
-            <View style={LegalPageStyles.relatedGrid}>
-              {relatedPages.map((page, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={[LegalPageStyles.relatedCard, isSmall && LegalPageStyles.relatedCardMobile]}
-                  onPress={() => router.push(page.route as any)}
-                  accessibilityRole="link"
-                >
-                  <Text style={LegalPageStyles.relatedCardIcon}>{page.icon}</Text>
-                  <Text style={LegalPageStyles.relatedCardTitle}>{page.title}</Text>
-                  <Text style={LegalPageStyles.relatedCardDesc}>{page.description}</Text>
-                </TouchableOpacity>
-              ))}
+          {relatedPages && relatedPages.length > 0 && (
+            <View style={styles.relatedSection}>
+              <Text style={styles.relatedTitle}>Related Pages</Text>
+              <View style={[styles.relatedGrid, isSmall && styles.relatedGridMobile]}>
+                {relatedPages.map((page, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={[styles.relatedCard, isSmall && styles.relatedCardMobile]}
+                    onPress={() => router.push(page.route as any)}
+                    accessibilityRole="link"
+                  >
+                    <Text style={styles.relatedCardIcon}>{page.icon}</Text>
+                    <Text style={styles.relatedCardTitle}>{page.title}</Text>
+                    <Text style={styles.relatedCardDesc}>{page.description}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
             </View>
-          </View>
-        )}
-      </View>
+          )}
+        </View>
+      </ScrollView>
     </PageLayout>
   );
 };
 
-// ========================================
-// REUSABLE COMPONENTS
-// ========================================
-
-// Reusable Section Component
-export const StandardSection = ({ 
-  title, 
-  children 
-}: { 
-  title?: string; 
-  children: ReactNode 
-}) => (
-  <View style={LegalPageStyles.section}>
-    {title && (
-      <Text style={LegalPageStyles.sectionTitle} accessibilityRole="header" aria-level={2}>
-        {title}
-      </Text>
-    )}
+// Reusable components with system fonts
+export const StandardSection = ({ title, children }: { title?: string; children: React.ReactNode }) => (
+  <View style={styles.section}>
+    {title && <Text style={styles.sectionTitle}>{title}</Text>}
     {children}
   </View>
 );
 
-// Reusable Paragraph Component
-export const StandardParagraph = ({ 
-  children 
-}: { 
-  children: ReactNode 
-}) => (
-  <Text style={LegalPageStyles.paragraph}>{children}</Text>
+export const StandardParagraph = ({ children }: { children: React.ReactNode }) => (
+  <Text style={styles.paragraph}>{children}</Text>
 );
 
-// Reusable Bullet List Component
-export const StandardBulletList = ({ 
-  items 
-}: { 
-  items: ReactNode[] 
-}) => (
-  <View style={LegalPageStyles.bulletList}>
+export const StandardBulletList = ({ items }: { items: React.ReactNode[] }) => (
+  <View style={styles.bulletList}>
     {items.map((item, index) => (
-      <View key={index} style={LegalPageStyles.bulletItem}>
-        <Text style={LegalPageStyles.bullet}>�</Text>
-        <Text style={LegalPageStyles.bulletText}>{item}</Text>
+      <View key={index} style={styles.bulletItem}>
+        <Text style={styles.bullet}>•</Text>
+        <Text style={styles.bulletText}>{item}</Text>
       </View>
     ))}
   </View>
 );
 
-// Reusable Bold Text Component
-export const StandardBold = ({ 
-  children 
-}: { 
-  children: ReactNode 
-}) => (
-  <Text style={LegalPageStyles.bold}>{children}</Text>
+export const StandardBold = ({ children }: { children: React.ReactNode }) => (
+  <Text style={styles.bold}>{children}</Text>
 );
 
-// Reusable Link Component
-export const StandardLink = ({ 
-  children, 
-  onPress 
-}: { 
-  children: ReactNode;
-  onPress?: () => void;
-}) => (
-  <Text style={LegalPageStyles.link} onPress={onPress}>{children}</Text>
+export const StandardLink = ({ children, onPress }: { children: React.ReactNode; onPress?: () => void }) => (
+  <Text style={styles.link} onPress={onPress}>
+    {children}
+  </Text>
 );
 
-// Reusable Contact Email Component
-export const StandardContactEmail = ({ 
-  children, 
-  onPress 
-}: { 
-  children: ReactNode;
-  onPress?: () => void;
-}) => (
-  <Text style={LegalPageStyles.contactEmail} onPress={onPress}>{children}</Text>
+export const StandardContactEmail = ({ children, onPress }: { children: React.ReactNode; onPress?: () => void }) => (
+  <Text style={styles.contactEmail} onPress={onPress}>
+    {children}
+  </Text>
 );
+
+const styles = StyleSheet.create({
+  scrollView: { flex: 1 },
+  scrollContent: { flexGrow: 1 },
+  
+  // Layout
+  content: {
+    maxWidth: 1000,
+    width: '100%',
+    marginHorizontal: 'auto',
+    paddingHorizontal: 40,
+    paddingVertical: 60,
+  },
+  contentMobile: {
+    paddingHorizontal: 20,
+    paddingVertical: 40,
+  },
+
+  // Typography with system fonts
+  pageTitle: {
+    fontFamily: SYSTEM_FONT,
+    fontWeight: '800', // Extra bold for page titles
+    fontSize: 42,
+    color: '#111827',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  pageTitleMobile: {
+    fontSize: 32,
+  },
+
+  lastUpdated: {
+    fontFamily: SYSTEM_FONT,
+    fontWeight: '400', // Regular weight
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+    marginBottom: 48,
+  },
+
+  section: {
+    marginBottom: 32,
+  },
+
+  sectionTitle: {
+    fontFamily: SYSTEM_FONT,
+    fontWeight: '700', // Bold for section titles
+    fontSize: 24,
+    color: '#111827',
+    marginBottom: 12,
+    marginTop: 24,
+  },
+
+  paragraph: {
+    fontFamily: SYSTEM_FONT,
+    fontWeight: '400', // Regular for body text
+    fontSize: 16,
+    color: '#4B5563',
+    lineHeight: 26,
+    marginBottom: 16,
+  },
+
+  // Bullets
+  bulletList: {
+    marginTop: 8,
+    marginLeft: 8,
+  },
+  bulletItem: {
+    flexDirection: 'row',
+    marginBottom: 8,
+  },
+  bullet: {
+    fontFamily: SYSTEM_FONT,
+    fontWeight: '700', // Bold bullet
+    fontSize: 16,
+    color: '#11998e',
+    marginRight: 8,
+  },
+  bulletText: {
+    fontFamily: SYSTEM_FONT,
+    fontWeight: '400', // Regular text
+    flex: 1,
+    fontSize: 16,
+    color: '#4B5563',
+    lineHeight: 24,
+  },
+
+  // Interactive elements
+  bold: {
+    fontFamily: SYSTEM_FONT,
+    fontWeight: '700', // Bold emphasis
+    color: '#111827',
+  },
+  link: {
+    fontFamily: SYSTEM_FONT,
+    fontWeight: '600', // Semibold for links
+    color: '#11998e',
+    textDecorationLine: 'underline',
+  },
+  contactEmail: {
+    fontFamily: SYSTEM_FONT,
+    fontWeight: '600', // Semibold for email
+    fontSize: 18,
+    color: '#11998e',
+    marginTop: 8,
+  },
+
+  // Related pages section
+  relatedSection: {
+    marginTop: 60,
+    marginBottom: 40,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+    paddingTop: 40,
+  },
+  relatedTitle: {
+    fontFamily: SYSTEM_FONT,
+    fontWeight: '700', // Bold title
+    fontSize: 28,
+    color: '#111827',
+    marginBottom: 24,
+    textAlign: 'center',
+  },
+  relatedGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 16,
+    justifyContent: 'center',
+  },
+  relatedGridMobile: {
+    flexDirection: 'column',
+  },
+  relatedCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 24,
+    width: 280,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  relatedCardMobile: {
+    width: '100%',
+  },
+  relatedCardIcon: {
+    fontSize: 32,
+    marginBottom: 8,
+  },
+  relatedCardTitle: {
+    fontFamily: SYSTEM_FONT,
+    fontWeight: '600', // Semibold for card titles
+    fontSize: 18,
+    color: '#111827',
+    marginBottom: 4,
+    textAlign: 'center',
+  },
+  relatedCardDesc: {
+    fontFamily: SYSTEM_FONT,
+    fontWeight: '400', // Regular for descriptions
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+  },
+});
