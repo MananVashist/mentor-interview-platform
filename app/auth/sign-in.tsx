@@ -205,7 +205,7 @@ export default function SignInScreen() {
                 onChangeText={setEmail}
                 autoCapitalize="none"
                 keyboardType="email-address"
-                placeholder="name@work-email.com"
+                placeholder="name@email.com"
                 placeholderTextColor="#9CA3AF"
               />
             </View>
