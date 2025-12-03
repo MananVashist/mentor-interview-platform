@@ -1,7 +1,6 @@
 ﻿import { useEffect } from 'react';
 import { Slot, SplashScreen } from 'expo-router';
 import Head from 'expo-router/head';
-// 1. Import SafeAreaProvider
 import { SafeAreaProvider } from 'react-native-safe-area-context'; 
 import { 
   useFonts, 
@@ -30,12 +29,10 @@ export default function RootLayout() {
     }
   }, [fontsLoaded]);
 
-  if (!fontsLoaded) {
-    return null;
-  }
+  // ❌ DELETED: "if (!fontsLoaded) return null;"
+  // We removed the blocking check so the app renders INSTANTLY.
 
   return (
-    // 2. WRAP THE APP HERE
     <SafeAreaProvider>
       <NotificationProvider>
         <Head>
@@ -47,6 +44,9 @@ export default function RootLayout() {
           <meta name="twitter:card" content="summary_large_image" />
         </Head>
         
+        {/* The Slot will now render immediately. 
+            The Homepage will look perfect because it uses System Fonts.
+            The Dashboard might swap fonts 0.5s later, which is fine. */}
         <Slot />
       </NotificationProvider>
     </SafeAreaProvider>
