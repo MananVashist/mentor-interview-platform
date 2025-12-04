@@ -64,6 +64,7 @@ export const supabase =
   Platform.OS === 'web'
     ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
         auth: {
+          storage: AsyncStorage,    
           autoRefreshToken: true,
           persistSession: true,
           detectSessionInUrl: false,

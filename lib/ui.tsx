@@ -156,7 +156,7 @@ export const BrandHeader = ({ style, small = false }: BrandHeaderProps) => {
           <Text style={styles.logoMainJobs}>Jobs</Text>
         </Text>
         <Text style={[styles.logoTagline, small && styles.logoTaglineSmall]}>
-          Mad skills. Dream job.
+          Mad skills. Dream job!
         </Text>
       </View>
     </View>
