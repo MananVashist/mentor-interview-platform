@@ -14,17 +14,9 @@ import {
   TextInputProps,
   Animated,
   Platform,
-  Easing, 
+  Easing,
 } from "react-native";
 import { theme } from "./theme";
-
-// 🔥 1. Define the System Font Stack (Same as your homepage)
-const SYSTEM_FONT = Platform.select({
-  web: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif",
-  ios: "System",
-  android: "Roboto",
-  default: "System"
-});
 
 // --- Types ---
 interface HeadingProps {
@@ -113,7 +105,7 @@ export const BrandHeader = ({ style, small = false }: BrandHeaderProps) => {
         Animated.timing(animX, {
           toValue: targetX,
           duration: duration,
-          easing: Easing.inOut(Easing.ease), // Smooth acceleration/deceleration
+          easing: Easing.inOut(Easing.ease),
           useNativeDriver: true,
         }),
         Animated.timing(animY, {
@@ -338,7 +330,7 @@ const styles = StyleSheet.create({
     borderColor: '#333',
     justifyContent: 'center',
     alignItems: 'center',
-    overflow: 'hidden', 
+    overflow: 'hidden',
   },
   pupil: {
     width: 12,
@@ -347,10 +339,9 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   logoMain: {
-    // 🟢 WEB: System Font | NATIVE: Custom Font
-    fontFamily: Platform.select({ web: SYSTEM_FONT, default: theme.typography.fontFamily.bold }),
+    fontFamily: theme.typography.fontFamily.bold,
     fontSize: 32,
-    fontWeight: '900', // Keeps it super bold on all platforms
+    fontWeight: '900',
     lineHeight: 38,
   },
   logoMainSmall: {
@@ -360,8 +351,7 @@ const styles = StyleSheet.create({
   logoMainCrack: { color: '#333' },
   logoMainJobs: { color: '#18a7a7' },
   logoTagline: {
-    // 🟢 WEB: System Font | NATIVE: Custom Font
-    fontFamily: Platform.select({ web: SYSTEM_FONT, default: theme.typography.fontFamily.bold }),
+    fontFamily: theme.typography.fontFamily.bold,
     fontSize: 14,
     fontWeight: '900',
     color: '#18a7a7',
@@ -373,42 +363,41 @@ const styles = StyleSheet.create({
 
   // Typography
   h1: {
-    // 🟢 WEB: System Font | NATIVE: Custom Font
-    fontFamily: Platform.select({ web: SYSTEM_FONT, default: theme.typography.fontFamily.bold }),
-    fontWeight: '700', // Added explicit weight for system font
+    fontFamily: theme.typography.fontFamily.bold,
+    fontWeight: '700', // 🟢 Explicit weight for web
     fontSize: theme.typography.size.xxl,
     color: theme.colors.text.main,
     marginBottom: theme.spacing.xs,
   },
   h2: {
-    fontFamily: Platform.select({ web: SYSTEM_FONT, default: theme.typography.fontFamily.semibold }),
-    fontWeight: '600', // Added explicit weight
+    fontFamily: theme.typography.fontFamily.semibold,
+    fontWeight: '600', // 🟢 Explicit weight for web
     fontSize: theme.typography.size.xl,
     color: theme.colors.text.main,
     marginBottom: theme.spacing.xs,
   },
   h3: {
-    fontFamily: Platform.select({ web: SYSTEM_FONT, default: theme.typography.fontFamily.semibold }),
-    fontWeight: '600',
+    fontFamily: theme.typography.fontFamily.semibold,
+    fontWeight: '600', // 🟢 Explicit weight for web
     fontSize: theme.typography.size.lg,
     color: theme.colors.text.main,
     marginBottom: theme.spacing.xs,
   },
   h4: {
-    fontFamily: Platform.select({ web: SYSTEM_FONT, default: theme.typography.fontFamily.medium }),
-    fontWeight: '500',
+    fontFamily: theme.typography.fontFamily.medium,
+    fontWeight: '500', // 🟢 Explicit weight for web
     fontSize: theme.typography.size.md,
     color: theme.colors.text.main,
   },
   text: {
-    fontFamily: Platform.select({ web: SYSTEM_FONT, default: theme.typography.fontFamily.regular }),
-    fontWeight: '400',
+    fontFamily: theme.typography.fontFamily.regular,
+    fontWeight: '400', // 🟢 Explicit weight for web
     fontSize: theme.typography.size.sm,
     color: theme.colors.text.body,
   },
   label: {
-    fontFamily: Platform.select({ web: SYSTEM_FONT, default: theme.typography.fontFamily.medium }),
-    fontWeight: '500',
+    fontFamily: theme.typography.fontFamily.medium,
+    fontWeight: '500', // 🟢 Explicit weight for web
     fontSize: theme.typography.size.xs,
     color: theme.colors.text.light,
     marginBottom: 4,
@@ -418,8 +407,8 @@ const styles = StyleSheet.create({
 
   // Forms
   input: {
-    fontFamily: Platform.select({ web: SYSTEM_FONT, default: theme.typography.fontFamily.regular }),
-    fontWeight: '400',
+    fontFamily: theme.typography.fontFamily.regular,
+    fontWeight: '400', // 🟢 Explicit weight for web
     fontSize: theme.typography.size.md,
     color: theme.colors.text.main,
     borderWidth: 1,
@@ -465,8 +454,8 @@ const styles = StyleSheet.create({
 
   // Button Text
   btnTextBase: {
-    fontFamily: Platform.select({ web: SYSTEM_FONT, default: theme.typography.fontFamily.semibold }),
-    fontWeight: '600', // Semibold weight
+    fontFamily: theme.typography.fontFamily.semibold,
+    fontWeight: '600', // 🟢 Explicit weight for web
     fontSize: theme.typography.size.sm,
   },
   btnTextPrimary: {
