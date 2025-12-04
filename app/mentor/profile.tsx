@@ -7,14 +7,14 @@ import { supabase } from '@/lib/supabase/client';
 
 import { colors, spacing, borderRadius, typography, shadows } from '@/lib/theme';
 import { Heading, AppText, Section, Card, Button, Input, ScreenBackground, Label } from '@/lib/ui';
-import { NotificationBanner } from '@/lib/ui/NotificationBanner';
+// 1. Change import from Component to Hook
+import { useNotification } from '@/lib/ui/NotificationBanner';
 
-// Updated to match your DB Schema
 type MentorRow = {
-  id: string; // This is the PK and FK to profiles(id)
+  id: string; 
   professional_title: string | null;
   years_of_experience: number | null; 
-  profile_ids: number[] | null; // Integer array for expertise IDs
+  profile_ids: number[] | null; 
   session_price_inr: number | null;    
 };
 
@@ -23,67 +23,53 @@ type InterviewProfile = {
   name: string;
 };
 
-type BannerState = { type: 'success' | 'error'; message: string } | null;
+// 2. Removed BannerState type (no longer needed)
 
 export default function MentorProfileScreen() {
   const { profile } = useAuthStore();
+  
+  // 3. Initialize the global hook
+  const { showNotification } = useNotification();
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   
-  // 1. Price State
   const [sessionPrice, setSessionPrice] = useState('');
-
-  // 2. Expertise State
   const [availableProfiles, setAvailableProfiles] = useState<InterviewProfile[]>([]);
   const [selectedProfiles, setSelectedProfiles] = useState<number[]>([]);
-
-  // 3. Public Profile State
   const [professionalTitle, setProfessionalTitle] = useState('');
   const [yearsOfExperience, setYearsOfExperience] = useState('');
 
-  const [banner, setBanner] = useState<BannerState>(null);
+  // 4. Removed local banner state (const [banner, setBanner]...)
 
   useEffect(() => {
     if (!profile?.id) return;
-
     let mounted = true;
 
     (async () => {
       try {
         setLoading(true);
 
-        // A. Load mentor row
-        // Query by 'id' which matches the user's profile.id
-        const { data: mentor, error: mentorError } = await supabase
+        const { data: mentor } = await supabase
           .from('mentors')
           .select('id, professional_title, years_of_experience, profile_ids, session_price_inr')
           .eq('id', profile.id) 
           .maybeSingle();
-
-        if (mentorError) {
-          console.log('[mentor/profile] load mentor error', mentorError);
-          // Don't show error banner yet, user might just be new
-        } 
         
         if (mentor && mounted) {
           const m = mentor as MentorRow;
-          
           setProfessionalTitle(m.professional_title ?? '');
           setYearsOfExperience(m.years_of_experience != null ? String(m.years_of_experience) : '');
           setSelectedProfiles(m.profile_ids ?? []);
           setSessionPrice(m.session_price_inr != null ? String(m.session_price_inr) : '');
         }
 
-        // B. Load available interview profiles
-        const { data: profilesData, error: profilesError } = await supabase
+        const { data: profilesData } = await supabase
           .from('interview_profiles_admin')
           .select('id, name')
           .order('name', { ascending: true });
 
-        if (profilesError) {
-          console.log('[mentor/profile] load interview_profiles_admin error', profilesError);
-        } else if (profilesData && mounted) {
+        if (profilesData && mounted) {
           setAvailableProfiles(profilesData as InterviewProfile[]);
         }
       } catch (e) {
@@ -93,9 +79,7 @@ export default function MentorProfileScreen() {
       }
     })();
 
-    return () => {
-      mounted = false;
-    };
+    return () => { mounted = false; };
   }, [profile?.id]);
 
   const toggleProfile = (id: number) => {
@@ -105,31 +89,23 @@ export default function MentorProfileScreen() {
   };
 
   const handleSave = async () => {
-    console.log('[handleSave] Starting save process...');
-    
     if (!profile?.id) {
-      console.error('[handleSave] No profile ID found in store.');
-      setBanner({ type: 'error', message: 'User session not found.' });
+      showNotification('User session not found.', 'error');
       return;
     }
 
-    // Validation inputs
     const yrsInput = yearsOfExperience.trim();
     const priceInput = sessionPrice.trim();
-    console.log('[handleSave] Raw inputs:', { yrsInput, priceInput, professionalTitle, selectedProfiles });
-
     const yrs = yrsInput ? Number(yrsInput) : null;
     const price = priceInput ? Number(priceInput) : null;
 
     if (yrs != null && (isNaN(yrs) || yrs < 0 || yrs > 60)) {
-      console.warn('[handleSave] Invalid years of experience:', yrs);
-      setBanner({ type: 'error', message: 'Enter a valid years of experience (0-60).' });
+      showNotification('Enter a valid years of experience (0-60).', 'error');
       return;
     }
     
     if (price != null && (isNaN(price) || price < 0)) {
-        console.warn('[handleSave] Invalid price:', price);
-        setBanner({ type: 'error', message: 'Price cannot be negative.' });
+        showNotification('Price cannot be negative.', 'error');
         return;
     }
 
@@ -137,7 +113,7 @@ export default function MentorProfileScreen() {
       setSaving(true);
 
       const payload = {
-        id: profile.id, // The PK is the user's ID
+        id: profile.id,
         professional_title: professionalTitle.trim() || null,
         years_of_experience: yrs,
         profile_ids: selectedProfiles,
@@ -145,27 +121,20 @@ export default function MentorProfileScreen() {
         updated_at: new Date(),
       };
 
-      console.log('[handleSave] Sending upsert payload to Supabase:', payload);
-
-      // Upsert: Create or Update based on 'id'
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('mentors')
-        .upsert(payload)
-        .select(); // Selecting returned data can help verify the write
+        .upsert(payload);
 
       if (error) {
-        console.error('[handleSave] Supabase upsert error:', error);
-        setBanner({ type: 'error', message: 'Could not save profile: ' + error.message });
+        showNotification('Could not save profile: ' + error.message, 'error');
       } else {
-        console.log('[handleSave] Success! Returned data:', data);
-        setBanner({ type: 'success', message: 'Profile saved successfully.' });
+        // 5. Success! Use global hook
+        showNotification('Profile saved successfully.', 'success');
       }
     } catch (e: any) {
-      console.error('[handleSave] Unexpected exception:', e);
-      setBanner({ type: 'error', message: 'Unexpected error while saving: ' + e.message });
+      showNotification('Unexpected error while saving: ' + e.message, 'error');
     } finally {
       setSaving(false);
-      console.log('[handleSave] Process finished.');
     }
   };
 
@@ -181,16 +150,9 @@ export default function MentorProfileScreen() {
 
   return (
     <ScreenBackground>
-      <NotificationBanner
-        key={banner ? `${banner.type}-${banner.message}` : 'no-banner'}
-        visible={!!banner}
-        type={banner?.type ?? 'success'}
-        message={banner?.message ?? ''}
-        onHide={() => setBanner(null)}
-      />
+      {/* 6. Removed <NotificationBanner /> JSX - it is now global in Layout */}
       
       <ScrollView contentContainerStyle={{ paddingBottom: spacing.xl }}>
-        {/* Header */}
         <Section style={styles.header}>
           <View style={styles.headerIcon}>
             <Ionicons name="settings-outline" size={32} color={colors.primary} />
@@ -342,7 +304,6 @@ export default function MentorProfileScreen() {
           </Card>
         </Section>
 
-        {/* Save Button */}
         <Section>
           <Button
             title={saving ? 'Saving...' : 'Save Settings'}
@@ -462,7 +423,7 @@ const styles = StyleSheet.create({
   profileCard: {
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: borderRadius.full, // Pill shape
+    borderRadius: borderRadius.full,
     paddingVertical: 8,
     paddingHorizontal: 16,
     backgroundColor: colors.background,

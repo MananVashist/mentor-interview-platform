@@ -39,7 +39,7 @@ const BookingCard = ({ session, onAccept, onReschedule, onViewDetails, onJoin, o
           </View>
           <View style={styles.infoRow}>
             <Ionicons name="time-outline" size={14} color="#6B7280" />
-            <AppText style={styles.infoText}>2 x 55 min (45 min interview + 10 min Q&A)</AppText>
+            <AppText style={styles.infoText}>55 min (45 min interview + 10 min Q&A)</AppText>
           </View>
           <View style={styles.payoutRow}>
             <Ionicons name="wallet-outline" size={14} color="#059669" />

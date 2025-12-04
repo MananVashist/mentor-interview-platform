@@ -8,19 +8,16 @@ import {
   Easing,
   Dimensions,
 } from 'react-native';
-// Removed LinearGradient since we just want a solid white background
 import { BrandHeader } from '@/lib/ui'; 
 
 const { width, height } = Dimensions.get('window');
 
 export const SplashScreen = () => {
-  // 1. Logo Entrance Animations
   const logoScale = useRef(new Animated.Value(0)).current;
   const logoOpacity = useRef(new Animated.Value(0)).current;
-
-  // 2. Typing Animation State
   const [displayedText, setDisplayedText] = useState('');
   const fullTagline = "Interview with real professionals";
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     // Step 1: Animate the Logo In
@@ -40,21 +37,33 @@ export const SplashScreen = () => {
         useNativeDriver: true,
       }),
     ]).start(() => {
-      // Step 2: Start Typing AFTER logo animation finishes (approx 700ms total)
+      // Step 2: Start Typing AFTER logo animation finishes
       startTyping();
     });
+
+    // Cleanup
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
   }, []);
 
   const startTyping = () => {
     let currentIndex = 0;
-    const typingInterval = setInterval(() => {
+    
+    intervalRef.current = setInterval(() => {
       if (currentIndex <= fullTagline.length) {
         setDisplayedText(fullTagline.slice(0, currentIndex));
         currentIndex++;
       } else {
-        clearInterval(typingInterval);
+        // Animation complete, clear interval
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+        }
       }
-    }, 50); // Adjust speed here (lower = faster)
+    }, 80); // 80ms per character = smooth and readable
   };
 
   return (
@@ -74,12 +83,11 @@ export const SplashScreen = () => {
         </Animated.View>
 
         {/* Typing Animation Tagline */}
-        {/* We use a fixed height container to prevent layout jumps as text appears */}
         <View style={styles.taglineContainer}>
-            <Text style={styles.tagline}>
-              {displayedText}
-              <Text style={styles.cursor}>|</Text> 
-            </Text>
+          <Text style={styles.tagline}>
+            {displayedText}
+            <Text style={styles.cursor}>|</Text> 
+          </Text>
         </View>
 
       </View>
@@ -92,7 +100,7 @@ const styles = StyleSheet.create({
     flex: 1,
     width: width,
     height: height,
-    backgroundColor: '#f8f5f0', // ✅ Pure white background
+    backgroundColor: '#f8f5f0',
   },
   content: {
     flex: 1,
@@ -102,7 +110,7 @@ const styles = StyleSheet.create({
   },
   taglineContainer: {
     marginTop: 20,
-    minHeight: 30, // Reserves space so layout doesn't jump
+    minHeight: 30,
     justifyContent: 'center',
   },
   tagline: {
@@ -110,9 +118,9 @@ const styles = StyleSheet.create({
     color: '#666',
     fontWeight: '500',
     textAlign: 'center',
-    fontFamily: 'Courier', // Monospace fonts look best with typing effects
+    fontFamily: 'Courier',
   },
   cursor: {
-    color: '#00BFA5', // Blinking cursor color (optional)
+    color: '#00BFA5',
   },
 });

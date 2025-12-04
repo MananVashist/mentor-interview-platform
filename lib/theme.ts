@@ -1,4 +1,5 @@
 ﻿// lib/theme.ts
+import { Platform } from 'react-native';
 
 export const colors = {
   // Main Brand Colors
@@ -54,13 +55,31 @@ export const colors = {
   }
 };
 
+// 🟢 CRITICAL FIX: Platform-specific font configuration
+// Web: Use system fonts (Inter via CDN or fallback to system fonts)
+// Native: Use Inter fonts loaded via expo-google-fonts
 export const typography = {
   fontFamily: {
-    regular: "Inter_400Regular",
-    medium: "Inter_500Medium",
-    semibold: "Inter_600SemiBold",
-    bold: "Inter_700Bold",
-    extrabold: "Inter_800ExtraBold",
+    regular: Platform.select({
+      web: 'Inter, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+      default: "Inter_400Regular",
+    }) as string,
+    medium: Platform.select({
+      web: 'Inter, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+      default: "Inter_500Medium",
+    }) as string,
+    semibold: Platform.select({
+      web: 'Inter, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+      default: "Inter_600SemiBold",
+    }) as string,
+    bold: Platform.select({
+      web: 'Inter, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+      default: "Inter_700Bold",
+    }) as string,
+    extrabold: Platform.select({
+      web: 'Inter, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+      default: "Inter_800ExtraBold",
+    }) as string,
   },
   size: {
     xs: 12,
