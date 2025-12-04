@@ -103,6 +103,7 @@ export default function LandingPage() {
         <meta name="description" content={SITE_DESCRIPTION} />
         <meta name="keywords" content="mock interview, product manager interview, data scientist interview, anonymous interview, tech interview prep, system design mock interview" />
         <meta name="robots" content="index, follow" />
+        <link rel="preload" href="/hero.webp" as="image" />
         <link rel="canonical" href={SITE_URL} />
 
         {/* Open Graph / Facebook */}
@@ -157,7 +158,7 @@ export default function LandingPage() {
               </Text>
             </View>
             <Image
-              source={require('../assets/crackjobs-hero.webp')}
+              source={{ uri: '/hero.webp' }} 
               style={[styles.mascot, isSmall && styles.mascotMobile]}
               resizeMode="contain"
               accessibilityLabel="CrackJobs mascot celebrating a job offer"

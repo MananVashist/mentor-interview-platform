@@ -14,6 +14,7 @@ import {
 import { useAuthStore } from '@/lib/store';
 import { supabase } from '@/lib/supabase/client'; // <--- Ensure this path is correct for your project
 import { Ionicons } from '@expo/vector-icons'; 
+import { useNotification } from '@/lib/ui/NotificationBanner';
 
 // --- Types ---
 type TimeSlot = string; 
@@ -53,6 +54,7 @@ const UPCOMING_DATES = Array.from({ length: 60 }, (_, i) => {
 
 export default function AvailabilityPage() {
   const { user, mentorProfile } = useAuthStore();
+  const { showNotification } = useNotification();
   
   // --- State ---
   const [loading, setLoading] = useState(true);
@@ -172,11 +174,11 @@ export default function AvailabilityPage() {
         if (exError) throw exError;
       }
 
-      Alert.alert('Success', 'Availability updated successfully.');
+      showNotification('Availability updated successfully', 'success');
 
     } catch (error: any) {
       console.error(error);
-      Alert.alert('Error', error.message || 'Failed to save availability.');
+      showNotification(error.message || 'Failed to save availability', 'error');
     } finally {
       setSaving(false);
     }
