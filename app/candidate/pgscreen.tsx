@@ -176,14 +176,27 @@ export default function PGScreen() {
 }
 
 // Helper for Web support
+// app/candidate/pgscreen.tsx
+
+// ... (Rest of your component code remains the same)
+
+// 👇 REPLACE the old loadRazorpayScript function at the bottom with this one:
 function loadRazorpayScript(src: string) {
   return new Promise((resolve) => {
     if (Platform.OS !== 'web') {
-        resolve(false);
-        return;
+      resolve(false);
+      return;
     }
+
+    // 1. Check if script is already there to prevent duplicates
+    if (document.getElementById('razorpay-sdk')) {
+      resolve(true);
+      return;
+    }
+
     const script = document.createElement('script');
     script.src = src;
+    script.id = 'razorpay-sdk'; // 2. Add an ID so we can find it later
     script.onload = () => {
       resolve(true);
     };

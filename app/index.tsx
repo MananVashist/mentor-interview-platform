@@ -157,7 +157,7 @@ export default function LandingPage() {
               </Text>
             </View>
             <Image
-              source={require('../assets/crackjobs-hero.png')}
+              source={require('../assets/crackjobs-hero.webp')}
               style={[styles.mascot, isSmall && styles.mascotMobile]}
               resizeMode="contain"
               accessibilityLabel="CrackJobs mascot celebrating a job offer"
