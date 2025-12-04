@@ -158,8 +158,13 @@ export default function ScheduleScreen() {
         .from('mentor_availability_rules')
         .select('weekdays, weekends')
         .eq('mentor_id', mentorId)
-        .single();
-      if (rulesError) throw rulesError;
+        .maybeSingle();
+      if (rulesError && rulesError.code !== 'PGRST116') throw rulesError;
+
+      const finalRulesData = rulesData || {
+        weekdays: { start: '20:00', end: '22:00', isActive: true },
+        weekends: { start: '12:00', end: '17:00', isActive: true }
+        };
 
       const { data: unavailData } = await supabase
         .from('mentor_unavailability')
@@ -206,7 +211,7 @@ export default function ScheduleScreen() {
         }
 
         const isWeekend = currentDay.weekday >= 6; 
-        const rawRule = isWeekend ? rulesData?.weekends : rulesData?.weekdays;
+        const rawRule = isWeekend ? finalRulesData?.weekends : finalRulesData?.weekdays;
         let dayRules: any[] = [];
         if (Array.isArray(rawRule)) { dayRules = rawRule; } 
         else if (rawRule && typeof rawRule === 'object') { dayRules = [rawRule]; }

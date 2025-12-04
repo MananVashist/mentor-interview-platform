@@ -73,6 +73,10 @@ export default function RootLayout() {
           <meta property="og:site_name" content="CrackJobs" />
           <meta property="og:type" content="website" />
           <meta name="twitter:card" content="summary_large_image" />
+          <link
+            rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/ionicons/7.1.0/collection/components/icon/icon.min.css"
+          />
         </Head>
         
         <Slot />
