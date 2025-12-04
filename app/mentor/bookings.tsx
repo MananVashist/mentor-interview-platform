@@ -94,6 +94,16 @@ const BookingCard = ({ session, onAccept, onReschedule, onViewDetails, onJoin, o
           <TouchableOpacity style={[styles.btnFull, styles.btnPrimary]} onPress={() => onEvaluate(session, 'edit')}>
             <AppText style={styles.textWhite}>Evaluate</AppText>
           </TouchableOpacity>
+          {hasResume && (
+            <TouchableOpacity 
+              style={[styles.btnFull, styles.btnOutline, { paddingHorizontal: 8 }]} 
+              onPress={() => onViewResume(session.candidate?.resume_url)}
+            >
+                        <AppText style={styles.textPrimary}>View Resume </AppText>
+
+              <Ionicons name="document-text-outline" size={18} color={theme.colors.primary} />
+            </TouchableOpacity>
+          )}
         </View>
       )}
 

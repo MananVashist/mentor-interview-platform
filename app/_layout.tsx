@@ -1,8 +1,8 @@
-﻿import { useEffect } from 'react';
-import { Platform } from 'react-native'; // 1. Import Platform
+﻿import { useEffect, useState } from 'react';
+import { Platform } from 'react-native';
 import { Slot, SplashScreen } from 'expo-router';
 import Head from 'expo-router/head';
-import { SafeAreaProvider } from 'react-native-safe-area-context'; 
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { 
   useFonts, 
   Inter_400Regular, 
@@ -12,16 +12,15 @@ import {
   Inter_800ExtraBold 
 } from '@expo-google-fonts/inter';
 import { NotificationProvider } from '@/lib/ui/NotificationBanner';
+import { supabase } from '@/lib/supabase/client';
+import { Session } from '@supabase/supabase-js';
 
 SplashScreen.preventAutoHideAsync();
 
-// app/_layout.tsx
-
-// ... keep your imports ...
-
 export default function RootLayout() {
-  // 🟢 FIX: Pass an EMPTY object on Web.
-  // This stops the browser from downloading the files in your screenshot.
+  const [isReady, setIsReady] = useState(false);
+  const [session, setSession] = useState<Session | null>(null);
+
   const [fontsLoaded] = useFonts(
     Platform.OS === 'web'
       ? {} 
@@ -35,26 +34,35 @@ export default function RootLayout() {
   );
 
   useEffect(() => {
+    // 1. Initialize Session Check
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setIsReady(true);
+    });
+
+    // 2. Listen for Auth Changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    // Hide Splash Screen only after fonts are loaded
     if (fontsLoaded) {
       SplashScreen.hideAsync();
     }
+
+    return () => subscription.unsubscribe();
   }, [fontsLoaded]);
 
-  // ... keep the rest of your code ...
+  // Block rendering until session check is complete
+  if (!isReady) {
+    return null;
+  }
 
-  // ---------------------------------------------------------
-  // THE LOGIC SPLIT
-  // ---------------------------------------------------------
-  
-  // Mobile: We MUST wait for fonts, or the app will crash/look broken.
-  // We return 'null' to keep the native white splash screen visible until fonts are ready.
+  // Mobile: Wait for fonts to prevent crash/glitch
   if (!fontsLoaded && Platform.OS !== 'web') {
     return null;
   }
 
-  // Web: We do NOT wait. 
-  // Even if !fontsLoaded, we render the <Slot /> immediately.
-  // Because 'index.tsx' uses System Fonts, it will look perfect instantly.
   return (
     <SafeAreaProvider>
       <NotificationProvider>
