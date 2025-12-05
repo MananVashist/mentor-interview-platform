@@ -265,7 +265,7 @@ const styles = StyleSheet.create({
     // Add subtle shadow for depth
     ...Platform.select({
       ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4 },
-      android: { elevation: 2 }
+      android: { elevation: 2, backgroundColor: '#FFF' }
     })
   },
   cardContent: { gap: 12 },
