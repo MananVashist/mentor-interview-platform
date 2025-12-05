@@ -88,7 +88,7 @@ export default function LandingPage() {
   // 🔁 Splash logic
   useEffect(() => {
     if (Platform.OS !== 'web') {
-      const timer = setTimeout(() => setShowSplash(false), 2000); 
+      const timer = setTimeout(() => setShowSplash(false), 4000); 
       return () => clearTimeout(timer);
     }
   }, []);
