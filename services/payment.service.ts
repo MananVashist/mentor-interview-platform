@@ -8,13 +8,13 @@ async function sendMeetingInvite(email: string, meetingLink: string, slotTime: s
 }
 
 export const paymentService = {
+  // 1. Check for Conflicts (accepts array to keep logic flexible, though we send only 1 now)
   async checkBookingConflict(mentorId: string, selectedSlots: string[]) {
     if (!selectedSlots || selectedSlots.length === 0) return;
     const { data, error } = await supabase
       .from('interview_sessions')
       .select('scheduled_at')
       .eq('mentor_id', mentorId)
-      // 🟢 Checking valid ENUM states
       .in('status', ['pending', 'confirmed', 'completed']) 
       .in('scheduled_at', selectedSlots);
 
@@ -22,20 +22,25 @@ export const paymentService = {
     if (data && data.length > 0) throw new Error('Slot already booked.');
   },
 
+  // 2. Create Package (Now Logic is for 1 Session + Skill ID)
   async createPackage(
     candidateId: string,
     mentorId: string,
     interviewProfileId: number, 
-    selectedSlots: string[]
+    skillId: string,          // <--- NEW: Skill ID
+    selectedSlot: string      // <--- CHANGED: Single slot string (ISO)
   ) {
     try {
-        await this.checkBookingConflict(mentorId, selectedSlots);
+        // Wrap in array for the conflict checker
+        await this.checkBookingConflict(mentorId, [selectedSlot]);
 
         const { data: mentorData, error: mentorError } = await supabase
         .from('mentors').select('session_price_inr').eq('id', mentorId).single();
         if (mentorError || !mentorData) throw new Error("Unable to retrieve mentor pricing details.");
 
         const basePrice = mentorData.session_price_inr || 0; 
+        
+        // Pricing Logic: Base + 20% Platform Fee
         const totalPrice = Math.round(basePrice * 1.2); 
         const mentorPayout = basePrice;
         const platformFee = totalPrice - mentorPayout;
@@ -55,6 +60,7 @@ export const paymentService = {
         const initialStatus = ENABLE_RAZORPAY ? 'pending_payment' : 'held_in_escrow';
         const paymentId = ENABLE_RAZORPAY ? null : `mvp_mock_${Date.now()}`;
 
+        // Create the Package Container
         const { data: pkg, error: pkgError } = await supabase
             .from('interview_packages')
             .insert({
@@ -76,26 +82,18 @@ export const paymentService = {
         let meetingLink = null;
         if (!ENABLE_RAZORPAY) meetingLink = `https://meet.jit.si/interview-${packageId}-${Date.now()}`;
 
-        // 🟢 DB Insert: "pending" (Valid ENUM)
-        const sessionStatus = 'pending'; 
-        
-        const sessionsData = selectedSlots.map((slot, index) => {
-            let roundName = 'round_1';
-            if (index === 1) roundName = 'round_2';
-            else if (index === 2) roundName = 'hr_round';
+        // 🟢 DB Insert: Single Session with Skill ID
+        const sessionData = {
+            package_id: packageId,
+            candidate_id: candidateId,
+            mentor_id: mentorId,
+            skill_id: skillId,      // <--- Mapping to Skill Table
+            scheduled_at: selectedSlot,
+            status: 'pending',
+            meeting_link: meetingLink
+        };
 
-            return {
-                package_id: packageId,
-                candidate_id: candidateId,
-                mentor_id: mentorId,
-                round: roundName,
-                scheduled_at: slot,
-                status: sessionStatus,
-                meeting_link: meetingLink
-            };
-        });
-
-        const { error: sessionError } = await supabase.from('interview_sessions').insert(sessionsData);
+        const { error: sessionError } = await supabase.from('interview_sessions').insert(sessionData);
         if (sessionError) throw sessionError;
 
         if (!ENABLE_RAZORPAY && meetingLink) this.triggerEmailNotification(packageId, meetingLink);
@@ -118,11 +116,10 @@ export const paymentService = {
 
     if (pkgError) throw pkgError;
 
-    // 🟢 DB Update: Ensure it is "pending" so Mentor sees Approval Request
     const { error: sessionError } = await supabase
       .from('interview_sessions')
       .update({
-        status: 'pending', // Valid ENUM
+        status: 'pending', 
         meeting_link: meetingLink
       })
       .eq('package_id', pkgId);

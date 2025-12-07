@@ -23,6 +23,9 @@ const BookingCard = ({ session, onJoin, onViewDetails, onViewEvaluation }: any) 
   const details = getBookingDetails(session);
   const counterpartName = details.getCounterpartName('candidate'); 
 
+  // Fallback for skill name if not present (backward compatibility)
+  const skillName = session.skill_name || 'Interview Session';
+
   return (
     <Card style={styles.sessionCard}>
       <View style={styles.splitContainer}>
@@ -32,9 +35,10 @@ const BookingCard = ({ session, onJoin, onViewDetails, onViewEvaluation }: any) 
             {details.profileName} interview with {counterpartName}
           </Heading>
           
+          {/* 🟢 CHANGED: Display Skill Name instead of Round */}
           <View style={styles.infoRow}>
-            <Ionicons name="layers-outline" size={14} color="#6B7280" />
-            <AppText style={styles.infoText}>Round {details.roundLabel}</AppText>
+            <Ionicons name="bulb-outline" size={14} color="#6B7280" />
+            <AppText style={styles.infoText}>{skillName}</AppText>
           </View>
 
           <View style={styles.infoRow}>
@@ -46,7 +50,7 @@ const BookingCard = ({ session, onJoin, onViewDetails, onViewEvaluation }: any) 
 
           <View style={styles.infoRow}>
             <Ionicons name="time-outline" size={14} color="#6B7280" />
-            <AppText style={styles.infoText}>55 mins</AppText>
+            <AppText style={styles.infoText}>60 mins</AppText>
           </View>
         </View>
 
@@ -79,7 +83,8 @@ const BookingCard = ({ session, onJoin, onViewDetails, onViewEvaluation }: any) 
           </View>
           <TouchableOpacity 
             style={[styles.btnFull, styles.btnSecondary]} 
-            onPress={() => onViewDetails(session.package)}
+            // 🟢 CHANGED: Pass full session object to show Skill details
+            onPress={() => onViewDetails(session)}
           >
             <AppText style={styles.textPrimary}>View Details</AppText>
           </TouchableOpacity>
@@ -110,7 +115,7 @@ const BookingCard = ({ session, onJoin, onViewDetails, onViewEvaluation }: any) 
       {uiState === 'POST_COMPLETED' && (
         <View style={styles.actionRowFull}>
            <View style={[styles.btnFull, styles.btnDisabled, {flex: 0.8}]}>
-              <AppText style={styles.textGray}>Round Completed</AppText>
+              <AppText style={styles.textGray}>Completed</AppText>
            </View>
            <TouchableOpacity 
               style={[styles.btnFull, styles.btnPrimary]} 
@@ -167,10 +172,11 @@ export default function CandidateBookingsScreen() {
     }
     
     try {
+      // 🟢 CHANGED: Removed 'round', Added 'skill_id'
       const { data: sessionsData, error } = await supabase
         .from('interview_sessions')
         .select(`
-          id, scheduled_at, status, round, meeting_link, mentor_id,
+          id, scheduled_at, status, skill_id, meeting_link, mentor_id,
           package:interview_packages!package_id ( id, interview_profile_id )
         `)
         .eq('candidate_id', currentUser.id)
@@ -181,6 +187,7 @@ export default function CandidateBookingsScreen() {
           setSessions([]); return;
       }
 
+      // 1. Fetch Mentors
       const mentorIds = [...new Set(sessionsData.map((s: any) => s.mentor_id))];
       const { data: profiles } = await supabase
         .from('mentors')
@@ -191,6 +198,7 @@ export default function CandidateBookingsScreen() {
           acc[p.id] = p; return acc;
       }, {});
 
+      // 2. Fetch Profiles (Context)
       const interviewProfileIds = [...new Set(sessionsData.map((s: any) => s.package?.interview_profile_id).filter(Boolean))];
       let interviewProfileMap: any = {};
       
@@ -206,11 +214,34 @@ export default function CandidateBookingsScreen() {
          }
       }
 
+      // 🟢 3. NEW: Fetch Skills
+      const skillIds = [...new Set(sessionsData.map((s: any) => s.skill_id).filter(Boolean))];
+      let skillMap: any = {};
+
+      if (skillIds.length > 0) {
+          const { data: skillsData } = await supabase
+            .from('interview_skills_admin')
+            .select('id, name, description')
+            .in('id', skillIds);
+          
+          if (skillsData) {
+              skillMap = skillsData.reduce((acc: any, curr: any) => {
+                  acc[curr.id] = curr; return acc;
+              }, {});
+          }
+      }
+
+      // 4. Merge Data
       const merged = sessionsData.map((s: any) => {
           const profileMeta = s.package ? interviewProfileMap[s.package.interview_profile_id] : null;
+          const skillMeta = s.skill_id ? skillMap[s.skill_id] : null;
+
           return {
             ...s,
             mentor_name: profileMap[s.mentor_id]?.professional_title || 'Mentor',
+            // 🟢 Attach Skill Data
+            skill_name: skillMeta?.name || 'Mock Interview',
+            skill_description: skillMeta?.description || '',
             package: s.package ? {
                 ...s.package,
                 interview_profile_name: profileMeta?.name || 'Mock Interview',
@@ -245,10 +276,15 @@ export default function CandidateBookingsScreen() {
     Linking.openURL(link).catch(err => Alert.alert("Error", "Could not open link."));
   };
 
-  const handleViewDetails = (pkg: any) => {
+  // 🟢 CHANGED: Now accepts the full session object to access skill info
+  const handleViewDetails = (session: any) => {
+    // Prefer Skill info, fallback to Profile info
+    const title = session.skill_name || session.package?.interview_profile_name || 'Interview Details';
+    const description = session.skill_description || session.package?.interview_profile_description || 'No additional details provided.';
+
     setDetailContent({
-      name: pkg?.interview_profile_name || 'Interview',
-      desc: pkg?.interview_profile_description || 'No details provided.'
+      name: title,
+      desc: description
     });
     setDetailModalVisible(true);
   };

@@ -1,4 +1,5 @@
-﻿import React, { useEffect, useState } from "react";
+﻿// app/candidate/[id].tsx
+import React, { useEffect, useState } from "react";
 import {
   View,
   ScrollView,
@@ -21,14 +22,18 @@ export default function MentorDetailsScreen() {
   
   const [mentor, setMentor] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  
+  // State for Selection
   const [selectedProfile, setSelectedProfile] = useState<string | null>(null);
+  const [skills, setSkills] = useState<any[]>([]);
+  const [selectedSkill, setSelectedSkill] = useState<any>(null);
 
+  // 1. Fetch Mentor Details
   useEffect(() => {
     async function fetchMentorDetails() {
       if (!id || id === 'schedule') return; 
 
       try {
-        // 1. UPDATE: Fetch 'years_of_experience'
         const { data, error } = await supabase
           .from('mentors')
           .select('session_price_inr, professional_title, experience_description, expertise_profiles, profile_ids, years_of_experience, profile:profiles(*)')
@@ -41,7 +46,6 @@ export default function MentorDetailsScreen() {
             const basePrice = data.session_price_inr || 1000;
             const totalPrice = Math.round(basePrice * 1.2);
             
-            // 2. LOGIC: Fallback description
             const profilesList = data.expertise_profiles?.join(", ") || "Tech";
             const aboutText = data.experience_description 
               ? data.experience_description 
@@ -50,7 +54,7 @@ export default function MentorDetailsScreen() {
             setMentor({
                 id: id, 
                 title: data.professional_title || "Senior Interviewer",
-                exp: data.years_of_experience, // Store Experience
+                exp: data.years_of_experience, 
                 about: aboutText,
                 expertise: data.expertise_profiles || ["Software Engineer"],
                 profileIds: data.profile_ids || [], 
@@ -58,6 +62,7 @@ export default function MentorDetailsScreen() {
                 avatarChar: data.profile?.full_name?.charAt(0) || 'M'
             });
 
+            // Default selection
             if (data.expertise_profiles?.length > 0) {
                 setSelectedProfile(data.expertise_profiles[0]);
             }
@@ -72,22 +77,53 @@ export default function MentorDetailsScreen() {
     fetchMentorDetails();
   }, [id]);
 
+  // 2. Fetch Skills when Profile Changes
+  useEffect(() => {
+    async function fetchSkills() {
+        if (!selectedProfile || !mentor) return;
+
+        // Find the ID of the selected profile string
+        const index = mentor.expertise.indexOf(selectedProfile);
+        const profileId = mentor.profileIds[index];
+
+        if (!profileId) {
+            setSkills([]);
+            return;
+        }
+
+        const { data, error } = await supabase
+            .from('interview_skills_admin')
+            .select('*')
+            .eq('interview_profile_id', profileId);
+
+        if (!error && data) {
+            setSkills(data);
+            if (data.length > 0) setSelectedSkill(data[0]);
+            else setSelectedSkill(null);
+        }
+    }
+    fetchSkills();
+  }, [selectedProfile, mentor]);
+
   const handleSchedule = () => {
-    if (!selectedProfile) {
-      Alert.alert("Selection Required", "Please select an interview profile to proceed.");
+    if (!selectedProfile || !selectedSkill) {
+      Alert.alert("Selection Required", "Please select both a profile and a specific skill.");
       return;
     }
 
     const index = mentor.expertise.indexOf(selectedProfile);
-    const selectedId = mentor.profileIds[index];
+    const selectedProfileId = mentor.profileIds[index];
 
     router.push({
         pathname: '/candidate/schedule',
         params: { 
             mentorId: id,
             profileName: selectedProfile, 
-            profileId: selectedId,        
-            price: mentor.totalPrice
+            profileId: selectedProfileId, // Passed for package creation
+            price: mentor.totalPrice,
+            // 🟢 Passing Skill Data Forward
+            skillId: selectedSkill.id,
+            skillName: selectedSkill.name
         } 
     });
   };
@@ -116,8 +152,6 @@ export default function MentorDetailsScreen() {
             </View>
             <View style={{ flex: 1 }}>
                 <AppText style={styles.headerTitle}>{mentor.title}</AppText>
-                
-                {/* 3. UI: Updated Badge to show Years of Exp */}
                 {mentor.exp != null && (
                   <View style={styles.badge}>
                       <Ionicons name="briefcase" size={10} color={theme.colors.text.body} style={{ marginRight: 4 }} />
@@ -126,9 +160,7 @@ export default function MentorDetailsScreen() {
                 )}
             </View>
           </View>
-          
           <View style={styles.divider} />
-          
           <View style={styles.sectionHeader}>
              <Ionicons name="information-circle-outline" size={20} color={theme.colors.text.light} style={{ marginRight: 8 }} />
              <AppText style={styles.sectionTitle}>About</AppText>
@@ -136,14 +168,15 @@ export default function MentorDetailsScreen() {
           <AppText style={styles.sectionBody}>{mentor.about}</AppText>
         </View>
 
-        {/* PROFILE SELECTION */}
+        {/* PROFILE & SKILL SELECTION */}
         <View style={styles.card}>
           <View style={styles.sectionHeader}>
              <Ionicons name="checkmark-circle-outline" size={20} color={theme.colors.text.light} style={{ marginRight: 8 }} />
-             <AppText style={styles.sectionTitle}>Select Interview Focus</AppText>
+             <AppText style={styles.sectionTitle}>Select Focus Area</AppText>
           </View>
-          <AppText style={styles.subLabel}>Choose the specific role you want to practice for:</AppText>
           
+          {/* 1. Profile Tags */}
+          <AppText style={styles.subLabel}>Role Profile:</AppText>
           <View style={styles.tagsContainer}>
             {mentor.expertise.map((tag: string, index: number) => {
               const isSelected = selectedProfile === tag;
@@ -160,6 +193,32 @@ export default function MentorDetailsScreen() {
               );
             })}
           </View>
+
+          {/* 2. Skill Tags (Dynamic based on Profile) */}
+          {selectedProfile && skills.length > 0 && (
+             <View style={{ marginTop: 20, paddingTop: 20, borderTopWidth: 1, borderTopColor: '#f0f0f0' }}>
+                <AppText style={styles.subLabel}>Specific Skill to Evaluate:</AppText>
+                <View style={styles.tagsContainer}>
+                    {skills.map((skill) => {
+                        const isSelected = selectedSkill?.id === skill.id;
+                        return (
+                        <TouchableOpacity 
+                            key={skill.id} 
+                            style={[styles.tag, isSelected && styles.skillTagActive]} // Different color style potentially
+                            onPress={() => setSelectedSkill(skill)}
+                        >
+                            <AppText style={[styles.tagText, isSelected && styles.tagTextActive]}>
+                                {skill.name}
+                            </AppText>
+                        </TouchableOpacity>
+                        );
+                    })}
+                </View>
+                {selectedSkill?.description && (
+                    <AppText style={styles.skillDesc}>{selectedSkill.description}</AppText>
+                )}
+             </View>
+          )}
         </View>
 
         {/* PRICING */}
@@ -175,7 +234,7 @@ export default function MentorDetailsScreen() {
                     <AppText style={styles.priceMain}>₹{mentor.totalPrice.toLocaleString()}</AppText>
                     <View style={styles.includesBadge}>
                         <Ionicons name="videocam-outline" size={12} color={theme.colors.primary} style={{ marginRight: 4 }} />
-                        <AppText style={styles.includesText}>Includes 2 mock interviews</AppText>
+                        <AppText style={styles.includesText}>Includes 1 focused session</AppText>
                     </View>
                 </View>
             </View>
@@ -192,7 +251,7 @@ export default function MentorDetailsScreen() {
             activeOpacity={0.9}
             onPress={handleSchedule}
           >
-            <AppText style={styles.scheduleButtonText}>Schedule & Pay</AppText>
+            <AppText style={styles.scheduleButtonText}>Select Time Slot</AppText>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -222,12 +281,14 @@ const styles = StyleSheet.create({
   sectionHeader: { flexDirection: "row", alignItems: "center", marginBottom: 12 },
   sectionTitle: { fontSize: 16, fontWeight: "700", color: theme.colors.text.main },
   sectionBody: { fontSize: 15, color: theme.colors.text.body, lineHeight: 24 },
-  subLabel: { fontSize: 14, color: theme.colors.text.light, marginBottom: 16 },
+  subLabel: { fontSize: 14, color: theme.colors.text.light, marginBottom: 8 },
   tagsContainer: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
   tag: { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: theme.colors.border, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 999 },
   tagActive: { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary },
+  skillTagActive: { backgroundColor: '#059669', borderColor: '#059669' }, // Slightly different shade for skills
   tagText: { fontSize: 14, color: theme.colors.text.body, fontWeight: "500" },
   tagTextActive: { color: "#FFF", fontWeight: "600" },
+  skillDesc: { fontSize: 12, color: '#666', marginTop: 8, fontStyle: 'italic' },
   priceContainer: { marginTop: 4 },
   priceRow: { flexDirection: "row", alignItems: "center" },
   priceMain: { fontSize: 32, fontWeight: "800", color: theme.colors.text.main, marginBottom: 8 },

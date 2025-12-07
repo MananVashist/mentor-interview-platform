@@ -1,118 +1,109 @@
 ﻿// app/candidate/pgscreen.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, ActivityIndicator, TouchableOpacity, SafeAreaView, Alert, Platform } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { paymentService } from '../../services/payment.service';
-// 🛑 REMOVED CONSTANT IMPORT to avoid confusion: import { RAZORPAY_KEY_ID } from '../../constants';
-import { useAuth } from '../../hooks/useAuth';
-
-// Metro automatically picks .native.ts for Android/iOS and .ts for Web.
+import { useAuthStore } from '@/lib/store';
 import RazorpayCheckout from 'react-native-razorpay';
 
 export default function PGScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
-  const { user } = useAuth();
+  const { user } = useAuthStore(); 
 
-  // 🟢 🟢 🟢 UPDATED: Receive 'keyId' from params
-  const { orderId, amount, packageId, keyId } = params;
+  // 1. Receive data from Schedule Screen (Matches perfectly)
+  const { orderId, packageId, keyId } = params; 
+  // Note: We deliberately ignore 'amount' here to prevent the Bad Request error.
   
   const [isProcessing, setIsProcessing] = useState(true);
   const [sdkReady, setSdkReady] = useState(false);
+  
+  const hasInitiated = useRef(false);
+  const rzpInstance = useRef<any>(null);
 
-  // 1. Initialization Logic: Load SDK if needed
   useEffect(() => {
-    console.log('[PGScreen] Mounted with params', { orderId, amount, packageId, keyId: keyId ? 'PRESENT' : 'MISSING', platform: Platform.OS });
-    
-    // Safety check
-    if (!orderId || !amount || !packageId || !keyId) {
-        Alert.alert("Error", "Missing booking details. Please try again.");
+    if (!orderId || !packageId || !keyId) {
+        Alert.alert("Error", "Missing booking details.");
         router.back();
         return;
     }
 
     const prepareSDK = async () => {
       if (Platform.OS === 'web') {
-        // Web: Load the script manually
-        console.log('[PGScreen] Loading Razorpay web SDK...');
         const res = await loadRazorpayScript('https://checkout.razorpay.com/v1/checkout.js');
         if (!res) {
-          console.error('[PGScreen] Razorpay SDK failed to load on web');
-          Alert.alert('Error', 'Razorpay SDK failed to load. Are you online?');
+          Alert.alert('Error', 'Razorpay SDK failed to load.');
           return;
         }
         setSdkReady(true);
       } else {
-        // Native: The library is loaded via the import above. Ready immediately.
-        console.log('[PGScreen] Native platform, SDK assumed ready');
         setSdkReady(true);
       }
     };
     prepareSDK();
+
+    return () => {
+        if (Platform.OS === 'web') {
+            const frames = document.querySelectorAll('.razorpay-checkout-frame');
+            frames.forEach(frame => frame.remove());
+            if (rzpInstance.current) {
+                try { rzpInstance.current.close(); } catch(e){}
+            }
+        }
+    };
   }, []);
 
-  // 2. Trigger Payment automatically when SDK is ready
   useEffect(() => {
-    if (sdkReady && orderId && amount && keyId) {
-      console.log('[PGScreen] SDK ready, initiating payment...');
+    if (sdkReady && orderId && keyId) {
+      if (hasInitiated.current) return;
+      hasInitiated.current = true;
       initiatePayment();
     }
   }, [sdkReady]);
 
   const initiatePayment = async () => {
     try {
-      // 1. Clean up options (Fixing the 400 Bad Request)
+      console.log("[PGScreen] Initiating Payment with Order ID:", orderId);
+
+      // 🟢 CRITICAL FIX: 
+      // We DO NOT pass 'amount' or 'currency' here. 
+      // Razorpay automatically pulls them from the 'order_id'.
+      // Passing them manually causes the "Bad Request" error you are seeing.
+      
       const options: any = {
-        description: 'Mock Interview Session',
-        currency: 'INR',
-        key: keyId, 
-        amount: Number(amount), 
         name: 'CrackJobs',
-        order_id: orderId,
+        description: 'Mock Interview Session',
+        key: keyId,      // From Params (Correct)
+        order_id: orderId, // From Params (Correct)
         theme: { color: '#0E9384' },
-        prefill: {
-          email: user?.email || undefined,
-          name: user?.user_metadata?.full_name || undefined,
-          // 🛑 FIX: Only add 'contact' if it exists. Do not send empty string.
+        retry: { enabled: false },
+        modal: {
+            ondismiss: function() {
+              handleCancel();
+            }
         }
       };
 
-      console.log('[PGScreen] Payment Options:', JSON.stringify(options, null, 2));
+      console.log('[PGScreen] Options:', options);
 
       if (Platform.OS === 'web') {
-        // --- WEB HANDLER ---
         const rzp1 = new (window as any).Razorpay({
           ...options,
           handler: async function (response: any) {
-            console.log('[PGScreen] Web payment success', response);
             await handleVerify(response);
-          },
-          modal: {
-            ondismiss: function() {
-              console.log('[PGScreen] Web Razorpay modal dismissed');
-              handleCancel();
-            }
           }
         });
         
-        // Safety check to prevent double opening
-        if (isProcessing) {
-             rzp1.open();
-        }
+        rzpInstance.current = rzp1;
+        rzp1.open();
 
       } else {
-        // --- NATIVE HANDLER ---
         if (RazorpayCheckout) {
           RazorpayCheckout.open(options)
-            .then((data: any) => {
-              console.log('[PGScreen] Native payment success', data);
-              handleVerify(data);
-            })
+            .then((data: any) => handleVerify(data))
             .catch((error: any) => {
-              // Ignore specific error codes if needed
-              if (error.code && error.code !== 0) {
-                 console.warn('[PGScreen] Native payment error', error);
-                 Alert.alert('Payment Error', error.description || 'Something went wrong');
+              if (error.code && error.code !== 0 && error.code !== 2) {
+                 Alert.alert('Payment Error', error.description || 'Failed');
               } else {
                  handleCancel();
               }
@@ -121,7 +112,7 @@ export default function PGScreen() {
       }
 
     } catch (e) {
-      console.error('[PGScreen] Could not initiate payment', e);
+      console.error('[PGScreen] Init Exception:', e);
       Alert.alert("Error", "Could not initiate payment.");
       router.back();
     }
@@ -129,31 +120,25 @@ export default function PGScreen() {
 
   const handleCancel = () => {
     setIsProcessing(false);
-    Alert.alert("Cancelled", "Payment was cancelled.");
-    router.back();
+    setTimeout(() => {
+        Alert.alert("Cancelled", "Payment was cancelled.");
+        router.back();
+    }, 500);
   };
 
   const handleVerify = async (data: any) => {
-      console.log('[PGScreen] Verifying payment...', data);
       try {
         setIsProcessing(true);
-        // Call the service to update DB status to 'confirmed'
         await paymentService.verifyPayment(
             packageId as string,
             data.razorpay_order_id, 
             data.razorpay_payment_id,
             data.razorpay_signature
         );
-        
-        console.log('[PGScreen] Payment verification succeeded');
         Alert.alert("Success", "Interview Booked Successfully!");
-        
-        // Redirect to Bookings page
         router.replace('/candidate/bookings');
-        
       } catch(err) {
-          console.error('[PGScreen] Payment verification failed', err);
-          Alert.alert("Failed", "Payment successful but verification failed. Please contact support.");
+          Alert.alert("Failed", "Payment verification failed.");
           router.back();
       } finally {
           setIsProcessing(false);
@@ -175,34 +160,21 @@ export default function PGScreen() {
   );
 }
 
-// Helper for Web support
-// app/candidate/pgscreen.tsx
-
-// ... (Rest of your component code remains the same)
-
-// 👇 REPLACE the old loadRazorpayScript function at the bottom with this one:
 function loadRazorpayScript(src: string) {
   return new Promise((resolve) => {
     if (Platform.OS !== 'web') {
       resolve(false);
       return;
     }
-
-    // 1. Check if script is already there to prevent duplicates
     if (document.getElementById('razorpay-sdk')) {
       resolve(true);
       return;
     }
-
     const script = document.createElement('script');
     script.src = src;
-    script.id = 'razorpay-sdk'; // 2. Add an ID so we can find it later
-    script.onload = () => {
-      resolve(true);
-    };
-    script.onerror = () => {
-      resolve(false);
-    };
+    script.id = 'razorpay-sdk';
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
     document.body.appendChild(script);
   });
 }

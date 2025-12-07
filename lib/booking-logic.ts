@@ -1,5 +1,7 @@
-﻿import { DateTime } from 'luxon';
-import { MASTER_TEMPLATES } from '@/lib/evaluation-templates';
+﻿// lib/booking-logic.ts
+import { DateTime } from 'luxon';
+
+// 🔴 REMOVED: import { MASTER_TEMPLATES } ... (Data is now in the DB)
 
 export type BookingUIState = 
   | 'APPROVAL'       // Pending mentor approval
@@ -11,13 +13,13 @@ export type BookingUIState =
 
 /**
  * 1. Determine the UI State based on Status + Time
+ * (Logic remains same as before)
  */
 export function getBookingState(session: any): BookingUIState {
   if (session.status === 'pending') return 'APPROVAL';
   if (session.status === 'cancelled') return 'CANCELLED';
   if (session.status === 'completed') return 'POST_COMPLETED';
 
-  // If status is confirmed or scheduled, we check the time
   if (session.status === 'confirmed' || session.status === 'scheduled') {
     const date = DateTime.fromISO(session.scheduled_at);
     const diffMinutes = date.diffNow('minutes').as('minutes');
@@ -32,11 +34,10 @@ export function getBookingState(session: any): BookingUIState {
       return 'POST_PENDING';
     }
 
-    // Otherwise it is in the future
     return 'SCHEDULED';
   }
 
-  return 'SCHEDULED'; // Fallback
+  return 'SCHEDULED'; 
 }
 
 /**
@@ -48,8 +49,12 @@ export function getBookingDetails(session: any) {
   return {
     dateLabel: date.toFormat('MMM dd, yyyy'),
     timeLabel: date.toFormat('h:mm a'),
-    roundLabel: session.round ? session.round.match(/\d+/)?.[0] || '1' : '1',
+    
+    // 🟢 CHANGED: Replaced 'roundLabel' with 'skillName'
+    skillName: session.skill_name || 'Interview Session',
+    
     profileName: session.package?.interview_profile_name || 'Mock Interview',
+    
     // Logic to resolve the other person's name
     getCounterpartName: (viewerRole: 'mentor' | 'candidate') => {
       if (viewerRole === 'mentor') return session.candidate?.professional_title || 'Candidate';
@@ -61,34 +66,18 @@ export function getBookingDetails(session: any) {
 
 /**
  * 3. Centralized Template Lookup
- * Returns the specific formatted text for the modal
+ * 🟢 UPDATED: Now fetches directly from the session object (populated from DB)
+ * instead of a hardcoded JSON file.
  */
 export function getEvaluationTemplate(session: any) {
-  const profileName = session.package?.interview_profile_name;
-  const desc = session.package?.interview_profile_description;
+  // 1. Title: Prefer the specific Skill, fallback to Profile
+  const title = session.skill_name || session.package?.interview_profile_name || 'Evaluation Details';
 
-  // Parse round (e.g. "Round 1" -> "round_1")
-  let roundKey = 'round_1';
-  if (session.round) {
-    const num = session.round.match(/\d+/)?.[0] || '1';
-    roundKey = `round_${num}`;
-  }
+  // 2. Content: The DB description now contains the Examples/Criteria text
+  const content = session.skill_description 
+    ? `GUIDELINES & EXAMPLES:\n\n${session.skill_description}`
+    : session.package?.interview_profile_description 
+    || "No specific guidelines available for this session.";
 
-  const roleTemplates = MASTER_TEMPLATES[profileName];
-  const roundTemplate = roleTemplates ? roleTemplates[roundKey] : null;
-
-  let content = "";
-  if (roundTemplate) {
-    content += `Evaluation Focus for ${profileName} (${roundKey.replace('_', ' ')}):\n\n`;
-    roundTemplate.forEach((item: any) => {
-      content += `📌 ${item.title}\n   Example: "${item.example}"\n`;
-      content += `   Criteria:\n`;
-      item.questions.forEach((q: any) => content += `   • ${q.text}\n`);
-      content += `\n`;
-    });
-  } else {
-    content = desc || "No specific guidelines available for this profile.";
-  }
-
-  return { title: profileName || 'Details', content };
+  return { title, content };
 }

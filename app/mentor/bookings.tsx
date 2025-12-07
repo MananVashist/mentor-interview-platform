@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { 
   View, ScrollView, StyleSheet, ActivityIndicator, TouchableOpacity, 
-  RefreshControl, StatusBar, Alert, Linking, Modal, Platform
+  RefreshControl, StatusBar, Linking, Modal, Platform, Alert
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -13,14 +13,19 @@ import { supabase } from '@/lib/supabase/client';
 import { theme } from '@/lib/theme';
 import { Heading, AppText, Card, Section, ScreenBackground } from '@/lib/ui';
 import { useAuthStore } from '@/lib/store';
-import { getBookingState, getBookingDetails, getEvaluationTemplate,BookingUIState } from '@/lib/booking-logic';
+import { getBookingState, getBookingDetails, getEvaluationTemplate, BookingUIState } from '@/lib/booking-logic';
+
+// Notification Hook (Only for Success messages now)
+import { useNotification } from '@/lib/ui/NotificationBanner';
 
 const BookingCard = ({ session, onAccept, onReschedule, onViewDetails, onJoin, onEvaluate, onViewResume }: any) => {
   const uiState = getBookingState(session);
   const details = getBookingDetails(session);
-  const rawPayout = session.package?.mentor_payout_inr || 0; // <--- ADD THIS
   const counterpartName = details.getCounterpartName('mentor');
   const hasResume = !!session.candidate?.resume_url;
+
+  const skillName = session.skill_name || 'Interview Session';
+  const skillDesc = session.skill_description || session.package?.interview_profile_description || "No details provided.";
 
   return (
     <Card style={styles.sessionCard}>
@@ -29,17 +34,19 @@ const BookingCard = ({ session, onAccept, onReschedule, onViewDetails, onJoin, o
           <Heading level={4} style={styles.cardTitle}>
             {details.profileName} interview with {counterpartName}
           </Heading>
+          
           <View style={styles.infoRow}>
-            <Ionicons name="layers-outline" size={14} color="#6B7280" />
-            <AppText style={styles.infoText}>Round {details.roundLabel}</AppText>
+            <Ionicons name="bulb-outline" size={14} color="#6B7280" />
+            <AppText style={styles.infoText}>{skillName}</AppText>
           </View>
+
           <View style={styles.infoRow}>
             <Ionicons name="calendar-outline" size={14} color="#6B7280" />
             <AppText style={styles.infoText}>{details.dateLabel} • {details.timeLabel}</AppText>
           </View>
           <View style={styles.infoRow}>
             <Ionicons name="time-outline" size={14} color="#6B7280" />
-            <AppText style={styles.infoText}>55 min (45 min interview + 10 min Q&A)</AppText>
+            <AppText style={styles.infoText}>60 mins</AppText>
           </View>
           <View style={styles.payoutRow}>
             <Ionicons name="wallet-outline" size={14} color="#059669" />
@@ -52,9 +59,7 @@ const BookingCard = ({ session, onAccept, onReschedule, onViewDetails, onJoin, o
       </View>
       <View style={styles.cardDivider} />
 
-      {/* --- ACTIONS --- */}
-
-      {/* 1. APPROVAL (DB: pending) */}
+      {/* ACTIONS */}
       {uiState === 'APPROVAL' && (
         <View style={styles.actionRowFull}>
           <TouchableOpacity style={[styles.btnFull, styles.btnOutline]} onPress={() => onReschedule(session)}>
@@ -66,7 +71,6 @@ const BookingCard = ({ session, onAccept, onReschedule, onViewDetails, onJoin, o
         </View>
       )}
 
-      {/* 2. CONFIRMED Future (DB: confirmed) */}
       {uiState === 'SCHEDULED' && (
         <View style={styles.actionRowFull}>
           {hasResume && (
@@ -77,14 +81,13 @@ const BookingCard = ({ session, onAccept, onReschedule, onViewDetails, onJoin, o
           )}
           <TouchableOpacity 
             style={[styles.btnFull, styles.btnSecondary]} 
-            onPress={() => onViewDetails(session.package?.interview_profile_description || "No details provided by admin.")}
+            onPress={() => onViewDetails(skillDesc)}
           >
             <AppText style={styles.textPrimary}>View Details</AppText>
           </TouchableOpacity>
         </View>
       )}
 
-      {/* 3. JOIN (DB: confirmed + Time) */}
       {uiState === 'JOIN' && (
         <View style={styles.actionRowFull}>
            <TouchableOpacity style={[styles.btnFull, styles.btnGreen]} onPress={() => onJoin(session.meeting_link)}>
@@ -99,15 +102,12 @@ const BookingCard = ({ session, onAccept, onReschedule, onViewDetails, onJoin, o
               style={[styles.btnFull, styles.btnOutline, { paddingHorizontal: 8 }]} 
               onPress={() => onViewResume(session.candidate?.resume_url)}
             >
-                        <AppText style={styles.textPrimary}>View Resume </AppText>
-
               <Ionicons name="document-text-outline" size={18} color={theme.colors.primary} />
             </TouchableOpacity>
           )}
         </View>
       )}
 
-      {/* 4. POST (Evaluation) */}
       {(uiState === 'POST_PENDING' || uiState === 'POST_COMPLETED') && (
         <View style={styles.actionRowFull}>
           <TouchableOpacity 
@@ -144,6 +144,8 @@ export default function MentorBookingsScreen() {
   const { user } = useAuthStore();
   const router = useRouter();
   
+  const { showNotification } = useNotification(); 
+
   const [sessions, setSessions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -154,11 +156,8 @@ export default function MentorBookingsScreen() {
   const [detailContent, setDetailContent] = useState("");
   const [rescheduleModalVisible, setRescheduleModalVisible] = useState(false);
   const [selectedSession, setSelectedSession] = useState<any>(null);
-const [newDate, setNewDate] = useState(new Date());
-const [showDatePicker, setShowDatePicker] = useState(false);
- // app/mentor/bookings.tsx
-
-// ... existing imports
+  const [newDate, setNewDate] = useState(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   const fetchSessions = async () => {
     if (!user) return;
@@ -166,7 +165,7 @@ const [showDatePicker, setShowDatePicker] = useState(false);
       const { data, error } = await supabase
         .from('interview_sessions')
         .select(`
-        id, scheduled_at, status, round, meeting_link,
+        id, scheduled_at, status, skill_id, meeting_link,
         package:interview_packages!package_id ( id, mentor_payout_inr, interview_profile_id ),
         candidate:candidates!candidate_id ( professional_title, resume_url )
       `)
@@ -176,7 +175,7 @@ const [showDatePicker, setShowDatePicker] = useState(false);
       if (error) throw error;
       const rawSessions = data || [];
 
-      // ... (Existing Profile Mapping Logic remains the same) ...
+      // 1. Fetch Profile Data
       const profileIds = Array.from(new Set(rawSessions.map((s: any) => s.package?.interview_profile_id).filter((id: any) => id != null)));
       let profileMap: Record<string, { name: string; description: string | null }> = {};
 
@@ -187,62 +186,55 @@ const [showDatePicker, setShowDatePicker] = useState(false);
         }
       }
 
+      // 2. Fetch Skills Data
+      const skillIds = [...new Set(rawSessions.map((s: any) => s.skill_id).filter(Boolean))];
+      let skillMap: any = {};
+
+      if (skillIds.length > 0) {
+          const { data: skillsData } = await supabase
+            .from('interview_skills_admin')
+            .select('id, name, description')
+            .in('id', skillIds);
+          
+          if (skillsData) {
+              skillMap = skillsData.reduce((acc: any, curr: any) => {
+                  acc[curr.id] = curr; return acc;
+              }, {});
+          }
+      }
+
+      // 3. Merge Data
       const enrichedSessions = rawSessions.map((s: any) => {
         const profileId = s.package?.interview_profile_id;
         const profileMeta = profileId != null ? profileMap[String(profileId)] ?? null : null;
+        const skillMeta = s.skill_id ? skillMap[s.skill_id] : null;
+
         return {
           ...s,
-          package: s.package ? { ...s.package, ...profileMeta ? { interview_profile_name: profileMeta.name, interview_profile_description: profileMeta.description } : { interview_profile_name: null, interview_profile_description: null } } : null,
+          skill_name: skillMeta?.name || 'Mock Interview',
+          skill_description: skillMeta?.description || '',
+          package: s.package ? { 
+              ...s.package, 
+              ...profileMeta ? { interview_profile_name: profileMeta.name, interview_profile_description: profileMeta.description } : { interview_profile_name: null, interview_profile_description: null } 
+          } : null,
         };
       });
 
       setSessions(enrichedSessions);
 
-      // --- 🟢 UPDATED STATS CALCULATION START ---
       let upcoming = 0;
       let completedCount = 0;
       let totalEarnings = 0;
 
-      // 1. Group sessions by Package ID to handle "Both Rounds" logic
-      const sessionsByPackage: Record<string, any[]> = {};
-
       enrichedSessions.forEach((s: any) => {
-        // Count individual session statuses
-        if (s.status === 'confirmed') upcoming++;
-        if (s.status === 'completed') completedCount++;
-
-        // Grouping
-        if (s.package?.id) {
-          if (!sessionsByPackage[s.package.id]) {
-            sessionsByPackage[s.package.id] = [];
-          }
-          sessionsByPackage[s.package.id].push(s);
-        }
-      });
-
-      // 2. Calculate Earnings per Package
-      // ... inside fetchSessions ...
-      
-      // 2. Calculate Earnings per Package
-      Object.values(sessionsByPackage).forEach((pkgSessions) => {
-        
-        // Check 1: Are ALL sessions in this package marked 'completed'?
-        const isPackageComplete = pkgSessions.every(s => s.status === 'completed');
-        
-        // Check 2: Does this package actually have both rounds? (at least 2 sessions)
-        const hasBothRounds = pkgSessions.length >= 2; 
-
-        // ONLY add earnings if both conditions are true
-        if (isPackageComplete && hasBothRounds) {
-          const packagePayout = pkgSessions[0].package?.mentor_payout_inr || 0;
-          
-          // Add the package price ONCE (do not multiply by length)
-          totalEarnings += packagePayout;
+        if (s.status === 'confirmed' || s.status === 'pending') upcoming++;
+        if (s.status === 'completed') {
+            completedCount++;
+            totalEarnings += (s.package?.mentor_payout_inr || 0);
         }
       });
 
       setStats({ upcoming, completed: completedCount, earnings: totalEarnings });
-      // --- 🟢 UPDATED STATS CALCULATION END ---
 
     } catch (err: any) {
       console.error('Error loading mentor bookings:', err);
@@ -256,16 +248,23 @@ const [showDatePicker, setShowDatePicker] = useState(false);
 
   const handleAccept = async (id: string) => {
     try {
-      // 🟢 DB Update: "pending" -> "confirmed" (Valid ENUM)
+      const newMeetingLink = `https://meet.jit.si/crackjobs-${id}`;
+
       const { error } = await supabase
         .from('interview_sessions')
-        .update({ status: 'confirmed' }) 
+        .update({ 
+            status: 'confirmed',
+            meeting_link: newMeetingLink 
+        }) 
         .eq('id', id);
 
       if (error) throw error;
-      Alert.alert('Accepted', 'This interview has been confirmed.');
+      
+      showNotification('Interview accepted! Meeting link generated.', 'success');
       fetchSessions();
     } catch (e: any) {
+      console.error("Accept Error:", e);
+      // 🟢 CHANGED: Reverted to Alert for errors
       Alert.alert('Error', e?.message || 'Could not accept this interview.');
     }
   };
@@ -278,24 +277,39 @@ const [showDatePicker, setShowDatePicker] = useState(false);
 
   const handleRescheduleConfirm = async () => {
     if (!selectedSession) return;
-    // 🟢 DB Update: "confirmed" (Valid ENUM) + new Time
-    const { error } = await supabase
-        .from('interview_sessions')
-        .update({ status: 'confirmed', scheduled_at: newDate.toISOString() })
-        .eq('id', selectedSession.id);
     
-    setRescheduleModalVisible(false);
-    if (!error) {
-        Alert.alert("Success", "Meeting rescheduled and confirmed.");
+    try {
+        // 🟢 CHANGED: Generate link on Reschedule as well
+        const newMeetingLink = `https://meet.jit.si/crackjobs-${selectedSession.id}`;
+
+        const { error } = await supabase
+            .from('interview_sessions')
+            .update({ 
+                status: 'confirmed', 
+                scheduled_at: newDate.toISOString(),
+                meeting_link: newMeetingLink // 🟢 Generate Link
+            })
+            .eq('id', selectedSession.id);
+        
+        setRescheduleModalVisible(false);
+        if (error) throw error;
+
+        showNotification('Meeting rescheduled successfully.', 'success');
         fetchSessions();
-    } else {
-        Alert.alert("Error", "Failed to reschedule.");
+    } catch (e: any) {
+        setRescheduleModalVisible(false);
+        // 🟢 CHANGED: Reverted to Alert for errors
+        Alert.alert('Error', 'Failed to reschedule.');
     }
   };
 
   const handleJoin = (link: string) => {
-    if (!link) return Alert.alert("No Link", "Meeting link is not ready yet.");
-    Linking.openURL(link).catch(() => Alert.alert("Error", "Could not open link."));
+    if (!link) {
+        // 🟢 CHANGED: Reverted to Alert for errors
+        Alert.alert('Not Ready', 'Meeting link is not ready yet.');
+        return;
+    }
+    Linking.openURL(link).catch(() => Alert.alert('Error', 'Could not open meeting link.'));
   };
 
   const handleViewDetails = (details: string) => {
@@ -304,7 +318,10 @@ const [showDatePicker, setShowDatePicker] = useState(false);
   };
   
   const handleViewResume = async (path: string) => {
-    if (!path) { Alert.alert('No Resume', 'The candidate has not uploaded a resume yet.'); return; }
+    if (!path) { 
+        Alert.alert('No Resume', 'No resume available for this candidate.');
+        return; 
+    }
     try {
       const { data, error } = await supabase.storage.from('resumes').createSignedUrl(path, 3600);
       if (error || !data?.signedUrl) throw error;
@@ -316,26 +333,23 @@ const [showDatePicker, setShowDatePicker] = useState(false);
   };
 
   const handleEvaluate = (session: any, mode: 'edit' | 'read') => {
-  try {
-    // Fetch the evaluation template for this session
-    const template = getEvaluationTemplate(session);
-    
-    // Navigate to evaluation page with session data and template
-    router.push({ 
-      pathname: `/mentor/session/${session.id}`, 
-      params: { 
-        mode,
-        templateTitle: template.title,
-        templateContent: template.content,
-        profileName: session.package?.interview_profile_name || '',
-        round: session.round || 'Round 1'
-      } 
-    });
-  } catch (e) {
-    console.error('Template fetch error:', e);
-    Alert.alert('Error', 'Could not load evaluation template.');
-  }
-};
+    try {
+        const template = getEvaluationTemplate(session);
+        router.push({ 
+        pathname: `/mentor/session/${session.id}`, 
+        params: { 
+            mode,
+            templateTitle: template.title,
+            templateContent: template.content,
+            profileName: session.package?.interview_profile_name || '',
+            round: session.skill_name || 'Interview' 
+        } 
+        });
+    } catch (e) {
+        console.error('Template fetch error:', e);
+        Alert.alert('Error', 'Could not load evaluation template.');
+    }
+  };
 
   if (loading) return <View style={styles.loadingContainer}><ActivityIndicator size="large" color={theme.colors.primary} /></View>;
 
@@ -343,6 +357,7 @@ const [showDatePicker, setShowDatePicker] = useState(false);
     <ScreenBackground style={styles.container}>
       <StatusBar barStyle="dark-content" />
       <ScrollView contentContainerStyle={styles.scrollContent} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
+        {/* ... (Rest of UI remains identical) ... */}
         <Section style={styles.header}>
           <Heading level={1} style={{textAlign: 'center'}}>Mentor Dashboard</Heading>
           <AppText style={styles.headerSub}>Manage your upcoming interviews</AppText>
@@ -381,11 +396,14 @@ const [showDatePicker, setShowDatePicker] = useState(false);
         )}
       </ScrollView>
 
+      {/* Detail Modal */}
       <Modal visible={detailModalVisible} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Heading level={3} style={{marginBottom:12}}>Interview Details</Heading>
-            <AppText style={{marginBottom: 20, lineHeight: 22}}>{detailContent}</AppText>
+            <Heading level={3} style={{marginBottom:12}}>Interview Focus</Heading>
+            <ScrollView style={{maxHeight: 300}}>
+                <AppText style={{marginBottom: 20, lineHeight: 22, color: '#374151'}}>{detailContent}</AppText>
+            </ScrollView>
             <TouchableOpacity onPress={() => setDetailModalVisible(false)} style={styles.modalCloseBtn}>
               <AppText style={styles.textWhite}>Close</AppText>
             </TouchableOpacity>
@@ -393,70 +411,71 @@ const [showDatePicker, setShowDatePicker] = useState(false);
         </View>
       </Modal>
 
-<Modal visible={rescheduleModalVisible} transparent animationType="slide">
-  <View style={styles.modalOverlay}>
-    <View style={styles.modalContent}>
-      <Heading level={3} style={{marginBottom:12}}>Reschedule Interview</Heading>
-      <AppText style={{marginBottom: 20}}>Select a new date and time for this candidate.</AppText>
-      
-      <View style={{marginBottom: 20}}>
-        {Platform.OS === 'web' ? (
-          <input
-            type="datetime-local"
-            value={newDate.toISOString().slice(0, 16)}
-            onChange={(e) => setNewDate(new Date(e.target.value))}
-            style={{
-              width: '100%',
-              padding: 12,
-              borderRadius: 8,
-              border: `1px solid ${theme.colors.border}`,
-              fontSize: 14,
-              fontFamily: 'inherit'
-            }}
-          />
-        ) : (
-          <>
-            <TouchableOpacity 
-              style={[styles.btn, styles.btnOutline, {marginBottom: 12}]}
-              onPress={() => setShowDatePicker(true)}
-            >
-              <Ionicons name="calendar-outline" size={16} color={theme.colors.primary} style={{marginRight: 8}} />
-              <AppText style={styles.textPrimary}>
-                {newDate.toLocaleDateString()} at {newDate.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}
-              </AppText>
-            </TouchableOpacity>
+      {/* Reschedule Modal */}
+      <Modal visible={rescheduleModalVisible} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+            <Heading level={3} style={{marginBottom:12}}>Reschedule Interview</Heading>
+            <AppText style={{marginBottom: 20}}>Select a new date and time for this candidate.</AppText>
+            
+            <View style={{marginBottom: 20}}>
+                {Platform.OS === 'web' ? (
+                <input
+                    type="datetime-local"
+                    value={newDate.toISOString().slice(0, 16)}
+                    onChange={(e) => setNewDate(new Date(e.target.value))}
+                    style={{
+                    width: '100%',
+                    padding: 12,
+                    borderRadius: 8,
+                    border: `1px solid ${theme.colors.border}`,
+                    fontSize: 14,
+                    fontFamily: 'inherit'
+                    }}
+                />
+                ) : (
+                <>
+                    <TouchableOpacity 
+                    style={[styles.btn, styles.btnOutline, {marginBottom: 12}]}
+                    onPress={() => setShowDatePicker(true)}
+                    >
+                    <Ionicons name="calendar-outline" size={16} color={theme.colors.primary} style={{marginRight: 8}} />
+                    <AppText style={styles.textPrimary}>
+                        {newDate.toLocaleDateString()} at {newDate.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}
+                    </AppText>
+                    </TouchableOpacity>
 
-            {showDatePicker && (
-              <DateTimePicker
-                value={newDate}
-                mode="datetime"
-                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                onChange={(event, selectedDate) => {
-                  setShowDatePicker(Platform.OS === 'ios');
-                  if (selectedDate) {
-                    setNewDate(selectedDate);
-                  }
-                }}
-              />
-            )}
-          </>
-        )}
-      </View>
+                    {showDatePicker && (
+                    <DateTimePicker
+                        value={newDate}
+                        mode="datetime"
+                        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                        onChange={(event, selectedDate) => {
+                        setShowDatePicker(Platform.OS === 'ios');
+                        if (selectedDate) {
+                            setNewDate(selectedDate);
+                        }
+                        }}
+                    />
+                    )}
+                </>
+                )}
+            </View>
 
-      <View style={styles.actionRow}>
-        <TouchableOpacity onPress={() => {
-          setRescheduleModalVisible(false);
-          setShowDatePicker(false);
-        }} style={[styles.btn, styles.btnOutline, {flex:1}]}>
-          <AppText style={styles.textPrimary}>Cancel</AppText>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={handleRescheduleConfirm} style={[styles.btn, styles.btnPrimary, {flex:1}]}>
-          <AppText style={styles.textWhite}>Confirm</AppText>
-        </TouchableOpacity>
-      </View>
-    </View>
-  </View>
-</Modal>
+            <View style={styles.actionRow}>
+                <TouchableOpacity onPress={() => {
+                setRescheduleModalVisible(false);
+                setShowDatePicker(false);
+                }} style={[styles.btn, styles.btnOutline, {flex:1}]}>
+                <AppText style={styles.textPrimary}>Cancel</AppText>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={handleRescheduleConfirm} style={[styles.btn, styles.btnPrimary, {flex:1}]}>
+                <AppText style={styles.textWhite}>Confirm</AppText>
+                </TouchableOpacity>
+            </View>
+            </View>
+        </View>
+      </Modal>
     </ScreenBackground>
   );
 }
