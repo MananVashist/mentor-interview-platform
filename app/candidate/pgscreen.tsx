@@ -9,7 +9,6 @@ import {
   Platform,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import RazorpayCheckout from 'react-native-razorpay';
 import { paymentService } from '../../services/payment.service';
 
 export default function PGScreen() {
@@ -95,7 +94,7 @@ export default function PGScreen() {
       rzp.open();
       return;
     }
-
+    const RazorpayCheckout = require('react-native-razorpay').default;
     // 🟢 NATIVE: keep order-based flow (orders API)
     const rnOptions: any = {
       key: keyId,
