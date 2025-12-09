@@ -14,18 +14,19 @@ import {
 import { NotificationProvider } from '@/lib/ui/NotificationBanner';
 import { supabase } from '@/lib/supabase/client';
 import { Session } from '@supabase/supabase-js';
+// 1. Import Ionicons component
 import { Ionicons } from '@expo/vector-icons';
 
-// Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const [isReady, setIsReady] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
 
-  // 1. Load Fonts (Including Ionicons manual fix if needed)
+  // 2. Load Fonts: Use '...Ionicons.font' instead of the long hardcoded path.
+  // This safely loads the font file from the package, regardless of OS.
   const [fontsLoaded, fontError] = useFonts({
-    'Ionicons': require('@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Ionicons.ttf'),
+    ...Ionicons.font, 
     Inter_400Regular,
     Inter_500Medium,
     Inter_600SemiBold,
@@ -34,28 +35,23 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
-    // 2. Initialize Session Check
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setIsReady(true);
     });
 
-    // 3. Listen for Auth Changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
     });
 
-    // 4. Hide Splash Screen (Success OR Failure)
-    // This prevents the "White Screen" if fonts fail to load
+    // 3. White Screen Fix: Unblock splash screen even if fonts fail
     if (fontsLoaded || fontError) {
       SplashScreen.hideAsync();
     }
 
-    // Cleanup subscription on unmount
     return () => subscription.unsubscribe();
   }, [fontsLoaded, fontError]);
 
-  // Block rendering ONLY for session check, NOT for fonts
   if (!isReady) {
     return null;
   }
