@@ -14,24 +14,24 @@ import {
 import { NotificationProvider } from '@/lib/ui/NotificationBanner';
 import { supabase } from '@/lib/supabase/client';
 import { Session } from '@supabase/supabase-js';
+import { Ionicons } from '@expo/vector-icons';
 
+// Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const [isReady, setIsReady] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
 
-  const [fontsLoaded] = useFonts(
-    Platform.OS === 'web'
-      ? {} 
-      : {
-          Inter_400Regular,
-          Inter_500Medium,
-          Inter_600SemiBold,
-          Inter_700Bold,
-          Inter_800ExtraBold,
-        }
-  );
+  // 🟢 FIX: Load Ionicons and Inter fonts on ALL platforms (Web included)
+  const [fontsLoaded] = useFonts({
+    ...Ionicons.font, // <--- Critical for Web Icon support
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
+    Inter_800ExtraBold,
+  });
 
   useEffect(() => {
     // 1. Initialize Session Check
@@ -45,7 +45,7 @@ export default function RootLayout() {
       setSession(session);
     });
 
-    // Hide Splash Screen only after fonts are loaded
+    // 3. Hide Splash Screen only after fonts are loaded
     if (fontsLoaded) {
       SplashScreen.hideAsync();
     }
@@ -58,8 +58,8 @@ export default function RootLayout() {
     return null;
   }
 
-  // Mobile: Wait for fonts to prevent crash/glitch
-  if (!fontsLoaded && Platform.OS !== 'web') {
+  // 🟢 FIX: Wait for fonts to load on Web too (prevents missing icons/text glitch)
+  if (!fontsLoaded) {
     return null;
   }
 
@@ -73,6 +73,7 @@ export default function RootLayout() {
           <meta property="og:site_name" content="CrackJobs" />
           <meta property="og:type" content="website" />
           <meta name="twitter:card" content="summary_large_image" />
+          {/* Optional: You can keep this, but Ionicons.font usually handles it */}
           <link
             rel="stylesheet"
             href="https://cdnjs.cloudflare.com/ajax/libs/ionicons/7.1.0/collection/components/icon/icon.min.css"
