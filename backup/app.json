@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Mentor Interview Platform",
-    "slug": "mentor-interview-platform",
+    "name": "CrackJobs",
+    "slug": "crackjobs",
     "version": "1.0.0",
     "sdkVersion": "51.0.0",
     "orientation": "portrait",

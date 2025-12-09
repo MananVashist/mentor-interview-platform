@@ -8,7 +8,6 @@ async function sendMeetingInvite(email: string, meetingLink: string, slotTime: s
 }
 
 export const paymentService = {
-  // 1. Check for Conflicts (accepts array to keep logic flexible, though we send only 1 now)
   async checkBookingConflict(mentorId: string, selectedSlots: string[]) {
     if (!selectedSlots || selectedSlots.length === 0) return;
     const { data, error } = await supabase
@@ -22,26 +21,38 @@ export const paymentService = {
     if (data && data.length > 0) throw new Error('Slot already booked.');
   },
 
-  // 2. Create Package (Now Logic is for 1 Session + Skill ID)
   async createPackage(
     candidateId: string,
     mentorId: string,
     interviewProfileId: number, 
-    skillId: string,          // <--- NEW: Skill ID
-    selectedSlot: string      // <--- CHANGED: Single slot string (ISO)
+    skillId: string,
+    selectedSlot: string 
   ) {
     try {
-        // Wrap in array for the conflict checker
         await this.checkBookingConflict(mentorId, [selectedSlot]);
 
+        // 1. Fetch Mentor Price
         const { data: mentorData, error: mentorError } = await supabase
-        .from('mentors').select('session_price_inr').eq('id', mentorId).single();
+          .from('mentors')
+          .select('session_price_inr')
+          .eq('id', mentorId)
+          .single();
+
         if (mentorError || !mentorData) throw new Error("Unable to retrieve mentor pricing details.");
+
+        // 🟢 DEBUG 1: What is coming directly from the DB?
+        console.log("--------------------------------------------------");
+        console.log("🔍 DEBUG: DB Raw Value:", mentorData.session_price_inr); 
+        console.log("🔍 DEBUG: Mentor ID:", mentorId);
 
         const basePrice = mentorData.session_price_inr || 0; 
         
         // Pricing Logic: Base + 20% Platform Fee
         const totalPrice = Math.round(basePrice * 1.2); 
+        
+        // 🟢 DEBUG 2: What is the calculated Total Price in Rupees?
+        console.log("🔍 DEBUG: Total Price (INR):", totalPrice);
+
         const mentorPayout = basePrice;
         const platformFee = totalPrice - mentorPayout;
 
@@ -49,10 +60,23 @@ export const paymentService = {
         let razorpayKeyId = null; 
 
         if (ENABLE_RAZORPAY) {
+            // 🟢 DEBUG 3: What exact number are we sending to Razorpay?
+            // (Should be Total INR * 100)
+            const amountToSend = totalPrice * 100;
+            console.log("🔍 DEBUG: Sending to Razorpay (Paise):", amountToSend);
+            console.log("--------------------------------------------------");
+
             const { data: orderData, error: orderError } = await supabase.functions.invoke('create-razorpay-order', {
-                body: { amount: totalPrice * 100, receipt: `rcpt_${candidateId.slice(0, 4)}_${Date.now()}` }
+                body: { 
+                    amount: amountToSend, 
+                    receipt: `rcpt_${candidateId.slice(0, 4)}_${Date.now()}` 
+                }
             });
-            if (orderError) throw new Error("Payment init failed.");
+
+            if (orderError) {
+                console.error("❌ Razorpay Order Error:", orderError);
+                throw new Error("Payment init failed.");
+            }
             razorpayOrderId = orderData.id; 
             razorpayKeyId = orderData.key_id; 
         }
@@ -60,7 +84,6 @@ export const paymentService = {
         const initialStatus = ENABLE_RAZORPAY ? 'pending_payment' : 'held_in_escrow';
         const paymentId = ENABLE_RAZORPAY ? null : `mvp_mock_${Date.now()}`;
 
-        // Create the Package Container
         const { data: pkg, error: pkgError } = await supabase
             .from('interview_packages')
             .insert({
@@ -82,12 +105,11 @@ export const paymentService = {
         let meetingLink = null;
         if (!ENABLE_RAZORPAY) meetingLink = `https://meet.jit.si/interview-${packageId}-${Date.now()}`;
 
-        // 🟢 DB Insert: Single Session with Skill ID
         const sessionData = {
             package_id: packageId,
             candidate_id: candidateId,
             mentor_id: mentorId,
-            skill_id: skillId,      // <--- Mapping to Skill Table
+            skill_id: skillId,
             scheduled_at: selectedSlot,
             status: 'pending',
             meeting_link: meetingLink
@@ -107,53 +129,49 @@ export const paymentService = {
   },
 
   async verifyPayment(pkgId: string, orderId: string, payId: string, sig: string) {
-  // 1. Verify signature via Edge Function (secret stays server-side)
-  const { data, error } = await supabase.functions.invoke(
-    "verify-razorpay-signature",
-    {
-      body: {
-        orderId,
-        paymentId: payId,
-        signature: sig,
-      },
+    const { data, error } = await supabase.functions.invoke(
+      "verify-razorpay-signature",
+      {
+        body: {
+          orderId,
+          paymentId: payId,
+          signature: sig,
+        },
+      }
+    );
+
+    if (error || !data?.valid) {
+      console.error("[PaymentService] Razorpay verification failed:", error, data);
+      throw new Error("Payment verification failed");
     }
-  );
 
-  if (error || !data?.valid) {
-    console.error("[PaymentService] Razorpay verification failed:", error, data);
-    throw new Error("Payment verification failed");
-  }
+    const meetingLink = `https://meet.jit.si/interview-${pkgId}-${Date.now()}`;
 
-  // 2. Only now consider the payment as valid
-  const meetingLink = `https://meet.jit.si/interview-${pkgId}-${Date.now()}`;
+    const { error: pkgError } = await supabase
+      .from("interview_packages")
+      .update({
+        payment_status: "held_in_escrow",
+        razorpay_payment_id: payId,
+        razorpay_signature: sig,
+        razorpay_order_id: orderId,
+      })
+      .eq("id", pkgId);
 
-  const { error: pkgError } = await supabase
-    .from("interview_packages")
-    .update({
-      payment_status: "held_in_escrow",
-      razorpay_payment_id: payId,
-      razorpay_signature: sig,
-      // optional: ensure order id stored too:
-      razorpay_order_id: orderId,
-    })
-    .eq("id", pkgId);
+    if (pkgError) throw pkgError;
 
-  if (pkgError) throw pkgError;
+    const { error: sessionError } = await supabase
+      .from("interview_sessions")
+      .update({
+        status: "pending",
+        meeting_link: meetingLink,
+      })
+      .eq("package_id", pkgId);
 
-  const { error: sessionError } = await supabase
-    .from("interview_sessions")
-    .update({
-      status: "pending",
-      meeting_link: meetingLink,
-    })
-    .eq("package_id", pkgId);
+    if (sessionError) throw sessionError;
 
-  if (sessionError) throw sessionError;
-
-  this.triggerEmailNotification(pkgId, meetingLink);
-  return { success: true, meetingLink };
-}
-,
+    this.triggerEmailNotification(pkgId, meetingLink);
+    return { success: true, meetingLink };
+  },
 
   async triggerEmailNotification(pkgId: string, link: string) {
     try {

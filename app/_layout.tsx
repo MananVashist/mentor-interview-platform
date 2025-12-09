@@ -45,9 +45,10 @@ export default function RootLayout() {
     });
 
     // 3. Hide Splash Screen only after fonts are loaded
-    if (fontsLoaded) {
+    if (fontsLoaded || fontError) {
       SplashScreen.hideAsync();
     }
+  }, [fontsLoaded, fontError]);
 
     return () => subscription.unsubscribe();
   }, [fontsLoaded]);
@@ -57,10 +58,7 @@ export default function RootLayout() {
     return null;
   }
 
-  // 🟢 FIX: Wait for fonts to load on Web too (prevents missing icons/text glitch)
-  if (!fontsLoaded) {
-    return null;
-  }
+
 
   return (
     <SafeAreaProvider>

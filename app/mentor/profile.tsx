@@ -7,7 +7,6 @@ import { supabase } from '@/lib/supabase/client';
 
 import { colors, spacing, borderRadius, typography, shadows } from '@/lib/theme';
 import { Heading, AppText, Section, Card, Button, Input, ScreenBackground, Label } from '@/lib/ui';
-// 1. Change import from Component to Hook
 import { useNotification } from '@/lib/ui/NotificationBanner';
 
 type MentorRow = {
@@ -23,25 +22,19 @@ type InterviewProfile = {
   name: string;
 };
 
-// 2. Removed BannerState type (no longer needed)
-
 export default function MentorProfileScreen() {
   const { profile } = useAuthStore();
-  
-  // 3. Initialize the global hook
   const { showNotification } = useNotification();
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   
-  const [sessionPrice, setSessionPrice] = useState('');
+  // 1. Set default state to '1000'
+  const [sessionPrice, setSessionPrice] = useState('1000');
   const [availableProfiles, setAvailableProfiles] = useState<InterviewProfile[]>([]);
   const [selectedProfiles, setSelectedProfiles] = useState<number[]>([]);
   const [professionalTitle, setProfessionalTitle] = useState('');
   const [yearsOfExperience, setYearsOfExperience] = useState('');
-
-  // 4. Removed local banner state (const [banner, setBanner]...)
-
   useEffect(() => {
     if (!profile?.id) return;
     let mounted = true;
@@ -61,7 +54,13 @@ export default function MentorProfileScreen() {
           setProfessionalTitle(m.professional_title ?? '');
           setYearsOfExperience(m.years_of_experience != null ? String(m.years_of_experience) : '');
           setSelectedProfiles(m.profile_ids ?? []);
-          setSessionPrice(m.session_price_inr != null ? String(m.session_price_inr) : '');
+          
+          // 2. Use DB value if exists, otherwise keep default '1000'
+          if (m.session_price_inr != null) {
+            setSessionPrice(String(m.session_price_inr));
+          } else {
+            setSessionPrice('1000');
+          }
         }
 
         const { data: profilesData } = await supabase
@@ -104,9 +103,21 @@ export default function MentorProfileScreen() {
       return;
     }
     
-    if (price != null && (isNaN(price) || price < 0)) {
-        showNotification('Price cannot be negative.', 'error');
+    // 3. Validation Logic for Price Range (500 - 2500)
+    if (price !== null) {
+      if (isNaN(price)) {
+        showNotification('Price must be a valid number.', 'error');
         return;
+      }
+      if (price < 500 || price > 2500) {
+        showNotification('Price must be between ₹500 and ₹2500.', 'error');
+        return;
+      }
+    } else {
+      // Optional: Prevent saving if price is empty? 
+      // Assuming price is required based on context:
+      showNotification('Please enter a session price.', 'error');
+      return;
     }
 
     try {
@@ -128,7 +139,6 @@ export default function MentorProfileScreen() {
       if (error) {
         showNotification('Could not save profile: ' + error.message, 'error');
       } else {
-        // 5. Success! Use global hook
         showNotification('Profile saved successfully.', 'success');
       }
     } catch (e: any) {
@@ -150,8 +160,6 @@ export default function MentorProfileScreen() {
 
   return (
     <ScreenBackground>
-      {/* 6. Removed <NotificationBanner /> JSX - it is now global in Layout */}
-      
       <ScrollView contentContainerStyle={{ paddingBottom: spacing.xl }}>
         <Section style={styles.header}>
           <View style={styles.headerIcon}>
@@ -167,19 +175,21 @@ export default function MentorProfileScreen() {
               <Ionicons name="cash-outline" size={20} color={colors.primary} />
               <Heading level={2} style={styles.cardTitle}>Pricing</Heading>
             </View>
+            
+            {/* 4. Updated Description Text */}
             <AppText style={styles.cardDescription}>
-              Set your fee for a complete mock interview booking (includes 2 sessions).
+              Set your fee for a complete mock interview session. Range: ₹500 - ₹2500.
             </AppText>
 
             <View style={styles.inputGroup}>
-              <Label style={styles.inputLabel}>Price per Booking (INR)</Label>
+              <Label style={styles.inputLabel}>Price per Session (INR)</Label>
               <View style={styles.currencyInputContainer}>
                 <AppText style={styles.currencySymbol}>₹</AppText>
                 <Input
                   value={sessionPrice}
                   onChangeText={setSessionPrice}
                   keyboardType="number-pad"
-                  placeholder="e.g. 2000"
+                  placeholder="e.g. 1000"
                   style={styles.currencyInput}
                 />
               </View>
