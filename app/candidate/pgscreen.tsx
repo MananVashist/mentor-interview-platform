@@ -1,178 +1,182 @@
 ﻿// app/candidate/pgscreen.tsx
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, ActivityIndicator, TouchableOpacity, SafeAreaView, Alert, Platform } from 'react-native';
+import {
+  View,
+  Text,
+  ActivityIndicator,
+  SafeAreaView,
+  Alert,
+  Platform,
+} from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { paymentService } from '../../services/payment.service';
-import { useAuthStore } from '@/lib/store';
 import RazorpayCheckout from 'react-native-razorpay';
+import { paymentService } from '../../services/payment.service';
 
 export default function PGScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
-  const { user } = useAuthStore(); 
 
-  // 1. Receive data from Schedule Screen (Matches perfectly)
-  const { orderId, packageId, keyId } = params; 
-  // Note: We deliberately ignore 'amount' here to prevent the Bad Request error.
-  
-  const [isProcessing, setIsProcessing] = useState(true);
+  const { orderId, packageId, keyId, amount } = params as {
+    orderId?: string;
+    packageId?: string;
+    keyId?: string;
+    amount?: string;
+  };
+
   const [sdkReady, setSdkReady] = useState(false);
-  
-  const hasInitiated = useRef(false);
-  const rzpInstance = useRef<any>(null);
+  const hasRun = useRef(false);
 
   useEffect(() => {
-    if (!orderId || !packageId || !keyId) {
-        Alert.alert("Error", "Missing booking details.");
-        router.back();
-        return;
+    console.log('[PGScreen] Params:', params);
+
+    if (!packageId || !keyId || !amount) {
+      Alert.alert('Error', 'Missing payment details.');
+      router.back();
+      return;
     }
 
-    const prepareSDK = async () => {
-      if (Platform.OS === 'web') {
-        const res = await loadRazorpayScript('https://checkout.razorpay.com/v1/checkout.js');
-        if (!res) {
-          Alert.alert('Error', 'Razorpay SDK failed to load.');
-          return;
-        }
-        setSdkReady(true);
-      } else {
-        setSdkReady(true);
-      }
-    };
-    prepareSDK();
+    // For native we require orderId as well, for web we’ll temporarily ignore it
+    if (Platform.OS !== 'web' && !orderId) {
+      Alert.alert('Error', 'Missing order id for payment.');
+      router.back();
+      return;
+    }
 
-    return () => {
-        if (Platform.OS === 'web') {
-            const frames = document.querySelectorAll('.razorpay-checkout-frame');
-            frames.forEach(frame => frame.remove());
-            if (rzpInstance.current) {
-                try { rzpInstance.current.close(); } catch(e){}
-            }
-        }
-    };
+    if (Platform.OS === 'web') {
+      loadRazorpayScript().then(() => setSdkReady(true));
+    } else {
+      setSdkReady(true);
+    }
   }, []);
 
   useEffect(() => {
-    if (sdkReady && orderId && keyId) {
-      if (hasInitiated.current) return;
-      hasInitiated.current = true;
-      initiatePayment();
+    if (sdkReady && !hasRun.current) {
+      hasRun.current = true;
+      openCheckout();
     }
   }, [sdkReady]);
 
-  const initiatePayment = async () => {
-    try {
-      console.log("[PGScreen] Initiating Payment with Order ID:", orderId);
+  const openCheckout = () => {
+    const amountPaise = Number(amount);
+    if (!Number.isFinite(amountPaise) || amountPaise <= 0) {
+      console.warn('[PGScreen] Invalid amount received:', amount);
+      Alert.alert('Error', 'Invalid payment amount.');
+      router.back();
+      return;
+    }
 
-      // 🟢 CRITICAL FIX: 
-      // We DO NOT pass 'amount' or 'currency' here. 
-      // Razorpay automatically pulls them from the 'order_id'.
-      // Passing them manually causes the "Bad Request" error you are seeing.
-      
+    if (Platform.OS === 'web') {
+      // 🟢 DEBUG MODE (WEB):
+      // Use SIMPLE amount-based checkout (NO order_id) to remove order from equation.
       const options: any = {
+        key: keyId,
+        amount: amountPaise, // paise
+        currency: 'INR',
         name: 'CrackJobs',
         description: 'Mock Interview Session',
-        key: keyId,      // From Params (Correct)
-        order_id: orderId, // From Params (Correct)
         theme: { color: '#0E9384' },
         retry: { enabled: false },
-        modal: {
-            ondismiss: function() {
-              handleCancel();
-            }
-        }
+        handler: handleSuccess,
+        redirect: false,
       };
 
-      console.log('[PGScreen] Options:', options);
+      console.log('[PGScreen][WEB] Options (NO order_id):', options);
 
-      if (Platform.OS === 'web') {
-        const rzp1 = new (window as any).Razorpay({
-          ...options,
-          handler: async function (response: any) {
-            await handleVerify(response);
-          }
-        });
-        
-        rzpInstance.current = rzp1;
-        rzp1.open();
+      const rzp = new (window as any).Razorpay(options);
 
-      } else {
-        if (RazorpayCheckout) {
-          RazorpayCheckout.open(options)
-            .then((data: any) => handleVerify(data))
-            .catch((error: any) => {
-              if (error.code && error.code !== 0 && error.code !== 2) {
-                 Alert.alert('Payment Error', error.description || 'Failed');
-              } else {
-                 handleCancel();
-              }
-            });
+      rzp.on('payment.failed', (resp: any) => {
+        console.log('[PGScreen][WEB] payment.failed:', resp);
+        Alert.alert(
+          'Payment Failed',
+          resp?.error?.description || 'Bad Request / Error'
+        );
+      });
+
+      rzp.open();
+      return;
+    }
+
+    // 🟢 NATIVE: keep order-based flow (orders API)
+    const rnOptions: any = {
+      key: keyId,
+      order_id: orderId,
+      amount: amountPaise,
+      currency: 'INR',
+      name: 'CrackJobs',
+      description: 'Mock Interview Session',
+      theme: { color: '#0E9384' },
+      retry: { enabled: false },
+    };
+
+    console.log('[PGScreen][RN] Options:', rnOptions);
+
+    RazorpayCheckout.open(rnOptions)
+      .then(handleSuccess)
+      .catch((err: any) => {
+        console.log('[PGScreen][RN] Razorpay Error:', err);
+
+        // code 0 / 2 usually user-cancel
+        if (err.code === 0 || err.code === 2) {
+          handleCancel();
+        } else {
+          Alert.alert('Payment Error', err.description || 'Bad Request');
         }
-      }
+      });
+  };
 
-    } catch (e) {
-      console.error('[PGScreen] Init Exception:', e);
-      Alert.alert("Error", "Could not initiate payment.");
+  const handleSuccess = async (data: any) => {
+    console.log('[PGScreen] Payment Success:', data);
+
+    try {
+      await paymentService.verifyPayment(
+        packageId as string,
+        data.razorpay_order_id,
+        data.razorpay_payment_id,
+        data.razorpay_signature
+      );
+
+      Alert.alert('Success', 'Interview booked!');
+      router.replace('/candidate/bookings');
+    } catch (err) {
+      console.error('[PGScreen] Verification failed:', err);
+      Alert.alert('Verification Failed', 'Please contact support.');
       router.back();
     }
   };
 
   const handleCancel = () => {
-    setIsProcessing(false);
-    setTimeout(() => {
-        Alert.alert("Cancelled", "Payment was cancelled.");
-        router.back();
-    }, 500);
+    Alert.alert('Cancelled', 'Payment was cancelled.');
+    router.back();
   };
 
-  const handleVerify = async (data: any) => {
-      try {
-        setIsProcessing(true);
-        await paymentService.verifyPayment(
-            packageId as string,
-            data.razorpay_order_id, 
-            data.razorpay_payment_id,
-            data.razorpay_signature
-        );
-        Alert.alert("Success", "Interview Booked Successfully!");
-        router.replace('/candidate/bookings');
-      } catch(err) {
-          Alert.alert("Failed", "Payment verification failed.");
-          router.back();
-      } finally {
-          setIsProcessing(false);
-      }
-  }
-
   return (
-    <SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' }}>
+    <SafeAreaView
+      style={{
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#FFF',
+      }}
+    >
       <ActivityIndicator size="large" color="#0E9384" />
-      <View style={{ marginTop: 20 }}>
-        <Text style={{ marginBottom: 10, color: '#666' }}>
-            {!sdkReady ? "Initializing Payment..." : "Redirecting to Razorpay..."}
-        </Text>
-        <TouchableOpacity onPress={handleCancel}>
-           <Text style={{ color: '#0E9384', fontWeight: '600' }}>Cancel</Text>
-        </TouchableOpacity>
-      </View>
+      <Text style={{ marginTop: 16 }}>
+        {sdkReady ? 'Opening Razorpay…' : 'Preparing payment…'}
+      </Text>
     </SafeAreaView>
   );
 }
 
-function loadRazorpayScript(src: string) {
+function loadRazorpayScript() {
   return new Promise((resolve) => {
-    if (Platform.OS !== 'web') {
-      resolve(false);
-      return;
-    }
+    if (Platform.OS !== 'web') return resolve(true);
+
     if (document.getElementById('razorpay-sdk')) {
-      resolve(true);
-      return;
+      return resolve(true);
     }
+
     const script = document.createElement('script');
-    script.src = src;
     script.id = 'razorpay-sdk';
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
     script.onload = () => resolve(true);
     script.onerror = () => resolve(false);
     document.body.appendChild(script);

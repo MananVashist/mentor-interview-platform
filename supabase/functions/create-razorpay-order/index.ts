@@ -1,74 +1,70 @@
-// supabase/functions/create-razorpay-order/index.ts
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
+};
 
 serve(async (req) => {
-  // 1. Handle CORS Preflight Request
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
   }
 
   try {
-    // 2. Get Data from Client
-    const { amount, receipt } = await req.json()
+    let { amount, receipt } = await req.json();
+    console.log("[RZP][Edge] Incoming:", { amount, receipt });
 
-    // 3. Get Secrets from Supabase Vault
-    const RZP_KEY = Deno.env.get('RAZORPAY_KEY_ID')
-    const RZP_SECRET = Deno.env.get('RAZORPAY_KEY_SECRET')
+    if (!amount || !receipt) throw new Error("Missing amount/receipt");
 
-    if (!RZP_KEY || !RZP_SECRET) {
-      throw new Error('Missing Razorpay Credentials in Edge Function')
-    }
+    const amountPaise = parseInt(String(amount), 10);
+    if (!Number.isFinite(amountPaise) || amountPaise <= 0)
+      throw new Error("Invalid amount (must be positive integer in paise)");
 
-    // 4. Create Authorization Header (Basic Auth)
-    const authHeader = `Basic ${btoa(`${RZP_KEY}:${RZP_SECRET}`)}`
+    const KEY = Deno.env.get("RAZORPAY_KEY_ID");
+    const SECRET = Deno.env.get("RAZORPAY_KEY_SECRET");
+    if (!KEY || !SECRET) throw new Error("Missing Razorpay credentials");
 
-    // 5. Call Razorpay API
-    const response = await fetch('https://api.razorpay.com/v1/orders', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': authHeader
-      },
-      body: JSON.stringify({
-        amount: amount, // Amount in paise (already converted by client)
-        currency: 'INR',
-        receipt: receipt,
-        payment_capture: 1 
-      })
-    })
+    const auth = `Basic ${btoa(`${KEY}:${SECRET}`)}`;
 
-    const razorpayData = await response.json()
+    const body = {
+      amount: amountPaise, // paise
+      currency: "INR",
+      receipt: receipt,
+      payment_capture: 1,
+    };
+
+    console.log("[RZP][Edge] Sending to Razorpay:", body);
+
+    const response = await fetch("https://api.razorpay.com/v1/orders", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: auth },
+      body: JSON.stringify(body),
+    });
+
+    const data = await response.json();
+    console.log("[RZP][Edge] Razorpay responded:", data);
 
     if (!response.ok) {
-      console.error('Razorpay Error:', razorpayData)
-      throw new Error(razorpayData.error?.description || 'Failed to create order')
+      console.error("[RZP][Edge] Razorpay Error RAW:", data);
+      throw new Error(data.error?.description || "Failed to create order");
     }
 
-    // 6. Return Order ID to Client
-   // 6. Return Order ID AND Key ID to Client
     return new Response(
       JSON.stringify({
-        ...razorpayData,
-        key_id: RZP_KEY // <--- THIS IS THE MISSING PIECE
+        ...data,
+        key_id: KEY,
       }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
       }
-    )
-
-  } catch (error) {
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
-      }
-    )
+    );
+  } catch (err) {
+    console.error("[RZP][Edge] Fatal:", err);
+    return new Response(JSON.stringify({ error: err.message }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 400,
+    });
   }
-})
+});

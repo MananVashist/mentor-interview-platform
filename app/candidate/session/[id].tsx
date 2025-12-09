@@ -1,8 +1,15 @@
 ﻿// app/candidate/session/[id].tsx
 import React, { useState, useEffect } from 'react';
-import { 
-  View, Text, StyleSheet, TouchableOpacity, 
-  ScrollView, Alert, ActivityIndicator, Platform 
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  Alert,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -12,15 +19,16 @@ import { MASTER_TEMPLATES } from '@/lib/evaluation-templates';
 export default function CandidateViewEvaluation() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
-  
+
   const [loading, setLoading] = useState(true);
   const [evaluation, setEvaluation] = useState<any>(null);
   const [template, setTemplate] = useState<any[]>([]);
-  const [sessionInfo, setSessionInfo] = useState({ 
-    profile: '', 
-    round: '', 
+
+  const [sessionInfo, setSessionInfo] = useState({
+    profile: '',
+    skill: '',
     mentorName: '',
-    date: ''
+    date: '',
   });
 
   useEffect(() => {
@@ -34,425 +42,456 @@ export default function CandidateViewEvaluation() {
 
   const loadEvaluation = async () => {
     try {
-      if (!id || id === 'undefined') {
-        throw new Error('Invalid session ID');
-      }
+      if (!id || id === 'undefined') throw new Error('Invalid session ID');
 
-      // 1. Fetch Session and Evaluation
-      const { data: session, error: sessionError } = await supabase
+      // 1. Fetch Session Data with linked evaluation + skill
+      const { data: session, error } = await supabase
         .from('interview_sessions')
         .select(`
           *,
-          package:interview_packages(
-            id,
-            interview_profile_id
-          ),
-          mentor:mentors!mentor_id(
-            id,
-            professional_title
-          ),
+          package:interview_packages(id, interview_profile_id),
+          mentor:mentors!mentor_id(id, professional_title, profile:profiles(full_name)),
+          skill:interview_skills_admin!skill_id(name),
           evaluation:session_evaluations(*)
         `)
         .eq('id', String(id))
         .single();
 
-      if (sessionError) throw sessionError;
+      if (error) throw error;
       if (!session) throw new Error('Session not found');
 
-      // Check if evaluation exists
-      if (!session.evaluation || session.evaluation.length === 0) {
-        Alert.alert('Not Available', 'The mentor has not submitted feedback yet.');
-        router.back();
-        return;
-      }
-
-      const evaluationData = Array.isArray(session.evaluation) 
-        ? session.evaluation[0] 
+      // 2. Pull evaluation row safely
+      const evaluationData = Array.isArray(session.evaluation)
+        ? session.evaluation[0]
         : session.evaluation;
+      setEvaluation(evaluationData || null);
 
-      setEvaluation(evaluationData);
+      // 3. Prefer canonical template keys from evaluation.meta (for display logic mainly)
+      const metaProfile =
+        evaluationData?.checklist_data?.meta?.profile_used || null;
+      const metaSkill =
+        evaluationData?.checklist_data?.meta?.skill_used || null;
 
-      // 2. Get profile name
-      let profile = 'Product Manager';
-      if (session.package?.interview_profile_id) {
-        const { data: profileData } = await supabase
+      // 4. Determine profile name (Display purposes)
+      let profileName: string = metaProfile || '';
+      if (!profileName && session.package?.interview_profile_id) {
+        const { data: p } = await supabase
           .from('interview_profiles_admin')
           .select('name')
           .eq('id', session.package.interview_profile_id)
           .single();
-        
-        if (profileData) profile = profileData.name;
+        if (p?.name) profileName = p.name;
       }
 
-      const round = session.round || 'round_1';
-      const mentorName = session.mentor?.professional_title || 'Your Mentor';
+      // 5. Determine skill name (Display purposes)
+      let skillName: string | undefined = metaSkill || session.skill?.name;
+      if (!skillName && session.skill_id) {
+        const { data: skillData } = await supabase
+          .from('interview_skills_admin')
+          .select('name')
+          .eq('id', session.skill_id)
+          .single();
+        
+        if (skillData?.name) {
+          skillName = skillData.name;
+        }
+      }
+
+      // 🟢 6. Load correct template using IDs (Robust Lookup)
+      let selectedTemplate: any[] = [];
+      const profileId = session.package?.interview_profile_id; // e.g. 7
+      const skillId = session.skill_id; // e.g. "uuid..."
+
+      if (profileId && MASTER_TEMPLATES[profileId]) {
+        const profileEntry = MASTER_TEMPLATES[profileId];
+        
+        // Try exact skill ID match first
+        if (skillId && profileEntry.skills[skillId]) {
+          selectedTemplate = profileEntry.skills[skillId].templates;
+        } 
+        // Fallback: If exact ID fails (legacy data?), use the first available skill
+        else {
+          const firstSkillKey = Object.keys(profileEntry.skills)[0];
+          if (firstSkillKey) {
+            selectedTemplate = profileEntry.skills[firstSkillKey].templates;
+            console.log(`[CandidateEval] Skill ID ${skillId} not found, using fallback: ${profileEntry.skills[firstSkillKey].skill_name}`);
+          }
+        }
+      } else {
+        console.warn(`[CandidateEval] Template not found for Profile ID: ${profileId}`);
+      }
+
+      setTemplate(selectedTemplate || []);
+
+      // 7. Session display info
+      const mentorName =
+        session.mentor?.profile?.full_name ||
+        session.mentor?.professional_title ||
+        'Senior Mentor';
       const date = new Date(session.scheduled_at).toLocaleDateString('en-US', {
         month: 'long',
         day: 'numeric',
-        year: 'numeric'
+        year: 'numeric',
       });
 
-      setSessionInfo({ profile, round, mentorName, date });
-
-      // 3. Load template
-      const profileTemplates = MASTER_TEMPLATES[profile] || MASTER_TEMPLATES["Product Manager"];
-      const roundQuestions = profileTemplates[round] || profileTemplates["round_1"];
-      setTemplate(roundQuestions);
-
+      setSessionInfo({
+        profile: profileName || 'Interview Session',
+        skill: skillName || 'General',
+        mentorName,
+        date,
+      });
     } catch (e: any) {
-      console.error('Load evaluation error:', e);
-      Alert.alert("Error", e.message || "Failed to load evaluation.");
+      console.error('Load Error:', e);
+      Alert.alert('Error', 'Failed to load session details.');
       router.back();
     } finally {
       setLoading(false);
     }
   };
 
-  const getAnswerDisplay = (questionId: string, questionType: string) => {
-    const answer = evaluation?.checklist_data?.answers?.[questionId];
-    
-    if (answer === undefined || answer === null) {
-      return { text: 'Not answered', color: '#9CA3AF' };
-    }
+  // Helper to style answers (as badges)
+  const getAnswerDisplay = (qId: string, type: string) => {
+    const val = evaluation?.checklist_data?.answers?.[qId];
 
-    if (questionType === 'boolean') {
+    // Empty state
+    if (val === undefined || val === null) {
       return {
-        text: answer ? 'Yes ✓' : 'No ✗',
-        color: answer ? '#10B981' : '#EF4444'
+        text: 'Not answered',
+        color: '#6B7280',
+        bg: '#F3F4F6',
+        border: '#E5E7EB',
       };
     }
 
-    if (questionType === 'rating') {
+    // Boolean state
+    if (type === 'boolean') {
       return {
-        text: `${answer}/5`,
-        color: answer >= 4 ? '#10B981' : answer >= 3 ? '#F59E0B' : '#EF4444'
+        text: val ? 'Yes' : 'No',
+        color: val ? '#059669' : '#DC2626',
+        bg: val ? '#ECFDF5' : '#FEF2F2',
+        border: val ? '#6EE7B7' : '#FECACA',
       };
     }
 
-    return { text: String(answer), color: '#374151' };
+    // Rating state
+    if (type === 'rating') {
+      const isGood = val >= 4;
+      const isAvg = val === 3;
+      return {
+        text: `${val}/5`,
+        color: isGood ? '#059669' : isAvg ? '#D97706' : '#DC2626',
+        bg: isGood ? '#ECFDF5' : isAvg ? '#FFFBEB' : '#FEF2F2',
+        border: isGood ? '#6EE7B7' : isAvg ? '#FDE68A' : '#FECACA',
+      };
+    }
+
+    // Default fallback (text, etc.)
+    return {
+      text: String(val),
+      color: '#374151',
+      bg: '#F3F4F6',
+      border: '#E5E7EB',
+    };
   };
 
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#2563eb" />
+        <ActivityIndicator size="large" color="#0E9384" />
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      {/* Header */}
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={styles.container}
+    >
+      {/* Header – aligned with mentor evaluation UI */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color="#1e293b" />
+          <Ionicons name="close" size={24} color="#1e293b" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Interview Feedback</Text>
-        <View style={{width: 24}} />
+        <View>
+          <Text style={styles.headerTitle}>Evaluation</Text>
+          <Text style={styles.headerSub}>
+            {sessionInfo.profile} • {sessionInfo.skill}
+          </Text>
+        </View>
+        <View style={{ width: 24 }} />
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
-        {/* Session Info Card */}
-        <View style={styles.infoCard}>
-          <View style={styles.infoHeader}>
-            <Ionicons name="document-text" size={24} color="#2563eb" />
-            <Text style={styles.infoTitle}>Session Details</Text>
+        {/* Session details card (like a compact summary) */}
+        <View style={styles.sessionCard}>
+          <View style={styles.sessionCardHeader}>
+            <Ionicons name="document-text-outline" size={18} color="#0E9384" />
+            <Text style={styles.sessionCardTitle}>Session Details</Text>
           </View>
-          
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Interview Type:</Text>
-            <Text style={styles.infoValue}>{sessionInfo.profile}</Text>
+          <View style={styles.sessionDivider} />
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Interview Type</Text>
+            <Text style={styles.detailValue}>{sessionInfo.profile}</Text>
           </View>
-          
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Round:</Text>
-            <Text style={styles.infoValue}>{sessionInfo.round.replace('_', ' ')}</Text>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Focus Skill</Text>
+            <Text style={styles.detailValue}>{sessionInfo.skill}</Text>
           </View>
-          
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Mentor:</Text>
-            <Text style={styles.infoValue}>{sessionInfo.mentorName}</Text>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Mentor</Text>
+            <Text style={styles.detailValue}>{sessionInfo.mentorName}</Text>
           </View>
-          
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Date:</Text>
-            <Text style={styles.infoValue}>{sessionInfo.date}</Text>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Date</Text>
+            <Text style={styles.detailValue}>{sessionInfo.date}</Text>
           </View>
         </View>
 
-        {/* Evaluation Sections */}
-        <Text style={styles.sectionTitle}>Detailed Evaluation</Text>
-        
-        {template.map((section, idx) => (
-          <View key={idx} style={styles.section}>
-            <Text style={styles.sectionHeader}>{section.title}</Text>
-            
-            {section.example && (
-              <View style={styles.exampleBox}>
-                <Text style={styles.exampleLabel}>SCENARIO DISCUSSED:</Text>
-                <Text style={styles.exampleText}>{section.example}</Text>
-              </View>
-            )}
-            
-            {section.questions.map((q: any) => {
-              const answer = getAnswerDisplay(q.id, q.type);
-              
-              return (
-                <View key={q.id} style={styles.qRow}>
-                  <View style={styles.qHeader}>
-                    <Text style={styles.qText}>{q.text}</Text>
-                    <View style={[styles.answerBadge, { backgroundColor: answer.color + '20' }]}>
-                      <Text style={[styles.answerText, { color: answer.color }]}>
-                        {answer.text}
-                      </Text>
-                    </View>
-                  </View>
-                  
-                  {/* Rating visualization */}
-                  {q.type === 'rating' && evaluation?.checklist_data?.answers?.[q.id] && (
-                    <View style={styles.ratingDots}>
-                      {[1, 2, 3, 4, 5].map((score) => (
-                        <View 
-                          key={score} 
-                          style={[
-                            styles.dot,
-                            evaluation.checklist_data.answers[q.id] >= score && styles.dotFilled
-                          ]} 
-                        />
-                      ))}
-                    </View>
-                  )}
-                </View>
-              );
-            })}
-          </View>
-        ))}
-
-        {/* Overall Feedback */}
-        {evaluation?.checklist_data?.summary_feedback && (
-          <View style={styles.feedbackCard}>
-            <View style={styles.feedbackHeader}>
-              <Ionicons name="chatbox-ellipses" size={20} color="#2563eb" />
-              <Text style={styles.feedbackTitle}>Overall Feedback from Mentor</Text>
-            </View>
-            <Text style={styles.feedbackText}>
-              {evaluation.checklist_data.summary_feedback}
+        {/* If no evaluation yet, show pending state */}
+        {!evaluation?.checklist_data && (
+          <View style={styles.emptyState}>
+            <Ionicons name="time-outline" size={40} color="#9CA3AF" />
+            <Text style={styles.emptyText}>
+              Feedback is pending. The mentor will submit it soon.
             </Text>
           </View>
         )}
 
-        {/* Encouragement Message */}
-        <View style={styles.encouragementCard}>
-          <Ionicons name="star" size={24} color="#F59E0B" />
-          <Text style={styles.encouragementText}>
-            Review this feedback carefully and use it to improve for your next interview. 
-            Keep practicing and you'll get better with each session!
-          </Text>
-        </View>
+        {/* Detailed evaluation – matches mentor layout but read-only */}
+        {evaluation?.checklist_data &&
+          template.map((section, idx) => (
+            <View key={idx} style={styles.section}>
+              <Text style={styles.sectionHeader}>{section.title}</Text>
+
+              {section.example && (
+                <View style={styles.exampleBox}>
+                  <Text style={styles.exampleLabel}>SCENARIO DISCUSSED:</Text>
+                  <Text style={styles.exampleText}>{section.example}</Text>
+                </View>
+              )}
+
+              {section.questions.map((q: any) => {
+                // Text feedback → comment box
+                if (q.type === 'text') {
+                  const txt = evaluation?.checklist_data?.answers?.[q.id];
+                  if (!txt) return null;
+                  return (
+                    <View key={q.id} style={styles.commentBox}>
+                      <Text style={styles.qText}>{q.text}</Text>
+                      <View style={styles.commentContent}>
+                        <Text style={styles.commentText}>{txt}</Text>
+                      </View>
+                    </View>
+                  );
+                }
+
+                // Rating / Boolean → badge (read-only)
+                const ans = getAnswerDisplay(q.id, q.type);
+                return (
+                  <View key={q.id} style={styles.qRow}>
+                    <Text style={styles.qText}>{q.text}</Text>
+                    <View
+                      style={[
+                        styles.badge,
+                        { backgroundColor: ans.bg, borderColor: ans.border },
+                      ]}
+                    >
+                      <Text
+                        style={[styles.badgeText, { color: ans.color }]}
+                      >
+                        {ans.text}
+                      </Text>
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+          ))}
       </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFC' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  
-  header: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'center',
-    paddingHorizontal: 20, 
-    paddingTop: Platform.OS === 'ios' ? 60 : 20, 
-    paddingBottom: 16, 
-    backgroundColor: '#FFF', 
-    borderBottomWidth: 1, 
-    borderBottomColor: '#E2E8F0',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
-  },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: '#1E293B' },
-  
-  content: { padding: 20, paddingBottom: 50 },
-  
-  infoCard: {
-    backgroundColor: '#FFF',
-    padding: 20,
-    borderRadius: 16,
-    marginBottom: 24,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  infoHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
-  },
-  infoTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1E293B',
-    marginLeft: 12,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  infoLabel: {
-    fontSize: 14,
-    color: '#64748B',
-    fontWeight: '500',
-  },
-  infoValue: {
-    fontSize: 14,
-    color: '#1E293B',
-    fontWeight: '600',
-  },
-  
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#1E293B',
-    marginBottom: 16,
-  },
-  
-  section: { 
-    marginBottom: 24,
-    backgroundColor: '#FFF',
-    padding: 16,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  sectionHeader: { 
-    fontSize: 16, 
-    fontWeight: '800', 
-    color: '#1E293B', 
-    marginBottom: 12,
-    paddingLeft: 12,
-    borderLeftWidth: 4, 
-    borderLeftColor: '#2563eb',
-  },
-  
-  exampleBox: { 
-    backgroundColor: '#EFF6FF', 
-    padding: 12, 
-    borderRadius: 8, 
-    marginBottom: 12, 
-    borderWidth: 1, 
-    borderColor: '#BFDBFE' 
-  },
-  exampleLabel: { 
-    fontSize: 10, 
-    fontWeight: '700', 
-    color: '#1E40AF', 
-    marginBottom: 4 
-  },
-  exampleText: { 
-    fontSize: 13, 
-    color: '#1E3A8A', 
-    fontStyle: 'italic',
-    lineHeight: 18,
-  },
 
-  qRow: { 
-    backgroundColor: '#F8FAFC',
-    padding: 14, 
-    borderRadius: 10, 
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  qHeader: {
+  // Header – same structure as mentor evaluation
+  header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-  qText: { 
-    fontSize: 14, 
-    fontWeight: '600', 
-    color: '#334155',
-    flex: 1,
-    marginRight: 12,
-  },
-  answerBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  answerText: {
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  
-  ratingDots: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: 12,
-  },
-  dot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: '#E2E8F0',
-  },
-  dotFilled: {
-    backgroundColor: '#2563eb',
-  },
-  
-  feedbackCard: {
-    backgroundColor: '#FFF',
-    padding: 20,
-    borderRadius: 16,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  feedbackHeader: {
-    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    paddingHorizontal: 20,
+    paddingTop: 50,
+    paddingBottom: 16,
+    backgroundColor: '#FFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
   },
-  feedbackTitle: {
+  headerTitle: {
     fontSize: 16,
     fontWeight: '700',
     color: '#1E293B',
-    marginLeft: 8,
+    textAlign: 'center',
   },
-  feedbackText: {
-    fontSize: 15,
-    color: '#475569',
-    lineHeight: 24,
+  headerSub: {
+    fontSize: 12,
+    color: '#64748B',
+    fontWeight: '500',
+    textAlign: 'center',
   },
-  
-  encouragementCard: {
-    backgroundColor: '#FFFBEB',
-    padding: 16,
+
+  content: { padding: 20, paddingBottom: 50 },
+
+  // Session summary card
+  sessionCard: {
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
+    padding: 16,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    shadowColor: '#000',
+    shadowOpacity: 0.02,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  sessionCardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#FDE68A',
+    gap: 8,
+    marginBottom: 8,
   },
-  encouragementText: {
-    fontSize: 14,
-    color: '#92400E',
-    marginLeft: 12,
+  sessionCardTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  sessionDivider: {
+    height: 1,
+    backgroundColor: '#F1F5F9',
+    marginVertical: 10,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+  },
+  detailLabel: {
+    fontSize: 13,
+    color: '#6B7280',
+    fontWeight: '500',
+  },
+  detailValue: {
+    fontSize: 13,
+    color: '#111827',
+    fontWeight: '600',
+    textAlign: 'right',
     flex: 1,
+    marginLeft: 16,
+  },
+
+  // Section styling – matches mentor’s section card look
+  section: { marginBottom: 24 },
+  sectionHeader: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#1E293B',
+    marginBottom: 8,
+    borderLeftWidth: 4,
+    borderLeftColor: '#0E9384',
+    paddingLeft: 10,
+  },
+
+  exampleBox: {
+    backgroundColor: '#F0FDFA',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#CCFBF1',
+  },
+  exampleLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#0F766E',
+    marginBottom: 4,
+  },
+  exampleText: {
+    fontSize: 13,
+    color: '#134E4A',
+    fontStyle: 'italic',
+  },
+
+  // Question row card – visually aligned with mentor but read-only
+  qRow: {
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  qText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#334155',
+    marginRight: 12,
+    flex: 1,
+  },
+
+  // Badge showing answer (Yes/No, 4/5, etc.)
+  badge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+    minWidth: 80,
+    alignItems: 'center',
+  },
+  badgeText: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+
+  // Text comment card (for q.type === 'text')
+  commentBox: {
+    backgroundColor: '#FFFFFF',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  commentContent: {
+    marginTop: 8,
+    backgroundColor: '#F9FAFB',
+    padding: 12,
+    borderRadius: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: '#9CA3AF',
+  },
+  commentText: {
+    fontSize: 14,
+    color: '#4B5563',
+    fontStyle: 'italic',
+    lineHeight: 20,
+  },
+
+  // Empty / pending state
+  emptyState: {
+    padding: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyText: {
+    color: '#6B7280',
+    textAlign: 'center',
+    marginTop: 8,
+    fontSize: 14,
     lineHeight: 20,
   },
 });

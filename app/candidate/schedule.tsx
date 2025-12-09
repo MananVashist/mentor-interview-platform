@@ -301,13 +301,23 @@ export default function ScheduleScreen() {
     });
   };
 
+  // app/candidate/schedule.tsx
+
+// ... (imports remain the same)
+
+// ... inside ScheduleScreen component ...
+
   const handleConfirm = async () => {
     if (!selectedSlot) {
       Alert.alert('Incomplete', 'Please select a time slot.');
       return;
     }
 
-    if (!user && !currentUserId) {
+    // 1. Get Fresh User Data
+    const { data: { user: currentUser } } = await supabase.auth.getUser();
+    const finalUserId = currentUser?.id || currentUserId || user?.id;
+
+    if (!finalUserId) {
       Alert.alert('Sign In Required', 'Please log in to book an interview.');
       router.push('/auth/sign-in'); 
       return;
@@ -316,13 +326,37 @@ export default function ScheduleScreen() {
     setBookingInProgress(true);
 
     try {
-      // 🟢 UPDATED: Pass skillId and single slot string
+      // 2. AUTO-FIX: Ensure candidate row exists
+      const { data: existingCandidate } = await supabase
+        .from('candidates')
+        .select('id')
+        .eq('id', finalUserId)
+        .maybeSingle();
+
+      if (!existingCandidate) {
+        console.log('[Schedule] Candidate profile missing. Creating now...');
+        
+        // 🟢 FIX: Removed 'email' because your table doesn't have that column
+        const { error: createError } = await supabase
+          .from('candidates')
+          .insert([{ 
+            id: finalUserId, 
+            created_at: new Date().toISOString() 
+          }]);
+
+        if (createError) {
+          console.error('[Schedule] Profile creation failed:', createError);
+          throw new Error("Could not verify user profile. Please try logging out and back in.");
+        }
+      }
+
+      // 3. Proceed with Booking
       const { package: pkg, orderId, amount, keyId, error } = await paymentService.createPackage(
-        currentUserId || user?.id as string,
+        finalUserId as string,
         mentorId as string,
         Number(profileIdParam),
         skillIdParam as string,
-        selectedSlot.iso // passing single slot string
+        selectedSlot.iso 
       );
 
       if (error || !pkg) throw new Error(error?.message || 'Booking creation failed');
