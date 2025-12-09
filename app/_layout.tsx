@@ -23,9 +23,10 @@ export default function RootLayout() {
   const [isReady, setIsReady] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
 
-  // 🟢 FIX: Load Ionicons and Inter fonts on ALL platforms (Web included)
-  const [fontsLoaded] = useFonts({
-'Ionicons': require('@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Ionicons.ttf'),    Inter_400Regular,
+  // 1. Load Fonts (Including Ionicons manual fix if needed)
+  const [fontsLoaded, fontError] = useFonts({
+    'Ionicons': require('@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Ionicons.ttf'),
+    Inter_400Regular,
     Inter_500Medium,
     Inter_600SemiBold,
     Inter_700Bold,
@@ -33,32 +34,31 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
-    // 1. Initialize Session Check
+    // 2. Initialize Session Check
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setIsReady(true);
     });
 
-    // 2. Listen for Auth Changes
+    // 3. Listen for Auth Changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
     });
 
-    // 3. Hide Splash Screen only after fonts are loaded
+    // 4. Hide Splash Screen (Success OR Failure)
+    // This prevents the "White Screen" if fonts fail to load
     if (fontsLoaded || fontError) {
       SplashScreen.hideAsync();
     }
+
+    // Cleanup subscription on unmount
+    return () => subscription.unsubscribe();
   }, [fontsLoaded, fontError]);
 
-    return () => subscription.unsubscribe();
-  }, [fontsLoaded]);
-
-  // Block rendering until session check is complete
+  // Block rendering ONLY for session check, NOT for fonts
   if (!isReady) {
     return null;
   }
-
-
 
   return (
     <SafeAreaProvider>
@@ -70,7 +70,6 @@ export default function RootLayout() {
           <meta property="og:site_name" content="CrackJobs" />
           <meta property="og:type" content="website" />
           <meta name="twitter:card" content="summary_large_image" />
-          {/* Optional: You can keep this, but Ionicons.font usually handles it */}
           <link
             rel="stylesheet"
             href="https://cdnjs.cloudflare.com/ajax/libs/ionicons/7.1.0/collection/components/icon/icon.min.css"
