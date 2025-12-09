@@ -1,8 +1,8 @@
 ﻿// app/candidate/schedule.tsx
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   View, StyleSheet, ScrollView, TouchableOpacity, 
-  ActivityIndicator, Alert, StatusBar, Platform, 
+  ActivityIndicator, Alert, StatusBar, Platform 
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,38 +14,35 @@ import { supabase } from '@/lib/supabase/client';
 import { paymentService } from '@/services/payment.service';
 import { useAuthStore } from '@/lib/store';
 
-// ----------------------------------------------------------------------
-// CONSTANTS & TYPES
-// ----------------------------------------------------------------------
+// CONSTANTS
 const SLOT_DURATION_MINUTES = 60; 
 const BOOKING_WINDOW_DAYS = 30; 
 const IST_ZONE = 'Asia/Kolkata';
 
 type Slot = {
-  time: string;       // "10:00"
+  time: string;
   isAvailable: boolean;
-  dateTime: DateTime; // Full Luxon object
-  reason?: string;    // "Booked", "Time Off", etc.
+  dateTime: DateTime;
+  reason?: string;
 };
 
 type DayAvailability = {
-  dateStr: string;    // "2025-12-01"
-  weekdayName: string;// "Mon"
-  monthDay: string;   // "Dec 1"
+  dateStr: string;
+  weekdayName: string;
+  monthDay: string;
   slots: Slot[];
   isFullDayOff: boolean; 
 };
 
+// 🟢 NEW TYPE: Single Selection
 type SelectedSession = {
   dateStr: string;  
   time: string;     
   displayDate: string; 
+  iso: string; // Full ISO String required for DB
 };
 
-// ----------------------------------------------------------------------
-// HELPER COMPONENTS
-// ----------------------------------------------------------------------
-
+// HELPER COMPONENT (DayCard)
 function DayCard({ day, isSelected, onPress }: { day: DayAvailability, isSelected: boolean, onPress: () => void }) {
   const availableCount = day.slots.filter(s => s.isAvailable).length;
   const isTimeOff = day.isFullDayOff;
@@ -81,16 +78,16 @@ function DayCard({ day, isSelected, onPress }: { day: DayAvailability, isSelecte
   );
 }
 
-// ----------------------------------------------------------------------
-// MAIN SCREEN
-// ----------------------------------------------------------------------
-
 export default function ScheduleScreen() {
   const router = useRouter();
   const params = useLocalSearchParams(); 
   
   const mentorId = Array.isArray(params.mentorId) ? params.mentorId[0] : params.mentorId;
   const profileIdParam = Array.isArray(params.profileId) ? params.profileId[0] : params.profileId;
+  
+  // 🟢 NEW PARAMS FROM PROFILE SCREEN
+  const skillIdParam = Array.isArray(params.skillId) ? params.skillId[0] : params.skillId;
+  const skillNameParam = Array.isArray(params.skillName) ? params.skillName[0] : params.skillName;
 
   const authStore = useAuthStore();
   const { user } = authStore;
@@ -102,13 +99,11 @@ export default function ScheduleScreen() {
   const [availabilityData, setAvailabilityData] = useState<DayAvailability[]>([]);
   const [selectedDay, setSelectedDay] = useState<DayAvailability | null>(null);
   
-  const [session1, setSession1] = useState<SelectedSession | null>(null);
-  const [session2, setSession2] = useState<SelectedSession | null>(null);
-  
-  const [activeField, setActiveField] = useState<'session1' | 'session2'>('session1');
+  // 🟢 SINGLE SELECTION STATE
+  const [selectedSlot, setSelectedSlot] = useState<SelectedSession | null>(null);
   const [bookingInProgress, setBookingInProgress] = useState(false);
 
-  // 1. INITIAL SETUP & AUTH CHECK
+  // 1. AUTH CHECK
   useEffect(() => {
     async function init() {
       const { data: { session } } = await supabase.auth.getSession();
@@ -119,7 +114,7 @@ export default function ScheduleScreen() {
     init();
   }, []);
 
-  // 2. FETCH MENTOR DETAILS
+  // 2. FETCH MENTOR
   useEffect(() => {
     async function fetchMentor() {
       if (!mentorId) return;
@@ -145,7 +140,7 @@ export default function ScheduleScreen() {
     fetchMentor();
   }, [mentorId]);
 
-  // 3. CORE LOGIC: FETCH & CALCULATE 30-DAY AVAILABILITY
+  // 3. FETCH AVAILABILITY (Core Logic remains mostly same)
   const fetchAvailability = useCallback(async () => {
     if (!mentorId) return;
     setIsLoading(true);
@@ -290,40 +285,39 @@ export default function ScheduleScreen() {
   const handleSlotPress = (time: string) => {
     if (!selectedDay) return;
 
-    const newSelection: SelectedSession = {
+    // Toggle logic: if clicking the same slot, deselect it
+    if (selectedSlot?.time === time && selectedSlot?.dateStr === selectedDay.dateStr) {
+        setSelectedSlot(null);
+        return;
+    }
+
+    const dt = DateTime.fromFormat(`${selectedDay.dateStr} ${time}`, "yyyy-MM-dd HH:mm", { zone: IST_ZONE });
+
+    setSelectedSlot({
       dateStr: selectedDay.dateStr,
       time: time,
-      displayDate: selectedDay.monthDay
-    };
-
-    const isSameSlot = (session: SelectedSession | null) => 
-      session?.time === time && session?.dateStr === selectedDay.dateStr;
-
-    if (activeField === 'session1') {
-      if (isSameSlot(session1)) {
-        setSession1(null);
-        return; 
-      }
-      if (isSameSlot(session2)) { setSession2(null); }
-      setSession1(newSelection);
-      setActiveField('session2'); 
-    } else {
-      if (isSameSlot(session2)) {
-        setSession2(null);
-        return;
-      }
-      if (isSameSlot(session1)) { setSession1(null); }
-      setSession2(newSelection);
-    }
+      displayDate: selectedDay.monthDay,
+      iso: dt.toISO()!
+    });
   };
 
+  // app/candidate/schedule.tsx
+
+// ... (imports remain the same)
+
+// ... inside ScheduleScreen component ...
+
   const handleConfirm = async () => {
-    if (!session1 || !session2) {
-      Alert.alert('Incomplete', 'Please select 2 time slots.');
+    if (!selectedSlot) {
+      Alert.alert('Incomplete', 'Please select a time slot.');
       return;
     }
 
-    if (!user && !currentUserId) {
+    // 1. Get Fresh User Data
+    const { data: { user: currentUser } } = await supabase.auth.getUser();
+    const finalUserId = currentUser?.id || currentUserId || user?.id;
+
+    if (!finalUserId) {
       Alert.alert('Sign In Required', 'Please log in to book an interview.');
       router.push('/auth/sign-in'); 
       return;
@@ -332,30 +326,49 @@ export default function ScheduleScreen() {
     setBookingInProgress(true);
 
     try {
-      const dt1 = DateTime.fromFormat(`${session1.dateStr} ${session1.time}`, "yyyy-MM-dd HH:mm", { zone: IST_ZONE });
-      const dt2 = DateTime.fromFormat(`${session2.dateStr} ${session2.time}`, "yyyy-MM-dd HH:mm", { zone: IST_ZONE });
-      const slots = [dt1.toISO(), dt2.toISO()].filter(Boolean) as string[];
+      // 2. AUTO-FIX: Ensure candidate row exists
+      const { data: existingCandidate } = await supabase
+        .from('candidates')
+        .select('id')
+        .eq('id', finalUserId)
+        .maybeSingle();
 
-      // 1. Create Package
-      // 🟢 🟢 🟢  UPDATED: Destructure 'keyId' here
+      if (!existingCandidate) {
+        console.log('[Schedule] Candidate profile missing. Creating now...');
+        
+        // 🟢 FIX: Removed 'email' because your table doesn't have that column
+        const { error: createError } = await supabase
+          .from('candidates')
+          .insert([{ 
+            id: finalUserId, 
+            created_at: new Date().toISOString() 
+          }]);
+
+        if (createError) {
+          console.error('[Schedule] Profile creation failed:', createError);
+          throw new Error("Could not verify user profile. Please try logging out and back in.");
+        }
+      }
+
+      // 3. Proceed with Booking
       const { package: pkg, orderId, amount, keyId, error } = await paymentService.createPackage(
-        currentUserId || user?.id as string,
+        finalUserId as string,
         mentorId as string,
         Number(profileIdParam),
-        slots
+        skillIdParam as string,
+        selectedSlot.iso 
       );
 
       if (error || !pkg) throw new Error(error?.message || 'Booking creation failed');
 
       if (pkg.payment_status === 'pending_payment') {
-        // 2. Redirect to Payment Screen
         router.replace({
           pathname: '/candidate/pgscreen',
           params: {
             packageId: pkg.id,
-            amount: amount, // ✅ Correct Paise Amount
-            orderId: orderId, // ✅ Correct Order ID
-            keyId: keyId // 🟢 ✅ Pass Key ID to Payment Screen
+            amount: amount, 
+            orderId: orderId, 
+            keyId: keyId 
           }
         });
       } else {
@@ -372,7 +385,6 @@ export default function ScheduleScreen() {
     }
   };
 
-  // 5. RENDERING (Simplified for brevity as no logic changes here)
   if (isLoading) return <View style={styles.centerContainer}><ActivityIndicator size="large" color={theme.colors.primary} /></View>;
   if (!mentor) return <View style={styles.centerContainer}><AppText>Mentor not found.</AppText></View>;
 
@@ -382,8 +394,11 @@ export default function ScheduleScreen() {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         
         <View style={styles.header}>
-          <Heading level={2}>Select Dates</Heading>
-          <AppText style={styles.subHeader}>Book with {mentor.title} • ₹{(mentor.price * 1.2).toLocaleString()} total</AppText>
+          <Heading level={2}>Select Date & Time</Heading>
+          {/* 🟢 Skill Name in SubHeader */}
+          <AppText style={styles.subHeader}>
+             {skillNameParam ? `${skillNameParam} interview` : 'Interview'} with {mentor.title}
+          </AppText>
         </View>
 
         {/* Date Picker */}
@@ -396,25 +411,25 @@ export default function ScheduleScreen() {
           </ScrollView>
         </View>
 
-        {/* Selection */}
+        {/* 🟢 NEW: Single Slot Selection Display */}
         <View style={styles.selectionDisplay}>
-          <TouchableOpacity style={[styles.selectionBox, activeField === 'session1' && styles.selectionBoxActive]} onPress={() => setActiveField('session1')}>
-            <AppText style={styles.selectionLabel}>SESSION 1</AppText>
-            <AppText style={session1 ? styles.selectionValue : [styles.selectionValue, { color: '#CCC', fontSize: 16 }]}>{session1 ? session1.time : 'Select Time'}</AppText>
-            {session1 && <AppText style={styles.selectionDate}>{session1.displayDate}</AppText>}
-          </TouchableOpacity>
-          <Ionicons name="arrow-forward" size={20} color="#999" style={{ marginTop: 12 }} />
-          <TouchableOpacity style={[styles.selectionBox, activeField === 'session2' && styles.selectionBoxActive]} onPress={() => setActiveField('session2')}>
-            <AppText style={styles.selectionLabel}>SESSION 2</AppText>
-            <AppText style={session2 ? styles.selectionValue : [styles.selectionValue, { color: '#CCC', fontSize: 16 }]}>{session2 ? session2.time : 'Select Time'}</AppText>
-            {session2 && <AppText style={styles.selectionDate}>{session2.displayDate}</AppText>}
-          </TouchableOpacity>
+            <View style={[styles.selectionBox, selectedSlot ? styles.selectionBoxActive : {}]}>
+                <AppText style={styles.selectionLabel}>SELECTED SLOT</AppText>
+                {selectedSlot ? (
+                    <View style={{ alignItems: 'center' }}>
+                        <AppText style={styles.selectionValue}>{selectedSlot.time}</AppText>
+                        <AppText style={styles.selectionDate}>{selectedSlot.displayDate}</AppText>
+                    </View>
+                ) : (
+                    <AppText style={styles.selectionPlaceholder}>Tap a time below</AppText>
+                )}
+            </View>
         </View>
 
         {/* Time Slots */}
         <View style={styles.section}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <AppText style={styles.sectionTitle}><Ionicons name="time-outline" size={16} /> Time Slots for {selectedDay?.monthDay}</AppText>
+            <AppText style={styles.sectionTitle}><Ionicons name="time-outline" size={16} /> Time Slots</AppText>
             {selectedDay?.isFullDayOff && <View style={styles.badgeErr}><AppText style={styles.badgeErrText}>Time Off</AppText></View>}
           </View>
           {(!selectedDay || (selectedDay.slots.length === 0 && !selectedDay.isFullDayOff)) ? (
@@ -424,18 +439,23 @@ export default function ScheduleScreen() {
           ) : (
             <View style={styles.grid}>
               {selectedDay.slots.map((slot) => {
-                const isSel1 = session1?.time === slot.time && session1?.dateStr === selectedDay.dateStr;
-                const isSel2 = session2?.time === slot.time && session2?.dateStr === selectedDay.dateStr;
-                const isActive = isSel1 || isSel2;
-                const isDisabled = !slot.isAvailable || (activeField === 'session1' ? isSel2 : isSel1);
+                const isSelected = selectedSlot?.time === slot.time && selectedSlot?.dateStr === selectedDay.dateStr;
                 return (
                   <TouchableOpacity
                     key={`${selectedDay.dateStr}-${slot.time}`}
-                    style={[styles.slot, !slot.isAvailable && styles.slotDisabled, isActive && styles.slotSelected]}
-                    disabled={isDisabled && !isActive}
+                    style={[
+                        styles.slot, 
+                        !slot.isAvailable && styles.slotDisabled, 
+                        isSelected && styles.slotSelected
+                    ]}
+                    disabled={!slot.isAvailable}
                     onPress={() => handleSlotPress(slot.time)}
                   >
-                    <AppText style={[styles.slotText, !slot.isAvailable && styles.slotTextDisabled, isActive && { color: '#FFF', fontWeight: 'bold' }]}>
+                    <AppText style={[
+                        styles.slotText, 
+                        !slot.isAvailable && styles.slotTextDisabled, 
+                        isSelected && { color: '#FFF', fontWeight: 'bold' }
+                    ]}>
                       {slot.time}
                     </AppText>
                   </TouchableOpacity>
@@ -473,12 +493,13 @@ const styles = StyleSheet.create({
   dayCardStatus: { fontSize: 9, color: '#666', marginTop: 4 },
   dayCardTextSelected: { color: theme.colors.primary, fontWeight: '700' },
   statusDot: { width: 6, height: 6, borderRadius: 3 },
-  selectionDisplay: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 24, backgroundColor: '#FFF', padding: 16, borderRadius: 16, borderWidth: 1, borderColor: '#EEE' },
-  selectionBox: { flex: 1, alignItems: 'center' },
-  selectionBoxActive: { backgroundColor: '#F0FDFA', borderRadius: 8, paddingVertical: 8, marginTop: -8, marginBottom: -8 }, 
-  selectionLabel: { fontSize: 10, fontWeight: '700', color: '#999', marginBottom: 4 },
-  selectionValue: { fontSize: 20, fontWeight: '600', color: theme.colors.primary },
-  selectionDate: { fontSize: 12, fontWeight: '500', color: '#666', marginTop: 2 },
+  selectionDisplay: { flexDirection: 'row', justifyContent: 'center', marginBottom: 24 },
+  selectionBox: { width: '100%', padding: 20, backgroundColor: '#FFF', borderRadius: 16, borderWidth: 1, borderColor: '#EEE', alignItems: 'center' },
+  selectionBoxActive: { backgroundColor: '#F0FDFA', borderColor: theme.colors.primary }, 
+  selectionLabel: { fontSize: 11, fontWeight: '700', color: '#999', marginBottom: 8, letterSpacing: 1 },
+  selectionValue: { fontSize: 24, fontWeight: '600', color: theme.colors.primary },
+  selectionDate: { fontSize: 14, fontWeight: '500', color: '#666', marginTop: 4 },
+  selectionPlaceholder: { fontSize: 16, color: '#CCC', fontStyle: 'italic' },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   slot: { width: '30%', paddingVertical: 12, borderRadius: 8, borderWidth: 1, borderColor: theme.colors.primary, backgroundColor: '#FFF', alignItems: 'center', marginBottom: 8 },
   slotDisabled: { borderColor: '#EEE', backgroundColor: '#F9FAFB' },
