@@ -25,8 +25,7 @@ export default function RootLayout() {
 
   // 🟢 FIX: Load Ionicons and Inter fonts on ALL platforms (Web included)
   const [fontsLoaded] = useFonts({
-    ...Ionicons.font, // <--- Critical for Web Icon support
-    Inter_400Regular,
+'Ionicons': require('@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Ionicons.ttf'),    Inter_400Regular,
     Inter_500Medium,
     Inter_600SemiBold,
     Inter_700Bold,
