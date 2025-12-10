@@ -83,10 +83,9 @@ export default function RootLayout() {
           <meta property="og:type" content="website" />
           <meta name="twitter:card" content="summary_large_image" />
           
-          {/* Fonts and Icons for Web */}
+          {/* Use Google Fonts CDN for web - fast, reliable, and compatible */}
           {Platform.OS === 'web' && (
             <>
-              {/* Google Fonts for Inter */}
               <link
                 rel="preconnect"
                 href="https://fonts.googleapis.com"
