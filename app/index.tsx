@@ -158,6 +158,14 @@ export default function LandingPage() {
       <Head>
         <title>{SITE_TITLE}</title>
         <meta name="description" content={SITE_DESCRIPTION} />
+        {/* 🔥 FIX: Forces icons to swap, preventing LCP render delay on text */}
+        <style type="text/css">{`
+          @font-face {
+            font-family: 'MaterialCommunityIcons';
+            font-display: swap;
+            src: local('MaterialCommunityIcons');
+          }
+        `}</style>
       </Head>
 
       <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
@@ -193,7 +201,7 @@ export default function LandingPage() {
               <TouchableOpacity style={[styles.btnBig, styles.btnPrimary]} onPress={() => router.push('/auth/sign-up')}>
                 <Text style={[styles.btnTextBig, styles.btnTextWhite]}>Start Practicing</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.btnBig, styles.btnSecondary]} onPress={() => router.push('/mentors')}>
+              <TouchableOpacity style={[styles.btnBig, styles.btnSecondary]} onPress={() => router.push('/auth/sign-in')}>
                 <Text style={styles.btnTextBig}>Browse Mentors</Text>
               </TouchableOpacity>
             </View>
@@ -349,7 +357,7 @@ export default function LandingPage() {
             
             {/* Button within the box */}
             <View style={{ alignItems: 'center' }}>
-               <TouchableOpacity style={styles.btnWhite} onPress={() => router.push('/mentors/apply')}>
+               <TouchableOpacity style={styles.btnWhite} onPress={() => router.push('/auth/sign-up')}>
                   <Text style={styles.btnTextDark}>Apply to be a Mentor</Text>
                </TouchableOpacity>
             </View>
@@ -376,7 +384,7 @@ export default function LandingPage() {
           <Text style={styles.bottomCtaTitle}>Ready to get hired?</Text>
           <Text style={styles.bottomCtaSubtitle}>Join thousands of candidates preparing today.</Text>
           <TouchableOpacity style={styles.bottomCtaButton} onPress={() => router.push('/auth/sign-up')}>
-            <Text style={styles.bottomCtaButtonText}>Get Started for Free</Text>
+            <Text style={styles.bottomCtaButtonText}>Get Started</Text>
           </TouchableOpacity>
         </View>
         
