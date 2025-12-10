@@ -8,7 +8,7 @@ import { supabase } from '@/lib/supabase/client';
 import { Session } from '@supabase/supabase-js';
 
 // Only load fonts on native platforms (iOS/Android)
-// Web will use Google Fonts CDN instead
+// Web will use CDN fonts instead
 let fontsLoaded = true; // Default to true for web
 let fontError: Error | undefined = undefined;
 
@@ -22,8 +22,6 @@ if (Platform.OS !== 'web') {
     Inter_700Bold, 
     Inter_800ExtraBold 
   } = require('@expo-google-fonts/inter');
-  
-  const { Ionicons } = require('@expo/vector-icons');
   
   // This hook only runs on native
   const [loaded, error] = useFonts({
@@ -100,6 +98,20 @@ export default function RootLayout() {
               <link
                 rel="stylesheet"
                 href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+              />
+              
+              {/* Ionicons from CDN */}
+              <link
+                rel="stylesheet"
+                href="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.css"
+              />
+              <script
+                type="module"
+                src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"
+              />
+              <script
+                noModule
+                src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"
               />
             </>
           )}
