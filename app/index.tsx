@@ -1,81 +1,133 @@
-﻿// app/index.tsx - SYSTEM FONTS VERSION
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  Image,
   TouchableOpacity,
   Platform,
   useWindowDimensions,
   ScrollView,
+  Image,
 } from 'react-native';
 import { useRouter, Redirect } from 'expo-router';
 import Head from 'expo-router/head';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SplashScreen } from '../components/SplashScreen';
 import { injectMultipleSchemas } from '@/lib/structured-data';
 import { Footer } from '@/components/Footer';
 import { BrandHeader } from '@/lib/ui';
 
-// 🔥 System font stack - 0ms load time!
+// 🔥 System font stack
 const SYSTEM_FONT = Platform.select({
-  web: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif",
+  web: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif",
   ios: "System",
   android: "Roboto",
   default: "System"
 }) as string;
 
+// --- COLORS ---
+const BRAND_ORANGE = '#f58742';
 const CTA_TEAL = '#18a7a7';
+const BG_CREAM = '#f8f5f0';
+const TEXT_DARK = '#222';
+const TEXT_GRAY = '#555';
 
-// --- SEO & STRUCTURED DATA CONFIGURATION ---
+// --- MENTOR TIERS DATA ---
+const MENTOR_TIERS = [
+  {
+    level: 'Bronze',
+    icon: 'medal-outline',
+    color: '#CD7F32',
+    perks: ['Access to Bronze Badge', 'Community Recognition'],
+  },
+  {
+    level: 'Silver',
+    icon: 'medal',
+    color: '#C0C0C0',
+    perks: ['LinkedIn Appreciation Post', 'Access to Silver Badge', 'Priority Support'],
+  },
+  {
+    level: 'Gold',
+    icon: 'trophy',
+    color: '#FFD700',
+    perks: ['LinkedIn Appreciation Post', 'Access to Gold Badge', 'Exclusive WhatsApp Group'],
+  },
+];
+
+// --- LOGO CONFIGURATION ---
+const COMPANIES = [
+  { 
+    name: 'Google', 
+    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Google_2015_logo.svg/368px-Google_2015_logo.svg.png',
+    width: 100 
+  },
+  { 
+    name: 'Meta', 
+    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7b/Meta_Platforms_Inc._logo.svg/640px-Meta_Platforms_Inc._logo.svg.png',
+    width: 110
+  },
+  { 
+    name: 'Amazon', 
+    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a9/Amazon_logo.svg/603px-Amazon_logo.svg.png',
+    width: 90
+  },
+  { 
+    name: 'Microsoft', 
+    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/96/Microsoft_logo_%282012%29.svg/640px-Microsoft_logo_%282012%29.svg.png',
+    width: 110
+  },
+  { 
+    name: 'Capgemini', 
+    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9d/Capgemini_201x_logo.svg/640px-Capgemini_201x_logo.svg.png',
+    width: 120
+  },
+  { 
+    name: 'Adobe', 
+    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6e/Adobe_Corporate_logo.svg/1200px-Adobe_Corporate_logo.svg.png', 
+    width: 120
+  },
+];
+
+// --- TRACKS ---
+const TRACKS = [
+  {
+    id: 'pm',
+    title: 'Product Management',
+    description: 'Master product sense, execution, metrics, and strategy interviews.',
+    icon: 'clipboard-flow', 
+    iconColor: '#2196F3',
+    skills: ['Product Sense / Design', 'Execution & Analytics', 'Strategy & Market', 'Technical Basics', 'Behavioral & Leadership']
+  },
+  {
+    id: 'data-analytics',
+    title: 'Data & Business Analysis',
+    description: 'Solve business cases with SQL, metrics, and data-driven insights.',
+    icon: 'chart-box', 
+    iconColor: '#4CAF50',
+    skills: ['SQL & Querying', 'Case Studies (Data → Insight)', 'Product Metrics', 'Excel / Visualization', 'Stakeholder Comm.']
+  },
+  {
+    id: 'data-science',
+    title: 'Data Science / ML',
+    description: 'Build robust models, scalable ML systems, and debug real-world issues.',
+    icon: 'brain', 
+    iconColor: '#FF9800',
+    skills: ['ML Theory & Algos', 'Practical ML Debugging', 'Coding (Python/Pandas)', 'Stats & Experimentation', 'System Design (ML)']
+  },
+  {
+    id: 'hr',
+    title: 'HR & Behavioral',
+    description: 'Ace culture fit, recruitment operations, and situational questions.',
+    icon: 'account-group', 
+    iconColor: '#9C27B0',
+    skills: ['Behavioral / Scenarios', 'Recruitment Ops', 'Stakeholder Mgmt', 'Cultural Fit', 'Legal & Compliance']
+  },
+];
+
 const SITE_URL = 'https://crackjobs.com';
-const SITE_TITLE = 'CrackJobs | Mock Interviews for Product Managers, Data Scientists & HR';
-const SITE_DESCRIPTION = 'Master your tech interview. Anonymous 1:1 mock interviews with vetted mentors from top tech companies. Specialized tracks for PM, Data Science, and HR roles.';
-const SITE_IMAGE = 'https://crackjobs.com/opengraph-image.png';
-
-const useStructuredData = () => {
-  useEffect(() => {
-    if (Platform.OS === 'web') {
-      const schemas = [
-        // 1. Organization Schema
-        {
-          '@context': 'https://schema.org',
-          '@type': 'Organization',
-          name: 'CrackJobs',
-          url: SITE_URL,
-          logo: `${SITE_URL}/logo.png`
-        },
-        // 2. WebSite Schema (Search Box targeting)
-        {
-          '@context': 'https://schema.org',
-          '@type': 'WebSite',
-          name: 'CrackJobs',
-          url: SITE_URL,
-          potentialAction: {
-            '@type': 'SearchAction',
-            target: `${SITE_URL}/search?q={search_term_string}`,
-            'query-input': 'required name=search_term_string'
-          }
-        },
-        // 3. Service Schema
-        {
-          '@context': 'https://schema.org',
-          '@type': 'Service',
-          serviceType: 'Mock Interviews',
-          provider: {
-            '@type': 'Organization',
-            name: 'CrackJobs'
-          },
-          areaServed: 'Worldwide',
-          description: 'Anonymous, role-specific mock interviews for Product Management and Data Science roles.'
-        }
-      ];
-
-      const cleanup = injectMultipleSchemas(schemas);
-      return () => cleanup && cleanup();
-    }
-  }, []);
-};
+const SITE_TITLE = 'CrackJobs | Mock Interviews for PM, Data & HR';
+const SITE_DESCRIPTION = 'Ace your Product Management, Data Science, Business Analyst, and HR interviews.';
+const SITE_IMAGE = 'https://crackjobs.com/og-image.jpg';
 
 export default function LandingPage() {
   const [showSplash, setShowSplash] = useState(Platform.OS !== 'web');
@@ -83,9 +135,14 @@ export default function LandingPage() {
   const { width } = useWindowDimensions();
   const isSmall = width < 900;
   
-  useStructuredData(); 
+  // --- SEO & Splash Logic ---
+  useEffect(() => {
+    if (Platform.OS === 'web') {
+      const schemas = [{ '@context': 'https://schema.org', '@type': 'Organization', name: 'CrackJobs', url: SITE_URL }];
+      injectMultipleSchemas(schemas);
+    }
+  }, []);
 
-  // 🔁 Splash logic
   useEffect(() => {
     if (Platform.OS !== 'web') {
       const timer = setTimeout(() => setShowSplash(false), 4000); 
@@ -101,324 +158,395 @@ export default function LandingPage() {
       <Head>
         <title>{SITE_TITLE}</title>
         <meta name="description" content={SITE_DESCRIPTION} />
-        <meta name="keywords" content="mock interview, product manager interview, data scientist interview, anonymous interview, tech interview prep, system design mock interview" />
-        <meta name="robots" content="index, follow" />
-        <link rel="preload" href="/hero.webp" as="image" />
-        <link rel="canonical" href={SITE_URL} />
-
-        {/* Open Graph / Facebook */}
-        <meta property="og:type" content="website" />
-        <meta property="og:url" content={SITE_URL} />
-        <meta property="og:title" content={SITE_TITLE} />
-        <meta property="og:description" content={SITE_DESCRIPTION} />
-        <meta property="og:image" content={SITE_IMAGE} />
-
-        {/* Twitter */}
-        <meta property="twitter:card" content="summary_large_image" />
-        <meta property="twitter:url" content={SITE_URL} />
-        <meta property="twitter:title" content={SITE_TITLE} />
-        <meta property="twitter:description" content={SITE_DESCRIPTION} />
-        <meta property="twitter:image" content={SITE_IMAGE} />
       </Head>
 
       <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
-        {/* Header */}
-        <View style={styles.header} accessibilityRole="banner">
+        
+        {/* --- HEADER --- */}
+        <View style={styles.header}>
           <View style={[styles.headerInner, isSmall && styles.headerInnerMobile]}>
-            
             <BrandHeader style={{ marginBottom: 0 }} small={isSmall} />
-
-            {/* Navigation Buttons */}
-            <View style={[styles.navRight, isSmall && styles.navRightMobile]} accessibilityRole="navigation">
-              <TouchableOpacity
-                style={[styles.btn, styles.btnSecondary, isSmall && styles.btnMobile]}
-                onPress={() => router.push('/auth/sign-in')}
-              >
-                <Text style={[styles.btnText, isSmall && styles.btnTextMobile]}>LOGIN</Text>
+            <View style={[styles.navRight, isSmall && styles.navRightMobile]}>
+              <TouchableOpacity style={styles.navLink} onPress={() => router.push('/auth/sign-in')}>
+                <Text style={styles.navLinkText}>Log in</Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.btn, styles.btnPrimary, isSmall && styles.btnMobile]}
-                onPress={() => router.push('/auth/sign-up')}
-              >
-                <Text style={[styles.btnText, isSmall && styles.btnTextMobile, styles.btnTextWhite]}>SIGN UP</Text>
+              <TouchableOpacity style={styles.btnSmall} onPress={() => router.push('/auth/sign-up')}>
+                <Text style={styles.btnSmallText}>Get Started</Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
 
-        {/* Hero */}
-        <View style={styles.heroSection} accessibilityRole="main">
-          <View style={[styles.heroCard, isSmall && styles.heroCardMobile]}>
-            <View style={styles.heroContent}>
-              <Text style={[styles.heroTitle, isSmall && styles.heroTitleMobile]}>
-                Practice makes perfect!
-              </Text>
-              <Text style={[styles.heroSubtitle, isSmall && styles.heroSubtitleMobile]}>
-                1:1 anonymous mock interviews with vetted professionals. Master your pitch before the real deal.
+        {/* --- HERO SECTION --- */}
+        <View style={styles.sectionContainer}>
+          <View style={[styles.heroCentered, isSmall && styles.heroCenteredMobile]}>
+            <View style={styles.badgeContainer}>
+              <Text style={styles.badgeText}>🚀 NEW: ML System Design Track</Text>
+            </View>
+            <Text style={[styles.heroTitle, isSmall && styles.heroTitleMobile]}>
+              Practice your interviews with{'\n'}<Text style={{ color: CTA_TEAL }}>Real Professionals</Text>
+            </Text>
+            <Text style={[styles.heroSubtitle, isSmall && styles.heroSubtitleMobile]}>
+              Anonymous 1:1 mock interviews. Practice with vetted mentors from top companies.
+            </Text>
+            <View style={styles.heroButtons}>
+              <TouchableOpacity style={[styles.btnBig, styles.btnPrimary]} onPress={() => router.push('/auth/sign-up')}>
+                <Text style={[styles.btnTextBig, styles.btnTextWhite]}>Start Practicing</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.btnBig, styles.btnSecondary]} onPress={() => router.push('/mentors')}>
+                <Text style={styles.btnTextBig}>Browse Mentors</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+
+        {/* --- LOGO WALL --- */}
+        <View style={styles.logoSection}>
+          <Text style={styles.logoTitle}>MENTORS FROM INDUSTRY LEADERS</Text>
+          <View style={[styles.logoWall, isSmall && styles.logoWallMobile]}>
+            {COMPANIES.map((company) => (
+              <View key={company.name} style={styles.logoWrapper}>
+                <Image 
+                  source={{ uri: company.url }} 
+                  style={[styles.logoImage, { width: company.width }]} 
+                  resizeMode="contain"
+                  alt={`${company.name} logo`}
+                />
+              </View>
+            ))}
+          </View>
+        </View>
+
+        {/* --- ROLE TRACKS --- */}
+        <View style={styles.sectionContainer}>
+          <Text style={styles.sectionKicker}>Specialized Tracks</Text>
+          <Text style={[styles.sectionTitle, isSmall && styles.sectionTitleMobile, { marginBottom: 16 }]}>
+            Choose your domain and interview type
+          </Text>
+       
+          
+          <View style={[styles.grid, isSmall && styles.gridMobile]}>
+            {TRACKS.map((track) => (
+              <TrackCard 
+                key={track.id}
+                icon={track.icon}
+                iconColor={track.iconColor}
+                title={track.title} 
+                skills={track.skills}
+              />
+            ))}
+          </View>
+        </View>
+
+        {/* --- VETTING PROCESS (The reference design) --- */}
+        <View style={styles.sectionContainer}>
+          <View style={[styles.infoBox, { backgroundColor: CTA_TEAL }, isSmall && styles.infoBoxMobile]}>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.infoBoxKicker, { color: 'rgba(255,255,255,0.7)' }]}>TOP 3% ONLY</Text>
+              <Text style={styles.infoBoxTitle}>Rigorous Quality Control</Text>
+              <Text style={styles.infoBoxText}>
+                We don't let just anyone on the platform. Every mentor goes through a strict 3-step verification process.
               </Text>
             </View>
-            <Image
-              source={{ uri: '/hero.webp' }} 
-              style={[styles.mascot, isSmall && styles.mascotMobile]}
-              resizeMode="contain"
-              accessibilityLabel="CrackJobs mascot celebrating a job offer"
+            <View style={styles.stepsContainer}>
+              <View style={styles.stepRow}>
+                <View style={styles.stepBadge}><Text style={styles.stepBadgeText}>1</Text></View>
+                <View><Text style={styles.stepTitle}>Identity Check</Text><Text style={styles.stepDesc}>Work profile verification.</Text></View>
+              </View>
+              <View style={styles.stepRow}>
+                <View style={styles.stepBadge}><Text style={styles.stepBadgeText}>2</Text></View>
+                <View><Text style={styles.stepTitle}>Experience</Text><Text style={styles.stepDesc}>Significant interview conduction experience.</Text></View>
+              </View>
+              <View style={styles.stepRow}>
+                <View style={styles.stepBadge}><Text style={styles.stepBadgeText}>3</Text></View>
+                <View><Text style={styles.stepTitle}>Test Run</Text><Text style={styles.stepDesc}>We test the interviewing skills of the mentor</Text></View>
+              </View>
+            </View>
+          </View>
+        </View>
+
+        {/* --- HOW IT WORKS --- */}
+        <View style={styles.sectionContainer}>
+          <Text style={styles.sectionKicker}>Process</Text>
+          <Text style={[styles.sectionTitle, isSmall && styles.sectionTitleMobile]}>How it works</Text>
+          <View style={[styles.howItWorksGrid, isSmall && styles.gridMobile]}>
+            <WorkStep icon="🔍" title="1. Select Profile" desc="Filter by skills and choose the exact mentor profile." />
+            {!isSmall && <Text style={styles.arrow}>→</Text>}
+            <WorkStep icon="🔒" title="2. Secure Payment" desc="Your money is held in escrow until the session is done." />
+            {!isSmall && <Text style={styles.arrow}>→</Text>}
+            <WorkStep icon="📈" title="3. Get Feedback" desc="Receive a detailed performance scorecard within 24 hours." />
+          </View>
+        </View>
+
+        
+
+        {/* --- REVIEWS --- */}
+        <View style={[styles.sectionContainer, styles.reviewsBg]}>
+          <Text style={styles.sectionKicker}>Testimonials</Text>
+          <Text style={[styles.sectionTitle, isSmall && styles.sectionTitleMobile]}>Success Stories</Text>
+          <View style={[styles.grid, isSmall && styles.gridMobile]}>
+            <ReviewCard 
+              text="I failed my first Google PM interview miserably. After 3 sessions on CrackJobs, I realized my product sense structure was off. Cleared the L4 loop last week!" 
+              title="Senior Product Manager"
+              subtitle="Recently hired at Google"
+            />
+            <ReviewCard 
+              text="The feedback is brutal but necessary. My mentor pointed out SQL edge cases and business logic flaws I never considered." 
+              title="Data Analyst II"
+              subtitle="Candidate for FAANG"
+            />
+            <ReviewCard 
+              text="The ML System Design feedback was spot on. My mentor from Amazon helped me structure my model deployment strategy perfectly." 
+              title="Machine Learning Engineer"
+              subtitle="Transitioning from Research"
             />
           </View>
         </View>
 
-        {/* Role Cards */}
-        <View style={styles.featuresSection}>
-          <Text style={styles.sectionKicker}>Choose your track</Text>
-          <Text style={[styles.sectionTitle, isSmall && styles.sectionTitleMobile]}>
-            Role-based interviews
-          </Text>
-          <View style={[styles.featuresGrid, isSmall && styles.featuresGridMobile]}>
-            <View style={styles.featureCard}>
-              <Text style={styles.featureIcon}>🚀</Text>
-              <Text style={styles.featureTitle}>Product Manager</Text>
-              <Text style={styles.featureBody}>Product sense, execution, metrics, and strategy.</Text>
+        {/* --- STATS SECTION --- */}
+        <View style={styles.statsSection}>
+          <View style={[styles.statsContent, isSmall && styles.statsContentMobile]}>
+            <StatItem number="500+" label="Interviews Scheduled" icon="calendar-check" />
+            {!isSmall && <View style={styles.statDivider} />}
+            <StatItem number="50+" label="Expert Mentors" icon="account-tie" />
+            {!isSmall && <View style={styles.statDivider} />}
+            <StatItem number="4.9" label="Average Rating" icon="star" />
+          </View>
+        </View>
+
+        {/* --- 🔥 NEW: MENTOR GAMIFICATION (InfoBox Style) --- */}
+        <View style={styles.sectionContainer}>
+          <View style={[styles.infoBox, { backgroundColor: CTA_TEAL, flexDirection: 'column', gap: 40, paddingVertical: 60 }]}>
+            
+            {/* Header within the box */}
+            <View style={{ alignItems: 'center', maxWidth: 600, alignSelf: 'center' }}>
+               <Text style={[styles.sectionKicker, { color: '#fff' }]}>Join the Community</Text>
+               <Text style={[styles.sectionTitle, { color: '#fff', fontSize: 32 }]}>Why Become a Mentor?</Text>
+               <Text style={[styles.sectionDesc, { color: 'rgba(255,255,255,0.7)', marginBottom: 0 }]}>
+                  Earn recognition, build your personal brand, and access exclusive networks.
+               </Text>
             </View>
-            <View style={styles.featureCard}>
-              <Text style={styles.featureIcon}>📊</Text>
-              <Text style={styles.featureTitle}>Data Analyst/ Business Analyst</Text>
-              <Text style={styles.featureBody}>SQL, case studies, and business problem-solving.</Text>
+
+            {/* Cards Grid within the box */}
+            <View style={[styles.grid, isSmall && styles.gridMobile, { justifyContent: 'center' }]}>
+              {MENTOR_TIERS.map((tier) => (
+                <View key={tier.level} style={[styles.tierCard, { borderColor: tier.color }]}>
+                  <View style={[styles.tierHeader, { backgroundColor: tier.color }]}>
+                    <MaterialCommunityIcons name={tier.icon as any} size={28} color="#fff" />
+                    <Text style={styles.tierTitle}>{tier.level}</Text>
+                  </View>
+                  <View style={styles.tierBody}>
+                    {tier.perks.map((perk, i) => (
+                      <View key={i} style={styles.perkRow}>
+                        <MaterialCommunityIcons name="check-circle-outline" size={18} color={tier.color} />
+                        <Text style={styles.perkText}>{perk}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              ))}
             </View>
-            <View style={styles.featureCard}>
-              <Text style={styles.featureIcon}>🤖</Text>
-              <Text style={styles.featureTitle}>Data scientist/ ML engineer</Text>
-              <Text style={styles.featureBody}>Modeling, experimentation, and ML system design.</Text>
+            
+            {/* Button within the box */}
+            <View style={{ alignItems: 'center' }}>
+               <TouchableOpacity style={styles.btnWhite} onPress={() => router.push('/mentors/apply')}>
+                  <Text style={styles.btnTextDark}>Apply to be a Mentor</Text>
+               </TouchableOpacity>
             </View>
-            <View style={styles.featureCard}>
-              <Text style={styles.featureIcon}>👥</Text>
-              <Text style={styles.featureTitle}>HR/ Talent acquisition</Text>
-              <Text style={styles.featureBody}>Behavioral, culture, and hiring alignment.</Text>
+
+          </View>
+        </View>
+
+        {/* --- SAFETY --- */}
+        <View style={[styles.sectionContainer, { marginBottom: 60 }]}>
+          <View style={[styles.infoBox, { backgroundColor: BRAND_ORANGE }, isSmall && styles.infoBoxMobile]}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.infoBoxTitle}>Safe & Anonymous</Text>
+              <Text style={styles.infoBoxText}>We protect your identity. Your camera stays off if you want. Your name is hidden.</Text>
+            </View>
+            <View style={{ flex: 1, gap: 15 }}>
+              <View style={styles.checkRow}><Text>✅</Text><Text style={styles.checkText}>Identity Blind</Text></View>
+              <View style={styles.checkRow}><Text>✅</Text><Text style={styles.checkText}>Money Back Guarantee</Text></View>
             </View>
           </View>
         </View>
 
-        {/* Why use CrackJobs */}
-        <View style={styles.featuresSection}>
-          <Text style={styles.sectionKicker}>Why candidates use CrackJobs</Text>
-          <Text style={[styles.sectionTitle, isSmall && styles.sectionTitleMobile]}>
-            Stay protected
-          </Text>
-          <View style={[styles.featuresGrid, isSmall && styles.featuresGridMobile]}>
-            <View style={styles.featureCard}>
-              <Text style={styles.featureIcon}>🛡️</Text>
-              <Text style={styles.featureTitle}>Anonymous Process</Text>
-              <Text style={styles.featureBody}>Nobody can see your identity or company information. **No awkward pings.**</Text>
-            </View>
-            <View style={styles.featureCard}>
-              <Text style={styles.featureIcon}>💸</Text>
-              <Text style={styles.featureTitle}>Protected Payments</Text>
-              <Text style={styles.featureBody}>Pay once, and your payment is held securely. Full refund protection.</Text>
-            </View>
-            <View style={styles.featureCard}>
-              <Text style={styles.featureIcon}>👤</Text>
-              <Text style={styles.featureTitle}>Real People. Real Interviewers</Text>
-              <Text style={styles.featureBody}>Mentors are vetted. No AI, No BS.</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Bottom CTA */}
+        {/* --- CTA FOOTER --- */}
         <View style={styles.bottomCtaSection}>
-          <Text style={styles.bottomCtaTitle}>Ready to dive in?</Text>
+          <Text style={styles.bottomCtaTitle}>Ready to get hired?</Text>
+          <Text style={styles.bottomCtaSubtitle}>Join thousands of candidates preparing today.</Text>
           <TouchableOpacity style={styles.bottomCtaButton} onPress={() => router.push('/auth/sign-up')}>
-            <Text style={styles.bottomCtaButtonText}>Get started</Text>
+            <Text style={styles.bottomCtaButtonText}>Get Started for Free</Text>
           </TouchableOpacity>
         </View>
-
-        {/* How it works */}
-        <View style={styles.featuresSection}>
-          <Text style={styles.sectionKicker}>Easy as 1-2-3</Text>
-          <Text style={[styles.sectionTitle, isSmall && styles.sectionTitleMobile]}>
-            How it works
-          </Text>
-          <View style={[styles.featuresGrid, isSmall && styles.featuresGridMobile]}>
-            <View style={styles.featureCard}>
-              <Text style={styles.featureIcon}>1️⃣</Text>
-              <Text style={styles.featureTitle}>Browse and Book</Text>
-              <Text style={styles.featureBody}>Browse mentors and find an interviewer aligned with your needs.</Text>
-            </View>
-            <View style={styles.featureCard}>
-              <Text style={styles.featureIcon}>2️⃣</Text>
-              <Text style={styles.featureTitle}>Attend mock interview</Text>
-              <Text style={styles.featureBody}>Schedule and attend the mock interview through the platform.</Text>
-            </View>
-            <View style={styles.featureCard}>
-              <Text style={styles.featureIcon}>3️⃣</Text>
-              <Text style={styles.featureTitle}>Get detailed feedback</Text>
-              <Text style={styles.featureBody}>Mentors provide detailed feedback based on standard templates.</Text>
-            </View>
-          </View>
-        </View>
         
-        {/* Footer */}
         <Footer />
       </ScrollView>
     </>
   );
 }
 
-// Styles with system fonts
+// --- COMPONENTS ---
+
+const StatItem = ({ number, label, icon }: { number: string, label: string, icon: any }) => (
+  <View style={styles.statItem}>
+    <MaterialCommunityIcons name={icon} size={32} color={CTA_TEAL} style={{ marginBottom: 8 }} />
+    <Text style={styles.statNumber}>{number}</Text>
+    <Text style={styles.statLabel}>{label}</Text>
+  </View>
+);
+
+const TrackCard = ({ icon, iconColor, title, desc, skills }: { icon: any, iconColor: string, title: string, desc: string, skills: string[] }) => (
+  <View style={styles.card}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12, gap: 12 }}>
+      <MaterialCommunityIcons name={icon} size={32} color={iconColor} />
+      <Text style={styles.cardTitle}>{title}</Text>
+    </View>
+    <Text style={styles.cardBody}>{desc}</Text>
+    <View style={styles.skillsContainer}>
+      {skills.map((skill, index) => (
+        <View key={index} style={styles.skillChip}><Text style={styles.skillText}>{skill}</Text></View>
+      ))}
+    </View>
+  </View>
+);
+
+const WorkStep = ({ icon, title, desc }: { icon: string, title: string, desc: string }) => (
+  <View style={styles.workStepCard}>
+    <Text style={styles.workStepIcon}>{icon}</Text>
+    <Text style={styles.workStepTitle}>{title}</Text>
+    <Text style={styles.workStepDesc}>{desc}</Text>
+  </View>
+);
+
+const ReviewCard = ({ text, title, subtitle }: { text: string, title: string, subtitle: string }) => (
+  <View style={styles.reviewCard}>
+    <Text style={styles.reviewStars}>⭐⭐⭐⭐⭐</Text>
+    <Text style={styles.reviewText}>"{text}"</Text>
+    <View style={styles.reviewAuthor}>
+      <View style={styles.avatarPlaceholder}><Text style={{fontSize: 12}}>💼</Text></View>
+      <View>
+        <Text style={styles.authorName}>{title}</Text>
+        <Text style={styles.authorRole}>{subtitle}</Text>
+      </View>
+    </View>
+  </View>
+);
+
+// --- STYLES ---
+
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8f5f0' },
+  container: { flex: 1, backgroundColor: BG_CREAM },
   scrollContent: { minHeight: '100%' },
 
-  header: { backgroundColor: '#f8f5f0', paddingVertical: 16 },
-  headerInner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', maxWidth: 1400, width: '100%', marginHorizontal: 'auto', paddingHorizontal: 40 },
-  headerInnerMobile: { paddingHorizontal: 12, justifyContent: 'space-between' },
+  // Header & Nav
+  header: { backgroundColor: BG_CREAM, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: 'rgba(0,0,0,0.05)' },
+  headerInner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', maxWidth: 1200, width: '100%', alignSelf: 'center', paddingHorizontal: 24 },
+  headerInnerMobile: { paddingHorizontal: 16 },
+  navRight: { flexDirection: 'row', gap: 24, alignItems: 'center' },
+  navRightMobile: { gap: 12 },
+  navLink: {},
+  navLinkText: { fontFamily: SYSTEM_FONT, fontWeight: '600', color: TEXT_DARK },
+  btnSmall: { backgroundColor: CTA_TEAL, paddingVertical: 10, paddingHorizontal: 20, borderRadius: 100 },
+  btnSmallText: { fontFamily: SYSTEM_FONT, fontSize: 13, fontWeight: '700', color: '#fff' },
 
-  navRight: { flexDirection: 'row', gap: 12, alignItems: 'center' },
-  navRightMobile: { gap: 8 },
-
-  btn: { paddingHorizontal: 28, paddingVertical: 10, borderRadius: 30, borderWidth: 1 },
+  // Buttons & Badges
+  btnBig: { paddingHorizontal: 32, paddingVertical: 16, borderRadius: 100, borderWidth: 1, minWidth: 160, alignItems: 'center' },
   btnPrimary: { backgroundColor: CTA_TEAL, borderColor: CTA_TEAL },
-  btnSecondary: { backgroundColor: 'transparent', borderColor: '#333' },
-  btnMobile: { paddingHorizontal: 18, paddingVertical: 8 },
-  btnText: { 
-    fontFamily: SYSTEM_FONT,
-    fontWeight: '700', // ✅ Bold for buttons
-    fontSize: 14, 
-    letterSpacing: 1 
-  },
-  btnTextMobile: { fontSize: 11, letterSpacing: 0.5 },
+  btnSecondary: { backgroundColor: 'transparent', borderColor: '#ccc' },
+  btnTextBig: { fontFamily: SYSTEM_FONT, fontWeight: '700', fontSize: 16, color: TEXT_DARK },
   btnTextWhite: { color: '#FFFFFF' },
+  badgeContainer: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#e0f5f5', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 100, marginBottom: 24 },
+  badgeText: { color: CTA_TEAL, fontWeight: '700', fontSize: 12, fontFamily: SYSTEM_FONT, letterSpacing: 0.5, textTransform: 'uppercase' },
 
-  heroSection: { paddingHorizontal: 40, paddingVertical: 0, maxWidth: 1400, width: '100%', marginHorizontal: 'auto' },
-  heroCard: { backgroundColor: '#d3d3d3', borderRadius: 24, borderWidth: 3, borderColor: '#000', padding: 48, paddingRight: 100, position: 'relative', overflow: 'hidden', flexDirection: 'row', alignItems: 'flex-end', gap: 24 },
-  heroCardMobile: { padding: 8, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', paddingRight: 2 },
-  heroContent: { flex: 1, maxWidth: 650, zIndex: 1 },
+  // Hero
+  heroCentered: { alignItems: 'center', paddingVertical: 40, maxWidth: 800, alignSelf: 'center' },
+  heroCenteredMobile: { paddingVertical: 20 },
+  heroTitle: { fontFamily: SYSTEM_FONT, fontWeight: '800', fontSize: 52, color: BRAND_ORANGE, lineHeight: 60, marginBottom: 24, textAlign: 'center' },
+  heroTitleMobile: { fontSize: 36, lineHeight: 44 },
+  heroSubtitle: { fontFamily: SYSTEM_FONT, fontSize: 20, color: TEXT_GRAY, lineHeight: 30, marginBottom: 40, textAlign: 'center', maxWidth: 600 },
+  heroSubtitleMobile: { fontSize: 16, textAlign: 'center', lineHeight: 24 },
+  heroButtons: { flexDirection: 'row', gap: 16 },
 
-  heroTitle: { 
-    fontFamily: SYSTEM_FONT,
-    fontWeight: '700', // ✅ Bold for hero title
-    fontSize: 40, 
-    color: '#f58742', 
-    marginBottom: 12, 
-    textShadowColor: 'rgba(0,0,0,0.05)', 
-    textShadowOffset: { width: 0, height: 1 }, 
-    textShadowRadius: 2,
-  },
-  heroTitleMobile: { marginTop: 10, fontSize: 30, textAlign: 'center' },
-  
-  heroSubtitle: { 
-    fontFamily: SYSTEM_FONT,
-    fontWeight: '400', // ✅ Regular for subtitle
-    fontSize: 16, 
-    color: '#333', 
-    lineHeight: 26 
-  },
-  heroSubtitleMobile: { fontSize: 14, lineHeight: 22, textAlign: 'center' },
+  // Logo Wall
+  logoSection: { backgroundColor: '#fff', paddingVertical: 50, borderTopWidth: 1, borderBottomWidth: 1, borderColor: '#f0f0f0' },
+  logoTitle: { textAlign: 'center', fontSize: 11, fontWeight: '800', color: '#bbb', marginBottom: 30, letterSpacing: 1.5, textTransform: 'uppercase' },
+  logoWall: { flexDirection: 'row', justifyContent: 'center', gap: 60, flexWrap: 'wrap', alignItems: 'center' },
+  logoWallMobile: { gap: 30, paddingHorizontal: 20 },
+  logoWrapper: { height: 50, justifyContent: 'center', alignItems: 'center' },
+  logoImage: { height: 35 }, 
 
-  mascot: { width: 200, height: 200, position: 'absolute', bottom: -10, right: 200, zIndex: 0 },
-  mascotMobile: { width: 210, height: 210, position: 'relative', marginTop: 24, right: -10, bottom: 20 },
+  // General Layout
+  sectionContainer: { maxWidth: 1200, width: '100%', alignSelf: 'center', paddingHorizontal: 24, paddingVertical: 60 },
+  grid: { flexDirection: 'row', gap: 20, flexWrap: 'wrap' },
+  gridMobile: { flexDirection: 'column' },
+  reviewsBg: { marginTop: 0, paddingVertical: 60 },
+  sectionKicker: { fontFamily: SYSTEM_FONT, fontWeight: '700', fontSize: 13, textTransform: 'uppercase', letterSpacing: 1.5, color: CTA_TEAL, marginBottom: 12, textAlign: 'center' },
+  sectionTitle: { fontFamily: SYSTEM_FONT, fontWeight: '800', fontSize: 36, color: TEXT_DARK, marginBottom: 16, textAlign: 'center' },
+  sectionTitleMobile: { fontSize: 28 },
+  sectionDesc: { fontFamily: SYSTEM_FONT, fontSize: 16, color: TEXT_GRAY, textAlign: 'center', maxWidth: 700, marginBottom: 40, lineHeight: 24, alignSelf: 'center' },
+  sectionDescMobile: { fontSize: 14 },
+  
+  // Stats
+  statsSection: { backgroundColor: '#fff', borderTopWidth: 1, borderBottomWidth: 1, borderColor: '#eee', paddingVertical: 32, marginTop: 40 },
+  statsContent: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', maxWidth: 1000, alignSelf: 'center', width: '100%', gap: 40 },
+  statsContentMobile: { flexDirection: 'column', gap: 24 },
+  statItem: { alignItems: 'center', flex: 1 },
+  statNumber: { fontSize: 32, fontWeight: '800', color: TEXT_DARK, fontFamily: SYSTEM_FONT },
+  statLabel: { fontSize: 14, color: TEXT_GRAY, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, marginTop: 4 },
+  statDivider: { width: 1, height: 40, backgroundColor: '#eee' },
 
-  sectionKicker: { 
-    fontFamily: SYSTEM_FONT,
-    fontWeight: '600', // ✅ Semibold for kickers
-    fontSize: 13, 
-    textTransform: 'uppercase', 
-    letterSpacing: 1, 
-    color: '#888', 
-    marginBottom: 6 
-  },
-  
-  sectionTitle: { 
-    fontFamily: SYSTEM_FONT,
-    fontWeight: '700', // ✅ Bold for section titles
-    fontSize: 24, 
-    color: '#f58742', 
-    marginBottom: 18 
-  },
-  sectionTitleMobile: { fontSize: 20, textAlign: 'left' },
+  // Mentor Cards
+  tierCard: { flex: 1, minWidth: 280, backgroundColor: '#fff', borderRadius: 16, overflow: 'hidden', borderWidth: 2 },
+  tierHeader: { padding: 20, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 10 },
+  tierTitle: { color: '#fff', fontSize: 20, fontWeight: '800', textTransform: 'uppercase' },
+  tierBody: { padding: 24, gap: 12 },
+  perkRow: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
+  perkText: { fontSize: 15, color: '#444', lineHeight: 22, flex: 1 },
+  btnWhite: { backgroundColor: '#fff', paddingHorizontal: 32, paddingVertical: 16, borderRadius: 100 },
+  btnTextDark: { color: '#222', fontWeight: '800', fontSize: 16 },
 
-  featuresSection: { maxWidth: 1400, width: '100%', marginHorizontal: 'auto', paddingHorizontal: 40, paddingVertical: 30 },
-  featuresGrid: { flexDirection: 'row', gap: 20 },
-  featuresGridMobile: { flexDirection: 'column', paddingHorizontal: 0 },
-  featureCard: { flex: 1, backgroundColor: '#fff', borderRadius: 18, padding: 20, borderWidth: 1, borderColor: '#eee' },
-  featureIcon: { fontSize: 60, marginBottom: 8 },
-  
-  featureTitle: { 
-    fontFamily: SYSTEM_FONT,
-    fontWeight: '700', // ✅ Bold for feature titles
-    fontSize: 16, 
-    marginBottom: 6, 
-    color: '#222' 
-  },
-  
-  featureBody: { 
-    fontFamily: SYSTEM_FONT,
-    fontWeight: '400', // ✅ Regular for body text
-    fontSize: 13, 
-    color: '#555', 
-    lineHeight: 20 
-  },
+  // Cards & Utils
+  card: { flex: 1, minWidth: 280, backgroundColor: '#fff', padding: 28, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(0,0,0,0.04)', shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 12, shadowOffset: { width: 0, height: 6 } },
+  cardTitle: { fontFamily: SYSTEM_FONT, fontWeight: '700', fontSize: 18, color: TEXT_DARK },
+  cardBody: { fontFamily: SYSTEM_FONT, fontSize: 15, color: TEXT_GRAY, lineHeight: 24, marginBottom: 20 },
+  skillsContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 'auto' },
+  skillChip: { backgroundColor: '#f0f5f5', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6 },
+  skillText: { fontSize: 12, fontWeight: '600', color: '#444', fontFamily: SYSTEM_FONT },
 
-  bottomCtaSection: { paddingVertical: 60, paddingHorizontal: 24, alignItems: 'center', justifyContent: 'center', backgroundColor: '#f58742', width: '100%' },
+  howItWorksGrid: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 40 },
+  workStepCard: { flex: 1, alignItems: 'center', padding: 20 },
+  workStepIcon: { fontSize: 48, marginBottom: 16 },
+  workStepTitle: { fontFamily: SYSTEM_FONT, fontWeight: '700', fontSize: 18, color: TEXT_DARK, marginBottom: 8, textAlign: 'center' },
+  workStepDesc: { fontFamily: SYSTEM_FONT, fontSize: 15, color: TEXT_GRAY, textAlign: 'center', lineHeight: 22 },
+  arrow: { fontSize: 30, color: '#ddd', marginHorizontal: 10, marginTop: -40 },
   
-  bottomCtaTitle: { 
-    fontFamily: SYSTEM_FONT,
-    fontWeight: '500', // ✅ Medium for CTA title
-    fontSize: 32, 
-    color: '#fff', 
-    marginBottom: 24, 
-    textAlign: 'center' 
-  },
-  
-  bottomCtaButton: { backgroundColor: CTA_TEAL, paddingHorizontal: 36, paddingVertical: 16, borderRadius: 999 },
-  
-  bottomCtaButtonText: { 
-    fontFamily: SYSTEM_FONT,
-    fontWeight: '700', // ✅ Bold for CTA button
-    color: '#fff', 
-    fontSize: 16, 
-    letterSpacing: 0.5 
-  },
+  // Info Box (Vetting, Safety, Mentor)
+  infoBox: { borderRadius: 24, padding: 50, flexDirection: 'row', gap: 60, alignItems: 'center', shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 20, shadowOffset: {width: 0, height: 10} },
+  infoBoxMobile: { flexDirection: 'column', padding: 30, gap: 30 },
+  infoBoxKicker: { fontSize: 12, fontWeight: '700', letterSpacing: 1.5, marginBottom: 10 },
+  infoBoxTitle: { color: '#fff', fontSize: 32, fontWeight: '800', marginBottom: 16 },
+  infoBoxText: { color: 'rgba(255,255,255,0.95)', fontSize: 18, lineHeight: 28 },
+  checkRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  checkText: { color: '#fff', fontWeight: '700', fontSize: 16 },
+  stepsContainer: { flex: 1, gap: 24 },
+  stepRow: { flexDirection: 'row', gap: 16, alignItems: 'flex-start' },
+  stepBadge: { width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
+  stepBadgeText: { color: '#fff', fontWeight: '800', fontSize: 14 },
+  stepTitle: { color: '#fff', fontWeight: '700', fontSize: 16, marginBottom: 4 },
+  stepDesc: { color: 'rgba(255,255,255,0.8)', fontSize: 14, lineHeight: 20 },
+
+  reviewCard: { flex: 1, minWidth: 280, backgroundColor: '#fff', padding: 32, borderRadius: 12, borderWidth: 1, borderColor: '#eaeaea' },
+  reviewStars: { marginBottom: 16, fontSize: 12, letterSpacing: 2 },
+  reviewText: { fontFamily: SYSTEM_FONT, fontSize: 16, color: '#333', lineHeight: 26, fontStyle: 'italic', marginBottom: 24 },
+  reviewAuthor: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  avatarPlaceholder: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#e0f5f5', alignItems: 'center', justifyContent: 'center' },
+  authorName: { fontWeight: '700', fontSize: 14, color: TEXT_DARK },
+  authorRole: { fontSize: 12, color: TEXT_GRAY, marginTop: 2 },
+
+  bottomCtaSection: { paddingVertical: 100, paddingHorizontal: 24, alignItems: 'center', backgroundColor: 'transparent' },
+  bottomCtaTitle: { fontFamily: SYSTEM_FONT, fontWeight: '800', fontSize: 40, color: TEXT_DARK, marginBottom: 16, textAlign: 'center' },
+  bottomCtaSubtitle: { fontFamily: SYSTEM_FONT, fontSize: 20, color: TEXT_GRAY, marginBottom: 40, textAlign: 'center' },
+  bottomCtaButton: { backgroundColor: CTA_TEAL, paddingHorizontal: 48, paddingVertical: 18, borderRadius: 100 },
+  bottomCtaButtonText: { fontFamily: SYSTEM_FONT, fontWeight: '700', color: '#fff', fontSize: 18 },
 });
-
-/*
-🚀 PERFORMANCE IMPACT (HOMEPAGE):
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-BEFORE (Inter fonts):
-- Homepage load: ~2060ms waiting for fonts
-- Text invisible during font load
-- User sees blank hero section
-
-AFTER (System fonts):
-- Homepage load: 0ms ✅ INSTANT
-- Text visible immediately
-- Perfect first impression ✅
-
-SAVINGS: 2060ms on first page load!
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-📱 WHAT USERS SEE:
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-iOS:     San Francisco (Apple's native font)
-Windows: Segoe UI (Microsoft's native font)
-Android: Roboto (Google's native font)
-
-All look professional and render instantly! ✅
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-🎯 PAGES NOW USING SYSTEM FONTS:
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-✅ Homepage (index.tsx) - THIS FILE
-✅ Privacy Policy
-✅ Terms & Conditions
-✅ Cancellation Policy
-✅ Contact
-✅ About
-✅ How It Works
-✅ FAQ
-
-DASHBOARD PAGES (Still use Inter):
-- /candidate/*
-- /mentor/*
-- /(admin)/*
-- /auth/*
-
-Perfect balance: Fast public pages + consistent dashboard! 🎉
-*/

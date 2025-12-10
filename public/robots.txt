@@ -4,29 +4,6 @@
 
 User-agent: *
 
-# --- ALLOW Public Content ---
-Allow: /$
-Allow: /about
-Allow: /how-it-works
-Allow: /faq
-Allow: /contact
-Allow: /blog
-Allow: /mentors
-
-# --- Legal Pages ---
-Allow: /terms
-Allow: /privacy
-Allow: /cancellation-policy
-
-# --- Assets ---
-Allow: /assets/*
-Allow: /*.js$
-Allow: /*.css$
-Allow: /*.png$
-Allow: /*.jpg$
-Allow: /*.webp$
-Allow: /*.svg$
-
 # --- DISALLOW Private Areas ---
 # Admin & Dashboards
 Disallow: /admin/
@@ -41,7 +18,6 @@ Disallow: /forgot-password
 
 # System Files
 Disallow: /api/
-Disallow: /_next/
 Disallow: /_expo/
 
 # Search Parameters (Prevents duplicate content issues)

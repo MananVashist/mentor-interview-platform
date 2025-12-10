@@ -194,7 +194,7 @@ export default function CandidateDashboard() {
                             {/* 4. Includes Text */}
                             <View style={styles.includesRow}>
                                 <Ionicons name="checkmark-circle-outline" size={14} color={theme.colors.primary} style={{marginRight: 4}} />
-                                <AppText style={styles.includesText}>Includes 2 x 55 min sessions</AppText>
+                                <AppText style={styles.includesText}>Includes 1 x 55 min session</AppText>
                             </View>
                         </View>
 
