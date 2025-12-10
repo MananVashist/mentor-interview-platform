@@ -50,6 +50,10 @@ export const paymentService = {
         // Pricing Logic: Base + 20% Platform Fee
         const totalPrice = Math.round(basePrice * 1.2); 
         
+        // ✅ FIX: Calculate amountToSend HERE (Global Scope for this function)
+        // This ensures it is available for both the Razorpay block AND the return statement
+        const amountToSend = totalPrice * 100;
+
         // 🟢 DEBUG 2: What is the calculated Total Price in Rupees?
         console.log("🔍 DEBUG: Total Price (INR):", totalPrice);
 
@@ -61,14 +65,12 @@ export const paymentService = {
 
         if (ENABLE_RAZORPAY) {
             // 🟢 DEBUG 3: What exact number are we sending to Razorpay?
-            // (Should be Total INR * 100)
-            const amountToSend = totalPrice * 100;
             console.log("🔍 DEBUG: Sending to Razorpay (Paise):", amountToSend);
             console.log("--------------------------------------------------");
 
             const { data: orderData, error: orderError } = await supabase.functions.invoke('create-razorpay-order', {
                 body: { 
-                    amount: amountToSend, 
+                    amount: amountToSend, // Now correctly defined
                     receipt: `rcpt_${candidateId.slice(0, 4)}_${Date.now()}` 
                 }
             });
@@ -120,7 +122,8 @@ export const paymentService = {
 
         if (!ENABLE_RAZORPAY && meetingLink) this.triggerEmailNotification(packageId, meetingLink);
 
-        return { package: pkg, orderId: razorpayOrderId, keyId: razorpayKeyId, amount: totalPrice, error: null };
+        // ✅ This now works because amountToSend is defined in the parent scope
+        return { package: pkg, orderId: razorpayOrderId, keyId: razorpayKeyId, amount: amountToSend, error: null };
 
     } catch (error: any) {
       console.error("Payment Logic Exception:", error);

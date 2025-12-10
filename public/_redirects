@@ -1,9 +1,0 @@
-# Serve static assets directly FIRST
-/_expo/*  200
-/assets/*  200
-/favicon.ico  200
-/robots.txt  200
-/sitemap.xml  200
-
-# THEN route everything else to index.html
-/*  /index.html  200
