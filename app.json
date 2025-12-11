@@ -84,7 +84,8 @@
           }
         }
       ],
-      "expo-font"
+      "expo-font",
+      "expo-asset"
     ],
     "scheme": "crackjobs",
     "extra": {
