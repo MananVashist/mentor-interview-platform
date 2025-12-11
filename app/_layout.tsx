@@ -42,6 +42,17 @@ if (Platform.OS !== 'web') {
 
 SplashScreen.preventAutoHideAsync();
 
+// 🔧 FIX: Prevent client-side routing for static files
+if (Platform.OS === 'web' && typeof window !== 'undefined') {
+  const staticPaths = ['/robots.txt', '/sitemap.xml', '/_headers'];
+  const currentPath = window.location.pathname;
+  
+  if (staticPaths.includes(currentPath)) {
+    // Force reload to let server handle these requests directly
+    window.location.reload();
+  }
+}
+
 export default function RootLayout() {
   const [isReady, setIsReady] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
