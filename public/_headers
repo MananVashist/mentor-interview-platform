@@ -1,23 +1,20 @@
 ﻿# Cloudflare Pages Headers Configuration
-# This file ensures proper content-type and caching for static files
 
-# robots.txt - served as plain text, cached for 1 day
+# robots.txt - served as plain text
 /robots.txt
   Content-Type: text/plain
   Cache-Control: public, max-age=86400
 
-# sitemap.xml - served as XML, cached for 1 day
+# sitemap.xml - served as XML
 /sitemap.xml
   Content-Type: application/xml
   Cache-Control: public, max-age=86400
 
-# Images - cached for 30 days
+# Images - long cache
 /*.webp
   Cache-Control: public, max-age=2592000, immutable
-
 /*.jpg
   Cache-Control: public, max-age=2592000, immutable
-
 /*.png
   Cache-Control: public, max-age=2592000, immutable
 
@@ -26,6 +23,4 @@
   X-Frame-Options: SAMEORIGIN
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
-  Permissions-Policy: camera=(), microphone=(), geolocation=()
-
-Just copy-paste these directly into your files! 📋Claude is AI and can make mistakes. Please double-check responses.
+  Permissions-Policy: camera=(self), microphone=(self), geolocation=()
