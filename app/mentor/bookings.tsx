@@ -18,6 +18,9 @@ import { getBookingState, getBookingDetails, getEvaluationTemplate, BookingUISta
 // Notification Hook (Only for Success messages now)
 import { useNotification } from '@/lib/ui/NotificationBanner';
 
+// Bank Details Modal
+import { BankDetailsModal } from '@/components/mentor/BankDetailsModal';
+
 const BookingCard = ({ session, onAccept, onReschedule, onViewDetails, onJoin, onEvaluate, onViewResume }: any) => {
   const uiState = getBookingState(session);
   const details = getBookingDetails(session);
@@ -159,6 +162,10 @@ export default function MentorBookingsScreen() {
   const [newDate, setNewDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
 
+  // Bank Details Modal
+  const [bankDetailsModalVisible, setBankDetailsModalVisible] = useState(false);
+  const [hasBankDetails, setHasBankDetails] = useState(false);
+
   const fetchSessions = async () => {
     if (!user) return;
     try {
@@ -243,10 +250,56 @@ export default function MentorBookingsScreen() {
     }
   };
 
-  useEffect(() => { fetchSessions(); }, [user]);
-  const onRefresh = () => { setRefreshing(true); fetchSessions(); };
+  const checkBankDetails = async () => {
+    if (!user) return false;
+    
+    try {
+      const { data: mentor } = await supabase
+        .from('mentors')
+        .select('bank_details')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (mentor && mentor.bank_details) {
+        const bd = mentor.bank_details as any;
+        // Check if all required fields are present and not empty
+        const hasAllDetails = !!(
+          bd.holder_name?.trim() &&
+          bd.account_number?.trim() &&
+          bd.ifsc_code?.trim()
+        );
+        setHasBankDetails(hasAllDetails);
+        return hasAllDetails;
+      }
+      
+      setHasBankDetails(false);
+      return false;
+    } catch (e) {
+      console.error('Error checking bank details:', e);
+      setHasBankDetails(false);
+      return false;
+    }
+  };
+
+  useEffect(() => { 
+    fetchSessions(); 
+    checkBankDetails();
+  }, [user]);
+  
+  const onRefresh = () => { 
+    setRefreshing(true); 
+    fetchSessions();
+    checkBankDetails();
+  };
 
   const handleAccept = async (id: string) => {
+    // Check bank details first
+    const hasDetails = await checkBankDetails();
+    if (!hasDetails) {
+      setBankDetailsModalVisible(true);
+      return;
+    }
+
     try {
       const newMeetingLink = `https://meet.jit.si/crackjobs-${id}`;
 
@@ -264,12 +317,18 @@ export default function MentorBookingsScreen() {
       fetchSessions();
     } catch (e: any) {
       console.error("Accept Error:", e);
-      // 🟢 CHANGED: Reverted to Alert for errors
       Alert.alert('Error', e?.message || 'Could not accept this interview.');
     }
   };
 
-  const handleRescheduleStart = (session: any) => {
+  const handleRescheduleStart = async (session: any) => {
+    // Check bank details first
+    const hasDetails = await checkBankDetails();
+    if (!hasDetails) {
+      setBankDetailsModalVisible(true);
+      return;
+    }
+
     setSelectedSession(session);
     setNewDate(new Date(session.scheduled_at));
     setRescheduleModalVisible(true);
@@ -279,7 +338,6 @@ export default function MentorBookingsScreen() {
     if (!selectedSession) return;
     
     try {
-        // 🟢 CHANGED: Generate link on Reschedule as well
         const newMeetingLink = `https://meet.jit.si/crackjobs-${selectedSession.id}`;
 
         const { error } = await supabase
@@ -287,7 +345,7 @@ export default function MentorBookingsScreen() {
             .update({ 
                 status: 'confirmed', 
                 scheduled_at: newDate.toISOString(),
-                meeting_link: newMeetingLink // 🟢 Generate Link
+                meeting_link: newMeetingLink
             })
             .eq('id', selectedSession.id);
         
@@ -298,14 +356,12 @@ export default function MentorBookingsScreen() {
         fetchSessions();
     } catch (e: any) {
         setRescheduleModalVisible(false);
-        // 🟢 CHANGED: Reverted to Alert for errors
         Alert.alert('Error', 'Failed to reschedule.');
     }
   };
 
   const handleJoin = (link: string) => {
     if (!link) {
-        // 🟢 CHANGED: Reverted to Alert for errors
         Alert.alert('Not Ready', 'Meeting link is not ready yet.');
         return;
     }
@@ -351,17 +407,31 @@ export default function MentorBookingsScreen() {
     }
   };
 
-  if (loading) return <View style={styles.loadingContainer}><ActivityIndicator size="large" color={theme.colors.primary} /></View>;
+  const handleBankDetailsSuccess = () => {
+    checkBankDetails();
+    showNotification('Bank details saved successfully! You can now accept bookings.', 'success');
+  };
+
+  if (loading) {
+    return (
+      <ScreenBackground>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+        </View>
+      </ScreenBackground>
+    );
+  }
 
   return (
-    <ScreenBackground style={styles.container}>
-      <StatusBar barStyle="dark-content" />
-      <ScrollView contentContainerStyle={styles.scrollContent} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
-        {/* ... (Rest of UI remains identical) ... */}
-        <Section style={styles.header}>
-          <Heading level={1} style={{textAlign: 'center'}}>Mentor Dashboard</Heading>
-          <AppText style={styles.headerSub}>Manage your upcoming interviews</AppText>
-        </Section>
+    <ScreenBackground>
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[theme.colors.primary]} />}
+      >
+        <View style={styles.header}>
+          <Heading level={2}>Your Bookings</Heading>
+          <AppText style={styles.headerSub}>Manage your interview schedule</AppText>
+        </View>
 
         <View style={styles.statsGrid}>
           <Card style={styles.statCard}><AppText style={styles.statValue}>{stats.upcoming}</AppText><AppText style={styles.statLabel}>Upcoming</AppText></Card>
@@ -476,6 +546,14 @@ export default function MentorBookingsScreen() {
             </View>
         </View>
       </Modal>
+
+      {/* Bank Details Modal */}
+      <BankDetailsModal
+        visible={bankDetailsModalVisible}
+        userId={user?.id || ''}
+        onClose={() => setBankDetailsModalVisible(false)}
+        onSuccess={handleBankDetailsSuccess}
+      />
     </ScreenBackground>
   );
 }
