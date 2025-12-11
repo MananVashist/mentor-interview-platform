@@ -14,7 +14,12 @@ type MentorRow = {
   professional_title: string | null;
   years_of_experience: number | null; 
   profile_ids: number[] | null; 
-  session_price_inr: number | null;    
+  session_price_inr: number | null;
+  bank_details: {
+    holder_name?: string;
+    account_number?: string;
+    ifsc_code?: string;
+  } | null;
 };
 
 type InterviewProfile = {
@@ -29,12 +34,17 @@ export default function MentorProfileScreen() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   
-  // 1. Set default state to '1000'
   const [sessionPrice, setSessionPrice] = useState('1000');
   const [availableProfiles, setAvailableProfiles] = useState<InterviewProfile[]>([]);
   const [selectedProfiles, setSelectedProfiles] = useState<number[]>([]);
   const [professionalTitle, setProfessionalTitle] = useState('');
   const [yearsOfExperience, setYearsOfExperience] = useState('');
+  
+  // Bank Details
+  const [accountHolderName, setAccountHolderName] = useState('');
+  const [accountNumber, setAccountNumber] = useState('');
+  const [ifscCode, setIfscCode] = useState('');
+
   useEffect(() => {
     if (!profile?.id) return;
     let mounted = true;
@@ -45,7 +55,7 @@ export default function MentorProfileScreen() {
 
         const { data: mentor } = await supabase
           .from('mentors')
-          .select('id, professional_title, years_of_experience, profile_ids, session_price_inr')
+          .select('id, professional_title, years_of_experience, profile_ids, session_price_inr, bank_details')
           .eq('id', profile.id) 
           .maybeSingle();
         
@@ -55,7 +65,13 @@ export default function MentorProfileScreen() {
           setYearsOfExperience(m.years_of_experience != null ? String(m.years_of_experience) : '');
           setSelectedProfiles(m.profile_ids ?? []);
           
-          // 2. Use DB value if exists, otherwise keep default '1000'
+          // Load bank details
+          if (m.bank_details) {
+            setAccountHolderName(m.bank_details.holder_name ?? '');
+            setAccountNumber(m.bank_details.account_number ?? '');
+            setIfscCode(m.bank_details.ifsc_code ?? '');
+          }
+          
           if (m.session_price_inr != null) {
             setSessionPrice(String(m.session_price_inr));
           } else {
@@ -103,7 +119,6 @@ export default function MentorProfileScreen() {
       return;
     }
     
-    // 3. Validation Logic for Price Range (500 - 2500)
     if (price !== null) {
       if (isNaN(price)) {
         showNotification('Price must be a valid number.', 'error');
@@ -114,16 +129,26 @@ export default function MentorProfileScreen() {
         return;
       }
     } else {
-      // Optional: Prevent saving if price is empty? 
-      // Assuming price is required based on context:
       showNotification('Please enter a session price.', 'error');
       return;
+    }
+
+    // Prepare bank details object
+    const bankDetailsObj: any = {};
+    const holderTrimmed = accountHolderName.trim();
+    const accountTrimmed = accountNumber.trim();
+    const ifscTrimmed = ifscCode.trim();
+
+    if (holderTrimmed || accountTrimmed || ifscTrimmed) {
+      if (holderTrimmed) bankDetailsObj.holder_name = holderTrimmed;
+      if (accountTrimmed) bankDetailsObj.account_number = accountTrimmed;
+      if (ifscTrimmed) bankDetailsObj.ifsc_code = ifscTrimmed.toUpperCase();
     }
 
     try {
       setSaving(true);
 
-      const payload = {
+      const payload: any = {
         id: profile.id,
         professional_title: professionalTitle.trim() || null,
         years_of_experience: yrs,
@@ -131,6 +156,11 @@ export default function MentorProfileScreen() {
         session_price_inr: price,
         updated_at: new Date(),
       };
+
+      // Only include bank_details if there's data
+      if (Object.keys(bankDetailsObj).length > 0) {
+        payload.bank_details = bankDetailsObj;
+      }
 
       const { error } = await supabase
         .from('mentors')
@@ -176,7 +206,6 @@ export default function MentorProfileScreen() {
               <Heading level={2} style={styles.cardTitle}>Pricing</Heading>
             </View>
             
-            {/* 4. Updated Description Text */}
             <AppText style={styles.cardDescription}>
               Set your fee for a complete mock interview session. Range: ₹500 - ₹2500.
             </AppText>
@@ -197,7 +226,60 @@ export default function MentorProfileScreen() {
           </Card>
         </Section>
 
-        {/* SECTION 2: INTERVIEW EXPERTISE */}
+        {/* SECTION 2: BANK DETAILS */}
+        <Section>
+          <Card style={[styles.card, shadows.card as any]}>
+            <View style={styles.cardHeader}>
+              <Ionicons name="card-outline" size={20} color={colors.primary} />
+              <Heading level={2} style={styles.cardTitle}>Bank Details</Heading>
+            </View>
+            
+            <AppText style={styles.cardDescription}>
+              Add your bank account details to receive payouts. (Optional but recommended)
+            </AppText>
+
+            <View style={styles.inputGroup}>
+              <Label style={styles.inputLabel}>Account Holder Name</Label>
+              <Input
+                value={accountHolderName}
+                onChangeText={setAccountHolderName}
+                placeholder="e.g., Rahul Verma"
+                style={styles.input}
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Label style={styles.inputLabel}>Account Number</Label>
+              <Input
+                value={accountNumber}
+                onChangeText={setAccountNumber}
+                keyboardType="number-pad"
+                placeholder="e.g., 1234567890"
+                style={styles.input}
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Label style={styles.inputLabel}>IFSC Code</Label>
+              <Input
+                value={ifscCode}
+                onChangeText={setIfscCode}
+                autoCapitalize="characters"
+                placeholder="e.g., SBIN0001234"
+                style={styles.input}
+              />
+            </View>
+
+            <View style={styles.bankNotice}>
+              <Ionicons name="shield-checkmark" size={14} color={colors.success} />
+              <AppText style={styles.bankNoticeText}>
+                Your bank details are secure and only used for payouts
+              </AppText>
+            </View>
+          </Card>
+        </Section>
+
+        {/* SECTION 3: INTERVIEW EXPERTISE */}
         <Section>
           <Card style={[styles.card, shadows.card as any]}>
             <View style={styles.cardHeader}>
@@ -247,7 +329,7 @@ export default function MentorProfileScreen() {
           </Card>
         </Section>
 
-        {/* SECTION 3: PRIVATE DETAILS */}
+        {/* SECTION 4: PRIVATE DETAILS */}
         <Section>
           <Card style={[styles.card, shadows.card as any]}>
             <View style={styles.cardHeader}>
@@ -280,7 +362,7 @@ export default function MentorProfileScreen() {
           </Card>
         </Section>
 
-        {/* SECTION 4: PUBLIC PROFILE */}
+        {/* SECTION 5: PUBLIC PROFILE */}
         <Section>
           <Card style={[styles.card, shadows.card as any]}>
             <View style={styles.cardHeader}>
@@ -386,6 +468,22 @@ const styles = StyleSheet.create({
   currencyInput: {
     flex: 1,
     marginTop: 0,
+  },
+
+  // Bank Notice
+  bankNotice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginTop: spacing.xs,
+    backgroundColor: '#f0fdf4',
+    padding: spacing.sm,
+    borderRadius: borderRadius.sm,
+  },
+  bankNoticeText: {
+    fontSize: typography.size.xs,
+    color: colors.success,
+    flex: 1,
   },
 
   // Info Rows (Private)

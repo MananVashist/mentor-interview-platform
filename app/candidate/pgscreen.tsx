@@ -23,12 +23,19 @@ export default function PGScreen() {
   };
 
   const [sdkReady, setSdkReady] = useState(false);
+  const [verifying, setVerifying] = useState(false);
   const hasRun = useRef(false);
 
   useEffect(() => {
-    console.log('[PGScreen] Params:', params);
+    console.log('[PGScreen] 🔍 Received Params:', {
+      orderId,
+      packageId,
+      keyId,
+      amount: amount ? `₹${Number(amount) / 100}` : 'missing'
+    });
 
     if (!packageId || !keyId || !amount) {
+      console.error('[PGScreen] ❌ Missing required params');
       Alert.alert('Error', 'Missing payment details.');
       router.back();
       return;
@@ -44,6 +51,7 @@ export default function PGScreen() {
   useEffect(() => {
     if (sdkReady && !hasRun.current) {
       hasRun.current = true;
+      console.log('[PGScreen] 🚀 SDK Ready, opening checkout...');
       openCheckout();
     }
   }, [sdkReady]);
@@ -52,43 +60,48 @@ export default function PGScreen() {
     const amountPaise = Number(amount);
 
     if (Platform.OS === 'web') {
-      // 🟢 WEB CONFIGURATION
+      // WEB CONFIGURATION
       const options: any = {
         key: keyId,
-        order_id: orderId, // ✅ Razorpay fetches amount/currency from Order ID
+        order_id: orderId,
         
         name: 'CrackJobs',
         description: 'Mock Interview Session',
         theme: { color: '#0E9384' },
-        
-        // ❌ REMOVED 'prefill' block entirely. 
-        // Sending { contact: '' } causes a 400 Bad Request because '' is not a valid phone number.
-        // Only add 'prefill' if you have actual data (e.g. user.email).
 
         handler: handleSuccess,
         modal: {
             ondismiss: () => {
-                console.log('Checkout dismissed');
+                console.log('[PGScreen] ⚠️ Checkout dismissed by user');
                 hasRun.current = false;
+                router.back();
             }
         },
         retry: { enabled: false }
       };
 
-      console.log('[PGScreen][WEB] Opening options:', options);
+      console.log('[PGScreen][WEB] 📋 Razorpay Options:', {
+        key: keyId,
+        order_id: orderId,
+        amount: `₹${amountPaise / 100}`
+      });
 
       const rzp = new (window as any).Razorpay(options);
 
       rzp.on('payment.failed', (resp: any) => {
-        console.error('[PGScreen][WEB] payment.failed:', resp);
-        Alert.alert('Payment Failed', resp.error?.description || 'Payment failed');
+        console.error('[PGScreen][WEB] ❌ payment.failed:', resp);
+        Alert.alert(
+          'Payment Failed', 
+          resp.error?.description || 'Payment failed. Please try again.',
+          [{ text: 'OK', onPress: () => router.back() }]
+        );
       });
 
       rzp.open();
       return;
     }
 
-    // 🟢 NATIVE CONFIGURATION (React Native)
+    // NATIVE CONFIGURATION
     const RazorpayCheckout = require('react-native-razorpay').default;
     
     const rnOptions: any = {
@@ -102,43 +115,107 @@ export default function PGScreen() {
       retry: { enabled: false },
     };
 
+    console.log('[PGScreen][RN] 📋 Razorpay Options:', {
+      key: keyId,
+      order_id: orderId,
+      amount: `₹${amountPaise / 100}`
+    });
+
     RazorpayCheckout.open(rnOptions)
       .then(handleSuccess)
       .catch((err: any) => {
-        console.log('[PGScreen][RN] Error:', err);
+        console.log('[PGScreen][RN] ⚠️ Checkout Error:', err);
         if (err.code === 0 || err.code === 2) {
-            // User cancelled
+            console.log('[PGScreen][RN] User cancelled payment');
+            router.back();
         } else {
-          Alert.alert('Payment Error', err.description || 'Something went wrong');
+          Alert.alert(
+            'Payment Error', 
+            err.description || 'Something went wrong',
+            [{ text: 'OK', onPress: () => router.back() }]
+          );
         }
       });
   };
 
   const handleSuccess = async (data: any) => {
-    console.log('[PGScreen] Success Data:', data);
+    console.log('[PGScreen] ✅ Payment Success! Data:', {
+      order_id: data.razorpay_order_id,
+      payment_id: data.razorpay_payment_id,
+      signature: data.razorpay_signature ? '✓ Present' : '✗ Missing'
+    });
+
+    setVerifying(true);
 
     try {
-      await paymentService.verifyPayment(
+      console.log('[PGScreen] 🔐 Starting verification...');
+      
+      const result = await paymentService.verifyPayment(
         packageId as string,
         data.razorpay_order_id,
         data.razorpay_payment_id,
         data.razorpay_signature
       );
 
-      Alert.alert('Success', 'Interview booked!', [
-        { text: 'OK', onPress: () => router.replace('/candidate/bookings') }
-      ]);
-    } catch (err) {
-      console.error('[PGScreen] Verification failed:', err);
-      Alert.alert('Verification Failed', 'Please contact support with Order ID: ' + orderId);
-      router.back();
+      console.log('[PGScreen] ✅ Verification successful!', result);
+
+      // ✅ AUTO-REDIRECT: Navigate immediately after success
+      setTimeout(() => {
+        router.replace('/candidate/bookings');
+      }, 1500); // Small delay to show success message
+
+    } catch (err: any) {
+      console.error('[PGScreen] ❌ Verification failed:', {
+        error: err,
+        message: err?.message,
+        details: err?.details
+      });
+
+      setVerifying(false);
+
+      // Show detailed error to user
+      const errorMessage = err?.message || 'Verification failed';
+      const errorDetails = err?.details ? `\n\nDetails: ${err.details}` : '';
+      
+      Alert.alert(
+        'Verification Failed', 
+        `${errorMessage}${errorDetails}\n\nOrder ID: ${orderId}\n\nPlease contact support if payment was deducted.`,
+        [
+          { 
+            text: 'Go Back', 
+            onPress: () => router.replace('/candidate/bookings') 
+          }
+        ]
+      );
     }
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFF' }}>
+    <SafeAreaView style={{ 
+      flex: 1, 
+      justifyContent: 'center', 
+      alignItems: 'center', 
+      backgroundColor: '#FFF' 
+    }}>
       <ActivityIndicator size="large" color="#0E9384" />
-      <Text style={{ marginTop: 16 }}>Securely connecting to Razorpay...</Text>
+      <Text style={{ 
+        marginTop: 16, 
+        fontSize: 16, 
+        color: '#374151',
+        fontWeight: '500'
+      }}>
+        {verifying ? '✓ Payment successful! Redirecting...' : 'Securely connecting to Razorpay...'}
+      </Text>
+      {verifying && (
+        <Text style={{ 
+          marginTop: 8, 
+          fontSize: 13, 
+          color: '#10B981',
+          fontWeight: '600' 
+        }}>
+          Booking confirmed
+        </Text>
+      )}
     </SafeAreaView>
   );
 }
@@ -146,13 +223,23 @@ export default function PGScreen() {
 function loadRazorpayScript() {
   return new Promise((resolve) => {
     if (Platform.OS !== 'web') return resolve(true);
-    if (document.getElementById('razorpay-sdk')) return resolve(true);
+    if (document.getElementById('razorpay-sdk')) {
+      console.log('[PGScreen] ✓ Razorpay SDK already loaded');
+      return resolve(true);
+    }
 
+    console.log('[PGScreen] 📥 Loading Razorpay SDK...');
     const script = document.createElement('script');
     script.id = 'razorpay-sdk';
     script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-    script.onload = () => resolve(true);
-    script.onerror = () => resolve(false);
+    script.onload = () => {
+      console.log('[PGScreen] ✓ Razorpay SDK loaded successfully');
+      resolve(true);
+    };
+    script.onerror = () => {
+      console.error('[PGScreen] ✗ Razorpay SDK failed to load');
+      resolve(false);
+    };
     document.body.appendChild(script);
   });
 }
