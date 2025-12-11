@@ -6,14 +6,17 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NotificationProvider } from '@/lib/ui/NotificationBanner';
 import { supabase } from '@/lib/supabase/client';
 import { Session } from '@supabase/supabase-js';
+// 👇 Add Asset import
+import { Asset } from 'expo-asset';
 
 // Only load fonts on native platforms (iOS/Android)
-// Web will use CDN fonts instead
-let fontsLoaded = true; // Default to true for web
+let fontsLoaded = true; 
 let fontError: Error | undefined = undefined;
 
+// 👇 Require the icon font file to get the asset URI for Web
+const ioniconsFont = require('@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Ionicons.ttf');
+
 if (Platform.OS !== 'web') {
-  // Only import and use fonts on native platforms
   const { 
     useFonts, 
     Inter_400Regular, 
@@ -23,9 +26,9 @@ if (Platform.OS !== 'web') {
     Inter_800ExtraBold 
   } = require('@expo-google-fonts/inter');
   
-  // This hook only runs on native
   const [loaded, error] = useFonts({
-    'Ionicons': require('@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Ionicons.ttf'),
+    // Native loading
+    'Ionicons': ioniconsFont, // reusing the require from above
     Inter_400Regular,
     Inter_500Medium,
     Inter_600SemiBold,
@@ -37,37 +40,34 @@ if (Platform.OS !== 'web') {
   fontError = error;
 }
 
-// Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const [isReady, setIsReady] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
 
+  // 👇 Resolve URI for Web
+  const ioniconsUri = Asset.fromModule(ioniconsFont).uri;
+
   useEffect(() => {
-    // Initialize Session Check
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setIsReady(true);
     });
 
-    // Listen for Auth Changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
     });
 
-    // Cleanup subscription
     return () => subscription.unsubscribe();
   }, []);
 
   useEffect(() => {
-    // Hide Splash Screen after fonts are loaded and session is ready
     if (fontsLoaded && isReady) {
       SplashScreen.hideAsync();
     }
   }, [fontsLoaded, isReady]);
 
-  // Block rendering until fonts and session check are complete
   if (!fontsLoaded || !isReady) {
     return null;
   }
@@ -83,36 +83,31 @@ export default function RootLayout() {
           <meta property="og:type" content="website" />
           <meta name="twitter:card" content="summary_large_image" />
           
-          {/* Use Google Fonts CDN for web - fast, reliable, and compatible */}
           {Platform.OS === 'web' && (
             <>
-              <link
-                rel="preconnect"
-                href="https://fonts.googleapis.com"
-              />
-              <link
-                rel="preconnect"
-                href="https://fonts.gstatic.com"
-                crossOrigin="anonymous"
-              />
-              <link
-                rel="stylesheet"
-                href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
-              />
+              {/* Google Fonts (Inter) - This part is fine */}
+              <link rel="preconnect" href="https://fonts.googleapis.com" />
+              <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+              <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" />
               
-              {/* Ionicons from CDN */}
-              <link
-                rel="stylesheet"
-                href="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.css"
+              {/* 👇 FIX: Preload Ionicons */}
+              <link 
+                rel="preload" 
+                href={ioniconsUri} 
+                as="font" 
+                type="font/ttf" 
+                crossOrigin="anonymous" 
               />
-              <script
-                type="module"
-                src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"
-              />
-              <script
-                noModule
-                src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"
-              />
+
+              {/* 👇 FIX: Inject proper CSS for React Native Web */}
+              {/* Removed the <script> tags for ionicons.esm.js as they conflict */}
+              <style type="text/css">{`
+                @font-face {
+                  font-family: 'Ionicons';
+                  src: url('${ioniconsUri}') format('truetype');
+                  font-display: swap;
+                }
+              `}</style>
             </>
           )}
         </Head>

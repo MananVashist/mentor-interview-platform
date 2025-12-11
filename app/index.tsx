@@ -16,6 +16,10 @@ import { SplashScreen } from '../components/SplashScreen';
 import { injectMultipleSchemas } from '@/lib/structured-data';
 import { Footer } from '@/components/Footer';
 import { BrandHeader } from '@/lib/ui';
+import { Asset } from 'expo-asset';
+
+// 🔥 FIX: Import the font file explicitly to resolve its URI for the web
+const iconFontAsset = require('@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/MaterialCommunityIcons.ttf');
 
 // 🔥 System font stack
 const SYSTEM_FONT = Platform.select({
@@ -127,13 +131,15 @@ const TRACKS = [
 const SITE_URL = 'https://crackjobs.com';
 const SITE_TITLE = 'CrackJobs | Mock Interviews for PM, Data & HR';
 const SITE_DESCRIPTION = 'Ace your Product Management, Data Science, Business Analyst, and HR interviews.';
-const SITE_IMAGE = 'https://crackjobs.com/og-image.jpg';
 
 export default function LandingPage() {
   const [showSplash, setShowSplash] = useState(Platform.OS !== 'web');
   const router = useRouter();
   const { width } = useWindowDimensions();
   const isSmall = width < 900;
+  
+  // 🔥 FIX: Resolve the font URI for the web
+  const fontUri = Asset.fromModule(iconFontAsset).uri;
   
   // --- SEO & Splash Logic ---
   useEffect(() => {
@@ -158,12 +164,22 @@ export default function LandingPage() {
       <Head>
         <title>{SITE_TITLE}</title>
         <meta name="description" content={SITE_DESCRIPTION} />
-        {/* 🔥 FIX: Forces icons to swap, preventing LCP render delay on text */}
+        
+        {/* 🔥 FIX: Preload font to fix critical request chain latency */}
+        <link 
+          rel="preload" 
+          href={fontUri} 
+          as="font" 
+          type="font/ttf" 
+          crossOrigin="anonymous" 
+        />
+
+        {/* 🔥 FIX: Correct @font-face with font-display: swap */}
         <style type="text/css">{`
           @font-face {
             font-family: 'MaterialCommunityIcons';
+            src: url('${fontUri}') format('truetype');
             font-display: swap;
-            src: local('MaterialCommunityIcons');
           }
         `}</style>
       </Head>
@@ -197,14 +213,24 @@ export default function LandingPage() {
             <Text style={[styles.heroSubtitle, isSmall && styles.heroSubtitleMobile]}>
               Anonymous 1:1 mock interviews. Practice with vetted mentors from top companies.
             </Text>
-            <View style={styles.heroButtons}>
-              <TouchableOpacity style={[styles.btnBig, styles.btnPrimary]} onPress={() => router.push('/auth/sign-up')}>
+            
+            {/* 🔥 FIX: Mobile responsive buttons container */}
+            <View style={[styles.heroButtons, isSmall && styles.heroButtonsMobile]}>
+              <TouchableOpacity 
+                style={[styles.btnBig, styles.btnPrimary, isSmall && { width: '100%' }]} 
+                onPress={() => router.push('/auth/sign-up')}
+              >
                 <Text style={[styles.btnTextBig, styles.btnTextWhite]}>Start Practicing</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.btnBig, styles.btnSecondary]} onPress={() => router.push('/auth/sign-in')}>
+              
+              <TouchableOpacity 
+                style={[styles.btnBig, styles.btnSecondary, isSmall && { width: '100%' }]} 
+                onPress={() => router.push('/auth/sign-in')}
+              >
                 <Text style={styles.btnTextBig}>Browse Mentors</Text>
               </TouchableOpacity>
             </View>
+
           </View>
         </View>
 
@@ -246,7 +272,7 @@ export default function LandingPage() {
           </View>
         </View>
 
-        {/* --- VETTING PROCESS (The reference design) --- */}
+        {/* --- VETTING PROCESS --- */}
         <View style={styles.sectionContainer}>
           <View style={[styles.infoBox, { backgroundColor: CTA_TEAL }, isSmall && styles.infoBoxMobile]}>
             <View style={{ flex: 1 }}>
@@ -257,17 +283,27 @@ export default function LandingPage() {
               </Text>
             </View>
             <View style={styles.stepsContainer}>
+              {/* 🔥 FIX: Added flex: 1 to the text wrappers to fix mobile text cutoff */}
               <View style={styles.stepRow}>
                 <View style={styles.stepBadge}><Text style={styles.stepBadgeText}>1</Text></View>
-                <View><Text style={styles.stepTitle}>Identity Check</Text><Text style={styles.stepDesc}>Work profile verification.</Text></View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.stepTitle}>Identity Check</Text>
+                  <Text style={styles.stepDesc}>Work profile verification.</Text>
+                </View>
               </View>
               <View style={styles.stepRow}>
                 <View style={styles.stepBadge}><Text style={styles.stepBadgeText}>2</Text></View>
-                <View><Text style={styles.stepTitle}>Experience</Text><Text style={styles.stepDesc}>Significant interview conduction experience.</Text></View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.stepTitle}>Experience</Text>
+                  <Text style={styles.stepDesc}>Significant interview conduction experience.</Text>
+                </View>
               </View>
               <View style={styles.stepRow}>
                 <View style={styles.stepBadge}><Text style={styles.stepBadgeText}>3</Text></View>
-                <View><Text style={styles.stepTitle}>Test Run</Text><Text style={styles.stepDesc}>We test the interviewing skills of the mentor</Text></View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.stepTitle}>Test Run</Text>
+                  <Text style={styles.stepDesc}>We test the interviewing skills of the mentor</Text>
+                </View>
               </View>
             </View>
           </View>
@@ -285,8 +321,6 @@ export default function LandingPage() {
             <WorkStep icon="📈" title="3. Get Feedback" desc="Receive a detailed performance scorecard within 24 hours." />
           </View>
         </View>
-
-        
 
         {/* --- REVIEWS --- */}
         <View style={[styles.sectionContainer, styles.reviewsBg]}>
@@ -316,17 +350,17 @@ export default function LandingPage() {
           <View style={[styles.statsContent, isSmall && styles.statsContentMobile]}>
             <StatItem number="500+" label="Interviews Scheduled" icon="calendar-check" />
             {!isSmall && <View style={styles.statDivider} />}
-            <StatItem number="50+" label="Expert Mentors" icon="account-tie" />
+            <StatItem number="15+" label="Expert Mentors" icon="account-tie" />
             {!isSmall && <View style={styles.statDivider} />}
             <StatItem number="4.9" label="Average Rating" icon="star" />
           </View>
         </View>
 
-        {/* --- 🔥 NEW: MENTOR GAMIFICATION (InfoBox Style) --- */}
+        {/* --- MENTOR GAMIFICATION --- */}
         <View style={styles.sectionContainer}>
           <View style={[styles.infoBox, { backgroundColor: CTA_TEAL, flexDirection: 'column', gap: 40, paddingVertical: 60 }]}>
             
-            {/* Header within the box */}
+            {/* Header */}
             <View style={{ alignItems: 'center', maxWidth: 600, alignSelf: 'center' }}>
                <Text style={[styles.sectionKicker, { color: '#fff' }]}>Join the Community</Text>
                <Text style={[styles.sectionTitle, { color: '#fff', fontSize: 32 }]}>Why Become a Mentor?</Text>
@@ -335,7 +369,7 @@ export default function LandingPage() {
                </Text>
             </View>
 
-            {/* Cards Grid within the box */}
+            {/* Cards Grid */}
             <View style={[styles.grid, isSmall && styles.gridMobile, { justifyContent: 'center' }]}>
               {MENTOR_TIERS.map((tier) => (
                 <View key={tier.level} style={[styles.tierCard, { borderColor: tier.color }]}>
@@ -355,8 +389,8 @@ export default function LandingPage() {
               ))}
             </View>
             
-            {/* Button within the box */}
-            <View style={{ alignItems: 'center' }}>
+            {/* Button */}
+            <View style={{ alignItems: 'center', width: '100%' }}>
                <TouchableOpacity style={styles.btnWhite} onPress={() => router.push('/auth/sign-up')}>
                   <Text style={styles.btnTextDark}>Apply to be a Mentor</Text>
                </TouchableOpacity>
@@ -368,11 +402,13 @@ export default function LandingPage() {
         {/* --- SAFETY --- */}
         <View style={[styles.sectionContainer, { marginBottom: 60 }]}>
           <View style={[styles.infoBox, { backgroundColor: BRAND_ORANGE }, isSmall && styles.infoBoxMobile]}>
-            <View style={{ flex: 1 }}>
+            {/* 🔥 FIX: Center alignment on mobile for Safety Section Text */}
+            <View style={{ flex: 1, alignItems: isSmall ? 'center' : 'flex-start' }}>
               <Text style={styles.infoBoxTitle}>Safe & Anonymous</Text>
-              <Text style={styles.infoBoxText}>We protect your identity. Your camera stays off if you want. Your name is hidden.</Text>
+              <Text style={[styles.infoBoxText, isSmall && { textAlign: 'center' }]}>We protect your identity. Your camera stays off if you want. Your name is hidden.</Text>
             </View>
-            <View style={{ flex: 1, gap: 15 }}>
+            {/* 🔥 FIX: Center alignment on mobile for Safety Section Checks */}
+            <View style={{ flex: 1, gap: 15, alignItems: isSmall ? 'center' : 'flex-start' }}>
               <View style={styles.checkRow}><Text>✅</Text><Text style={styles.checkText}>Identity Blind</Text></View>
               <View style={styles.checkRow}><Text>✅</Text><Text style={styles.checkText}>Money Back Guarantee</Text></View>
             </View>
@@ -459,10 +495,10 @@ const styles = StyleSheet.create({
   btnSmallText: { fontFamily: SYSTEM_FONT, fontSize: 13, fontWeight: '700', color: '#fff' },
 
   // Buttons & Badges
-  btnBig: { paddingHorizontal: 32, paddingVertical: 16, borderRadius: 100, borderWidth: 1, minWidth: 160, alignItems: 'center' },
+  btnBig: { paddingHorizontal: 32, paddingVertical: 16, borderRadius: 100, borderWidth: 1, minWidth: 160, alignItems: 'center', justifyContent: 'center' },
   btnPrimary: { backgroundColor: CTA_TEAL, borderColor: CTA_TEAL },
   btnSecondary: { backgroundColor: 'transparent', borderColor: '#ccc' },
-  btnTextBig: { fontFamily: SYSTEM_FONT, fontWeight: '700', fontSize: 16, color: TEXT_DARK },
+  btnTextBig: { fontFamily: SYSTEM_FONT, fontWeight: '700', fontSize: 16, color: TEXT_DARK, textAlign: 'center' },
   btnTextWhite: { color: '#FFFFFF' },
   badgeContainer: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#e0f5f5', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 100, marginBottom: 24 },
   badgeText: { color: CTA_TEAL, fontWeight: '700', fontSize: 12, fontFamily: SYSTEM_FONT, letterSpacing: 0.5, textTransform: 'uppercase' },
@@ -474,7 +510,10 @@ const styles = StyleSheet.create({
   heroTitleMobile: { fontSize: 36, lineHeight: 44 },
   heroSubtitle: { fontFamily: SYSTEM_FONT, fontSize: 20, color: TEXT_GRAY, lineHeight: 30, marginBottom: 40, textAlign: 'center', maxWidth: 600 },
   heroSubtitleMobile: { fontSize: 16, textAlign: 'center', lineHeight: 24 },
+  
   heroButtons: { flexDirection: 'row', gap: 16 },
+  // 🔥 FIX: Vertical stacking for mobile so buttons don't crop
+  heroButtonsMobile: { flexDirection: 'column', width: '100%', paddingHorizontal: 20 },
 
   // Logo Wall
   logoSection: { backgroundColor: '#fff', paddingVertical: 50, borderTopWidth: 1, borderBottomWidth: 1, borderColor: '#f0f0f0' },
@@ -504,15 +543,17 @@ const styles = StyleSheet.create({
   statLabel: { fontSize: 14, color: TEXT_GRAY, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, marginTop: 4 },
   statDivider: { width: 1, height: 40, backgroundColor: '#eee' },
 
-  // Mentor Cards
+  // Mentor Cards & Buttons
   tierCard: { flex: 1, minWidth: 280, backgroundColor: '#fff', borderRadius: 16, overflow: 'hidden', borderWidth: 2 },
   tierHeader: { padding: 20, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 10 },
   tierTitle: { color: '#fff', fontSize: 20, fontWeight: '800', textTransform: 'uppercase' },
   tierBody: { padding: 24, gap: 12 },
   perkRow: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
   perkText: { fontSize: 15, color: '#444', lineHeight: 22, flex: 1 },
-  btnWhite: { backgroundColor: '#fff', paddingHorizontal: 32, paddingVertical: 16, borderRadius: 100 },
-  btnTextDark: { color: '#222', fontWeight: '800', fontSize: 16 },
+  
+  // 🔥 FIX: Added alignment and justification to center text within the button
+  btnWhite: { backgroundColor: '#fff', paddingHorizontal: 32, paddingVertical: 16, borderRadius: 100, alignItems: 'center', justifyContent: 'center' },
+  btnTextDark: { color: '#222', fontWeight: '800', fontSize: 16, textAlign: 'center' },
 
   // Cards & Utils
   card: { flex: 1, minWidth: 280, backgroundColor: '#fff', padding: 28, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(0,0,0,0.04)', shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 12, shadowOffset: { width: 0, height: 6 } },
