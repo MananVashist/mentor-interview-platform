@@ -2,6 +2,7 @@
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, StatusBar } from 'react-native';
 import { supabase } from '@/lib/supabase/client';
 import { Ionicons } from '@expo/vector-icons';
+import { paymentService } from '@/services/payment.service';
 
 export default function ApprovalsScreen() {
   const [mentors, setMentors] = useState<any[]>([]);
@@ -46,6 +47,17 @@ export default function ApprovalsScreen() {
     if (error) {
       Alert.alert("Error", "Failed to update status");
     } else {
+      // Send welcome email when mentor is approved
+      if (newStatus === 'approved') {
+        try {
+          await paymentService.sendMentorWelcomeEmail(mentorId);
+          console.log('✅ Welcome email sent to mentor:', mentorId);
+        } catch (emailError) {
+          console.warn('⚠️ Failed to send welcome email:', emailError);
+          // Don't block the approval if email fails
+        }
+      }
+      
       Alert.alert("Success", `Mentor ${newStatus}!`);
       fetchPendingMentors(); 
     }

@@ -16,66 +16,79 @@ serve(async (req) => {
   }
 
   try {
-    const { to, subject, html, type } = await req.json() as {
+    const { to, subject, html, templateId, templateData, type } = await req.json() as {
       to: string;
       subject: string;
-      html: string;
-      type: 'booking_confirmation' | 'mentor_notification' | 'meeting_reminder';
+      html?: string;
+      templateId?: string;
+      templateData?: Record<string, any>;
+      type: string;
     };
 
-    console.log("[Email Service] Sending email:", { to, subject, type });
+    console.log(`[Email Service] Processing '${type}' for: ${to}`);
 
-    if (!to || !subject || !html) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: "Missing required fields: to, subject, html"
-        }),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 400,
-        }
-      );
+    // Basic Validation
+    if (!to || !subject) {
+      throw new Error("Missing required fields: to, subject");
+    }
+
+    if (!html && !templateId) {
+      throw new Error("Must provide either 'html' or 'templateId'");
     }
 
     const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
     if (!RESEND_API_KEY) {
       console.error("[Email Service] Missing Resend API key");
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: "Email service not configured"
-        }),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 500,
-        }
-      );
+      throw new Error("Email service configuration missing");
     }
 
-    // Send email via Resend API
+    // ---------------------------------------------------------
+    // CONSTRUCT RESEND PAYLOAD
+    // ---------------------------------------------------------
+    
+    // ⚠️ REPLACE THIS WITH YOUR VERIFIED DOMAIN ONCE READY
+    const FROM_EMAIL = "CrackJobs <no-reply@crackjobs.com>";
+    // const FROM_EMAIL = "CrackJobs <onboarding@resend.dev>"; 
+
+    let resendPayload: any = {
+      from: FROM_EMAIL,
+      to: [to],
+      subject: subject,
+    };
+
+    if (templateId) {
+      // ✅ CORRECT SYNTAX for Resend Dashboard Templates
+      resendPayload.template_id = templateId;
+      resendPayload.data = templateData || {}; 
+      console.log(`[Email Service] Using Template: ${templateId}`);
+    } else {
+      // Raw HTML Fallback
+      resendPayload.html = html;
+      console.log("[Email Service] Using raw HTML");
+    }
+
+    // ---------------------------------------------------------
+    // SEND REQUEST TO RESEND
+    // ---------------------------------------------------------
     const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${RESEND_API_KEY}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        from: "CrackJobs <onboarding@resend.dev>", // ✅ Update this to your verified domain
-        to: [to],
-        subject: subject,
-        html: html,
-      }),
+      body: JSON.stringify(resendPayload),
     });
 
     const data = await response.json();
 
     if (!response.ok) {
-      console.error("[Email Service] Resend API error:", data);
+      console.error("[Email Service] ❌ Resend API Error:", data);
+      // Return 500 so the client knows it failed
       return new Response(
         JSON.stringify({
           success: false,
-          error: data.message || "Failed to send email"
+          error: data.message || "Failed to send email via Resend",
+          details: data
         }),
         {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -84,7 +97,7 @@ serve(async (req) => {
       );
     }
 
-    console.log("[Email Service] Email sent successfully:", data.id);
+    console.log("[Email Service] ✅ Sent Successfully! ID:", data.id);
 
     return new Response(
       JSON.stringify({ 
@@ -96,8 +109,9 @@ serve(async (req) => {
         status: 200,
       }
     );
+
   } catch (error: any) {
-    console.error("[Email Service] Error:", error);
+    console.error("[Email Service] Exception:", error.message);
     return new Response(
       JSON.stringify({
         success: false,
@@ -105,7 +119,7 @@ serve(async (req) => {
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 500,
+        status: 500, // Internal Server Error
       }
     );
   }
