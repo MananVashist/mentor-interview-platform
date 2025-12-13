@@ -1,54 +1,52 @@
 ﻿import { supabase } from '@/lib/supabase/client';
+import { EMAIL_TEMPLATES } from './email.templates';
 
 export const ENABLE_RAZORPAY = true; 
-
-// Resend Template IDs
-const RESEND_TEMPLATES = {
-  MENTOR_WELCOME: '4ed4161d-83cf-43a3-b581-c0b923883e94', 
-  CANDIDATE_BOOKING_CONFIRMATION: '4fcb02c7-e884-4945-9d7e-dd23cbbb3351', 
-  MENTOR_BOOKING_CONFIRMATION: 'f6634c20-97cf-4053-b763-d9dc167d9c20', 
-};
-
-// Base URL for the application
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://crackjobs.com';
 
-async function sendTemplatedEmail(
+// ==========================================
+// 📧 EMAIL HELPER
+// ==========================================
+
+const compileTemplate = (template: string, data: Record<string, any>) => {
+  return template.replace(/{{(\w+)}}/g, (_, key) => data[key] || '');
+};
+
+async function sendEmail(
   to: string, 
   subject: string, 
-  templateId: string, 
-  templateData: Record<string, any>,
-  type: string
-): Promise<boolean> {
+  templateHtml: string, 
+  data: Record<string, any>
+) {
   try {
-    console.log(`📧 [Email Service] Sending ${type} to: ${to}`);
+    const compiledHtml = compileTemplate(templateHtml, data);
+    console.log(`📧 [Email Service] Sending to: ${to}`);
     
-    const { data, error } = await supabase.functions.invoke('send-email', {
+    // Calls the Edge Function (send-email) with RAW HTML
+    const { data: resData, error } = await supabase.functions.invoke('send-email', {
       body: { 
         to, 
         subject, 
-        templateId,
-        templateData,
-        type 
+        html: compiledHtml // Send compiled HTML directly
       }
     });
 
-    if (error) {
-      console.error(`[Email Service] ❌ Failed to invoke function for ${type}:`, error);
+    if (error || !resData?.success) {
+      console.error('[Email Service] Failed:', error || resData);
       return false;
     }
 
-    if (!data?.success) {
-        console.error(`[Email Service] ❌ API returned error for ${type}:`, data?.error);
-        return false;
-    }
-
-    console.log(`[Email Service] ✅ Email (${type}) sent successfully. ID:`, data.emailId);
+    console.log('[Email Service] ✅ Success! ID:', resData.id);
     return true;
   } catch (e) {
-    console.error(`[Email Service] Exception sending ${type}:`, e);
+    console.error('[Email Service] Exception:', e);
     return false;
   }
 }
+
+// ==========================================
+// 💳 PAYMENT & BOOKING SERVICE
+// ==========================================
 
 export const paymentService = {
   async checkBookingConflict(mentorId: string, selectedSlots: string[]) {
@@ -72,9 +70,9 @@ export const paymentService = {
     selectedSlot: string 
   ) {
     try {
+        console.log("🚀 Starting Booking Process...");
         await this.checkBookingConflict(mentorId, [selectedSlot]);
 
-        // 1. Fetch Mentor Price
         const { data: mentorData, error: mentorError } = await supabase
           .from('mentors')
           .select('session_price_inr')
@@ -84,41 +82,47 @@ export const paymentService = {
         if (mentorError || !mentorData) throw new Error("Unable to retrieve mentor pricing details.");
 
         const basePrice = mentorData.session_price_inr || 0; 
-        
-        // Pricing Logic: Base + 20% Platform Fee
         const totalPrice = Math.round(basePrice * 1.2); 
-        const amountToSend = totalPrice * 100;
-
+        const amountToSend = totalPrice * 100; // in paise
         const mentorPayout = basePrice;
         const platformFee = totalPrice - mentorPayout;
 
-        // 2. Create a Razorpay Order (if enabled)
         let razorpayOrderId = null;
         let razorpayKeyId = null;
 
         if (ENABLE_RAZORPAY) {
+          console.log("💳 Creating Razorpay Order...");
           const { data: orderData, error: orderError } = await supabase.functions.invoke(
             "create-razorpay-order",
-            { body: { amount: amountToSend, currency: "INR" } }
+            { 
+              body: { 
+                amount: amountToSend, 
+                currency: "INR", 
+                receipt: `rcpt_${Date.now()}` // ✅ REQUIRED by Edge Function
+              } 
+            }
           );
 
-          if (orderError || !orderData?.orderId) {
-            console.error("Razorpay order creation failed:", orderError, orderData);
+          // ✅ Check for 'id' (Standard Razorpay response), NOT 'orderId'
+          if (orderError || !orderData?.id) {
+            console.error("Razorpay Error:", orderError, orderData);
             throw new Error("Payment order creation failed.");
           }
-
-          razorpayOrderId = orderData.orderId;
-          razorpayKeyId = orderData.keyId;
+          
+          razorpayOrderId = orderData.id;      
+          razorpayKeyId = orderData.key_id;     
         }
 
-        // 3. Insert Package Record
+        // ✅ Updated Payload to match your new Schema
         const pkgPayload = {
           candidate_id: candidateId,
           mentor_id: mentorId,
           interview_profile_id: interviewProfileId,
-          total_price_inr: totalPrice,
+          
+          total_amount_inr: totalPrice, // ✅ FIXED: Changed from total_price_inr
           mentor_payout_inr: mentorPayout,
           platform_fee_inr: platformFee,
+          
           payment_status: ENABLE_RAZORPAY ? "pending" : "held_in_escrow",
           razorpay_order_id: razorpayOrderId,
           booking_metadata: {
@@ -134,17 +138,18 @@ export const paymentService = {
           .single();
 
         if (pkgError || !pkg) {
-          console.error("Package creation failed:", pkgError);
-          throw new Error("Unable to create package.");
+           console.error("Database Insert Error:", pkgError);
+           throw new Error("Unable to create package in database.");
         }
 
+        console.log("✅ Package Created:", pkg.id);
         const packageId = pkg.id;
 
-        // If Razorpay is disabled (test mode), create the session immediately
+        // If Razorpay is disabled (Test Mode) - Create session immediately
         if (!ENABLE_RAZORPAY) {
            const meetingLink = `https://meet.jit.si/interview-${packageId}-${Date.now()}`;
            
-           const sessionData = {
+           const { error: sessionError } = await supabase.from('interview_sessions').insert({
               package_id: packageId,
               candidate_id: candidateId,
               mentor_id: mentorId,
@@ -152,9 +157,8 @@ export const paymentService = {
               scheduled_at: selectedSlot,
               status: 'pending',
               meeting_link: meetingLink
-           };
+           });
 
-           const { error: sessionError } = await supabase.from('interview_sessions').insert(sessionData);
            if (sessionError) throw sessionError;
            
            this.triggerBookingConfirmationEmails(packageId, meetingLink);
@@ -172,36 +176,21 @@ export const paymentService = {
     // 1. Verify Signature
     const { data, error } = await supabase.functions.invoke(
       "verify-razorpay-signature",
-      {
-        body: {
-          orderId,
-          paymentId: payId,
-          signature: sig,
-        },
-      }
+      { body: { orderId, paymentId: payId, signature: sig } }
     );
 
-    if (error || !data?.valid) {
-      throw new Error("Payment verification failed");
-    }
+    if (error || !data?.valid) throw new Error("Payment verification failed");
 
-    // 2. Fetch the package to get stored booking metadata
-    const { data: pkgData, error: pkgFetchError } = await supabase
-      .from('interview_packages')
-      .select('*')
-      .eq('id', pkgId)
-      .single();
+    // 2. Fetch Package
+    const { data: pkgData } = await supabase.from('interview_packages').select('*').eq('id', pkgId).single();
+    if (!pkgData) throw new Error("Package not found.");
 
-    if (pkgFetchError || !pkgData) throw new Error("Package not found for verification.");
-
-    // 3. Extract Metadata
     const { skill_id, scheduled_at } = pkgData.booking_metadata || {};
-    if (!skill_id || !scheduled_at) throw new Error("Booking metadata missing in package.");
-
-    // 4. Double check conflict (Race condition check)
+    
+    // 3. Double check conflict
     await this.checkBookingConflict(pkgData.mentor_id, [scheduled_at]);
 
-    // 5. Update Package Status
+    // 4. Update Package
     const { error: pkgError } = await supabase
       .from("interview_packages")
       .update({
@@ -214,9 +203,8 @@ export const paymentService = {
 
     if (pkgError) throw pkgError;
 
-    // 6. Create the Interview Session (The Booking)
+    // 5. Create Session
     const meetingLink = `https://meet.jit.si/interview-${pkgId}-${Date.now()}`;
-    
     const { error: sessionError } = await supabase
       .from("interview_sessions")
       .insert({
@@ -231,7 +219,7 @@ export const paymentService = {
 
     if (sessionError) throw sessionError;
 
-    // 7. Send booking confirmation emails
+    // 6. Send Emails
     this.triggerBookingConfirmationEmails(pkgId, meetingLink);
     
     return { success: true, meetingLink };
@@ -239,105 +227,47 @@ export const paymentService = {
 
   async triggerBookingConfirmationEmails(pkgId: string, link: string) {
     try {
-        // 1. Get package basic data
-        const { data: pkgData, error: pkgError } = await supabase
-          .from('interview_packages')
-          .select('id, candidate_id, mentor_id, interview_profile_id')
-          .eq('id', pkgId)
-          .single();
+        const { data: pkg } = await supabase.from('interview_packages').select('candidate_id, mentor_id, interview_profile_id').eq('id', pkgId).single();
+        if (!pkg) return;
 
-        if (pkgError || !pkgData) return;
+        const { data: mentor } = await supabase.from('mentors').select('professional_title, profile:profiles!id(email, full_name)').eq('id', pkg.mentor_id).single();
+        const { data: candidate } = await supabase.from('candidates').select('professional_title, profile:profiles!id(email, full_name)').eq('id', pkg.candidate_id).single();
+        const { data: profile } = await supabase.from('interview_profiles_admin').select('name').eq('id', pkg.interview_profile_id).single();
+        const { data: session } = await supabase.from('interview_sessions').select('scheduled_at, skill:interview_skills_admin!skill_id(name)').eq('package_id', pkgId).single();
 
-        // 2. Get mentor details
-        const { data: mentorData } = await supabase
-          .from('mentors')
-          .select(`
-            id,
-            professional_title,
-            profile:profiles!id (email, full_name)
-          `)
-          .eq('id', pkgData.mentor_id)
-          .single();
+        const dateTime = session?.scheduled_at ? new Date(session.scheduled_at).toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }) : 'TBD';
 
-        // 3. Get candidate details
-        const { data: candidateData } = await supabase
-          .from('candidates')
-          .select(`
-            id,
-            professional_title,
-            profile:profiles!id (email, full_name)
-          `)
-          .eq('id', pkgData.candidate_id)
-          .single();
-
-        // 4. Get interview profile name
-        const { data: profileData } = await supabase
-          .from('interview_profiles_admin')
-          .select('name')
-          .eq('id', pkgData.interview_profile_id)
-          .single();
-
-        // 5. Get session details
-        const { data: sessionData } = await supabase
-          .from('interview_sessions')
-          .select(`
-            scheduled_at,
-            skill:interview_skills_admin!skill_id (name)
-          `)
-          .eq('package_id', pkgId)
-          .single();
-
-        const mentorEmail = mentorData?.profile?.email;
-        const candidateEmail = candidateData?.profile?.email;
-        const profileName = profileData?.name || 'Interview';
-        const skillName = sessionData?.skill?.name || 'Session';
-        
-        const scheduledDate = sessionData?.scheduled_at 
-          ? new Date(sessionData.scheduled_at).toLocaleString('en-US', {
-              weekday: 'long',
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit',
-              timeZone: 'Asia/Kolkata'
-            })
-          : 'TBD';
-
-        // Email to Candidate
-        if (candidateEmail) {
-          await sendTemplatedEmail(
-            candidateEmail,
-            `✅ Interview Confirmed - ${profileName}`,
-            RESEND_TEMPLATES.CANDIDATE_BOOKING_CONFIRMATION,
+        // Send to Candidate
+        if (candidate?.profile?.email) {
+          await sendEmail(
+            candidate.profile.email,
+            `✅ Interview Confirmed - ${profile?.name}`,
+            EMAIL_TEMPLATES.CANDIDATE_BOOKING_CONFIRMATION,
             {
-              name: candidateData?.profile?.full_name,
-              mentorTitle: mentorData?.professional_title || 'Mentor',
-              profileName,
-              skillName,
-              dateTime: scheduledDate,
+              name: candidate.profile.full_name,
+              mentorTitle: mentor?.professional_title,
+              profileName: profile?.name,
+              skillName: session?.skill?.name,
+              dateTime: dateTime,
               baseUrl: BASE_URL
-            },
-            'candidate_booking_confirmation'
+            }
           );
         }
 
-        // Email to Mentor
-        if (mentorEmail) {
-          await sendTemplatedEmail(
-            mentorEmail,
-            `🎯 New Booking Confirmed - ${profileName}`,
-            RESEND_TEMPLATES.MENTOR_BOOKING_CONFIRMATION,
+        // Send to Mentor
+        if (mentor?.profile?.email) {
+          await sendEmail(
+            mentor.profile.email,
+            `🎯 New Booking Confirmed - ${profile?.name}`,
+            EMAIL_TEMPLATES.MENTOR_BOOKING_CONFIRMATION,
             {
-              name: mentorData?.profile?.full_name,
-              candidateTitle: candidateData?.professional_title || 'Candidate',
-              profileName,
-              skillName,
-              dateTime: scheduledDate,
+              name: mentor.profile.full_name,
+              candidateTitle: candidate?.professional_title,
+              profileName: profile?.name,
+              skillName: session?.skill?.name,
+              dateTime: dateTime,
               meetingLink: link,
-              baseUrl: BASE_URL
-            },
-            'mentor_booking_confirmation'
+            }
           );
         }
 
@@ -348,13 +278,9 @@ export const paymentService = {
 
   async sendMentorWelcomeEmail(mentorId: string) {
     try {
-      // Get mentor details (added full_name for personalization)
       const { data: mentorData } = await supabase
         .from('mentors')
-        .select(`
-          professional_title,
-          profile:profiles!id (email, full_name)
-        `)
+        .select('profile:profiles!id (email, full_name)')
         .eq('id', mentorId)
         .single();
 
@@ -363,25 +289,21 @@ export const paymentService = {
         return;
       }
 
-      const success = await sendTemplatedEmail(
+      const success = await sendEmail(
         mentorData.profile.email,
         '🎉 Welcome to CrackJobs - Your Mentor Account is Active',
-        RESEND_TEMPLATES.MENTOR_WELCOME,
+        EMAIL_TEMPLATES.MENTOR_WELCOME,
         {
           name: mentorData.profile.full_name,
           baseUrl: BASE_URL
-        },
-        'mentor_welcome'
+        }
       );
 
       if (success) {
-          console.log('[Email] ✅ Welcome email process completed for:', mentorId);
-      } else {
-          console.warn('[Email] ⚠️ Welcome email failed (check Edge Function logs)');
+        console.log('[Email] ✅ Welcome email sent to mentor:', mentorId);
       }
-
     } catch (err) {
-      console.warn("Mentor welcome email exception:", err);
+      console.warn("Mentor welcome email failed:", err);
     }
   }
 };

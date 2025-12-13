@@ -50,7 +50,7 @@ const BookingCard = ({ session, onJoin, onViewDetails, onViewEvaluation }: any) 
 
           <View style={styles.infoRow}>
             <Ionicons name="time-outline" size={14} color="#6B7280" />
-            <AppText style={styles.infoText}>60 mins</AppText>
+            <AppText style={styles.infoText}>55 mins (45 min interview + 10 min feedback)</AppText>
           </View>
         </View>
 
