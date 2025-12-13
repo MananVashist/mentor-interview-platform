@@ -145,6 +145,17 @@ export default function ScheduleScreen() {
     if (!mentorId) return;
     setIsLoading(true);
     try {
+      // 🧹 STEP 0: Lazy Cleanup
+      // Delete any unpaid bookings older than 15 mins BEFORE calculating availability
+      const { error: cleanupError } = await supabase.rpc('delete_expired_pending_packages');
+      
+      if (cleanupError) {
+        console.warn('[Schedule] Cleanup failed (non-critical):', cleanupError);
+      } else {
+        console.log('[Schedule] Expired unpaid slots cleaned up.');
+      }
+
+      // ... The rest of your existing logic continues below ...
       const now = DateTime.now().setZone(IST_ZONE);
       const startDate = now.plus({ days: 1 }).startOf('day'); 
       const endDate = startDate.plus({ days: BOOKING_WINDOW_DAYS }).endOf('day');
@@ -361,7 +372,7 @@ export default function ScheduleScreen() {
 
       if (error || !pkg) throw new Error(error?.message || 'Booking creation failed');
 
-      if (pkg.payment_status === 'pending_payment') {
+      if (pkg.payment_status === 'pending') {
         router.replace({
           pathname: '/candidate/pgscreen',
           params: {
