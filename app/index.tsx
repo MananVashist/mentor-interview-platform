@@ -175,7 +175,7 @@ export default function LandingPage() {
     }
   }, []);
 
-  if (!fontsLoaded) {
+  if (!fontsLoaded && Platform.OS !== 'web') {
     return <SplashScreen />; 
   }
 
