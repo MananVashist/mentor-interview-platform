@@ -5,22 +5,20 @@
 User-agent: *
 
 # --- DISALLOW Private Areas ---
-# Admin & Dashboards
+# Keep these! You don't want Google indexing user dashboards.
 Disallow: /admin/
 Disallow: /candidate/
 Disallow: /mentor/
 
-# Auth Pages (No SEO value)
-Disallow: /auth/
-Disallow: /sign-in
-Disallow: /sign-up
-Disallow: /forgot-password
+# --- ALLOWED PAGES ---
+# (Removed Auth bans so Sitelinks work)
 
-# System Files
+# --- SYSTEM FILES ---
 Disallow: /api/
 Disallow: /_expo/
 
-# Search Parameters (Prevents duplicate content issues)
+# --- PREVENT DUPLICATE CONTENT ---
+# Good practice for search filters
 Disallow: /*?search=
 Disallow: /*?filter=
 Disallow: /*?sort=

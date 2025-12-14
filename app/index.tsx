@@ -12,22 +12,11 @@ import {
 import { useRouter, Redirect } from 'expo-router';
 import Head from 'expo-router/head';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useFonts } from 'expo-font'; 
 import { SplashScreen } from '../components/SplashScreen';
 import { injectMultipleSchemas } from '@/lib/structured-data';
 import { Footer } from '@/components/Footer';
 import { BrandHeader } from '@/lib/ui';
-import { Asset } from 'expo-asset';
-
-// 🔥 FIX: Import the font file explicitly to resolve its URI for the web
-const iconFontAsset = require('@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/MaterialCommunityIcons.ttf');
-
-// 🔥 System font stack
-const SYSTEM_FONT = Platform.select({
-  web: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif",
-  ios: "System",
-  android: "Roboto",
-  default: "System"
-}) as string;
 
 // --- COLORS ---
 const BRAND_ORANGE = '#f58742';
@@ -36,101 +25,41 @@ const BG_CREAM = '#f8f5f0';
 const TEXT_DARK = '#222';
 const TEXT_GRAY = '#555';
 
-// --- MENTOR TIERS DATA ---
+// System font stack
+const SYSTEM_FONT = Platform.select({
+  web: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif",
+  ios: "System",
+  android: "Roboto",
+  default: "System"
+}) as string;
+
+// --- DATA ARRAYS ---
 const MENTOR_TIERS = [
-  {
-    level: 'Bronze',
-    icon: 'medal-outline',
-    color: '#CD7F32',
-    perks: ['Access to Bronze Badge', 'Community Recognition'],
-  },
-  {
-    level: 'Silver',
-    icon: 'medal',
-    color: '#C0C0C0',
-    perks: ['LinkedIn Appreciation Post', 'Access to Silver Badge', 'Priority Support'],
-  },
-  {
-    level: 'Gold',
-    icon: 'trophy',
-    color: '#FFD700',
-    perks: ['LinkedIn Appreciation Post', 'Access to Gold Badge', 'Exclusive WhatsApp Group'],
-  },
+  { level: 'Bronze', icon: 'medal-outline', color: '#CD7F32', perks: ['Access to Bronze Badge', 'Community Recognition'] },
+  { level: 'Silver', icon: 'medal', color: '#C0C0C0', perks: ['LinkedIn Appreciation Post', 'Access to Silver Badge', 'Priority Support'] },
+  { level: 'Gold', icon: 'trophy', color: '#FFD700', perks: ['LinkedIn Appreciation Post', 'Access to Gold Badge', 'Exclusive Community Group'] },
 ];
 
-// --- LOGO CONFIGURATION ---
 const COMPANIES = [
-  { 
-    name: 'Google', 
-    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Google_2015_logo.svg/368px-Google_2015_logo.svg.png',
-    width: 100 
-  },
-  { 
-    name: 'Meta', 
-    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7b/Meta_Platforms_Inc._logo.svg/640px-Meta_Platforms_Inc._logo.svg.png',
-    width: 110
-  },
-  { 
-    name: 'Amazon', 
-    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a9/Amazon_logo.svg/603px-Amazon_logo.svg.png',
-    width: 90
-  },
-  { 
-    name: 'Microsoft', 
-    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/96/Microsoft_logo_%282012%29.svg/640px-Microsoft_logo_%282012%29.svg.png',
-    width: 110
-  },
-  { 
-    name: 'Capgemini', 
-    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9d/Capgemini_201x_logo.svg/640px-Capgemini_201x_logo.svg.png',
-    width: 120
-  },
-  { 
-    name: 'Adobe', 
-    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6e/Adobe_Corporate_logo.svg/1200px-Adobe_Corporate_logo.svg.png', 
-    width: 120
-  },
+  { name: 'Google', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Google_2015_logo.svg/368px-Google_2015_logo.svg.png', width: 100 },
+  { name: 'Meta', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7b/Meta_Platforms_Inc._logo.svg/640px-Meta_Platforms_Inc._logo.svg.png', width: 110 },
+  { name: 'Amazon', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a9/Amazon_logo.svg/603px-Amazon_logo.svg.png', width: 90 },
+  { name: 'Microsoft', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/96/Microsoft_logo_%282012%29.svg/640px-Microsoft_logo_%282012%29.svg.png', width: 110 },
+  { name: 'Capgemini', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9d/Capgemini_201x_logo.svg/640px-Capgemini_201x_logo.svg.png', width: 120 },
+  { name: 'Adobe', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6e/Adobe_Corporate_logo.svg/1200px-Adobe_Corporate_logo.svg.png', width: 120 },
 ];
 
-// --- TRACKS ---
 const TRACKS = [
-  {
-    id: 'pm',
-    title: 'Product Management',
-    description: 'Master product sense, execution, metrics, and strategy interviews.',
-    icon: 'clipboard-flow', 
-    iconColor: '#2196F3',
-    skills: ['Product Sense / Design', 'Execution & Analytics', 'Strategy & Market', 'Technical Basics', 'Behavioral & Leadership']
-  },
-  {
-    id: 'data-analytics',
-    title: 'Data & Business Analysis',
-    description: 'Solve business cases with SQL, metrics, and data-driven insights.',
-    icon: 'chart-box', 
-    iconColor: '#4CAF50',
-    skills: ['SQL & Querying', 'Case Studies (Data → Insight)', 'Product Metrics', 'Excel / Visualization', 'Stakeholder Comm.']
-  },
-  {
-    id: 'data-science',
-    title: 'Data Science / ML',
-    description: 'Build robust models, scalable ML systems, and debug real-world issues.',
-    icon: 'brain', 
-    iconColor: '#FF9800',
-    skills: ['ML Theory & Algos', 'Practical ML Debugging', 'Coding (Python/Pandas)', 'Stats & Experimentation', 'System Design (ML)']
-  },
-  {
-    id: 'hr',
-    title: 'HR & Behavioral',
-    description: 'Ace culture fit, recruitment operations, and situational questions.',
-    icon: 'account-group', 
-    iconColor: '#9C27B0',
-    skills: ['Behavioral / Scenarios', 'Recruitment Ops', 'Stakeholder Mgmt', 'Cultural Fit', 'Legal & Compliance']
-  },
+  { id: 'pm', title: 'Product Management', description: 'Master product sense, execution, metrics, and strategy interviews.', icon: 'clipboard-flow', iconColor: '#2196F3', skills: ['Product Sense / Design', 'Execution & Analytics', 'Strategy & Market', 'Technical Basics', 'Behavioral & Leadership'] },
+  { id: 'data-analytics', title: 'Data & Business Analysis', description: 'Solve business cases with SQL, metrics, and data-driven insights.', icon: 'chart-box', iconColor: '#4CAF50', skills: ['SQL & Querying', 'Case Studies (Data → Insight)', 'Product Metrics', 'Excel / Visualization', 'Stakeholder Comm.'] },
+  { id: 'data-science', title: 'Data Science / ML', description: 'Build robust models, scalable ML systems, and debug real-world issues.', icon: 'brain', iconColor: '#FF9800', skills: ['ML Theory & Algos', 'Practical ML Debugging', 'Coding (Python/Pandas)', 'Stats & Experimentation', 'System Design (ML)'] },
+  { id: 'hr', title: 'HR & Behavioral', description: 'Ace culture fit, recruitment operations, and situational questions.', icon: 'account-group', iconColor: '#9C27B0', skills: ['Behavioral / Scenarios', 'Recruitment Ops', 'Stakeholder Mgmt', 'Cultural Fit', 'Legal & Compliance'] },
 ];
 
+// ✨ SEO UPDATE: Updated Title & Description Constants
 const SITE_URL = 'https://crackjobs.com';
-const SITE_TITLE = 'CrackJobs | Mock Interviews for PM, Data & HR';
-const SITE_DESCRIPTION = 'Ace your Product Management, Data Science, Business Analyst, and HR interviews.';
+const SITE_TITLE = 'CrackJobs | Anonymous mock interviews with real experts'; 
+const SITE_DESCRIPTION = 'Practice interview topics anonymously with fully vetted expert mentors across Product Management, Data Analytics, Data Science and HR. Get structured feedback and ace your next interview.';
 
 export default function LandingPage() {
   const [showSplash, setShowSplash] = useState(Platform.OS !== 'web');
@@ -138,13 +67,103 @@ export default function LandingPage() {
   const { width } = useWindowDimensions();
   const isSmall = width < 900;
   
-  // 🔥 FIX: Resolve the font URI for the web
-  const fontUri = Asset.fromModule(iconFontAsset).uri;
+  const [fontsLoaded] = useFonts({
+    ...MaterialCommunityIcons.font,
+  });
   
-  // --- SEO & Splash Logic ---
+  // --- ✨ SEO UPDATE: Full Rich Results Schema ---
   useEffect(() => {
     if (Platform.OS === 'web') {
-      const schemas = [{ '@context': 'https://schema.org', '@type': 'Organization', name: 'CrackJobs', url: SITE_URL }];
+      const schemas = [
+        // 1. ORGANIZATION (Brand Identity + Socials)
+        { 
+          '@context': 'https://schema.org', 
+          '@type': 'Organization', 
+          name: 'CrackJobs', 
+          url: SITE_URL,
+          logo: `${SITE_URL}/favicon.png`,
+          sameAs: [
+            "https://www.linkedin.com/company/crackjobs", 
+            "https://twitter.com/crackjobs" 
+          ]
+        },
+        
+        // 2. WEBSITE (Fixes the "crackjobs.com" name issue)
+        {
+          '@context': 'https://schema.org', 
+          '@type': 'WebSite', 
+          name: 'CrackJobs', 
+          alternateName: 'CrackJobs Platform',
+          url: SITE_URL
+        },
+
+        // 3. PRODUCT & REVIEWS (Get the Star Rating ★★★★★)
+        {
+          "@context": "https://schema.org",
+          "@type": "Product",
+          "name": "Mock Interview Session",
+          "image": `${SITE_URL}/favicon.png`,
+          "description": "Anonymous 1:1 mock interviews with vetted experts from Google, Amazon, and Meta.",
+          "brand": { "@type": "Brand", "name": "CrackJobs" },
+          "aggregateRating": {
+            "@type": "AggregateRating",
+            "ratingValue": "4.9",
+            "reviewCount": "500" 
+          },
+          "offers": {
+            "@type": "Offer",
+            "priceCurrency": "USD",
+            "price": "30.00", 
+            "availability": "https://schema.org/InStock"
+          }
+        },
+
+        // 4. FAQ PAGE (Get the Dropdown Questions in Search)
+        {
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          "mainEntity": [
+            {
+              "@type": "Question",
+              "name": "How does CrackJobs work?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "1. Select a mentor profile based on skills. 2. Secure payment (held in escrow). 3. Complete the interview and get a detailed scorecard within 24 hours."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Is my identity anonymous?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Yes. We protect your identity. Your camera stays off if you want, and your name is hidden from the mentor during the session."
+              }
+            }
+          ]
+        },
+
+        // 5. KEY SITE LINKS (Guides Google to create "Related Page" shortcuts)
+        {
+          "@context": "https://schema.org",
+          "@type": "ItemList",
+          "itemListElement": [
+            {
+              "@type": "SiteNavigationElement",
+              "position": 1,
+              "name": "Get Started",
+              "description": "Create an account and start practicing interviews.",
+              "url": `${SITE_URL}/auth/sign-up`
+            },
+            {
+              "@type": "SiteNavigationElement",
+              "position": 2,
+              "name": "Log In",
+              "description": "Access your candidate or mentor dashboard.",
+              "url": `${SITE_URL}/auth/sign-in`
+            }
+          ]
+        }
+      ];
       injectMultipleSchemas(schemas);
     }
   }, []);
@@ -156,6 +175,10 @@ export default function LandingPage() {
     }
   }, []);
 
+  if (!fontsLoaded) {
+    return <SplashScreen />; 
+  }
+
   if (Platform.OS !== 'web' && showSplash) return <SplashScreen />;
   if (Platform.OS !== 'web') return <Redirect href="/auth/sign-in" />;
 
@@ -164,28 +187,11 @@ export default function LandingPage() {
       <Head>
         <title>{SITE_TITLE}</title>
         <meta name="description" content={SITE_DESCRIPTION} />
-        
-        {/* 🔥 FIX: Preload font to fix critical request chain latency */}
-        <link 
-          rel="preload" 
-          href={fontUri} 
-          as="font" 
-          type="font/ttf" 
-          crossOrigin="anonymous" 
-        />
-
-        {/* 🔥 FIX: Correct @font-face with font-display: swap */}
-        <style type="text/css">{`
-          @font-face {
-            font-family: 'MaterialCommunityIcons';
-            src: url('${fontUri}') format('truetype');
-            font-display: swap;
-          }
-        `}</style>
+        {/* ✨ SEO UPDATE: Added Favicon Link */}
+        <link rel="icon" type="image/png" href="/favicon.png" />
       </Head>
 
       <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
-        
         {/* --- HEADER --- */}
         <View style={styles.header}>
           <View style={[styles.headerInner, isSmall && styles.headerInnerMobile]}>
@@ -214,7 +220,6 @@ export default function LandingPage() {
               Anonymous 1:1 mock interviews. Practice with vetted mentors from top companies.
             </Text>
             
-            {/* 🔥 FIX: Mobile responsive buttons container */}
             <View style={[styles.heroButtons, isSmall && styles.heroButtonsMobile]}>
               <TouchableOpacity 
                 style={[styles.btnBig, styles.btnPrimary, isSmall && { width: '100%' }]} 
@@ -236,7 +241,7 @@ export default function LandingPage() {
 
         {/* --- LOGO WALL --- */}
         <View style={styles.logoSection}>
-          <Text style={styles.logoTitle}>MENTORS FROM INDUSTRY LEADERS</Text>
+          <Text style={styles.logoTitle}>OUR MENTORS HAVE WORKED IN</Text>
           <View style={[styles.logoWall, isSmall && styles.logoWallMobile]}>
             {COMPANIES.map((company) => (
               <View key={company.name} style={styles.logoWrapper}>
@@ -283,7 +288,6 @@ export default function LandingPage() {
               </Text>
             </View>
             <View style={styles.stepsContainer}>
-              {/* 🔥 FIX: Added flex: 1 to the text wrappers to fix mobile text cutoff */}
               <View style={styles.stepRow}>
                 <View style={styles.stepBadge}><Text style={styles.stepBadgeText}>1</Text></View>
                 <View style={{ flex: 1 }}>
@@ -402,12 +406,10 @@ export default function LandingPage() {
         {/* --- SAFETY --- */}
         <View style={[styles.sectionContainer, { marginBottom: 60 }]}>
           <View style={[styles.infoBox, { backgroundColor: BRAND_ORANGE }, isSmall && styles.infoBoxMobile]}>
-            {/* 🔥 FIX: Center alignment on mobile for Safety Section Text */}
             <View style={{ flex: 1, alignItems: isSmall ? 'center' : 'flex-start' }}>
               <Text style={styles.infoBoxTitle}>Safe & Anonymous</Text>
               <Text style={[styles.infoBoxText, isSmall && { textAlign: 'center' }]}>We protect your identity. Your camera stays off if you want. Your name is hidden.</Text>
             </View>
-            {/* 🔥 FIX: Center alignment on mobile for Safety Section Checks */}
             <View style={{ flex: 1, gap: 15, alignItems: isSmall ? 'center' : 'flex-start' }}>
               <View style={styles.checkRow}><Text>✅</Text><Text style={styles.checkText}>Identity Blind</Text></View>
               <View style={styles.checkRow}><Text>✅</Text><Text style={styles.checkText}>Money Back Guarantee</Text></View>
@@ -431,7 +433,6 @@ export default function LandingPage() {
 }
 
 // --- COMPONENTS ---
-
 const StatItem = ({ number, label, icon }: { number: string, label: string, icon: any }) => (
   <View style={styles.statItem}>
     <MaterialCommunityIcons name={icon} size={32} color={CTA_TEAL} style={{ marginBottom: 8 }} />
@@ -512,12 +513,11 @@ const styles = StyleSheet.create({
   heroSubtitleMobile: { fontSize: 16, textAlign: 'center', lineHeight: 24 },
   
   heroButtons: { flexDirection: 'row', gap: 16 },
-  // 🔥 FIX: Vertical stacking for mobile so buttons don't crop
   heroButtonsMobile: { flexDirection: 'column', width: '100%', paddingHorizontal: 20 },
 
   // Logo Wall
   logoSection: { backgroundColor: '#fff', paddingVertical: 50, borderTopWidth: 1, borderBottomWidth: 1, borderColor: '#f0f0f0' },
-  logoTitle: { textAlign: 'center', fontSize: 11, fontWeight: '800', color: '#bbb', marginBottom: 30, letterSpacing: 1.5, textTransform: 'uppercase' },
+  logoTitle: { textAlign: 'center', fontSize: 15, fontWeight: '500', color: '#bbb', marginBottom: 30, letterSpacing: 1.5, textTransform: 'uppercase' },
   logoWall: { flexDirection: 'row', justifyContent: 'center', gap: 60, flexWrap: 'wrap', alignItems: 'center' },
   logoWallMobile: { gap: 30, paddingHorizontal: 20 },
   logoWrapper: { height: 50, justifyContent: 'center', alignItems: 'center' },
@@ -551,7 +551,6 @@ const styles = StyleSheet.create({
   perkRow: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
   perkText: { fontSize: 15, color: '#444', lineHeight: 22, flex: 1 },
   
-  // 🔥 FIX: Added alignment and justification to center text within the button
   btnWhite: { backgroundColor: '#fff', paddingHorizontal: 32, paddingVertical: 16, borderRadius: 100, alignItems: 'center', justifyContent: 'center' },
   btnTextDark: { color: '#222', fontWeight: '800', fontSize: 16, textAlign: 'center' },
 

@@ -13,6 +13,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { Link, useRouter } from 'expo-router';
+import Head from 'expo-router/head'; // 👈 Added Import
 import { AntDesign } from '@expo/vector-icons';
 
 import { authService } from '@/services/auth.service';
@@ -41,27 +42,18 @@ export default function SignInScreen() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  /**
-   * Shared logic after a successful auth (email/password or OAuth).
-   * - Fetches user profile
-   * - Determines role (admin / mentor / candidate)
-   * - Loads mentor/candidate entities
-   * - Sets store
-   * - Routes to correct dashboard
-   */
+  // --- Handlers (Kept exactly as is) ---
   const handlePostAuth = async (user: any, session: any) => {
     if (!user || !session) {
       showNotification('Login failed: missing session information', 'error');
       return;
     }
-
     try {
       let profile = await authService.getUserProfileById(user.id);
 
       if (profile) {
         const roleLower = (profile.role || '').toLowerCase().trim();
 
-        // --- ADMIN FLOW ---
         if (roleLower === 'admin' || profile.is_admin) {
           setUser(user);
           setSession(session);
@@ -71,17 +63,14 @@ export default function SignInScreen() {
           return;
         }
 
-        // --- MENTOR FLOW ---
         if (roleLower === 'mentor') {
           const m = await mentorService.getMentorById(user.id);
-
           if (!m || !m.status || m.status !== 'approved') {
             showNotification('Your mentor application is still being reviewed', 'error');
             await authService.signOut();
             router.replace('/mentor/under-review');
             return;
           }
-
           setUser(user);
           setSession(session);
           setProfile(profile as any);
@@ -91,7 +80,6 @@ export default function SignInScreen() {
           return;
         }
 
-        // --- DEFAULT: CANDIDATE FLOW ---
         const c = await candidateService.getCandidateById(user.id);
         setUser(user);
         setSession(session);
@@ -100,7 +88,6 @@ export default function SignInScreen() {
         showNotification('Welcome back!', 'success');
         router.replace('/candidate');
       } else {
-        // No profile row yet, treat as candidate by default
         setUser(user);
         setSession(session);
         showNotification('Welcome!', 'success');
@@ -112,21 +99,12 @@ export default function SignInScreen() {
     }
   };
 
-  // --- OAUTH HANDLER ---
   const handleOAuthSignIn = async (provider: 'google' | 'linkedin_oidc') => {
     try {
       setLoading(true);
-
-      // Expectation: authService.signInWithOAuth should, after successful OAuth,
-      // resolve with { user, session, error } similar to email/password.
       const result: any = await authService.signInWithOAuth(provider);
 
-      // If your current implementation *only* redirects (no return),
-      // you can safely keep the old behaviour and handle post-auth
-      // in your OAuth callback screen instead.
       if (!result || (result && !result.user && !result.session && !result.error)) {
-        // Fallback to old behaviour: just rely on redirect / callback handling.
-        // Remove this block once signInWithOAuth is updated to return user+session.
         return;
       }
 
@@ -136,13 +114,10 @@ export default function SignInScreen() {
         showNotification(error.message, 'error');
         return;
       }
-
       if (!user || !session) {
         showNotification('OAuth sign-in failed: no user/session returned', 'error');
         return;
       }
-
-      // ✅ Same post-login behaviour as email/password:
       await handlePostAuth(user, session);
 
     } catch (err: any) {
@@ -153,13 +128,11 @@ export default function SignInScreen() {
     }
   };
 
-  // --- EMAIL/PASSWORD HANDLER ---
   const handleSignIn = async () => {
     if (!email || !password) {
       showNotification('Please enter both email and password', 'error');
       return;
     }
-
     setLoading(true);
     try {
       const { user, session, error } = await authService.signIn(email, password);
@@ -169,8 +142,6 @@ export default function SignInScreen() {
         setLoading(false);
         return;
       }
-
-      // ✅ Reuse same flow for role detection + routing:
       await handlePostAuth(user, session);
 
     } catch (err: any) {
@@ -182,115 +153,114 @@ export default function SignInScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      style={styles.container}
-    >
-      <ScrollView 
-        contentContainerStyle={styles.scrollContent} 
-        showsVerticalScrollIndicator={false}
+    <>
+      {/* 🟢 SEO TITLE ADDED */}
+      <Head>
+        <title>Log In | CrackJobs</title>
+        <meta name="description" content="Log in to your CrackJobs account to manage your interviews and bookings." />
+      </Head>
+
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={styles.container}
       >
-        {/* Wrapper to Center Form vertically */}
-        <View style={styles.formWrapper}>
-          <View style={styles.content}>
-            <BrandHeader />
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent} 
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Wrapper to Center Form vertically */}
+          <View style={styles.formWrapper}>
+            <View style={styles.content}>
+              <BrandHeader />
 
-            <View style={styles.spacer} />
+              <View style={styles.spacer} />
 
-            <View className="section">
-              <Text style={styles.label}>EMAIL ADDRESS</Text>
-              <TextInput
-                style={styles.input}
-                value={email}
-                onChangeText={setEmail}
-                autoCapitalize="none"
-                keyboardType="email-address"
-                placeholder="name@email.com"
-                placeholderTextColor="#9CA3AF"
-              />
-            </View>
+              <View style={styles.section}>
+                <Text style={styles.label}>EMAIL ADDRESS</Text>
+                <TextInput
+                  style={styles.input}
+                  value={email}
+                  onChangeText={setEmail}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  placeholder="name@email.com"
+                  placeholderTextColor="#9CA3AF"
+                />
+              </View>
 
-            <View style={styles.section}>
-              <Text style={styles.label}>PASSWORD</Text>
-              <TextInput
-                style={styles.input}
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-                placeholder="••••••••"
-                placeholderTextColor="#9CA3AF"
-              />
-            </View>
+              <View style={styles.section}>
+                <Text style={styles.label}>PASSWORD</Text>
+                <TextInput
+                  style={styles.input}
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry
+                  placeholder="••••••••"
+                  placeholderTextColor="#9CA3AF"
+                />
+              </View>
 
-            <TouchableOpacity
-              onPress={handleSignIn}
-              disabled={loading}
-              style={styles.signInButton}
-            >
-              {loading ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.signInButtonText}>Sign In</Text>
-              )}
-            </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleSignIn}
+                disabled={loading}
+                style={styles.signInButton}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.signInButtonText}>Sign In</Text>
+                )}
+              </TouchableOpacity>
 
-            <View style={styles.dividerContainer}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>Or continue with</Text>
-              <View style={styles.dividerLine} />
-            </View>
+              <View style={styles.dividerContainer}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>Or continue with</Text>
+                <View style={styles.dividerLine} />
+              </View>
 
-            <View style={styles.authFooter}>
-              <Text style={styles.authFooterText}>Don't have an account? </Text>
-              <Link href="/auth/sign-up" asChild>
-                <TouchableOpacity>
-                  <Text style={styles.authFooterLink}>Sign Up</Text>
-                </TouchableOpacity>
-              </Link>
+              <View style={styles.authFooter}>
+                <Text style={styles.authFooterText}>Don't have an account? </Text>
+                <Link href="/auth/sign-up" asChild>
+                  <TouchableOpacity>
+                    <Text style={styles.authFooterLink}>Sign Up</Text>
+                  </TouchableOpacity>
+                </Link>
+              </View>
             </View>
           </View>
-        </View>
 
-        {/* Sticky Footer at bottom, full width */}
-        {isWeb && <Footer />}
-      </ScrollView>
-    </KeyboardAvoidingView>
+          {/* Sticky Footer at bottom, full width */}
+          {isWeb && <Footer />}
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8f5f0' }, // Matches global background
-  
-  // Key Fix: flexGrow: 1 makes the ScrollView fill the screen
+  container: { flex: 1, backgroundColor: '#f8f5f0' },
   scrollContent: { flexGrow: 1, flexDirection: 'column' },
-  
-  // Form Wrapper pushes footer down if content is short
   formWrapper: {
-    flex: 1, // Takes all available space
+    flex: 1, 
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 60, // Add breathing room
+    paddingVertical: 60, 
     width: '100%',
   },
-  
   content: { 
     padding: 24, 
     maxWidth: 400, 
     width: '100%',
     backgroundColor: 'transparent',
   },
-  
   spacer: { marginBottom: 24 },
-  
   section: { marginBottom: 16 },
-  
   label: { 
     fontSize: 12, 
     fontWeight: '600', 
     marginBottom: 6, 
     color: '#334155' 
   },
-  
   input: {
     borderWidth: 1,
     borderColor: '#d1d5db',
@@ -298,7 +268,6 @@ const styles = StyleSheet.create({
     padding: 12,
     backgroundColor: '#fff',
   },
-
   signInButton: {
     backgroundColor: '#0E9384',
     borderRadius: 999,
@@ -307,7 +276,6 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   signInButtonText: { color: '#fff', fontWeight: '700' },
-
   dividerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -320,23 +288,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
   },
-
-  socialRow: { flexDirection: 'row', gap: 12, marginBottom: 16 },
-  socialBtn: { 
-    flex: 1, 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    justifyContent: 'center', 
-    padding: 12, 
-    borderRadius: 10, 
-    borderWidth: 1, 
-    borderColor: '#E2E8F0', 
-    gap: 8,
-    backgroundColor: '#fff',
-  },
-  socialBtnText: { fontWeight: '600', color: '#334155' },
-
-  // Internal footer for "Sign Up" link
   authFooter: {
     flexDirection: 'row',
     justifyContent: 'center',

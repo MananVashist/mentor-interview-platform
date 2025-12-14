@@ -12,12 +12,14 @@ import {
   Modal,
 } from 'react-native';
 import { Link, useRouter } from 'expo-router';
+import Head from 'expo-router/head'; // 👈 Added Import
 import { Ionicons } from '@expo/vector-icons';
 import { authService } from '@/services/auth.service';
 import { useAuthStore } from '@/lib/store';
 import { supabase } from '@/lib/supabase/client';
 import { BrandHeader } from '@/lib/ui';
 import { useNotification } from '@/lib/ui/NotificationBanner';
+import { Footer } from '@/components/Footer'; // 👈 Added Import
 
 // --- Types ---
 type InterviewProfile = { id: number; name: string };
@@ -26,6 +28,7 @@ export default function SignUpScreen() {
   const router = useRouter();
   const { setUser, setProfile } = useAuthStore();
   const { showNotification } = useNotification();
+  const isWeb = Platform.OS === 'web'; // 👈 Added check
 
   // --- State ---
   const [role, setRole] = useState<'candidate' | 'mentor'>('candidate');
@@ -70,14 +73,13 @@ export default function SignUpScreen() {
     password.length >= 6 && 
     password === confirmPassword;
 
-  // Phone is only required for mentors
   const isPhoneValid = role === 'mentor' ? phone.trim().length >= 10 : true;
 
   const isCandidateValid = isCommonValid && candidateTitle.trim().length > 0;
 
   const isMentorValid =
     isCommonValid &&
-    isPhoneValid && // <--- Only check phone for mentors
+    isPhoneValid && 
     linkedinUrl.trim().includes('linkedin.com') &&
     professionalTitle.trim().length > 0 &&
     yearsOfExp.trim().length > 0 &&
@@ -103,7 +105,6 @@ export default function SignUpScreen() {
     setLoading(true);
     try {
       // 1. Create Auth User
-      // Pass phone only if mentor, otherwise empty string or null
       const phoneToSend = role === 'mentor' ? phone.trim() : '';
 
       const { user, error: authError } = await authService.signUp(
@@ -172,29 +173,15 @@ export default function SignUpScreen() {
       setLoading(false);
     }
   };
-  // --- DEBUGGING: LOG VALIDATION STATE ---
-  console.log("--- FORM DEBUG ---");
-  console.log("Role:", role);
-  console.log("Name valid?", name.trim().length > 0);
-  console.log("Email valid?", email.trim().length > 0);
-  console.log("Pass length?", password.length >= 6);
-  console.log("Pass Match?", password === confirmPassword);
-  
-  if (role === 'mentor') {
-      console.log("Phone valid?", phone.trim().length >= 10, `(Current: '${phone}')`);
-      console.log("LinkedIn valid?", linkedinUrl.trim().includes('linkedin.com'));
-      console.log("Title valid?", professionalTitle.trim().length > 0);
-      console.log("Exp valid?", yearsOfExp.trim().length > 0);
-      console.log("Profiles selected?", selectedProfiles.length > 0, `(Count: ${selectedProfiles.length})`);
-      console.log("IS MENTOR VALID?", isMentorValid);
-  } else {
-      console.log("Candidate Title valid?", candidateTitle.trim().length > 0);
-      console.log("IS CANDIDATE VALID?", isCandidateValid);
-  }
-  console.log("IS FORM VALID?", isFormValid);
-  console.log("------------------");
+
   return (
     <View style={styles.container}>
+      {/* 🟢 SEO TITLE ADDED */}
+      <Head>
+        <title>Sign Up | CrackJobs</title>
+        <meta name="description" content="Create a CrackJobs account to start practicing mock interviews or become a mentor." />
+      </Head>
+
       <KeyboardAvoidingView style={styles.flex1} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView
           contentContainerStyle={styles.scrollContent}
@@ -280,7 +267,7 @@ export default function SignUpScreen() {
                 />
               </View>
 
-              {/* --- PHONE NUMBER (MENTOR ONLY - AFTER PASSWORD) --- */}
+              {/* --- PHONE NUMBER (MENTOR ONLY) --- */}
               {role === 'mentor' && (
                 <View style={styles.section}>
                   <Text style={styles.label}>PHONE NUMBER <Text style={styles.required}>*</Text></Text>
@@ -398,6 +385,10 @@ export default function SignUpScreen() {
               </View>
             </View>
           </View>
+          
+          {/* 🟢 FOOTER ADDED HERE */}
+          {isWeb && <Footer />}
+
         </ScrollView>
       </KeyboardAvoidingView>
 
@@ -439,17 +430,12 @@ export default function SignUpScreen() {
 }
 
 const styles = StyleSheet.create({
-  // Main Container
   container: { flex: 1, backgroundColor: '#f8f5f0' },
   flex1: { flex: 1 },
-
-  // ScrollView Content
   scrollContent: {
     flexGrow: 1,
     flexDirection: 'column',
   },
-
-  // Form Wrapper
   formWrapper: {
     flex: 1,
     justifyContent: 'center',
@@ -457,37 +443,26 @@ const styles = StyleSheet.create({
     paddingVertical: 60,
     width: '100%',
   },
-
   content: {
     padding: 24,
     maxWidth: 400,
     width: '100%',
     backgroundColor: 'transparent',
   },
-
   spacer: { marginBottom: 24 },
-
   section: { marginBottom: 16 },
-
-  // Typography
   label: {
     fontSize: 12,
     fontWeight: '600',
     marginBottom: 6,
     color: '#334155',
   },
-  
-  required: {
-    color: '#EF4444',
-  },
-
+  required: { color: '#EF4444' },
   hintText: {
     fontSize: 12,
     color: '#6B7280',
     marginTop: 6,
   },
-
-  // Inputs
   input: {
     borderWidth: 1,
     borderColor: '#d1d5db',
@@ -497,13 +472,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#111827',
   },
-
-  textArea: {
-    height: 80,
-    textAlignVertical: 'top',
-  },
-
-  // Dropdown Button
   dropdownButton: {
     borderWidth: 1,
     borderColor: '#d1d5db',
@@ -514,48 +482,39 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#fff',
   },
-
   dropdownText: {
     fontSize: 16,
     color: '#111827',
   },
-
-  // Selected Profiles Chips
   selectedProfilesContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     marginTop: 8,
     gap: 8,
   },
-
   selectedProfileChip: {
     backgroundColor: '#D1FAE5',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
   },
-
   selectedProfileText: {
     fontSize: 12,
     color: '#065F46',
     fontWeight: '600',
   },
-
-  // Role Toggle
   roleToggle: {
     flexDirection: 'row',
     borderRadius: 10,
     padding: 4,
     backgroundColor: '#E5E7EB',
   },
-
   roleButton: {
     flex: 1,
     paddingVertical: 10,
     borderRadius: 8,
     alignItems: 'center',
   },
-
   roleButtonActive: {
     backgroundColor: '#fff',
     shadowColor: '#000',
@@ -563,18 +522,14 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 1,
   },
-
   roleButtonText: {
     fontSize: 14,
     fontWeight: '600',
     color: '#6B7280',
   },
-
   roleButtonTextActive: {
     color: '#0E9384',
   },
-
-  // Sign Up Button
   signUpButton: {
     backgroundColor: '#0E9384',
     borderRadius: 999,
@@ -582,33 +537,23 @@ const styles = StyleSheet.create({
     padding: 14,
     marginTop: 8,
   },
-
   signUpButtonDisabled: {
     backgroundColor: '#9CA3AF',
   },
-
   signUpButtonText: {
     color: '#fff',
     fontWeight: '700',
   },
-
-  // Auth Footer
   authFooter: {
     flexDirection: 'row',
     justifyContent: 'center',
     marginTop: 24,
   },
-
-  authFooterText: {
-    color: '#6b7280',
-  },
-
+  authFooterText: { color: '#6b7280' },
   authFooterLink: {
     color: '#0E9384',
     fontWeight: '700',
   },
-
-  // Modal Styles
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
@@ -616,7 +561,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
   },
-
   modalContent: {
     backgroundColor: '#fff',
     borderRadius: 16,
@@ -625,20 +569,17 @@ const styles = StyleSheet.create({
     maxWidth: 400,
     maxHeight: '80%',
   },
-
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 16,
   },
-
   modalTitle: {
     fontSize: 18,
     fontWeight: '700',
     color: '#111827',
   },
-
   modalOption: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -647,21 +588,17 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#F3F4F6',
   },
-
   modalOptionSelected: {
     backgroundColor: '#F0FDFA',
   },
-
   modalOptionText: {
     fontSize: 16,
     color: '#374151',
   },
-
   modalOptionTextSelected: {
     color: '#0E9384',
     fontWeight: '600',
   },
-
   modalDoneBtn: {
     marginTop: 16,
     backgroundColor: '#0E9384',
@@ -669,7 +606,6 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     alignItems: 'center',
   },
-
   modalDoneText: {
     color: '#fff',
     fontWeight: '700',
