@@ -235,7 +235,7 @@ export default function MentorProfileScreen() {
             </View>
             
             <AppText style={styles.cardDescription}>
-              Add your bank account details to receive payouts. (Optional but recommended)
+              Add your bank account details to receive payouts.
             </AppText>
 
             <View style={styles.inputGroup}>
