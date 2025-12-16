@@ -157,26 +157,55 @@ const getIconComponent = (iconName: string, size: number, color: string) => {
 };
 
 export default function LandingPage() {
-  const [showSplash, setShowSplash] = useState(Platform.OS !== 'web');
+  const [showSplash, setShowSplash] = useState(Platform.OS === 'android');
   const router = useRouter();
   const { width } = useWindowDimensions();
   const isSmall = width < 900;
 
   useEffect(() => {
-    if (Platform.OS !== 'web') {
+    if (showSplash && Platform.OS === 'android') {
       const timer = setTimeout(() => setShowSplash(false), 4000); 
       return () => clearTimeout(timer);
     }
-  }, []);
+  }, [showSplash]);
 
-  if (Platform.OS !== 'web' && showSplash) return <SplashScreen />;
-  if (Platform.OS !== 'web') return <Redirect href="/auth/sign-in" />;
+  if (showSplash && Platform.OS === 'android') return <SplashScreen />;
+  if (Platform.OS === 'android') return <Redirect href="/auth/sign-in" />;
 
   return (
     <>
       <Head>
         <title>{SITE_TITLE}</title>
         <meta name="description" content={SITE_DESCRIPTION} />
+          <meta name="viewport" content="width=device-width, initial-scale=1" />
+          <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+  
+  {/* Open Graph for social sharing */}
+  <meta property="og:title" content={SITE_TITLE} />
+  <meta property="og:description" content={SITE_DESCRIPTION} />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content={SITE_URL} />
+  
+  {/* Critical CSS inline for instant render - THIS IS THE KEY FIX */}
+  <style>{`
+    body { 
+      margin: 0; 
+      padding: 0; 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
+      background-color: #f8f5f0;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    * { 
+      box-sizing: border-box; 
+    }
+    /* Prevent layout shift */
+    img {
+      max-width: 100%;
+      height: auto;
+    }
+  `}</style>
         <link rel="icon" type="image/png" href="/favicon.png" />
       </Head>
 
