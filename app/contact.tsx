@@ -8,6 +8,8 @@ import {
   StandardBold,
   StandardContactEmail,
 } from '@/components/StandardPageTemplate';
+import { SEO } from '@/components/SEO';
+import { SEO_CONFIG } from '@/config/seo';
 
 export default function Contact() {
   // SEO: ContactPage Schema
@@ -23,6 +25,8 @@ export default function Contact() {
   };
 
   return (
+        <>    <SEO {...SEO_CONFIG.contact} />
+
     <StandardPageTemplate
       title="Contact Us | CrackJobs Support"
       metaDescription="Get in touch with the CrackJobs team for support. We're here to help."
@@ -114,5 +118,6 @@ export default function Contact() {
         </StandardParagraph>
       </StandardSection>
     </StandardPageTemplate>
+    </>
   );
 }

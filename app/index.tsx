@@ -11,12 +11,10 @@ import {
 } from 'react-native';
 import { useRouter, Redirect } from 'expo-router';
 import Head from 'expo-router/head';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useFonts } from 'expo-font'; 
 import { SplashScreen } from '../components/SplashScreen';
-import { injectMultipleSchemas } from '@/lib/structured-data';
 import { Footer } from '@/components/Footer';
 import { BrandHeader } from '@/lib/ui';
+import Svg, { Path, Circle, G, Rect, Polygon } from 'react-native-svg';
 
 // --- COLORS ---
 const BRAND_ORANGE = '#f58742';
@@ -32,6 +30,73 @@ const SYSTEM_FONT = Platform.select({
   android: "Roboto",
   default: "System"
 }) as string;
+
+// --- INLINE SVG ICON COMPONENTS ---
+const MedalOutlineIcon = ({ size = 24, color = "#000" }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M14.94 19.5L12 17.77L9.06 19.5L9.84 16.16L7.25 13.94L10.66 13.65L12 10.5L13.34 13.65L16.75 13.94L14.16 16.16L14.94 19.5M20 2H4V4L7.81 7.81C6.12 9.67 5 12.2 5 15C5 19.42 8.58 23 13 23C17.42 23 21 19.42 21 15C21 12.2 19.88 9.67 18.19 7.81L22 4V2M7.19 5H16.81L15.54 6.27C14.5 5.5 13.28 5 12 5C10.72 5 9.5 5.5 8.46 6.27L7.19 5M12 21C9.68 21 7.73 19.5 7.17 17.41L8.53 16.67L12 15.1L15.47 16.68L16.83 17.41C16.27 19.5 14.32 21 12 21Z" fill={color} />
+  </Svg>
+);
+
+const MedalIcon = ({ size = 24, color = "#000" }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M20,2H4V4L9.81,9.81C9.29,10.79 9,11.87 9,13A6,6 0 0,0 15,19C16.13,19 17.21,18.71 18.19,18.19L22,22V20L18.19,16.19C18.71,15.21 19,14.13 19,13A6,6 0 0,0 13,7C11.87,7 10.79,7.29 9.81,7.81L4,2M14.94,16L12,14.27L9.06,16L9.84,12.66L7.25,10.44L10.66,10.15L12,7L13.34,10.15L16.75,10.44L14.16,12.66L14.94,16Z" fill={color} />
+  </Svg>
+);
+
+const TrophyIcon = ({ size = 24, color = "#000" }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M20,2H4V4L4.34,4.34C3.5,5.16 3,6.29 3,7.5C3,9.45 4.55,11 6.5,11C7.71,11 8.84,10.5 9.66,9.66L10,10C9.39,10 8.84,10.24 8.42,10.66L8.41,10.67C7.84,11.24 7.5,12 7.5,12.83V18H7V20H17V18H16.5V12.83C16.5,12 16.16,11.24 15.59,10.67L15.58,10.66C15.16,10.24 14.61,10 14,10L14.34,9.66C15.16,10.5 16.29,11 17.5,11C19.45,11 21,9.45 21,7.5C21,6.29 20.5,5.16 19.66,4.34L20,4M6.5,9C5.67,9 5,8.33 5,7.5C5,6.67 5.67,6 6.5,6C7.33,6 8,6.67 8,7.5C8,8.33 7.33,9 6.5,9M17.5,9C16.67,9 16,8.33 16,7.5C16,6.67 16.67,6 17.5,6C18.33,6 19,6.67 19,7.5C19,8.33 18.33,9 17.5,9Z" fill={color} />
+  </Svg>
+);
+
+const CheckCircleOutlineIcon = ({ size = 24, color = "#000" }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M12 2C6.5 2 2 6.5 2 12S6.5 22 12 22 22 17.5 22 12 17.5 2 12 2M12 20C7.59 20 4 16.41 4 12S7.59 4 12 4 20 7.59 20 12 16.41 20 12 20M16.59 7.58L10 14.17L7.41 11.59L6 13L10 17L18 9L16.59 7.58Z" fill={color} />
+  </Svg>
+);
+
+const CalendarCheckIcon = ({ size = 24, color = "#000" }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M19,19H5V8H19M19,3H18V1H16V3H8V1H6V3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5A2,2 0 0,0 19,3M16.5,16.25L13.5,13.25L14.9,11.84L16.5,13.44L19.6,10.34L21,11.75L16.5,16.25Z" fill={color} />
+  </Svg>
+);
+
+const AccountTieIcon = ({ size = 24, color = "#000" }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M12,3A4,4 0 0,1 16,7A4,4 0 0,1 12,11A4,4 0 0,1 8,7A4,4 0 0,1 12,3M16,13.54C16,14.6 15.72,17.07 13.81,19.83L13,15L13.94,13.12C13.32,13.05 12.67,13 12,13C11.33,13 10.68,13.05 10.06,13.12L11,15L10.19,19.83C8.28,17.07 8,14.6 8,13.54C5.61,14.24 4,15.5 4,17V21H10L11.09,21H12.91L14,21H20V17C20,15.5 18.4,14.24 16,13.54Z" fill={color} />
+  </Svg>
+);
+
+const StarIcon = ({ size = 24, color = "#000" }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M12,17.27L18.18,21L16.54,13.97L22,9.24L14.81,8.62L12,2L9.19,8.62L2,9.24L7.45,13.97L5.82,21L12,17.27Z" fill={color} />
+  </Svg>
+);
+
+const ClipboardFlowIcon = ({ size = 24, color = "#000" }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M12,2A2,2 0 0,1 14,4V5C14,5.55 13.55,6 13,6H11C10.45,6 10,5.55 10,5V4A2,2 0 0,1 12,2M19,4C20.11,4 21,4.9 21,6V20A2,2 0 0,1 19,22H5A2,2 0 0,1 3,20V6C3,4.9 3.9,4 5,4H9.18C9.6,2.84 10.7,2 12,2C13.3,2 14.4,2.84 14.82,4H19M18,11V9H6V11H18M18,15V13H6V15H18M18,19V17H6V19H18Z" fill={color} />
+  </Svg>
+);
+
+const ChartBoxIcon = ({ size = 24, color = "#000" }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3M9,17H7V10H9V17M13,17H11V7H13V17M17,17H15V13H17V17Z" fill={color} />
+  </Svg>
+);
+
+const BrainIcon = ({ size = 24, color = "#000" }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M21.33,12.91C21.42,14.46 20.71,15.95 19.44,16.86L19.44,17A2,2 0 0,1 17.44,19H11.55C9.64,19 7.47,18.3 5.41,17.07L5.06,16.86C3.79,15.95 3.08,14.46 3.17,12.91C2.74,12.75 2.32,12.5 2,12.15C1.17,11.24 1,9.94 1.61,8.82C2.21,7.7 3.46,7.12 4.7,7.29C4.8,6.36 5.32,5.5 6.12,4.97C6.92,4.44 7.92,4.27 8.85,4.5C9.78,4.73 10.57,5.36 11,6.23C11.4,5.36 12.21,4.73 13.14,4.5C14.07,4.27 15.07,4.44 15.87,4.97C16.67,5.5 17.19,6.36 17.29,7.29C18.53,7.12 19.78,7.7 20.38,8.82C20.99,9.94 20.82,11.24 20,12.15C19.68,12.5 19.26,12.75 18.83,12.91L18.83,12.91C18.83,12.91 18.83,12.91 18.83,12.91L18.83,12.91C18.83,12.91 18.83,12.91 18.83,12.91C18.83,12.91 18.83,12.91 18.83,12.91M18,11.71C18,11.71 18,11.71 18,11.71L18,11.71C18.08,11.36 18.19,11 18.32,10.68C18.91,9.18 19.04,7.77 18.66,6.6C18.12,4.93 16.64,3.79 14.88,3.55C14.06,3.44 13.22,3.62 12.5,4.06C11.78,4.5 11.24,5.17 10.97,5.96L10.97,5.96C10.97,5.96 10.97,5.96 10.97,5.96C10.97,5.96 10.97,5.96 10.97,5.96C10.7,5.17 10.16,4.5 9.44,4.06C8.72,3.62 7.88,3.44 7.06,3.55C5.3,3.79 3.82,4.93 3.28,6.6C2.9,7.77 3.03,9.18 3.62,10.68C3.75,11 3.86,11.36 3.94,11.71L3.94,11.71C3.94,11.71 3.94,11.71 3.94,11.71C3.94,11.71 3.94,11.71 3.94,11.71C3.94,11.71 3.94,11.71 3.94,11.71L3.94,11.71C3.94,11.71 3.94,11.71 3.94,11.71L3.94,11.71C3.42,11.94 2.94,12.27 2.54,12.68C1.86,13.38 1.52,14.32 1.61,15.26C1.7,16.2 2.19,17.05 2.94,17.63L3.94,17.63C4.69,17.63 5.42,17.42 6.06,17C6.7,16.58 7.22,15.98 7.56,15.26C7.9,14.54 8.04,13.74 7.97,12.96C7.9,12.18 7.61,11.44 7.13,10.83L7.13,10.83C7.13,10.83 7.13,10.83 7.13,10.83C7.13,10.83 7.13,10.83 7.13,10.83M11.97,5.96L11.97,5.96L11.97,5.96C11.97,5.96 11.97,5.96 11.97,5.96L11.97,5.96L11.97,5.96C11.97,5.96 11.97,5.96 11.97,5.96L11.97,5.96C11.97,5.96 11.97,5.96 11.97,5.96Z" fill={color} />
+  </Svg>
+);
+
+const AccountGroupIcon = ({ size = 24, color = "#000" }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M12,5A3.5,3.5 0 0,0 8.5,8.5A3.5,3.5 0 0,0 12,12A3.5,3.5 0 0,0 15.5,8.5A3.5,3.5 0 0,0 12,5M12,7A1.5,1.5 0 0,1 13.5,8.5A1.5,1.5 0 0,1 12,10A1.5,1.5 0 0,1 10.5,8.5A1.5,1.5 0 0,1 12,7M5.5,8A2.5,2.5 0 0,0 3,10.5C3,11.44 3.53,12.25 4.29,12.68C4.65,12.88 5.06,13 5.5,13C5.94,13 6.35,12.88 6.71,12.68C7.08,12.47 7.39,12.17 7.62,11.81C6.89,10.86 6.5,9.7 6.5,8.5C6.5,8.41 6.5,8.31 6.5,8.22C6.2,8.08 5.86,8 5.5,8M18.5,8C18.14,8 17.8,8.08 17.5,8.22C17.5,8.31 17.5,8.41 17.5,8.5C17.5,9.7 17.11,10.86 16.38,11.81C16.5,12 16.63,12.15 16.78,12.3C16.94,12.45 17.1,12.58 17.29,12.68C17.65,12.88 18.06,13 18.5,13C18.94,13 19.35,12.88 19.71,12.68C20.47,12.25 21,11.44 21,10.5A2.5,2.5 0 0,0 18.5,8M12,14C9.66,14 5,15.17 5,17.5V19H19V17.5C19,15.17 14.34,14 12,14M4.71,14.55C2.78,14.78 0,15.76 0,17.5V19H3V17.07C3,16.06 3.69,15.22 4.71,14.55M19.29,14.55C20.31,15.22 21,16.06 21,17.07V19H24V17.5C24,15.76 21.22,14.78 19.29,14.55M12,16C13.53,16 15.24,16.5 16.23,17H7.77C8.76,16.5 10.47,16 12,16Z" fill={color} />
+  </Svg>
+);
 
 // --- DATA ARRAYS ---
 const MENTOR_TIERS = [
@@ -61,112 +126,41 @@ const SITE_URL = 'https://crackjobs.com';
 const SITE_TITLE = 'CrackJobs | Anonymous mock interviews with real experts'; 
 const SITE_DESCRIPTION = 'Practice interview topics anonymously with fully vetted expert mentors across Product Management, Data Analytics, Data Science and HR. Get structured feedback and ace your next interview.';
 
+// Icon mapping
+const getIconComponent = (iconName: string, size: number, color: string) => {
+  switch (iconName) {
+    case 'medal-outline':
+      return <MedalOutlineIcon size={size} color={color} />;
+    case 'medal':
+      return <MedalIcon size={size} color={color} />;
+    case 'trophy':
+      return <TrophyIcon size={size} color={color} />;
+    case 'check-circle-outline':
+      return <CheckCircleOutlineIcon size={size} color={color} />;
+    case 'calendar-check':
+      return <CalendarCheckIcon size={size} color={color} />;
+    case 'account-tie':
+      return <AccountTieIcon size={size} color={color} />;
+    case 'star':
+      return <StarIcon size={size} color={color} />;
+    case 'clipboard-flow':
+      return <ClipboardFlowIcon size={size} color={color} />;
+    case 'chart-box':
+      return <ChartBoxIcon size={size} color={color} />;
+    case 'brain':
+      return <BrainIcon size={size} color={color} />;
+    case 'account-group':
+      return <AccountGroupIcon size={size} color={color} />;
+    default:
+      return null;
+  }
+};
+
 export default function LandingPage() {
   const [showSplash, setShowSplash] = useState(Platform.OS !== 'web');
   const router = useRouter();
   const { width } = useWindowDimensions();
   const isSmall = width < 900;
-  
-  const [fontsLoaded] = useFonts({
-    ...MaterialCommunityIcons.font,
-  });
-  
-  // --- ✨ SEO UPDATE: Full Rich Results Schema ---
-  useEffect(() => {
-    if (Platform.OS === 'web') {
-      const schemas = [
-        // 1. ORGANIZATION (Brand Identity + Socials)
-        { 
-          '@context': 'https://schema.org', 
-          '@type': 'Organization', 
-          name: 'CrackJobs', 
-          url: SITE_URL,
-          logo: `${SITE_URL}/favicon.png`,
-          sameAs: [
-            "https://www.linkedin.com/company/crackjobs", 
-            "https://twitter.com/crackjobs" 
-          ]
-        },
-        
-        // 2. WEBSITE (Fixes the "crackjobs.com" name issue)
-        {
-          '@context': 'https://schema.org', 
-          '@type': 'WebSite', 
-          name: 'CrackJobs', 
-          alternateName: 'CrackJobs Platform',
-          url: SITE_URL
-        },
-
-        // 3. PRODUCT & REVIEWS (Get the Star Rating ★★★★★)
-        {
-          "@context": "https://schema.org",
-          "@type": "Product",
-          "name": "Mock Interview Session",
-          "image": `${SITE_URL}/favicon.png`,
-          "description": "Anonymous 1:1 mock interviews with vetted experts from Google, Amazon, and Meta.",
-          "brand": { "@type": "Brand", "name": "CrackJobs" },
-          "aggregateRating": {
-            "@type": "AggregateRating",
-            "ratingValue": "4.9",
-            "reviewCount": "500" 
-          },
-          "offers": {
-            "@type": "Offer",
-            "priceCurrency": "USD",
-            "price": "30.00", 
-            "availability": "https://schema.org/InStock"
-          }
-        },
-
-        // 4. FAQ PAGE (Get the Dropdown Questions in Search)
-        {
-          "@context": "https://schema.org",
-          "@type": "FAQPage",
-          "mainEntity": [
-            {
-              "@type": "Question",
-              "name": "How does CrackJobs work?",
-              "acceptedAnswer": {
-                "@type": "Answer",
-                "text": "1. Select a mentor profile based on skills. 2. Secure payment (held in escrow). 3. Complete the interview and get a detailed scorecard within 24 hours."
-              }
-            },
-            {
-              "@type": "Question",
-              "name": "Is my identity anonymous?",
-              "acceptedAnswer": {
-                "@type": "Answer",
-                "text": "Yes. We protect your identity. Your camera stays off if you want, and your name is hidden from the mentor during the session."
-              }
-            }
-          ]
-        },
-
-        // 5. KEY SITE LINKS (Guides Google to create "Related Page" shortcuts)
-        {
-          "@context": "https://schema.org",
-          "@type": "ItemList",
-          "itemListElement": [
-            {
-              "@type": "SiteNavigationElement",
-              "position": 1,
-              "name": "Get Started",
-              "description": "Create an account and start practicing interviews.",
-              "url": `${SITE_URL}/auth/sign-up`
-            },
-            {
-              "@type": "SiteNavigationElement",
-              "position": 2,
-              "name": "Log In",
-              "description": "Access your candidate or mentor dashboard.",
-              "url": `${SITE_URL}/auth/sign-in`
-            }
-          ]
-        }
-      ];
-      injectMultipleSchemas(schemas);
-    }
-  }, []);
 
   useEffect(() => {
     if (Platform.OS !== 'web') {
@@ -174,10 +168,6 @@ export default function LandingPage() {
       return () => clearTimeout(timer);
     }
   }, []);
-
-  if (!fontsLoaded && Platform.OS !== 'web') {
-    return <SplashScreen />; 
-  }
 
   if (Platform.OS !== 'web' && showSplash) return <SplashScreen />;
   if (Platform.OS !== 'web') return <Redirect href="/auth/sign-in" />;
@@ -187,7 +177,6 @@ export default function LandingPage() {
       <Head>
         <title>{SITE_TITLE}</title>
         <meta name="description" content={SITE_DESCRIPTION} />
-        {/* ✨ SEO UPDATE: Added Favicon Link */}
         <link rel="icon" type="image/png" href="/favicon.png" />
       </Head>
 
@@ -214,7 +203,7 @@ export default function LandingPage() {
               <Text style={styles.badgeText}>🚀 NEW: ML System Design Track</Text>
             </View>
             <Text style={[styles.heroTitle, isSmall && styles.heroTitleMobile]}>
-              Practice your interviews with{'\n'}<Text style={{ color: CTA_TEAL }}>Real Professionals</Text>
+              Practice interviews with{'\n'}<Text style={{ color: CTA_TEAL }}>Real expert mentors</Text>
             </Text>
             <Text style={[styles.heroSubtitle, isSmall && styles.heroSubtitleMobile]}>
               Anonymous 1:1 mock interviews. Practice with vetted mentors from top companies.
@@ -271,6 +260,7 @@ export default function LandingPage() {
                 icon={track.icon}
                 iconColor={track.iconColor}
                 title={track.title} 
+                description={track.description}
                 skills={track.skills}
               />
             ))}
@@ -378,13 +368,13 @@ export default function LandingPage() {
               {MENTOR_TIERS.map((tier) => (
                 <View key={tier.level} style={[styles.tierCard, { borderColor: tier.color }]}>
                   <View style={[styles.tierHeader, { backgroundColor: tier.color }]}>
-                    <MaterialCommunityIcons name={tier.icon as any} size={28} color="#fff" />
+                    {getIconComponent(tier.icon, 28, '#fff')}
                     <Text style={styles.tierTitle}>{tier.level}</Text>
                   </View>
                   <View style={styles.tierBody}>
                     {tier.perks.map((perk, i) => (
                       <View key={i} style={styles.perkRow}>
-                        <MaterialCommunityIcons name="check-circle-outline" size={18} color={tier.color} />
+                        {getIconComponent('check-circle-outline', 18, tier.color)}
                         <Text style={styles.perkText}>{perk}</Text>
                       </View>
                     ))}
@@ -433,21 +423,23 @@ export default function LandingPage() {
 }
 
 // --- COMPONENTS ---
-const StatItem = ({ number, label, icon }: { number: string, label: string, icon: any }) => (
+const StatItem = ({ number, label, icon }: { number: string, label: string, icon: string }) => (
   <View style={styles.statItem}>
-    <MaterialCommunityIcons name={icon} size={32} color={CTA_TEAL} style={{ marginBottom: 8 }} />
+    <View style={{ marginBottom: 8 }}>
+      {getIconComponent(icon, 32, CTA_TEAL)}
+    </View>
     <Text style={styles.statNumber}>{number}</Text>
     <Text style={styles.statLabel}>{label}</Text>
   </View>
 );
 
-const TrackCard = ({ icon, iconColor, title, desc, skills }: { icon: any, iconColor: string, title: string, desc: string, skills: string[] }) => (
+const TrackCard = ({ icon, iconColor, title, description, skills }: { icon: string, iconColor: string, title: string, description: string, skills: string[] }) => (
   <View style={styles.card}>
     <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12, gap: 12 }}>
-      <MaterialCommunityIcons name={icon} size={32} color={iconColor} />
+      {getIconComponent(icon, 32, iconColor)}
       <Text style={styles.cardTitle}>{title}</Text>
     </View>
-    <Text style={styles.cardBody}>{desc}</Text>
+    <Text style={styles.cardBody}>{description}</Text>
     <View style={styles.skillsContainer}>
       {skills.map((skill, index) => (
         <View key={index} style={styles.skillChip}><Text style={styles.skillText}>{skill}</Text></View>

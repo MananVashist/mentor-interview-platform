@@ -11,11 +11,12 @@ import {
   Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import Head from 'expo-router/head';
 import { PageLayout } from '@/components/PageLayout';
 import { theme } from '@/lib/theme';
 import { getAllPosts } from '@/data/blog-posts';
 import { createBreadcrumbSchema, injectMultipleSchemas } from '@/lib/structured-data';
+import { SEO } from '@/components/SEO';
+import { SEO_CONFIG } from '@/config/seo';
 
 export default function BlogListing() {
   const router = useRouter();
@@ -52,13 +53,7 @@ export default function BlogListing() {
 
   return (
     <PageLayout>
-      <Head>
-        <title>Blog | CrackJobs - Interview Prep Tips & Career Advice</title>
-        <meta
-          name="description"
-          content="Expert interview preparation guides, behavioral question tips, technical interview strategies, and career advice from industry professionals."
-        />
-      </Head>
+      <SEO {...SEO_CONFIG.blog.index} />
 
       <View style={[styles.container, isSmall && styles.containerMobile]}>
         {/* Header */}

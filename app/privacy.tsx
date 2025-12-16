@@ -8,9 +8,14 @@ import {
   StandardBulletList,
   StandardLink,
 } from '@/components/StandardPageTemplate';
+import { SEO } from '@/components/SEO';
+import { SEO_CONFIG } from '@/config/seo';
+
 
 export default function PrivacyPolicy() {
   return (
+        <>    <SEO {...SEO_CONFIG.privacy} />
+
     <StandardPageTemplate
       title="Privacy Policy | CrackJobs"
       metaDescription="We value your privacy. Learn how CrackJobs handles your data, resumes, and interview recordings."
@@ -118,5 +123,6 @@ export default function PrivacyPolicy() {
         </StandardLink>
       </StandardSection>
     </StandardPageTemplate>
+    </>
   );
 }

@@ -9,6 +9,8 @@ import {
   StandardBold,
 } from '@/components/StandardPageTemplate';
 import { theme } from '@/lib/theme';
+import { SEO } from '@/components/SEO';
+import { SEO_CONFIG } from '@/config/seo';
 
 export default function HowItWorks() {
   const router = useRouter();
@@ -56,6 +58,8 @@ export default function HowItWorks() {
   };
 
   return (
+        <>    <SEO {...SEO_CONFIG.howItWorks} />
+
     <StandardPageTemplate
       title="How It Works - 5 Steps to Ace Your Interview | CrackJobs"
       metaDescription="Master the CrackJobs process: 1. Sign Up, 2. Book a FAANG Mentor, 3. Practice, 4. Get Feedback. The simplest way to prepare for tech interviews."
@@ -164,6 +168,7 @@ export default function HowItWorks() {
         </TouchableOpacity>
       </View>
     </StandardPageTemplate>
+    </>
   );
 }
 

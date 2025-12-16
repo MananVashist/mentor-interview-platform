@@ -8,6 +8,8 @@ import {
   StandardParagraph,
   StandardBold,
 } from '@/components/StandardPageTemplate';
+import { SEO } from '@/components/SEO';
+import { SEO_CONFIG } from '@/config/seo';
 
 export default function About() {
   const router = useRouter();
@@ -25,6 +27,7 @@ export default function About() {
   };
 
   return (
+     <> <SEO {...SEO_CONFIG.about} />
     <StandardPageTemplate
       title="About Us | CrackJobs Mission"
       metaDescription="We connect job seekers with experienced mentors from top companies to democratize interview preparation. Learn about our mission and values."
@@ -53,6 +56,8 @@ export default function About() {
         }
       ]}
     >
+          
+
       <StandardSection title="Our Mission">
         <StandardParagraph>
           At CrackJobs, we believe that <StandardBold>practice makes perfect</StandardBold>. Landing your dream job shouldn't be a matter of luck—it should be a result of preparation and confidence built through real practice with industry professionals.
@@ -151,5 +156,6 @@ export default function About() {
         </TouchableOpacity>
       </StandardSection>
     </StandardPageTemplate>
+    </>
   );
 }

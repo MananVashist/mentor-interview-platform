@@ -10,7 +10,26 @@ import {
   Linking
 } from 'react-native';
 import { Link } from 'expo-router'; 
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import Svg, { Path } from 'react-native-svg';
+
+// --- SVG ICON COMPONENTS ---
+const TwitterIcon = ({ size = 24, color = '#ccc' }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path 
+      d="M22.46 6c-.85.38-1.75.64-2.7.75a4.7 4.7 0 0 0 2.06-2.6c-.9.54-1.9.93-2.98 1.14a4.69 4.69 0 0 0-8 4.27A13.3 13.3 0 0 1 1.64 4.16a4.69 4.69 0 0 0 1.45 6.26 4.65 4.65 0 0 1-2.12-.58v.06a4.69 4.69 0 0 0 3.76 4.6 4.7 4.7 0 0 1-2.12.08 4.69 4.69 0 0 0 4.38 3.26A9.4 9.4 0 0 1 0 19.54a13.25 13.25 0 0 0 7.18 2.1c8.61 0 13.32-7.14 13.32-13.32 0-.2 0-.4-.02-.6A9.5 9.5 0 0 0 22.46 6z" 
+      fill={color}
+    />
+  </Svg>
+);
+
+const LinkedInIcon = ({ size = 24, color = '#ccc' }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path 
+      d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.32 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.79M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z" 
+      fill={color}
+    />
+  </Svg>
+);
 
 export const Footer = () => {
   const { width } = useWindowDimensions();
@@ -28,15 +47,15 @@ export const Footer = () => {
             <Text style={styles.brandTitle}>CrackJobs</Text>
           </Link>
           <Text style={styles.brandDesc}>
-            Anonymous mock interviews with verified experts from top tech companies.
+            Anonymous mock interviews with verified experts from top companies.
           </Text>
           <View style={styles.socialRow}>
             {/* Replace with your actual profiles */}
-            <TouchableOpacity onPress={() => openExternal('https://twitter.com')}>
-              <MaterialCommunityIcons name="twitter" size={24} color="#ccc" />
+            <TouchableOpacity onPress={() => openExternal('https://twitter.com/crackjobs')} accessibilityLabel="Follow us on Twitter">
+              <TwitterIcon size={24} color="#ccc" />
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => openExternal('https://linkedin.com')}>
-              <MaterialCommunityIcons name="linkedin" size={24} color="#ccc" />
+            <TouchableOpacity onPress={() => openExternal('https://linkedin.com/company/crackjobs')} accessibilityLabel="Follow us on LinkedIn">
+              <LinkedInIcon size={24} color="#ccc" />
             </TouchableOpacity>
           </View>
         </View>

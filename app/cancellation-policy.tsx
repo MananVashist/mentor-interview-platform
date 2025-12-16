@@ -7,9 +7,13 @@ import {
   StandardBulletList,
   StandardBold,
 } from '@/components/StandardPageTemplate';
+import { SEO } from '@/components/SEO';
+import { SEO_CONFIG } from '@/config/seo';
 
 export default function CancellationPolicy() {
   return (
+       <>     <SEO {...SEO_CONFIG.cancellation} />
+
     <StandardPageTemplate
       title="Cancellation & Refund Policy | CrackJobs"
       metaDescription="Understand our refund terms. Fair policies for candidates and mentors."
@@ -131,5 +135,6 @@ export default function CancellationPolicy() {
         </StandardParagraph>
       </StandardSection>
     </StandardPageTemplate>
+    </>
   );
 }

@@ -11,13 +11,13 @@ import {
   Platform,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import Head from 'expo-router/head';
 import { PageLayout } from '@/components/PageLayout';
 import { BlogRenderer } from '@/components/BlogRenderer';
 import { theme } from '@/lib/theme';
 import { getPostBySlug } from '@/data/blog-posts';
 import { createBreadcrumbSchema, createArticleSchema, injectMultipleSchemas } from '@/lib/structured-data';
 import { Ionicons } from '@expo/vector-icons';
+import { SEO } from '@/components/SEO';
 
 export default function BlogPost() {
   const router = useRouter();
@@ -81,11 +81,12 @@ export default function BlogPost() {
 
   return (
     <PageLayout>
-      <Head>
-        <title>{post.title} | CrackJobs Blog</title>
-        <meta name="description" content={post.excerpt} />
-        {post.thumbnailUrl && <meta property="og:image" content={post.thumbnailUrl} />}
-      </Head>
+      <SEO
+        title={`${post.title} | CrackJobs Blog`}
+        description={post.excerpt}
+        canonical={`https://crackjobs.com/blog/${post.slug}`}
+        ogImage={post.thumbnailUrl || 'https://crackjobs.com/og-image.png'}
+      />
 
       <ScrollView>
         <View style={[styles.container, isSmall && styles.containerMobile]}>
