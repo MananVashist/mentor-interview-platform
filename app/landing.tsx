@@ -15,6 +15,10 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/lib/theme_provider';
+import { SEO } from '@/components/SEO';
+import { SEO_CONFIG } from '@/config/seo';
+
+
 
 const ROLES = [
   {
@@ -122,6 +126,9 @@ export default function LandingScreen() {
   };
 
   return (
+      <>
+            <SEO {...SEO_CONFIG.home} />
+
     <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
       {/* Top nav */}
       <View
@@ -445,6 +452,7 @@ export default function LandingScreen() {
         </Animated.View>
       </ScrollView>
     </View>
+    </>
   );
 }
 

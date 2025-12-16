@@ -6,6 +6,8 @@ import {
   StandardBold,
 } from '@/components/StandardPageTemplate';
 import { theme } from '@/lib/theme';
+import { SEO } from '@/components/SEO';
+import { SEO_CONFIG } from '@/config/seo';
 
 export default function FAQ() {
   const faqCategories = [
@@ -129,6 +131,8 @@ export default function FAQ() {
   };
 
   return (
+         <>   <SEO {...SEO_CONFIG.faq} />
+
     <StandardPageTemplate
       title="FAQ - Frequently Asked Questions | CrackJobs"
       metaDescription="Get answers to common questions about CrackJobs mock interviews, booking sessions, payments, refunds, and more."
@@ -187,6 +191,7 @@ export default function FAQ() {
         </TouchableOpacity>
       </View>
     </StandardPageTemplate>
+    </>
   );
 }
 

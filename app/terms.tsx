@@ -8,9 +8,13 @@ import {
   StandardBulletList,
   StandardLink,
 } from '@/components/StandardPageTemplate';
+import { SEO } from '@/components/SEO';
+import { SEO_CONFIG } from '@/config/seo';
 
 export default function TermsAndConditions() {
   return (
+        <>    <SEO {...SEO_CONFIG.terms} />
+
     <StandardPageTemplate
       title="Terms & Conditions | CrackJobs"
       metaDescription="Read the user agreement for CrackJobs. Guidelines for candidates and mentors using our mock interview platform."
@@ -146,5 +150,6 @@ export default function TermsAndConditions() {
         </StandardLink>
       </StandardSection>
     </StandardPageTemplate>
+    </>
   );
 }

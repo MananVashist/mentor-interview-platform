@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+﻿import React from 'react';
 import {
   View,
   Text,
@@ -9,14 +9,15 @@ import {
   ScrollView,
 } from 'react-native';
 import { useLocalSearchParams, useRouter, Redirect } from 'expo-router';
-import Head from 'expo-router/head';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFonts } from 'expo-font'; 
 
 // --- IMPORTS ---
 import { Footer } from '@/components/Footer';
 import { BrandHeader } from '@/lib/ui';
-import { ROLE_DATA } from '@/data/roles'; // Make sure this path is correct for your project!
+import { ROLE_DATA } from '@/data/roles';
+import { SEO } from '@/components/SEO';
+import { SEO_CONFIG } from '@/config/seo';
 
 // --- COLORS (Matched to Home Page) ---
 const BRAND_ORANGE = '#f58742';
@@ -42,13 +43,14 @@ export default function RoleLandingPage() {
   // 1. Get Data
   const roleKey = typeof role === 'string' ? role : '';
   const data = ROLE_DATA[roleKey];
+  const seoData = SEO_CONFIG.interviews[roleKey as keyof typeof SEO_CONFIG.interviews];
 
   const [fontsLoaded] = useFonts({
     ...MaterialCommunityIcons.font,
   });
 
   // 2. Redirect if invalid role
-  if (!data) {
+  if (!data || !seoData) {
     return <Redirect href="/" />;
   }
 
@@ -58,12 +60,7 @@ export default function RoleLandingPage() {
 
   return (
     <>
-      <Head>
-        <title>{data.metaTitle}</title>
-        <meta name="description" content={data.metaDescription} />
-        <meta property="og:title" content={data.metaTitle} />
-        <meta property="og:description" content={data.metaDescription} />
-      </Head>
+      <SEO {...seoData} />
 
       <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
         
@@ -226,7 +223,7 @@ const styles = StyleSheet.create({
   stepBadge: { width: 32, height: 32, borderRadius: 16, backgroundColor: CTA_TEAL, alignItems: 'center', justifyContent: 'center' },
   stepBadgeText: { color: '#fff', fontWeight: '800', fontSize: 14 },
   
-  topicList: { flexDirection: 'row', flexWrap: 'wrap', gap: 16, paddingLeft: 48 }, // Indent to align with text
+  topicList: { flexDirection: 'row', flexWrap: 'wrap', gap: 16, paddingLeft: 48 },
   checkRow: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: BG_CREAM, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
   topicText: { fontSize: 14, fontWeight: '500', color: '#444' },
 
