@@ -1,16 +1,34 @@
 ﻿// components/Header.tsx
-import React from 'react';
+import React, { Suspense } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   useWindowDimensions,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { BrandHeader } from '@/lib/ui'; // ← Using BrandHeader from ui.tsx
+
+// 🟢 CRITICAL: Lazy load named export from main library
+// This ensures Header.tsx doesn't force the whole UI library to load immediately
+const BrandHeader = React.lazy(() => 
+  import('@/lib/ui').then(module => ({ default: module.BrandHeader }))
+);
 
 const CTA_TEAL = '#18a7a7';
+
+// ⚡ LIGHTWEIGHT FALLBACK
+const BrandFallback = ({ small }: { small: boolean }) => (
+  <View style={{ justifyContent: 'center' }}>
+    <Text style={[styles.fallbackLogo, small && styles.fallbackLogoSmall]}>
+      Crack<Text style={{ color: CTA_TEAL }}>Jobs</Text>
+    </Text>
+    <Text style={[styles.fallbackTag, small && styles.fallbackTagSmall]}>
+      Mad skills. Dream job!
+    </Text>
+  </View>
+);
 
 export const Header = () => {
   const router = useRouter();
@@ -21,9 +39,11 @@ export const Header = () => {
     <View style={styles.header} accessibilityRole="banner">
       <View style={[styles.headerInner, isSmall && styles.headerInnerMobile]}>
         
-        {/* Brand Section with Animated Eyes (from ui.tsx) */}
+        {/* Brand Section */}
         <TouchableOpacity onPress={() => router.push('/')} activeOpacity={0.8}>
-          <BrandHeader small={isSmall} style={styles.brandOverride} />
+          <Suspense fallback={<BrandFallback small={isSmall} />}>
+             <BrandHeader small={isSmall} style={styles.brandOverride} />
+          </Suspense>
         </TouchableOpacity>
 
         {/* Navigation Buttons */}
@@ -77,9 +97,31 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between' 
   },
   
-  // Override BrandHeader's default marginBottom
   brandOverride: {
     marginBottom: 0,
+  },
+
+  // Fallback Styles
+  fallbackLogo: {
+    fontSize: 32,
+    fontWeight: '900',
+    color: '#333',
+    fontFamily: Platform.OS === 'web' ? 'System' : undefined,
+    lineHeight: 38,
+  },
+  fallbackLogoSmall: {
+    fontSize: 24,
+    lineHeight: 30,
+  },
+  fallbackTag: {
+    fontSize: 14,
+    fontWeight: '900',
+    color: CTA_TEAL,
+    marginTop: -4,
+    fontFamily: Platform.OS === 'web' ? 'System' : undefined,
+  },
+  fallbackTagSmall: {
+    fontSize: 12,
   },
   
   // Navigation Buttons
@@ -120,7 +162,8 @@ const styles = StyleSheet.create({
   btnText: { 
     fontWeight: '700', 
     fontSize: 13, 
-    letterSpacing: 1 
+    letterSpacing: 1,
+    fontFamily: Platform.OS === 'web' ? 'System' : undefined,
   },
   
   btnTextPrimary: {
