@@ -12,11 +12,19 @@ import {
 } from 'react-native';
 import { useRouter, Redirect } from 'expo-router';
 import Head from 'expo-router/head';
+// 🟢 FIX 1: Import Asset helper (run "npx expo install expo-asset" if needed)
+import { Asset } from 'expo-asset';
+
+// Static Imports
+import GoogleImg from '../assets/companies/Google.png';
+import MetaImg from '../assets/companies/Meta.png';
+import AmazonImg from '../assets/companies/Amazon.webp';
+import MicrosoftImg from '../assets/companies/Microsoft.webp';
+import CapgeminiImg from '../assets/companies/Capgemini.png';
+import AdobeImg from '../assets/companies/Adobe.png';   
 
 // ---------------------------------------------------------------------------
-// 🟢 1. LAZY LOAD (The Performance Fix)
-// We import from the main library '@lib/ui' dynamically. 
-// This moves the heavy code to a background chunk.
+// 🟢 LAZY LOAD
 // ---------------------------------------------------------------------------
 
 const BrandHeader = React.lazy(() => 
@@ -30,8 +38,7 @@ const Button = React.lazy(() =>
 const LazySections = React.lazy(() => import('../components/LazySections'));
 
 
-// --- GHOST COMPONENTS (Render Instantly ⚡) ---
-// These are simple Views that look like your UI but have ZERO heavy code.
+// --- GHOST COMPONENTS ---
 const HeaderFallback = () => (
   <View style={{ height: 40, justifyContent: 'center' }}>
     <Text style={{ fontSize: 32, fontWeight: '900', color: '#222', fontFamily: Platform.OS === 'web' ? 'System' : undefined, lineHeight: 38 }}>
@@ -66,48 +73,67 @@ const SYSTEM_FONT = Platform.select({
   default: "System"
 }) as string;
 
-const COMPANIES = [
-  { name: 'Google', image: require('../assets/companies/Google.png'), width: 100 },
-  { name: 'Meta', image: require('../assets/companies/Meta.png'), width: 110 },
-  { name: 'Amazon', image: require('../assets/companies/Amazon.webp'), width: 90 },
-  { name: 'Microsoft', image: require('../assets/companies/Microsoft.webp'), width: 110 },
-  { name: 'Capgemini', image: require('../assets/companies/Capgemini.png'), width: 120 },
-  { name: 'Adobe', image: require('../assets/companies/Adobe.png'), width: 120 },
-];
+const COMPANIES = [ 
+  { name: 'Google', image: GoogleImg, width: 100 },
+  { name: 'Meta', image: MetaImg, width: 110 },
+  { name: 'Amazon', image: AmazonImg, width: 90 },
+  { name: 'Microsoft', image: MicrosoftImg, width: 110 },
+  { name: 'Capgemini', image: CapgeminiImg, width: 120 },
+  { name: 'Adobe', image: AdobeImg, width: 120 },   
+];          
 
 const SITE_URL = 'https://crackjobs.com';
 const SITE_TITLE = 'CrackJobs | Anonymous mock interviews with real experts'; 
 const SITE_DESCRIPTION = 'Practice interview topics anonymously with fully vetted expert mentors.';
 
-// Optimized Image Component
+// 🟢 FIX 2: Production-Ready Image Resolver
 const OptimizedImage = ({ source, style, alt }: any) => {
-  if (Platform.OS === 'web') {
-    const src = typeof source === 'string' ? source : source.uri || source;
-    return (
-      <img 
-        src={src} 
-        alt={alt}
-        style={{ width: style.width, height: style.height, objectFit: 'contain' }}
-        fetchPriority="high" 
-      />
-    );
+  const isWeb = Platform.OS === 'web';
+  
+  if (isWeb) {
+    let src = '';
+
+    // A. Check if it's already a string URL (e.g. "https://...")
+    if (typeof source === 'string') {
+      src = source;
+    } 
+    // B. Check if it's an object with a URI (some bundlers do this)
+    else if (source?.uri) {
+      src = source.uri;
+    }
+    // C. The Critical Fix: Handle Numeric Asset IDs (Production Build)
+    else {
+      // Asset.fromModule handles the lookup in the production asset registry
+      // and returns the correct hashed path (e.g., "/assets/google.a8f2....png")
+      const asset = Asset.fromModule(source);
+      src = asset?.uri || '';
+    }
+    
+    // Render standard HTML img tag for SEO & Performance
+    if (src) {
+      return (
+        <img 
+          src={src} 
+          alt={alt}
+          style={{ width: style.width, height: style.height, objectFit: 'contain' }}
+          loading="lazy" 
+          decoding="async"
+        />
+      );
+    }
   }
+
+  // Fallback for Mobile or failed resolution
   return <RNImage source={source} style={style} resizeMode="contain" alt={alt} />;
 };
 
 export default function LandingPage() {
-  // 🟢 2. THE GATE (The Metric Fix)
-  // We default to FALSE so the heavy chunks are NOT requested immediately.
   const [isReady, setIsReady] = useState(false);
-  
   const router = useRouter();
   const { width } = useWindowDimensions();
   const isSmall = width < 900;
 
   useEffect(() => {
-    // 🟢 3. THE DELAY
-    // Wait 100ms for the HTML to paint (LCP). 
-    // Only THEN do we set isReady=true to load the heavy interactive bits.
     const timer = setTimeout(() => setIsReady(true), 100); 
     return () => clearTimeout(timer);
   }, []);
@@ -131,10 +157,7 @@ export default function LandingPage() {
         {/* --- HEADER --- */}
         <View style={styles.header}>
           <View style={[styles.headerInner, isSmall && styles.headerInnerMobile]}>
-            
-            {/* 🟢 SUSPENSE: Fallback paints instantly. Heavy Header loads later. */}
             <Suspense fallback={<HeaderFallback />}>
-               {/* Only load real header if isReady is true */}
                {isReady ? (
                  <BrandHeader style={{ marginBottom: 0 }} small={isSmall} />
                ) : (
@@ -169,7 +192,6 @@ export default function LandingPage() {
             </Text>
             
             <View style={[styles.heroButtons, isSmall && styles.heroButtonsMobile]}>
-              {/* 🟢 SUSPENSE: Fallback paints instantly. Buttons load later. */}
               <Suspense fallback={
                 <>
                   <ButtonFallback variant="primary" />

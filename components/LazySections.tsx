@@ -35,18 +35,17 @@ const INTERVIEW_TRACKS = [
 ];
 
 const REVIEWS = [
-  { id: 1, name: 'Priya S.', role: 'Product Manager', company: 'Funded Startup', text: 'The anonymous format helped me practice without fear. Got honest feedback that directly improved my answers.', rating: 5 },
-  { id: 2, name: 'Arjun M.', role: 'Data Analyst', company: 'Analytics Firm', text: 'My mentor was from Google. The SQL round practice was exactly like my real interview. Landed the offer!', rating: 5 },
-  { id: 3, name: 'Sneha K.', role: 'ML Engineer', company: 'AI Startup', text: 'Worth every rupee. The structured evaluation showed exactly where I was weak. Fixed those gaps and aced my next interview.', rating: 5 },
+  { id: 1, name: 'P.K.', role: 'Product Manager at Loco', company: 'Funded Startup', text: 'The anonymous format helped me practice without fear. Got honest feedback that directly improved my answers.', rating: 5 },
+  { id: 2, name: 'A.M.', role: 'Data Analyst at MuSigma', company: 'Analytics Firm', text: 'My mentor was from Google. The SQL round practice was exactly like my real interview. Landed the offer!', rating: 5 },
+  { id: 3, name: 'S.K.', role: 'ML Engineer at Happay   ', company: 'AI Startup', text: 'Worth every rupee. The structured evaluation showed exactly where I was weak. Fixed those gaps and aced my next interview.', rating: 5 },
 ];
 
 const FAQ = [
-  { q: 'How does anonymous interviewing work?', a: 'Your name, photo, and personal details are hidden. You are identified only by your professional title (e.g., "Software Engineer"). Mentors see your role and focus area, nothing more.' },
+  { q: 'How does anonymous interviewing work?', a: 'Your name, photo, and personal details are hidden. You are identified only by your professional title (e.g., "Data Scientist at Uber"). Mentors see your role and resume (if you choose to upload it), nothing more. When you join the meeting, you can join with a fake name and keep your video off' },
   { q: 'Are your mentors verified?', a: 'Yes. Every mentor is vetted manually. We verify employment history, LinkedIn profiles, and conduct background checks to ensure they work at top companies.' },
-  { q: 'What happens in a session?', a: 'Book a 55-minute slot. Your mentor conducts a realistic mock interview focused on your chosen skill. After the session, you receive structured evaluation feedback covering strengths, gaps, and specific improvement areas.' },
-  { q: 'Can I practice specific rounds?', a: 'Absolutely. Choose your interview profile (PM, Data, HR, etc.) and then select the specific skill you want to practice - like "Product Sense", "SQL", or "Behavioral Questions".' },
-  { q: 'What if I need to reschedule?', a: 'You can reschedule up to 24 hours before your session. Contact support or use the reschedule option in your bookings.' },
-  { q: 'Do you offer refunds?', a: 'Yes. If you cancel at least 24 hours before your session, we provide a full refund. No questions asked.' },
+  { q: 'What happens in a session?', a: 'Book a 55-minute slot. Your mentor conducts a realistic mock interview focused on your chosen topic. After the session, you receive structured evaluation feedback covering strengths, gaps, and specific improvement areas.' },
+  { q: 'Can I practice specific rounds?', a: 'Absolutely. Choose your interview profile (PM, Data, HR, etc.) and then select the specific topic you want to practice - like "Product Thinking", "SQL", or "Behavioral Questions".' },
+  { q: 'Do you offer refunds?', a: 'Yes. If the mentor does not show up for the session, we provide a full refund. Just make sure you have a recording of the first 15 mins of the session  .' },
 ];
 
 // --- SUB-COMPONENTS ---
@@ -56,7 +55,7 @@ const HowItWorks = memo(() => {
   const isSmall = width < 900;
 
   const STEPS = [
-    { emoji: '📝', title: 'Pick Your Track', desc: 'Choose interview type and specific skill to practice' },
+    { emoji: '📝', title: 'Pick Your Track', desc: 'Choose interview type and specific topic you want to practice' },
     { emoji: '👨‍💼', title: 'Book a Mentor', desc: 'Select from verified experts at top companies' },
     { emoji: '🎯', title: 'Practice & Get Feedback', desc: 'Realistic 55-min session with structured evaluation' },
   ];
