@@ -4,13 +4,12 @@ import {
   ActivityIndicator, Alert, StatusBar, Platform
 } from 'react-native';
 import { useRouter, useLocalSearchParams, usePathname } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { DateTime } from 'luxon';
+import { format, parseISO } from 'date-fns';
 
 // Libs
 import { supabase } from '@/lib/supabase/client';
 import { theme } from '@/lib/theme';
-import { Heading, AppText, Card } from '@/lib/ui';
+import { Heading, AppText, Card, IconLock } from '@/lib/ui';
 import { paymentService } from '@/services/payment.service';
 import { useAuthStore } from '@/lib/store';
 
@@ -136,10 +135,15 @@ export default function PaymentScreen() {
     );
   }
 
-  // Formats
+  // Formats - Using date-fns instead of luxon
   const fmtTime = (iso: string | undefined) => {
       if (!iso) return 'Invalid Date';
-      return DateTime.fromISO(iso).toFormat('MMM d, h:mm a');
+      try {
+        const date = parseISO(iso);
+        return format(date, 'MMM d, h:mm a');
+      } catch {
+        return 'Invalid Date';
+      }
   };
 
   return (
@@ -192,7 +196,7 @@ export default function PaymentScreen() {
           </TouchableOpacity>
           
            <View style={styles.secureRow}>
-             <Ionicons name="lock-closed" size={12} color="#6B7280" />
+             <IconLock size={12} color="#6B7280" />
              <AppText style={styles.secureText}>Secured by Razorpay</AppText>
            </View>
         </Card>

@@ -4,13 +4,12 @@ import {
   RefreshControl, TouchableOpacity, StatusBar 
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { DateTime } from 'luxon';
+import { format, parseISO } from 'date-fns';
 
 // Libs
 import { supabase } from '@/lib/supabase/client';
 import { theme } from '@/lib/theme';
-import { Heading, AppText, Card } from '@/lib/ui';
+import { Heading, AppText, Card, IconCalendar, IconClock } from '@/lib/ui';
 import { useAuthStore } from '@/lib/store';
 
 export default function MyBookingsScreen() {
@@ -128,7 +127,7 @@ export default function MyBookingsScreen() {
         {sessions.length === 0 ? (
           <View style={styles.emptyState}>
             <View style={styles.emptyIcon}>
-              <Ionicons name="calendar-outline" size={48} color="#9CA3AF" />
+              <IconCalendar size={48} color="#9CA3AF" />
             </View>
             <Heading level={3}>No sessions yet</Heading>
             <AppText style={styles.emptyText}>
@@ -144,7 +143,17 @@ export default function MyBookingsScreen() {
         ) : (
           <View style={styles.list}>
             {sessions.map((session) => {
-              const date = DateTime.fromISO(session.scheduled_at);
+              let date: Date;
+              let isValidDate = false;
+              
+              try {
+                date = parseISO(session.scheduled_at);
+                isValidDate = !isNaN(date.getTime());
+              } catch {
+                date = new Date();
+                isValidDate = false;
+              }
+              
               const statusStyle = getStatusColor(session.status);
               
               // Safe Access to Mentor Data
@@ -155,8 +164,12 @@ export default function MyBookingsScreen() {
                 <Card key={session.id} style={styles.sessionCard}>
                   {/* Date Badge */}
                   <View style={styles.dateBadge}>
-                    <AppText style={styles.dateMonth}>{date.isValid ? date.toFormat('MMM') : '??'}</AppText>
-                    <AppText style={styles.dateDay}>{date.isValid ? date.toFormat('dd') : '--'}</AppText>
+                    <AppText style={styles.dateMonth}>
+                      {isValidDate ? format(date, 'MMM') : '??'}
+                    </AppText>
+                    <AppText style={styles.dateDay}>
+                      {isValidDate ? format(date, 'dd') : '--'}
+                    </AppText>
                   </View>
 
                   {/* Content */}
@@ -168,9 +181,9 @@ export default function MyBookingsScreen() {
                     <AppText style={styles.mentorTitle}>{mentorTitle}</AppText>
                     
                     <View style={styles.timeRow}>
-                      <Ionicons name="time-outline" size={14} color="#6B7280" />
+                      <IconClock size={14} color="#6B7280" />
                       <AppText style={styles.timeText}>
-                        {date.isValid ? date.toFormat('cccc, h:mm a') : 'Date Invalid'}
+                        {isValidDate ? format(date, 'EEEE, h:mm a') : 'Date Invalid'}
                       </AppText>
                     </View>
                   </View>
