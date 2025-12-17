@@ -36,7 +36,7 @@
     "expo-status-bar": "~1.12.1",
     "expo-updates": "~0.25.28",
     "expo-web-browser": "~13.0.3",
-    "luxon": "^3.4.4",
+    "luxon": "^3.7.2",
     "nativewind": "^2.0.11",
     "react": "18.2.0",
     "react-dom": "18.2.0",
@@ -57,7 +57,6 @@
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
-    "@types/luxon": "^3.4.0",
     "@types/react": "~18.2.45",
     "react-snap": "^1.23.0",
     "supabase": "^1.192.5",
