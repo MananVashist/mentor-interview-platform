@@ -12,6 +12,8 @@ import {
 } from 'react-native';
 import { useRouter, Redirect } from 'expo-router';
 import Head from 'expo-router/head';
+// 🟢 FIX 1: Import Asset helper (run "npx expo install expo-asset" if needed)
+import { Asset } from 'expo-asset';
 
 // Static Imports
 import GoogleImg from '../assets/companies/Google.png';
@@ -84,29 +86,31 @@ const SITE_URL = 'https://crackjobs.com';
 const SITE_TITLE = 'CrackJobs | Anonymous mock interviews with real experts'; 
 const SITE_DESCRIPTION = 'Practice interview topics anonymously with fully vetted expert mentors.';
 
-// 🟢 FIX: Crash-proof Image Resolver
+// 🟢 FIX 2: Production-Ready Image Resolver
 const OptimizedImage = ({ source, style, alt }: any) => {
   const isWeb = Platform.OS === 'web';
   
   if (isWeb) {
-    // 1. Try to get the string URL safely without calling functions that might crash
-    let src = typeof source === 'string' ? source : (source?.uri || source?.default);
-    
-    // 2. If it's a number (Metro asset) and we still don't have a src, try resolveAssetSource SAFELY
-    if (!src && typeof source === 'number') {
-        // Only call the function if it exists to prevent "is not a function" crash
-        if (RNImage.resolveAssetSource) {
-           try {
-             const resolved = RNImage.resolveAssetSource(source);
-             src = resolved?.uri;
-           } catch (e) {
-             // If resolution fails, we fall through to the <RNImage> below
-           }
-        }
-    }
+    let src = '';
 
-    // 3. If we found a valid web path, render the optimized <img> tag
-    if (typeof src === 'string') {
+    // A. Check if it's already a string URL (e.g. "https://...")
+    if (typeof source === 'string') {
+      src = source;
+    } 
+    // B. Check if it's an object with a URI (some bundlers do this)
+    else if (source?.uri) {
+      src = source.uri;
+    }
+    // C. The Critical Fix: Handle Numeric Asset IDs (Production Build)
+    else {
+      // Asset.fromModule handles the lookup in the production asset registry
+      // and returns the correct hashed path (e.g., "/assets/google.a8f2....png")
+      const asset = Asset.fromModule(source);
+      src = asset?.uri || '';
+    }
+    
+    // Render standard HTML img tag for SEO & Performance
+    if (src) {
       return (
         <img 
           src={src} 
@@ -119,8 +123,7 @@ const OptimizedImage = ({ source, style, alt }: any) => {
     }
   }
 
-  // 4. Fallback: If web resolution failed OR we are on mobile, use the standard RNImage.
-  // This ensures the app NEVER crashes even if the custom resolution fails.
+  // Fallback for Mobile or failed resolution
   return <RNImage source={source} style={style} resizeMode="contain" alt={alt} />;
 };
 

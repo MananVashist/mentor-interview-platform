@@ -37,7 +37,7 @@ const INTERVIEW_TRACKS = [
 const REVIEWS = [
   { id: 1, name: 'P.K.', role: 'Product Manager at Loco', company: 'Funded Startup', text: 'The anonymous format helped me practice without fear. Got honest feedback that directly improved my answers.', rating: 5 },
   { id: 2, name: 'A.M.', role: 'Data Analyst at MuSigma', company: 'Analytics Firm', text: 'My mentor was from Google. The SQL round practice was exactly like my real interview. Landed the offer!', rating: 5 },
-  { id: 3, name: 'S.K.', role: 'ML Engineer at Happay', company: 'AI Startup', text: 'Worth every rupee. The structured evaluation showed exactly where I was weak. Fixed those gaps and aced my next interview.', rating: 5 },
+  { id: 3, name: 'S.K.', role: 'ML Engineer at Happay   ', company: 'AI Startup', text: 'Worth every rupee. The structured evaluation showed exactly where I was weak. Fixed those gaps and aced my next interview.', rating: 5 },
 ];
 
 const FAQ = [
