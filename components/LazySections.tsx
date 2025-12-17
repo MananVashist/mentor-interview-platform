@@ -7,12 +7,21 @@ import {
   TouchableOpacity,
   Platform,
   useWindowDimensions,
+  Image as RNImage,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-// Ensure Footer is in the same directory, or adjust this path to '@/components/Footer'
+import { Asset } from 'expo-asset';
 import { Footer } from './Footer'; 
 
-// --- COLORS ---
+// 🟢 MOVED IMAGES HERE (Lazy Loaded)
+import GoogleImg from '../assets/companies/Google.png';
+import MetaImg from '../assets/companies/Meta.png';
+import AmazonImg from '../assets/companies/Amazon.webp';
+import MicrosoftImg from '../assets/companies/Microsoft.webp';
+import CapgeminiImg from '../assets/companies/Capgemini.png';
+import AdobeImg from '../assets/companies/Adobe.png';   
+
+// --- CONSTANTS ---
 const BRAND_ORANGE = '#f58742';
 const CTA_TEAL = '#18a7a7';
 const BG_CREAM = '#f8f5f0';
@@ -27,6 +36,15 @@ const SYSTEM_FONT = Platform.select({
 }) as string;
 
 // --- DATA ---
+const COMPANIES = [ 
+  { name: 'Google', image: GoogleImg, width: 100 },
+  { name: 'Meta', image: MetaImg, width: 110 },
+  { name: 'Amazon', image: AmazonImg, width: 90 },
+  { name: 'Microsoft', image: MicrosoftImg, width: 110 },
+  { name: 'Capgemini', image: CapgeminiImg, width: 120 },
+  { name: 'Adobe', image: AdobeImg, width: 120 },   
+];
+
 const INTERVIEW_TRACKS = [
   { id: 'pm', emoji: '📊', title: 'Product Management', desc: 'Product sense, strategy, execution', path: '/interviews/product-management' },
   { id: 'data-analytics', emoji: '📈', title: 'Data Analytics', desc: 'SQL, Python, business intelligence', path: '/interviews/data-analytics' },
@@ -48,37 +66,34 @@ const FAQ = [
   { q: 'Do you offer refunds?', a: 'Yes. If the mentor does not show up for the session, we provide a full refund. Just make sure you have a recording of the first 15 mins of the session  .' },
 ];
 
-// --- SUB-COMPONENTS ---
+// --- COMPONENTS ---
 
-const HowItWorks = memo(() => {
+// Simple Image for Lazy Loading
+const SimpleImage = ({ source, style, alt }: any) => {
+  const isWeb = Platform.OS === 'web';
+  if (isWeb) {
+    let src = typeof source === 'string' ? source : (source?.uri || Asset.fromModule(source)?.uri || '');
+    if (src) return <img src={src} alt={alt} style={{...style, objectFit: 'contain'}} loading="lazy" decoding="async" />;
+  }
+  return <RNImage source={source} style={style} resizeMode="contain" alt={alt} />;
+};
+
+const LogoWall = memo(() => {
   const { width } = useWindowDimensions();
   const isSmall = width < 900;
-
-  const STEPS = [
-    { emoji: '📝', title: 'Pick Your Track', desc: 'Choose interview type and specific topic you want to practice' },
-    { emoji: '👨‍💼', title: 'Book a Mentor', desc: 'Select from verified experts at top companies' },
-    { emoji: '🎯', title: 'Practice & Get Feedback', desc: 'Realistic 55-min session with structured evaluation' },
-  ];
-
   return (
-    <View style={styles.sectionContainer}>
-      <Text style={styles.sectionKicker}>HOW IT WORKS</Text>
-      <Text style={[styles.sectionTitle, isSmall && styles.sectionTitleMobile]}>
-        Three simple steps to better interviews
-      </Text>
-      <View style={[styles.stepsGrid, isSmall && styles.stepsGridMobile]}>
-        {STEPS.map((step, i) => (
-          <View key={i} style={styles.stepCard}>
-            <Text style={styles.stepEmoji}>{step.emoji}</Text>
-            <Text style={styles.stepTitle}>{step.title}</Text>
-            <Text style={styles.stepDesc}>{step.desc}</Text>
-          </View>
+    <View style={styles.logoSection}>
+      <Text style={styles.logoTitle}>OUR MENTORS HAVE WORKED IN</Text>
+      <View style={[styles.logoWall, isSmall && styles.logoWallMobile]}>
+        {COMPANIES.map((company) => (
+           <View key={company.name} style={styles.logoWrapper}>
+             <SimpleImage source={company.image} style={{ width: company.width, height: 35 }} alt={company.name} />
+           </View>
         ))}
       </View>
     </View>
   );
 });
-HowItWorks.displayName = 'HowItWorks';
 
 const InterviewTracks = memo(() => {
   const { width } = useWindowDimensions();
@@ -111,7 +126,6 @@ const InterviewTracks = memo(() => {
     </View>
   );
 });
-InterviewTracks.displayName = 'InterviewTracks';
 
 const Reviews = memo(() => {
   const { width } = useWindowDimensions();
@@ -140,7 +154,6 @@ const Reviews = memo(() => {
     </View>
   );
 });
-Reviews.displayName = 'Reviews';
 
 const FAQSection = memo(() => {
   const { width } = useWindowDimensions();
@@ -163,7 +176,6 @@ const FAQSection = memo(() => {
     </View>
   );
 });
-FAQSection.displayName = 'FAQSection';
 
 const BottomCTA = memo(() => {
   const router = useRouter();
@@ -190,13 +202,12 @@ const BottomCTA = memo(() => {
     </View>
   );
 });
-BottomCTA.displayName = 'BottomCTA';
 
 // ✅ DEFAULT EXPORT
 export default function LazySections() {
   return (
     <>
-      <HowItWorks />
+      <LogoWall />
       <InterviewTracks />
       <Reviews />
       <FAQSection />
@@ -213,18 +224,17 @@ const styles = StyleSheet.create({
   sectionTitle: { fontFamily: SYSTEM_FONT, fontWeight: '800', fontSize: 36, color: TEXT_DARK, marginBottom: 48, textAlign: 'center' },
   sectionTitleMobile: { fontSize: 28 },
 
-  // How It Works
-  stepsGrid: { flexDirection: 'row', gap: 32, justifyContent: 'center' },
-  stepsGridMobile: { flexDirection: 'column' },
-  stepCard: { flex: 1, maxWidth: 320, backgroundColor: '#fff', padding: 32, borderRadius: 16, alignItems: 'center', borderWidth: 1, borderColor: '#f0f0f0' },
-  stepEmoji: { fontSize: 48, marginBottom: 16 },
-  stepTitle: { fontFamily: SYSTEM_FONT, fontWeight: '700', fontSize: 20, color: TEXT_DARK, marginBottom: 8, textAlign: 'center' },
-  stepDesc: { fontFamily: SYSTEM_FONT, fontSize: 15, color: TEXT_GRAY, lineHeight: 22, textAlign: 'center' },
+  // Logo Wall
+  logoSection: { backgroundColor: '#fff', paddingVertical: 50, borderTopWidth: 1, borderBottomWidth: 1, borderColor: '#f0f0f0' },
+  logoTitle: { textAlign: 'center', fontSize: 15, fontWeight: '500', color: '#bbb', marginBottom: 30, letterSpacing: 1.5, textTransform: 'uppercase' },
+  logoWall: { flexDirection: 'row', justifyContent: 'center', gap: 60, flexWrap: 'wrap', alignItems: 'center' },
+  logoWallMobile: { gap: 30, paddingHorizontal: 20 },
+  logoWrapper: { height: 50, justifyContent: 'center', alignItems: 'center' },
 
   // Tracks
   tracksSection: { backgroundColor: BG_CREAM },
   tracksGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 20, justifyContent: 'center' },
-  tracksGridMobile: { flexDirection: 'column' },
+  tracksGridMobile: { flexDirection: 'column',alignItems: 'center' },
   trackCard: { flex: 1, minWidth: 260, maxWidth: 280, backgroundColor: '#fff', padding: 24, borderRadius: 16, borderWidth: 1, borderColor: '#f0f0f0' },
   trackEmoji: { fontSize: 32, marginBottom: 12 },
   trackTitle: { fontFamily: SYSTEM_FONT, fontWeight: '700', fontSize: 18, color: TEXT_DARK, marginBottom: 8 },
@@ -235,7 +245,7 @@ const styles = StyleSheet.create({
   // Reviews
   reviewsSection: { backgroundColor: '#fff', paddingVertical: 80 },
   reviewsGrid: { flexDirection: 'row', gap: 24, justifyContent: 'center', flexWrap: 'wrap' },
-  reviewsGridMobile: { flexDirection: 'column' },
+  reviewsGridMobile: { flexDirection: 'column',alignItems: 'center' },
   reviewCard: { flex: 1, minWidth: 280, maxWidth: 360, backgroundColor: BG_CREAM, padding: 24, borderRadius: 16, borderWidth: 1, borderColor: '#f0f0f0' },
   reviewHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 },
   reviewName: { fontFamily: SYSTEM_FONT, fontWeight: '700', fontSize: 16, color: TEXT_DARK },
