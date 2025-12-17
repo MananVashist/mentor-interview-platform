@@ -7,4 +7,12 @@ const config = getDefaultConfig(__dirname);
 // Add support for CSS
 config.resolver.sourceExts.push('css');
 
+// ✅ PERFORMANCE OPTIMIZATION: Inline requires for lazy loading
+config.transformer.getTransformOptions = async () => ({
+  transform: {
+    experimentalImportSupport: false,
+    inlineRequires: true,
+  },
+});
+
 module.exports = config;
