@@ -19,6 +19,9 @@ import { ROLE_DATA } from '@/data/roles';
 import { SEO } from '@/components/SEO';
 import { SEO_CONFIG } from '@/config/seo';
 
+// --- CONFIG ---
+const BASE_URL = 'https://crackjobs.com';
+
 // --- COLORS (Matched to Home Page) ---
 const BRAND_ORANGE = '#f58742';
 const CTA_TEAL = '#18a7a7';
@@ -58,9 +61,16 @@ export default function RoleLandingPage() {
     return <View style={{ flex: 1, backgroundColor: BG_CREAM }} />;
   }
 
+  // 3. Construct Canonical URL
+  // This tells Google: "The official version of this page is https://crackjobs.com/interviews/[role]"
+  const canonicalUrl = `${BASE_URL}/interviews/${roleKey}`;
+
   return (
     <>
-      <SEO {...seoData} />
+      <SEO 
+        {...seoData} 
+        canonical={canonicalUrl} 
+      />
 
       <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
         

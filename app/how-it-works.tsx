@@ -7,6 +7,7 @@ import {
   StandardSection,
   StandardParagraph,
   StandardBold,
+  StandardBulletList, // Added for the new FAQ section
 } from '@/components/StandardPageTemplate';
 import { theme } from '@/lib/theme';
 import { SEO } from '@/components/SEO';
@@ -58,116 +59,139 @@ export default function HowItWorks() {
   };
 
   return (
-        <>    <SEO {...SEO_CONFIG.howItWorks} />
+    <>
+      {/* FIX 1: Added Canonical Tag */}
+      <SEO 
+        {...SEO_CONFIG.howItWorks} 
+        canonical="https://crackjobs.com/how-it-works"
+      />
 
-    <StandardPageTemplate
-      title="How It Works - 5 Steps to Ace Your Interview | CrackJobs"
-      metaDescription="Master the CrackJobs process: 1. Sign Up, 2. Book a FAANG Mentor, 3. Practice, 4. Get Feedback. The simplest way to prepare for tech interviews."
-      pageUrl="https://crackjobs.com/how-it-works"
-      pageTitle="How It Works"
-      lastUpdated="November 25, 2024"
-      additionalSchema={howToSchema}
-      relatedPages={[
-        {
-          title: "Browse Mentors",
-          description: "Find your perfect mentor",
-          icon: "🔍",
-          route: "/auth/sign-in"
-        },
-        {
-          title: "FAQ",
-          description: "Common questions answered",
-          icon: "❓",
-          route: "/faq"
-        },
-        {
-          title: "Pricing",
-          description: "Transparent, affordable rates",
-          icon: "💰",
-          route: "/auth/sign-up"
-        }
-      ]}
-    >
-      <StandardSection>
-        <StandardParagraph>
-          From sign-up to actionable insights in 5 simple steps. CrackJobs makes interview preparation effortless and effective.
-        </StandardParagraph>
-      </StandardSection>
+      <StandardPageTemplate
+        title="How It Works - 5 Steps to Ace Your Interview | CrackJobs"
+        metaDescription="Master the CrackJobs process: 1. Sign Up, 2. Book a FAANG Mentor, 3. Practice, 4. Get Feedback. The simplest way to prepare for tech interviews."
+        pageUrl="https://crackjobs.com/how-it-works"
+        pageTitle="How It Works"
+        lastUpdated="November 25, 2024"
+        additionalSchema={howToSchema}
+        relatedPages={[
+          {
+            title: "Browse Mentors",
+            description: "Find your perfect mentor",
+            icon: "🔍",
+            route: "/auth/sign-in"
+          },
+          {
+            title: "FAQ",
+            description: "Common questions answered",
+            icon: "❓",
+            route: "/faq"
+          },
+          {
+            title: "Pricing",
+            description: "Transparent, affordable rates",
+            icon: "💰",
+            route: "/auth/sign-up"
+          }
+        ]}
+      >
+        <StandardSection>
+          <StandardParagraph>
+            From sign-up to actionable insights in 5 simple steps. CrackJobs makes interview preparation effortless and effective.
+          </StandardParagraph>
+        </StandardSection>
 
-      {/* Steps */}
-      {steps.map((step, index) => (
-        <View key={index} style={styles.stepCard}>
-          <View style={styles.stepNumber}>
-            <Text style={styles.stepNumberText}>{step.number}</Text>
+        {/* Steps */}
+        {steps.map((step, index) => (
+          <View key={index} style={styles.stepCard}>
+            <View style={styles.stepNumber}>
+              <Text style={styles.stepNumberText}>{step.number}</Text>
+            </View>
+            <View style={styles.stepContent}>
+              <Text style={styles.stepTitle} accessibilityRole="header" aria-level={3}>
+                {step.title}
+              </Text>
+              <StandardParagraph>{step.description}</StandardParagraph>
+            </View>
           </View>
-          <View style={styles.stepContent}>
-            <Text style={styles.stepTitle} accessibilityRole="header" aria-level={3}>
-              {step.title}
-            </Text>
-            <StandardParagraph>{step.description}</StandardParagraph>
-          </View>
+        ))}
+
+        <StandardSection title="Why This Works">
+          <StandardParagraph>
+            <StandardBold>Real Interview Conditions</StandardBold>{'\n'}
+            Our mentors simulate actual company interview environments, giving you the most authentic practice experience possible.
+          </StandardParagraph>
+          <StandardParagraph>
+            <StandardBold>Immediate, Specific Feedback</StandardBold>{'\n'}
+            Unlike watching YouTube videos or reading books, you get personalized feedback on YOUR performance, YOUR answers, and YOUR approach.
+          </StandardParagraph>
+          <StandardParagraph>
+            <StandardBold>Iterative Improvement</StandardBold>{'\n'}
+            Each session builds on the last. Track your progress, address weak areas, and build confidence with every mock interview.
+          </StandardParagraph>
+        </StandardSection>
+
+        <StandardSection title="What to Expect">
+          <StandardParagraph>
+            <StandardBold>Before the Session:</StandardBold>{'\n'}
+            • Receive a confirmation on the app with session details{'\n'}
+            • Prepare for the interview as if it's the real thing
+          </StandardParagraph>
+          <StandardParagraph>
+            <StandardBold>During the Session (60-90 mins):</StandardBold>{'\n'}
+            • Brief introductions (5 mins){'\n'}
+            • Mock interview questions (45 mins){'\n'}
+            • Live feedback and discussion (10-15 mins)
+          </StandardParagraph>
+          <StandardParagraph>
+            <StandardBold>After the Session:</StandardBold>{'\n'}
+            • Receive detailed written feedback within 48 hours{'\n'}
+            • Review evaluation across multiple criteria{'\n'}
+            • Book follow-up sessions if needed
+          </StandardParagraph>
+        </StandardSection>
+
+        <StandardSection title="Success Tips">
+          <StandardParagraph>
+            🎯 <StandardBold>Be prepared:</StandardBold> Treat it like a real interview{'\n'}
+            💬 <StandardBold>Communicate clearly:</StandardBold> Think out loud during problem-solving{'\n'}
+            📝 <StandardBold>Take notes:</StandardBold> Write down feedback immediately{'\n'}
+            🔄 <StandardBold>Iterate:</StandardBold> Book multiple sessions to track improvement{'\n'}
+            ❓ <StandardBold>Ask questions:</StandardBold> Use the Q&A time wisely
+          </StandardParagraph>
+        </StandardSection>
+
+        {/* FIX 2: Added FAQ Section to "Thicken" Content */}
+        <StandardSection title="Frequently Asked Questions">
+          <StandardParagraph>
+            <StandardBold>How long are the sessions?</StandardBold>{'\n'}
+            Most sessions are 60 minutes long. This includes time for the interview simulation and dedicated time for verbal feedback at the end.
+          </StandardParagraph>
+          
+          <StandardParagraph>
+            <StandardBold>What happens if I need to cancel?</StandardBold>{'\n'}
+            You can reschedule for free if you give more than 24 hours' notice. Cancellations within 24 hours may be subject to a fee to compensate the mentor for their time.
+          </StandardParagraph>
+
+          <StandardParagraph>
+            <StandardBold>Who are the mentors?</StandardBold>{'\n'}
+            Our mentors are vetted professionals currently working at top tech companies (FAANG/MANG). They are verified for their identity and current employment status.
+          </StandardParagraph>
+        </StandardSection>
+
+        {/* CTA Section */}
+        <View style={styles.ctaSection}>
+          <Text style={styles.ctaTitle}>Ready to Start?</Text>
+          <StandardParagraph style={{ textAlign: 'center', marginBottom: 20, color: '#fff' }}>
+            Join hundreds of candidates who've improved their interview skills with CrackJobs.
+          </StandardParagraph>
+          <TouchableOpacity 
+            style={styles.ctaButton}
+            onPress={() => router.push('/auth/sign-up')}
+          >
+            <Text style={styles.ctaButtonText}>GET STARTED NOW</Text>
+          </TouchableOpacity>
         </View>
-      ))}
-
-      <StandardSection title="Why This Works">
-        <StandardParagraph>
-          <StandardBold>Real Interview Conditions</StandardBold>{'\n'}
-          Our mentors simulate actual company interview environments, giving you the most authentic practice experience possible.
-        </StandardParagraph>
-        <StandardParagraph>
-          <StandardBold>Immediate, Specific Feedback</StandardBold>{'\n'}
-          Unlike watching YouTube videos or reading books, you get personalized feedback on YOUR performance, YOUR answers, and YOUR approach.
-        </StandardParagraph>
-        <StandardParagraph>
-          <StandardBold>Iterative Improvement</StandardBold>{'\n'}
-          Each session builds on the last. Track your progress, address weak areas, and build confidence with every mock interview.
-        </StandardParagraph>
-      </StandardSection>
-
-      <StandardSection title="What to Expect">
-        <StandardParagraph>
-          <StandardBold>Before the Session:</StandardBold>{'\n'}
-          • Receive a confirmation on the app with session details{'\n'}
-          • Prepare for the interview as if its the real thing
-        </StandardParagraph>
-        <StandardParagraph>
-          <StandardBold>During the Session (60-90 mins):</StandardBold>{'\n'}
-          • Brief introductions (5 mins){'\n'}
-          • Mock interview questions (45 mins){'\n'}
-          • Live feedback and discussion (10-15     mins)
-        </StandardParagraph>
-        <StandardParagraph>
-          <StandardBold>After the Session:</StandardBold>{'\n'}
-          • Receive detailed written feedback within 48 hours{'\n'}
-          • Review evaluation across multiple criteria{'\n'}
-          • Book follow-up sessions if needed
-        </StandardParagraph>
-      </StandardSection>
-
-      <StandardSection title="Success Tips">
-        <StandardParagraph>
-          🎯 <StandardBold>Be prepared:</StandardBold> Treat it like a real interview{'\n'}
-          💬 <StandardBold>Communicate clearly:</StandardBold> Think out loud during problem-solving{'\n'}
-          📝 <StandardBold>Take notes:</StandardBold> Write down feedback immediately{'\n'}
-          🔄 <StandardBold>Iterate:</StandardBold> Book multiple sessions to track improvement{'\n'}
-          ❓ <StandardBold>Ask questions:</StandardBold> Use the Q&A time wisely
-        </StandardParagraph>
-      </StandardSection>
-
-      {/* CTA Section */}
-      <View style={styles.ctaSection}>
-        <Text style={styles.ctaTitle}>Ready to Start?</Text>
-        <StandardParagraph style={{ textAlign: 'center', marginBottom: 20 }}>
-          Join hundreds of candidates who've improved their interview skills with CrackJobs.
-        </StandardParagraph>
-        <TouchableOpacity 
-          style={styles.ctaButton}
-          onPress={() => router.push('/auth/sign-up')}
-        >
-          <Text style={styles.ctaButtonText}>GET STARTED NOW</Text>
-        </TouchableOpacity>
-      </View>
-    </StandardPageTemplate>
+      </StandardPageTemplate>
     </>
   );
 }
@@ -231,4 +255,4 @@ const styles = StyleSheet.create({
     color: theme.colors.primary,
     letterSpacing: 0.5,
   },
-});
+}); 
