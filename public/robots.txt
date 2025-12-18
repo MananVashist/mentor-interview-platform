@@ -10,6 +10,12 @@ Disallow: /admin/
 Disallow: /candidate/
 Disallow: /mentor/
 
+# --- BLOCK GHOST / LEGACY PAGES ---
+# These pages do not exist but are stuck in Google's index.
+# Blocking them here forces Google to stop trying to crawl them.
+Disallow: /shipping
+Disallow: /blog/technical-interview-preparation-guide
+
 # --- ALLOWED PAGES ---
 # (Removed Auth bans so Sitelinks work)
 
