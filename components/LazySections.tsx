@@ -75,19 +75,34 @@ const SimpleImage = ({ source, style, alt }: any) => {
     let src = typeof source === 'string' ? source : (source?.uri || Asset.fromModule(source)?.uri || '');
     if (src) return <img src={src} alt={alt} style={{...style, objectFit: 'contain'}} loading="lazy" decoding="async" />;
   }
-  return <RNImage source={source} style={style} resizeMode="contain" alt={alt} />;
+  return <RNImage source={source} style={style} resizeMode="contain" accessible={true} accessibilityLabel={alt} />;
 };
 
 const LogoWall = memo(() => {
   const { width } = useWindowDimensions();
   const isSmall = width < 900;
   return (
-    <View style={styles.logoSection}>
-      <Text style={styles.logoTitle}>OUR MENTORS HAVE WORKED IN</Text>
+    <View 
+      style={styles.logoSection}
+      accessibilityRole="region"
+      accessibilityLabel="Companies where our mentors work"
+    >
+      <Text 
+        style={styles.logoTitle}
+        accessibilityRole="header"
+        accessibilityLevel={2}
+      >
+        OUR MENTORS HAVE WORKED IN
+      </Text>
       <View style={[styles.logoWall, isSmall && styles.logoWallMobile]}>
         {COMPANIES.map((company) => (
-           <View key={company.name} style={styles.logoWrapper}>
-             <SimpleImage source={company.image} style={{ width: company.width, height: 35 }} alt={company.name} />
+           <View 
+             key={company.name} 
+             style={styles.logoWrapper}
+             accessibilityRole="image"
+             accessibilityLabel={`${company.name} logo`}
+           >
+             <SimpleImage source={company.image} style={{ width: company.width, height: 35 }} alt={`${company.name} company logo`} />
            </View>
         ))}
       </View>
@@ -101,9 +116,23 @@ const InterviewTracks = memo(() => {
   const router = useRouter();
 
   return (
-    <View style={[styles.sectionContainer, styles.tracksSection]}>
-      <Text style={styles.sectionKicker}>INTERVIEW TRACKS</Text>
-      <Text style={[styles.sectionTitle, isSmall && styles.sectionTitleMobile]}>
+    <View 
+      style={[styles.sectionContainer, styles.tracksSection]}
+      accessibilityRole="region"
+      accessibilityLabel="Interview tracks section"
+    >
+      <Text 
+        style={styles.sectionKicker}
+        accessibilityRole="header"
+        accessibilityLevel={2}
+      >
+        INTERVIEW TRACKS
+      </Text>
+      <Text 
+        style={[styles.sectionTitle, isSmall && styles.sectionTitleMobile]}
+        accessibilityRole="header"
+        accessibilityLevel={3}
+      >
         Choose your focus area
       </Text>
       <View style={[styles.tracksGrid, isSmall && styles.tracksGridMobile]}>
@@ -113,11 +142,28 @@ const InterviewTracks = memo(() => {
             style={styles.trackCard}
             onPress={() => router.push(track.path as any)}
             activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel={`${track.title}: ${track.desc}`}
+            accessibilityHint={`Navigate to ${track.title} interview track`}
           >
-            <Text style={styles.trackEmoji}>{track.emoji}</Text>
-            <Text style={styles.trackTitle}>{track.title}</Text>
+            <Text 
+              style={styles.trackEmoji}
+              accessibilityLabel={track.emoji}
+            >
+              {track.emoji}
+            </Text>
+            <Text 
+              style={styles.trackTitle}
+              accessibilityRole="header"
+              accessibilityLevel={4}
+            >
+              {track.title}
+            </Text>
             <Text style={styles.trackDesc}>{track.desc}</Text>
-            <View style={styles.trackArrow}>
+            <View 
+              style={styles.trackArrow}
+              accessible={false}
+            >
               <Text style={styles.trackArrowText}>→</Text>
             </View>
           </TouchableOpacity>
@@ -132,20 +178,52 @@ const Reviews = memo(() => {
   const isSmall = width < 900;
 
   return (
-    <View style={[styles.sectionContainer, styles.reviewsSection]}>
-      <Text style={styles.sectionKicker}>SUCCESS STORIES</Text>
-      <Text style={[styles.sectionTitle, isSmall && styles.sectionTitleMobile]}>
+    <View 
+      style={[styles.sectionContainer, styles.reviewsSection]}
+      accessibilityRole="region"
+      accessibilityLabel="Success stories and reviews section"
+    >
+      <Text 
+        style={styles.sectionKicker}
+        accessibilityRole="header"
+        accessibilityLevel={2}
+      >
+        SUCCESS STORIES
+      </Text>
+      <Text 
+        style={[styles.sectionTitle, isSmall && styles.sectionTitleMobile]}
+        accessibilityRole="header"
+        accessibilityLevel={3}
+      >
         Real results from real candidates
       </Text>
       <View style={[styles.reviewsGrid, isSmall && styles.reviewsGridMobile]}>
         {REVIEWS.map((review) => (
-          <View key={review.id} style={styles.reviewCard}>
+          <View 
+            key={review.id} 
+            style={styles.reviewCard}
+            accessibilityRole="article"
+            accessibilityLabel={`Review from ${review.name}, ${review.role} at ${review.company}. Rating: ${review.rating} out of 5 stars. ${review.text}`}
+          >
             <View style={styles.reviewHeader}>
-              <View>
-                <Text style={styles.reviewName}>{review.name}</Text>
+              <View style={styles.reviewHeaderLeft}>
+                <Text 
+                  style={styles.reviewName}
+                  accessibilityRole="header"
+                  accessibilityLevel={4}
+                >
+                  {review.name}
+                </Text>
                 <Text style={styles.reviewRole}>{review.role}, {review.company}</Text>
               </View>
-              <Text style={styles.reviewStars}>{'⭐'.repeat(review.rating)}</Text>
+              <View style={styles.reviewStarsContainer}>
+                <Text 
+                  style={styles.reviewStars}
+                  accessibilityLabel={`${review.rating} out of 5 stars`}
+                >
+                  {'⭐'.repeat(review.rating)}
+                </Text>
+              </View>
             </View>
             <Text style={styles.reviewText}>{review.text}</Text>
           </View>
@@ -160,15 +238,40 @@ const FAQSection = memo(() => {
   const isSmall = width < 900;
 
   return (
-    <View style={styles.sectionContainer}>
-      <Text style={styles.sectionKicker}>FAQ</Text>
-      <Text style={[styles.sectionTitle, isSmall && styles.sectionTitleMobile]}>
+    <View 
+      style={styles.sectionContainer}
+      accessibilityRole="region"
+      accessibilityLabel="Frequently asked questions section"
+    >
+      <Text 
+        style={styles.sectionKicker}
+        accessibilityRole="header"
+        accessibilityLevel={2}
+      >
+        FAQ
+      </Text>
+      <Text 
+        style={[styles.sectionTitle, isSmall && styles.sectionTitleMobile]}
+        accessibilityRole="header"
+        accessibilityLevel={3}
+      >
         Common questions answered
       </Text>
       <View style={styles.faqContainer}>
         {FAQ.map((item, i) => (
-          <View key={i} style={styles.faqItem}>
-            <Text style={styles.faqQ}>{item.q}</Text>
+          <View 
+            key={i} 
+            style={styles.faqItem}
+            accessibilityRole="summary"
+            accessibilityLabel={`Question: ${item.q}. Answer: ${item.a}`}
+          >
+            <Text 
+              style={styles.faqQ}
+              accessibilityRole="header"
+              accessibilityLevel={4}
+            >
+              {item.q}
+            </Text>
             <Text style={styles.faqA}>{item.a}</Text>
           </View>
         ))}
@@ -183,18 +286,32 @@ const BottomCTA = memo(() => {
   const isSmall = width < 900;
 
   return (
-    <View style={styles.ctaSection}>
+    <View 
+      style={styles.ctaSection}
+      accessibilityRole="region"
+      accessibilityLabel="Call to action section"
+    >
       <View style={[styles.ctaInner, isSmall && styles.ctaInnerMobile]}>
-        <Text style={[styles.ctaTitle, isSmall && styles.ctaTitleMobile]}>
+        <Text 
+          style={[styles.ctaTitle, isSmall && styles.ctaTitleMobile]}
+          accessibilityRole="header"
+          accessibilityLevel={2}
+        >
           Ready to ace your next interview?
         </Text>
-        <Text style={[styles.ctaSubtitle, isSmall && styles.ctaSubtitleMobile]}>
+        <Text 
+          style={[styles.ctaSubtitle, isSmall && styles.ctaSubtitleMobile]}
+          accessibilityRole="text"
+        >
           Join hundreds of candidates landing offers at top companies
         </Text>
         <TouchableOpacity
           style={styles.ctaButton}
           onPress={() => router.push('/auth/sign-up')}
           activeOpacity={0.9}
+          accessibilityRole="button"
+          accessibilityLabel="Get Started"
+          accessibilityHint="Navigate to sign up page to create your account"
         >
           <Text style={styles.ctaButtonText}>GET STARTED</Text>
         </TouchableOpacity>
@@ -242,12 +359,14 @@ const styles = StyleSheet.create({
   trackArrow: { alignSelf: 'flex-start', backgroundColor: CTA_TEAL, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
   trackArrowText: { color: '#fff', fontWeight: '700' },
 
-  // Reviews
+  // Reviews - ✅ FIXED OVERFLOW ISSUE
   reviewsSection: { backgroundColor: '#fff', paddingVertical: 80 },
   reviewsGrid: { flexDirection: 'row', gap: 24, justifyContent: 'center', flexWrap: 'wrap' },
   reviewsGridMobile: { flexDirection: 'column',alignItems: 'center' },
   reviewCard: { flex: 1, minWidth: 280, maxWidth: 360, backgroundColor: BG_CREAM, padding: 24, borderRadius: 16, borderWidth: 1, borderColor: '#f0f0f0' },
-  reviewHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 },
+  reviewHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12, gap: 12 },
+  reviewHeaderLeft: { flex: 1, flexShrink: 1, minWidth: 0 }, // ✅ ADDED: Allows text to wrap, prevents overflow
+  reviewStarsContainer: { flexShrink: 0, paddingLeft: 8 }, // ✅ ADDED: Prevents stars from shrinking or overflowing
   reviewName: { fontFamily: SYSTEM_FONT, fontWeight: '700', fontSize: 16, color: TEXT_DARK },
   reviewRole: { fontFamily: SYSTEM_FONT, fontSize: 13, color: TEXT_GRAY, marginTop: 2 },
   reviewStars: { fontSize: 16 },

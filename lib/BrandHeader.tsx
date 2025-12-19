@@ -9,7 +9,9 @@ import {
   Animated,
   Platform,
   Easing,
+  TouchableOpacity,
 } from "react-native";
+import { useRouter } from "expo-router";
 
 interface BrandHeaderProps {
   style?: ViewStyle;
@@ -17,6 +19,7 @@ interface BrandHeaderProps {
 }
 
 export const BrandHeader = ({ style, small = false }: BrandHeaderProps) => {
+  const router = useRouter();
   const leftEyeX = useRef(new Animated.Value(0)).current;
   const leftEyeY = useRef(new Animated.Value(0)).current;
   const rightEyeX = useRef(new Animated.Value(0)).current;
@@ -73,9 +76,16 @@ export const BrandHeader = ({ style, small = false }: BrandHeaderProps) => {
   }, []);
 
   return (
-    <View style={[styles.brandContainer, style]}>
+    <TouchableOpacity 
+      onPress={() => router.push('/')}
+      activeOpacity={0.8}
+      accessibilityRole="link"
+      accessibilityLabel="CrackJobs home"
+      accessibilityHint="Navigate to homepage"
+    >
+      <View style={[styles.brandContainer, style]}>
       {!small && (  
-        <View style={styles.eyesWrapper}>
+      <View style={styles.eyesWrapper}>
           <View style={styles.eye}>
             <Animated.View
               style={[
@@ -94,16 +104,17 @@ export const BrandHeader = ({ style, small = false }: BrandHeaderProps) => {
           </View>
         </View>
       )}
-      <View>
-        <Text style={[styles.logoMain, small && styles.logoMainSmall]}>
-          <Text style={styles.logoMainCrack}>Crack</Text>
-          <Text style={styles.logoMainJobs}>Jobs</Text>
-        </Text>
-        <Text style={[styles.logoTagline, small && styles.logoTaglineSmall]}>
-          Mad skills. Dream job!
-        </Text>
+        <View>
+          <Text style={[styles.logoMain, small && styles.logoMainSmall]}>
+            <Text style={styles.logoMainCrack}>Crack</Text>
+            <Text style={styles.logoMainJobs}>Jobs</Text>
+          </Text>
+          <Text style={[styles.logoTagline, small && styles.logoTaglineSmall]}>
+            Mad skills. Dream job!
+          </Text>
+        </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 };
 

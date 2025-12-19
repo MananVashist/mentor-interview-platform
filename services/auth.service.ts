@@ -1,11 +1,6 @@
 ﻿// services/auth.service.ts
 import { supabase } from '../lib/supabase/client';
 import { Session, AuthChangeEvent } from '@supabase/supabase-js';
-import * as WebBrowser from 'expo-web-browser'; //
-import * as Linking from 'expo-linking'; //
-
-// Warm up the browser for faster load
-WebBrowser.maybeCompleteAuthSession();
 
 export type Profile = {
   id: string;
@@ -84,50 +79,6 @@ async function signIn(email: string, password: string) {
 }
 
 /**
- * SIGN IN WITH OAUTH (FIXED)
- */
-async function signInWithOAuth(provider: 'google' | 'linkedin_oidc') {
-  console.log(`[AUTH] signInWithOAuth called for ${provider}`);
-  
-  // 1. Create a dynamic redirect URL that works in Expo Go (exp://) and Prod (crackjobs://)
-  const redirectUrl = Linking.createURL('/auth/callback'); 
-  console.log('[AUTH] Redirect URL:', redirectUrl);
-
-  try {
-    // 2. Get the auth URL from Supabase, but DO NOT let Supabase open the browser (skipBrowserRedirect: true)
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: provider, 
-      options: {
-        redirectTo: redirectUrl,
-        skipBrowserRedirect: true, // We handle the browser manually
-      },
-    });
-
-    if (error) throw error;
-
-    // 3. Open the browser session manually
-    if (data?.url) {
-      const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUrl);
-      
-      // If the user cancels the browser, we can log it
-      if (result.type !== 'success') {
-        console.log('[AUTH] User cancelled or browser failed');
-        return { data: null, error: { message: 'Login cancelled' } };
-      }
-      
-      // Note: On successful redirect, Supabase's global event listener (in client.ts) 
-      // picks up the deep link and sets the session.
-      return { data, error: null };
-    }
-    
-    return { data, error: null };
-  } catch (err: any) {
-    console.error('[AUTH] OAuth Error:', err);
-    return { data: null, error: err };
-  }
-}
-
-/**
  * SIGN UP (supabase-js)
  * Updated to accept phone number for metadata
  */
@@ -136,7 +87,7 @@ async function signUp(
   password: string, 
   fullName: string, 
   role: string, 
-  phone: string // <--- Added phone argument
+  phone: string
 ) {
   console.log('================ SIGN UP (service) ================');
   const { data, error } = await withTiming('supabase.auth.signUp', () =>
@@ -148,7 +99,7 @@ async function signUp(
           email,
           full_name: fullName,
           role,
-          phone, // <--- Passed to metadata
+          phone,
         },
       },
     })
@@ -214,7 +165,6 @@ function onAuthStateChange(callback: (event: AuthChangeEvent, session: Session |
 
 export const authService = {
   signIn,
-  signInWithOAuth, 
   signUp,
   signOut,
   getCurrentUser,

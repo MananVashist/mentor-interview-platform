@@ -14,9 +14,18 @@ import {
   TextInputProps,
   Animated,
   Platform,
-  Easing, // 🟢 Using standard Easing
+  Easing,
 } from "react-native";
+import { useRouter } from "expo-router";
 import { theme } from "./theme";
+
+// --- SYSTEM FONT (for BrandHeader consistency) ---
+const SYSTEM_FONT = Platform.select({
+  web: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif",
+  ios: "System",
+  android: "Roboto",
+  default: "System"
+}) as string;
 
 // --- Types ---
 interface HeadingProps {
@@ -56,6 +65,7 @@ interface BrandHeaderProps {
 
 // 🟢 BRAND HEADER: FIXED & SMOOTH
 export const BrandHeader = ({ style, small = false }: BrandHeaderProps) => {
+  const router = useRouter();
   const leftEyeX = useRef(new Animated.Value(0)).current;
   const leftEyeY = useRef(new Animated.Value(0)).current;
   const rightEyeX = useRef(new Animated.Value(0)).current;
@@ -129,37 +139,45 @@ export const BrandHeader = ({ style, small = false }: BrandHeaderProps) => {
   }, []);
 
   return (
-    <View style={[styles.brandContainer, style]}>
-    {!small && (  
-    <View style={styles.eyesWrapper}>
-        <View style={styles.eye}>
-          <Animated.View
-            style={[
-              styles.pupil,
-              { transform: [{ translateX: leftEyeX }, { translateY: leftEyeY }] },
-            ]}
-          />
+    <TouchableOpacity 
+      onPress={() => router.push('/')}
+      activeOpacity={0.8}
+      accessibilityRole="link"
+      accessibilityLabel="CrackJobs home"
+      accessibilityHint="Navigate to homepage"
+    >
+      <View style={[styles.brandContainer, style]}>
+      {!small && (  
+      <View style={styles.eyesWrapper}>
+          <View style={styles.eye}>
+            <Animated.View
+              style={[
+                styles.pupil,
+                { transform: [{ translateX: leftEyeX }, { translateY: leftEyeY }] },
+              ]}
+            />
+          </View>
+          <View style={styles.eye}>
+            <Animated.View
+              style={[
+                styles.pupil,
+                { transform: [{ translateX: rightEyeX }, { translateY: rightEyeY }] },
+              ]}
+            />
+          </View>
         </View>
-        <View style={styles.eye}>
-          <Animated.View
-            style={[
-              styles.pupil,
-              { transform: [{ translateX: rightEyeX }, { translateY: rightEyeY }] },
-            ]}
-          />
+      )}
+        <View>
+          <Text style={[styles.logoMain, small && styles.logoMainSmall]}>
+            <Text style={styles.logoMainCrack}>Crack</Text>
+            <Text style={styles.logoMainJobs}>Jobs</Text>
+          </Text>
+          <Text style={[styles.logoTagline, small && styles.logoTaglineSmall]}>
+            Mad skills. Dream job!
+          </Text>
         </View>
       </View>
-    )}
-      <View>
-        <Text style={[styles.logoMain, small && styles.logoMainSmall]}>
-          <Text style={styles.logoMainCrack}>Crack</Text>
-          <Text style={styles.logoMainJobs}>Jobs</Text>
-        </Text>
-        <Text style={[styles.logoTagline, small && styles.logoTaglineSmall]}>
-          Mad skills. Dream job!
-        </Text>
-      </View>
-    </View>
+    </TouchableOpacity>
   );
 };
 
@@ -309,7 +327,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing.md,
   },
   
-  // Brand Styles
+  // Brand Styles - ✅ NOW USING SYSTEM_FONT
   brandContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -339,7 +357,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   logoMain: {
-    fontFamily: theme.typography.fontFamily.bold,
+    fontFamily: SYSTEM_FONT, // ✅ FIXED: Now uses SYSTEM_FONT
     fontSize: 32,
     fontWeight: '900',
     lineHeight: 38,
@@ -351,7 +369,7 @@ const styles = StyleSheet.create({
   logoMainCrack: { color: '#333' },
   logoMainJobs: { color: '#18a7a7' },
   logoTagline: {
-    fontFamily: theme.typography.fontFamily.bold,
+    fontFamily: SYSTEM_FONT, // ✅ FIXED: Now uses SYSTEM_FONT
     fontSize: 14,
     fontWeight: '900',
     color: '#18a7a7',

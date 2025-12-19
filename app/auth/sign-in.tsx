@@ -5,7 +5,6 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
-  Alert,
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
@@ -13,14 +12,13 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { Link, useRouter } from 'expo-router';
-import Head from 'expo-router/head'; // 👈 Added Import
-import { AntDesign } from '@expo/vector-icons';
+import Head from 'expo-router/head';
 
 import { authService } from '@/services/auth.service';
 import { candidateService } from '@/services/candidate.service';
 import { mentorService } from '@/services/mentor.service';
 import { useAuthStore } from '@/lib/store';
-import { BrandHeader } from '@/lib/ui';
+import { BrandHeader } from '@/lib/BrandHeader';
 import { Footer } from '@/components/Footer';
 import { useNotification } from '@/lib/ui/NotificationBanner';
 
@@ -42,7 +40,6 @@ export default function SignInScreen() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // --- Handlers (Kept exactly as is) ---
   const handlePostAuth = async (user: any, session: any) => {
     if (!user || !session) {
       showNotification('Login failed: missing session information', 'error');
@@ -99,35 +96,6 @@ export default function SignInScreen() {
     }
   };
 
-  const handleOAuthSignIn = async (provider: 'google' | 'linkedin_oidc') => {
-    try {
-      setLoading(true);
-      const result: any = await authService.signInWithOAuth(provider);
-
-      if (!result || (result && !result.user && !result.session && !result.error)) {
-        return;
-      }
-
-      const { user, session, error } = result;
-
-      if (error) {
-        showNotification(error.message, 'error');
-        return;
-      }
-      if (!user || !session) {
-        showNotification('OAuth sign-in failed: no user/session returned', 'error');
-        return;
-      }
-      await handlePostAuth(user, session);
-
-    } catch (err: any) {
-      console.error('[SignIn] handleOAuthSignIn error:', err);
-      showNotification(err.message || 'OAuth sign-in failed', 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleSignIn = async () => {
     if (!email || !password) {
       showNotification('Please enter both email and password', 'error');
@@ -154,10 +122,10 @@ export default function SignInScreen() {
 
   return (
     <>
-      {/* 🟢 SEO TITLE ADDED */}
       <Head>
         <title>Log In | CrackJobs</title>
         <meta name="description" content="Log in to your CrackJobs account to manage your interviews and bookings." />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 
       <KeyboardAvoidingView
@@ -167,16 +135,25 @@ export default function SignInScreen() {
         <ScrollView 
           contentContainerStyle={styles.scrollContent} 
           showsVerticalScrollIndicator={false}
+          accessibilityRole="main"
         >
-          {/* Wrapper to Center Form vertically */}
           <View style={styles.formWrapper}>
-            <View style={styles.content}>
+            <View 
+              style={styles.content}
+              accessibilityRole="form"
+              accessibilityLabel="Sign in form"
+            >
               <BrandHeader />
 
               <View style={styles.spacer} />
 
               <View style={styles.section}>
-                <Text style={styles.label}>EMAIL ADDRESS</Text>
+                <Text 
+                  style={styles.label}
+                  accessibilityRole="text"
+                >
+                  EMAIL ADDRESS
+                </Text>
                 <TextInput
                   style={styles.input}
                   value={email}
@@ -185,11 +162,20 @@ export default function SignInScreen() {
                   keyboardType="email-address"
                   placeholder="name@email.com"
                   placeholderTextColor="#9CA3AF"
+                  accessibilityLabel="Email address"
+                  accessibilityHint="Enter your email address"
+                  textContentType="emailAddress"
+                  autoComplete="email"
                 />
               </View>
 
               <View style={styles.section}>
-                <Text style={styles.label}>PASSWORD</Text>
+                <Text 
+                  style={styles.label}
+                  accessibilityRole="text"
+                >
+                  PASSWORD
+                </Text>
                 <TextInput
                   style={styles.input}
                   value={password}
@@ -197,6 +183,10 @@ export default function SignInScreen() {
                   secureTextEntry
                   placeholder="••••••••"
                   placeholderTextColor="#9CA3AF"
+                  accessibilityLabel="Password"
+                  accessibilityHint="Enter your password"
+                  textContentType="password"
+                  autoComplete="password"
                 />
               </View>
 
@@ -204,24 +194,29 @@ export default function SignInScreen() {
                 onPress={handleSignIn}
                 disabled={loading}
                 style={styles.signInButton}
+                accessibilityRole="button"
+                accessibilityLabel="Sign in"
+                accessibilityHint="Sign in to your account"
+                accessibilityState={{ disabled: loading }}
               >
                 {loading ? (
-                  <ActivityIndicator color="#fff" />
+                  <ActivityIndicator color="#fff" accessibilityLabel="Signing in" />
                 ) : (
                   <Text style={styles.signInButtonText}>Sign In</Text>
                 )}
               </TouchableOpacity>
 
-              <View style={styles.dividerContainer}>
-                <View style={styles.dividerLine} />
-                <Text style={styles.dividerText}>Or continue with</Text>
-                <View style={styles.dividerLine} />
-              </View>
-
-              <View style={styles.authFooter}>
+              <View 
+                style={styles.authFooter}
+                accessibilityRole="text"
+              >
                 <Text style={styles.authFooterText}>Don't have an account? </Text>
                 <Link href="/auth/sign-up" asChild>
-                  <TouchableOpacity>
+                  <TouchableOpacity
+                    accessibilityRole="link"
+                    accessibilityLabel="Sign up"
+                    accessibilityHint="Navigate to sign up page to create a new account"
+                  >
                     <Text style={styles.authFooterLink}>Sign Up</Text>
                   </TouchableOpacity>
                 </Link>
@@ -229,7 +224,6 @@ export default function SignInScreen() {
             </View>
           </View>
 
-          {/* Sticky Footer at bottom, full width */}
           {isWeb && <Footer />}
         </ScrollView>
       </KeyboardAvoidingView>
@@ -276,22 +270,10 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   signInButtonText: { color: '#fff', fontWeight: '700' },
-  dividerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 24,
-  },
-  dividerLine: { flex: 1, height: 1, backgroundColor: '#E2E8F0' },
-  dividerText: {
-    marginHorizontal: 12,
-    color: '#94A3B8',
-    fontSize: 12,
-    fontWeight: '500',
-  },
   authFooter: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 16,
+    marginTop: 24,
   },
   authFooterText: { color: '#6b7280' },
   authFooterLink: { color: '#0E9384', fontWeight: '700' },

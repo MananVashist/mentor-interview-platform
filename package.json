@@ -57,6 +57,7 @@
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
+    "@types/luxon": "^3.7.1",
     "@types/react": "~18.2.45",
     "react-snap": "^1.23.0",
     "supabase": "^1.192.5",

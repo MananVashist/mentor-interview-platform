@@ -4,7 +4,7 @@
 export interface TemplateQuestion {
   id: string;
   text: string;
-  type: 'rating' | 'text' | string;
+  type: 'rating' | 'text' | string; // 'boolean' supported via string
 }
 
 export interface EvaluationTemplate {
@@ -25,11 +25,10 @@ export interface InterviewProfile {
 
 // Mapped by interview_profile_id (number) -> skill_id (UUID)
 export const MASTER_TEMPLATES: Record<number, InterviewProfile> = {
-  
   // =========================================================
   // 1. PRODUCT MANAGEMENT (PM) -> ID: 8
   // =========================================================
-  8: { 
+  8: {
     profile_name: "Product Manager",
     skills: {
       // Product Sense / Product Design
@@ -43,120 +42,139 @@ export const MASTER_TEMPLATES: Record<number, InterviewProfile> = {
               { id: "pm_ps_q1", text: "Did the candidate identify distinct, specific user segments rather than generic ones?", type: "rating" },
               { id: "pm_ps_q2", text: "Did they articulate the specific pain points of the chosen segment with empathy?", type: "rating" },
               { id: "pm_ps_q3", text: "Did they prioritize one segment/problem clearly with logical reasoning?", type: "rating" },
-              { id: "pm_ps_q4", text: "Did they define a clear goal for the product before jumping to features?", type: "rating" }
+              { id: "pm_ps_q4", text: "Did they define a clear goal / JTBD before jumping to features?", type: "rating" },
+              { id: "pm_ps_q5", text: "Did they explicitly call out key assumptions and what they'd validate first?", type: "rating" }
             ]
           },
           {
-            title: "Solutioning & Creativity",
-            example: "Brainstorm solutions for the identified pain points.",
+            title: "Solutioning, Trade-offs & Success",
+            example: "Improve WhatsApp groups for large communities.",
             questions: [
-              { id: "pm_ps_q5", text: "Did the candidate propose at least one novel/creative solution beyond the obvious?", type: "rating" },
-              { id: "pm_ps_q6", text: "Did they prioritize features based on impact vs effort (or a similar framework)?", type: "rating" },
-              { id: "pm_ps_q7", text: "Did they critique their own solution (identify pitfalls or risks)?", type: "rating" },
-              { id: "pm_ps_rem", text: "Overall Product Sense Feedback", type: "text" }
+              { id: "pm_ps_q6", text: "Did the candidate propose at least one non-obvious / differentiated solution?", type: "rating" },
+              { id: "pm_ps_q7", text: "Did they prioritize features using a clear framework (impact/effort, RICE, etc.)?", type: "rating" },
+              { id: "pm_ps_q8", text: "Did they discuss UX risks, abuse vectors, or edge cases (spam, privacy, accessibility)?", type: "rating" },
+              { id: "pm_ps_q9", text: "Did they define success metrics + guardrails (e.g., retention vs toxicity)?", type: "rating" },
+              { id: "pm_ps_q10", text: "Would you ship this v1 with confidence?", type: "boolean" },
+              { id: "pm_ps_rem", text: "Overall Product Sense Feedback (what was strong/weak, key gaps, hire/no-hire rationale)", type: "text" }
             ]
           }
         ]
       },
+
       // Execution & Analytics
       "10f8c61c-fa5e-4208-b36f-571ee64cc8fa": {
         skill_name: "Execution & Analytics",
         templates: [
           {
             title: "Root Cause Analysis (RCA)",
-            example: "Uber bookings dropped 10% yesterday. Investigate.",
+            example: "DAU dropped 20% in the last week. Diagnose.",
             questions: [
-              { id: "pm_exec_q1", text: "Did the candidate first clarify the metric definition and time frame?", type: "rating" },
-              { id: "pm_exec_q2", text: "Did they systematically check external factors (seasonality, competitors) vs internal factors (bugs, releases)?", type: "rating" },
-              { id: "pm_exec_q3", text: "Did they segment the data (by region, platform, device) to isolate the issue?", type: "rating" },
-              { id: "pm_exec_q4", text: "Did they summarize the likely root cause clearly?", type: "rating" }
+              { id: "pm_exec_q1", text: "Did the candidate clarify metric definition, timeframe, and severity (real vs logging issue)?", type: "rating" },
+              { id: "pm_exec_q2", text: "Did they segment to isolate (region/platform/cohort/channel)?", type: "rating" },
+              { id: "pm_exec_q3", text: "Did they propose hypotheses across internal + external causes?", type: "rating" },
+              { id: "pm_exec_q4", text: "Did they prioritize hypotheses by likelihood x impact (not a laundry list)?", type: "rating" },
+              { id: "pm_exec_q5", text: "Did they tie investigation to funnel decomposition (acquisition → activation → retention)?", type: "rating" }
             ]
           },
           {
-            title: "Metric Definition & Trade-offs",
-            example: "Define success for Facebook Marketplace.",
+            title: "Decisioning, Metrics & Next Steps",
+            example: "North Star metrics for YouTube Shorts (and what you'd monitor daily).",
             questions: [
-              { id: "pm_exec_q5", text: "Did the candidate identify a North Star metric that captures true value?", type: "rating" },
-              { id: "pm_exec_q6", text: "Did they include counter-metrics (guardrails) to prevent negative side effects?", type: "rating" },
-              { id: "pm_exec_q7", text: "Did they explain trade-offs (e.g., revenue vs user experience) effectively?", type: "rating" },
-              { id: "pm_exec_rem", text: "Overall Execution Feedback", type: "text" }
+              { id: "pm_exec_q6", text: "Did they propose a North Star metric aligned to value creation (not vanity)?", type: "rating" },
+              { id: "pm_exec_q7", text: "Did they propose input metrics that drive the North Star (leading indicators)?", type: "rating" },
+              { id: "pm_exec_q8", text: "Did they include guardrails/counter-metrics to prevent harm (quality, churn, creator health)?", type: "rating" },
+              { id: "pm_exec_q9", text: "Did they propose an actionable next-step plan (what data, what dashboards, what owners)?", type: "rating" },
+              { id: "pm_exec_q10", text: "Did they communicate uncertainty clearly (what they'd need to confirm)?", type: "boolean" },
+              { id: "pm_exec_rem", text: "Overall Execution Feedback (structured? decisive? pragmatic?)", type: "text" }
             ]
           }
         ]
       },
+
       // Strategy & Market Understanding
       "eec759c9-ed0e-4305-9dd9-a36556e93ff0": {
         skill_name: "Strategy & Market Understanding",
         templates: [
           {
-            title: "Market Analysis",
-            example: "Should Spotify enter the hardware market?",
+            title: "Market, Competition & Positioning",
+            example: "How should Spotify compete with Apple Music?",
             questions: [
-              { id: "pm_strat_q1", text: "Did the candidate use a framework (SWOT, 5 Forces, etc.) to structure their thoughts?", type: "rating" },
-              { id: "pm_strat_q2", text: "Did they correctly identify the competitive landscape and key players?", type: "rating" },
-              { id: "pm_strat_q3", text: "Did they analyze the barriers to entry and potential unfair advantages?", type: "rating" },
-              { id: "pm_strat_q4", text: "Did they consider the alignment with the company's mission/vision?", type: "rating" }
+              { id: "pm_strat_q1", text: "Did the candidate structure analysis using a framework (5 Forces, SWOT, Jobs-to-be-done, etc.)?", type: "rating" },
+              { id: "pm_strat_q2", text: "Did they identify customer segments + distinct needs (not one-size-fits-all)?", type: "rating" },
+              { id: "pm_strat_q3", text: "Did they analyze competitive differentiation and moats (distribution, ecosystem, network effects)?", type: "rating" },
+              { id: "pm_strat_q4", text: "Did they consider pricing/monetization realities and constraints?", type: "rating" },
+              { id: "pm_strat_q5", text: "Did they evaluate risks (regulatory, partnerships, supply-side creators/artists)?", type: "rating" }
             ]
           },
           {
-            title: "Strategic Decision Making",
-            example: "Go-to-Market strategy for the new product.",
+            title: "Go/No-Go, GTM & Long-Term Thinking",
+            example: "Should Instagram enter online dating? What would your strategy be?",
             questions: [
-              { id: "pm_strat_q5", text: "Did the candidate identify a clear beachhead market or launch strategy?", type: "rating" },
-              { id: "pm_strat_q6", text: "Did they discuss monetization or business model sustainability?", type: "rating" },
-              { id: "pm_strat_q7", text: "Was their final recommendation ('Go' or 'No-Go') definitive and well-supported?", type: "rating" },
+              { id: "pm_strat_q6", text: "Did they size the opportunity (rough TAM/SAM/SOM or directional sizing)?", type: "rating" },
+              { id: "pm_strat_q7", text: "Did they propose a clear wedge/beachhead + phased rollout?", type: "rating" },
+              { id: "pm_strat_q8", text: "Did they connect strategy to product bets (features, partnerships, distribution)?", type: "rating" },
+              { id: "pm_strat_q9", text: "Was the final recommendation decisive and well-supported?", type: "rating" },
+              { id: "pm_strat_q10", text: "Would you trust this person to own a quarterly strategy narrative?", type: "boolean" },
               { id: "pm_strat_rem", text: "Overall Strategy Feedback", type: "text" }
             ]
           }
         ]
       },
+
       // Technical & Architecture Basics
       "f699c3dc-d048-4c61-ac5c-6abb4b2dcdc3": {
         skill_name: "Technical & Architecture Basics",
         templates: [
           {
-            title: "System Concepts",
-            example: "What happens when you type a URL in the browser?",
+            title: "System Concepts & Data Flow",
+            example: "Explain how search autosuggest works end-to-end.",
             questions: [
-              { id: "pm_tech_q1", text: "Did the candidate explain the request/response cycle clearly?", type: "rating" },
-              { id: "pm_tech_q2", text: "Did they mention key components like DNS, Server, Database, and APIs?", type: "rating" },
-              { id: "pm_tech_q3", text: "Was the level of detail appropriate (not too deep, not too shallow)?", type: "rating" },
-              { id: "pm_tech_q4", text: "Did they use correct terminology (latency, throughput, cache)?", type: "rating" }
+              { id: "pm_tech_q1", text: "Did they clarify requirements (latency, accuracy, scale, languages, abuse/spam)?", type: "rating" },
+              { id: "pm_tech_q2", text: "Did they explain components (client, API, service, cache, DB/index, analytics)?", type: "rating" },
+              { id: "pm_tech_q3", text: "Did they describe the request/response cycle and where caching fits?", type: "rating" },
+              { id: "pm_tech_q4", text: "Did they mention ranking signals (popularity, personalization, recency) at a high level?", type: "rating" },
+              { id: "pm_tech_q5", text: "Did they discuss failure modes (fallbacks, partial outages, stale cache)?", type: "rating" }
             ]
           },
           {
-            title: "Working with Engineering",
-            example: "Trade-offs between SQL vs NoSQL or Native vs Web.",
+            title: "Trade-offs & Working with Engineering",
+            example: "SQL vs NoSQL trade-offs for a feed system. Monolith vs microservices.",
             questions: [
-              { id: "pm_tech_q5", text: "Did the candidate understand the pros/cons of the technology choices?", type: "rating" },
-              { id: "pm_tech_q6", text: "Could they explain the impact on the user experience (speed vs reliability)?", type: "rating" },
-              { id: "pm_tech_q7", text: "Did they demonstrate empathy for engineering constraints?", type: "rating" },
+              { id: "pm_tech_q6", text: "Did they explain trade-offs with user impact (latency, reliability, consistency)?", type: "rating" },
+              { id: "pm_tech_q7", text: "Did they talk about observability (logs/metrics/traces) and debugging?", type: "rating" },
+              { id: "pm_tech_q8", text: "Did they show good API literacy (contracts, versioning, pagination, idempotency)?", type: "rating" },
+              { id: "pm_tech_q9", text: "Did they avoid unnecessary jargon and stay at the right depth?", type: "rating" },
+              { id: "pm_tech_q10", text: "Would engineers enjoy working with this PM?", type: "boolean" },
               { id: "pm_tech_rem", text: "Overall Technical Feedback", type: "text" }
             ]
           }
         ]
       },
+
       // Behavioral & Leadership
       "2be8c466-fdab-4fc3-86e9-f1302ba001b5": {
         skill_name: "Behavioral & Leadership",
         templates: [
           {
-            title: "Conflict & Communication",
-            example: "Tell me about a time you managed a difficult stakeholder.",
+            title: "Conflict, Influence & Ownership",
+            example: "Tell me about a time you disagreed with a stakeholder.",
             questions: [
-              { id: "pm_beh_q1", text: "Did the candidate use the STAR method (Situation, Task, Action, Result)?", type: "rating" },
-              { id: "pm_beh_q2", text: "Did they focus on their specific contribution ('I' vs 'We')?", type: "rating" },
-              { id: "pm_beh_q3", text: "Did they show empathy for the other party's perspective?", type: "rating" },
-              { id: "pm_beh_q4", text: "Was the resolution constructive and positive?", type: "rating" }
+              { id: "pm_beh_q1", text: "Did the candidate use a clear structure (STAR/CARE/What-SoWhat-NowWhat)?", type: "rating" },
+              { id: "pm_beh_q2", text: "Did they demonstrate ownership (specific actions they took)?", type: "rating" },
+              { id: "pm_beh_q3", text: "Did they show empathy for the stakeholder’s incentives and constraints?", type: "rating" },
+              { id: "pm_beh_q4", text: "Did they use data / customer evidence to influence (not just opinions)?", type: "rating" },
+              { id: "pm_beh_q5", text: "Was the outcome constructive and did it protect the relationship?", type: "rating" }
             ]
           },
           {
-            title: "Leadership & Growth",
+            title: "Resilience, Growth & Judgment",
             example: "Tell me about a failure and what you learned.",
             questions: [
-              { id: "pm_beh_q5", text: "Did the candidate take ownership of the failure without blaming others?", type: "rating" },
-              { id: "pm_beh_q6", text: "Was the 'learning' specific and actionable for the future?", type: "rating" },
-              { id: "pm_beh_q7", text: "Did they demonstrate resilience and a growth mindset?", type: "rating" },
+              { id: "pm_beh_q6", text: "Did they take accountability without blaming others?", type: "rating" },
+              { id: "pm_beh_q7", text: "Was the learning specific and applied later (behavior change)?", type: "rating" },
+              { id: "pm_beh_q8", text: "Did they demonstrate good judgment under uncertainty?", type: "rating" },
+              { id: "pm_beh_q9", text: "Would you trust them to lead cross-functional alignment in a tough quarter?", type: "boolean" },
+              { id: "pm_beh_q10", text: "Any red flags (ego, blame, vagueness, lack of impact)?", type: "text" },
               { id: "pm_beh_rem", text: "Overall Behavioral Feedback", type: "text" }
             ]
           }
@@ -176,122 +194,141 @@ export const MASTER_TEMPLATES: Record<number, InterviewProfile> = {
         skill_name: "SQL & Querying",
         templates: [
           {
-            title: "Query Construction",
+            title: "Core Query Skills (Top-N, Joins, Aggregations)",
             example: "Write a query to find the top 3 items per category.",
             questions: [
-              { id: "da_sql_q1", text: "Did the candidate choose the correct Window Function (RANK vs DENSE_RANK)?", type: "rating" },
-              { id: "da_sql_q2", text: "Did they structure the CTEs or subqueries logically for readability?", type: "rating" },
-              { id: "da_sql_q3", text: "Did they handle NULL values or data type conversions correctly?", type: "rating" },
-              { id: "da_sql_q4", text: "Did they correctly join tables (Inner vs Left Join usage)?", type: "rating" }
+              { id: "da_sql_q1", text: "Did the candidate clarify the schema and expected output shape before writing SQL?", type: "rating" },
+              { id: "da_sql_q2", text: "Did they choose the correct window function / approach (ROW_NUMBER vs RANK vs DENSE_RANK)?", type: "rating" },
+              { id: "da_sql_q3", text: "Were joins correct (inner vs left) and did they avoid duplicate explosions?", type: "rating" },
+              { id: "da_sql_q4", text: "Did they handle NULLs and edge cases (ties, missing categories) correctly?", type: "rating" },
+              { id: "da_sql_q5", text: "Was the query readable (CTEs, naming, logical steps)?", type: "rating" }
             ]
           },
           {
-            title: "Optimization & Accuracy",
+            title: "Accuracy, Validation & Performance",
             example: "Optimize a slow query on a large dataset.",
             questions: [
-              { id: "da_sql_q5", text: "Did the candidate verify the output logic (e.g., checking for duplicates)?", type: "rating" },
-              { id: "da_sql_q6", text: "Did they mention indexing, partition pruning, or limiting data scans?", type: "rating" },
-              { id: "da_sql_q7", text: "Can they explain the order of execution (WHERE vs HAVING)?", type: "rating" }
+              { id: "da_sql_q6", text: "Did they validate output correctness (spot checks, counts, duplicates)?", type: "rating" },
+              { id: "da_sql_q7", text: "Did they demonstrate correct understanding of WHERE vs HAVING and GROUP BY behavior?", type: "rating" },
+              { id: "da_sql_q8", text: "Did they mention performance levers (indexes/partition pruning/limiting scans) appropriately?", type: "rating" },
+              { id: "da_sql_q9", text: "Would you trust this query in production for decision-making?", type: "boolean" },
+              { id: "da_sql_rem", text: "Overall SQL Feedback (strengths, gaps, common pitfalls observed)", type: "text" }
             ]
           }
         ]
       },
+
       // Case Studies (Data → Insight)
       "1d072282-c794-4d7b-8aa4-27989bd5602a": {
         skill_name: "Case Studies (Data → Insight)",
         templates: [
           {
-            title: "Diagnostic Capability",
-            example: "Average order value is down. Why?",
+            title: "Diagnosis & Root Cause",
+            example: "Sales dropped in South India—investigate.",
             questions: [
-              { id: "da_case_q1", text: "Did the candidate segment data to isolate the driver (Mix shift vs Pure decline)?", type: "rating" },
-              { id: "da_case_q2", text: "Did they clarify the metric definition first?", type: "rating" },
-              { id: "da_case_q3", text: "Did they check for data quality issues or logging errors?", type: "rating" },
-              { id: "da_case_q4", text: "Did they hypothesize logical business reasons (e.g., discounts, seasonality)?", type: "rating" }
+              { id: "da_case_q1", text: "Did the candidate clarify the metric definition and timeframe (real vs data issue)?", type: "rating" },
+              { id: "da_case_q2", text: "Did they segment properly (channel, city, category, cohort, supply constraints)?", type: "rating" },
+              { id: "da_case_q3", text: "Did they propose hypotheses across business + product + ops causes?", type: "rating" },
+              { id: "da_case_q4", text: "Did they distinguish mix-shift vs within-segment decline?", type: "rating" },
+              { id: "da_case_q5", text: "Did they avoid correlation traps and seek causal evidence?", type: "rating" }
             ]
           },
           {
-            title: "Actionability",
-            example: "What recommendation would you give the CEO based on this?",
+            title: "Insight Storytelling & Actionability",
+            example: "Present your recommendation to the CEO in 2 minutes.",
             questions: [
-              { id: "da_case_q5", text: "Did the candidate translate the data insight into a business recommendation?", type: "rating" },
-              { id: "da_case_q6", text: "Did they quantify the impact of the problem?", type: "rating" },
-              { id: "da_case_q7", text: "Was the recommendation practical and feasible?", type: "rating" }
+              { id: "da_case_q6", text: "Did they quantify impact / prioritize the biggest driver?", type: "rating" },
+              { id: "da_case_q7", text: "Did they propose pragmatic next steps (data pulls, experiments, ops changes)?", type: "rating" },
+              { id: "da_case_q8", text: "Was the narrative clear (what happened → why → what to do)?", type: "rating" },
+              { id: "da_case_q9", text: "Would you trust them to lead the analysis end-to-end?", type: "boolean" },
+              { id: "da_case_rem", text: "Overall Case Study Feedback", type: "text" }
             ]
           }
         ]
       },
+
       // Product Metrics & Experimentation
       "b800c6dc-2306-431c-9b72-ef4c6b2896e3": {
         skill_name: "Product Metrics & Experimentation",
         templates: [
           {
-            title: "Experiment Design",
+            title: "Metric Design & Experiment Setup",
             example: "Design an A/B test for a new checkout button.",
             questions: [
-              { id: "da_exp_q1", text: "Did the candidate define a clear Primary Metric (e.g., Conversion Rate)?", type: "rating" },
-              { id: "da_exp_q2", text: "Did they define Guardrail Metrics (e.g., Latency, Cancellation Rate)?", type: "rating" },
-              { id: "da_exp_q3", text: "Did they understand how to select the target population and sample size?", type: "rating" },
-              { id: "da_exp_q4", text: "Did they mention randomization units (User vs Session)?", type: "rating" }
+              { id: "da_exp_q1", text: "Did the candidate define a clear primary metric aligned to the goal?", type: "rating" },
+              { id: "da_exp_q2", text: "Did they define guardrails (refunds, cancellations, latency, complaints)?", type: "rating" },
+              { id: "da_exp_q3", text: "Did they state randomization unit (user/session) and why?", type: "rating" },
+              { id: "da_exp_q4", text: "Did they discuss sample size / power / duration considerations?", type: "rating" },
+              { id: "da_exp_q5", text: "Did they anticipate biases (novelty, seasonality, SRM)?", type: "rating" }
             ]
           },
           {
-            title: "Result Interpretation",
-            example: "P-value is 0.04. Do we launch?",
+            title: "Result Interpretation & Decision",
+            example: "P-value is 0.04 but guardrail metric worsened. Launch?",
             questions: [
-              { id: "da_exp_q5", text: "Did the candidate correctly interpret statistical significance?", type: "rating" },
-              { id: "da_exp_q6", text: "Did they check for novelty effects or seasonality?", type: "rating" },
-              { id: "da_exp_q7", text: "Did they recommend a decision based on both stats and business sense?", type: "rating" }
+              { id: "da_exp_q6", text: "Did they interpret statistical significance correctly and discuss confidence intervals?", type: "rating" },
+              { id: "da_exp_q7", text: "Did they look beyond p-value to practical significance (effect size)?", type: "rating" },
+              { id: "da_exp_q8", text: "Did they recommend a decision balancing business + risk?", type: "rating" },
+              { id: "da_exp_q9", text: "Would you trust them to sign off an experiment readout?", type: "boolean" },
+              { id: "da_exp_rem", text: "Overall Experimentation Feedback", type: "text" }
             ]
           }
         ]
       },
+
       // Excel / Visualization / Dashboarding
       "d2dd2979-5117-41e1-b32b-5804b717661b": {
         skill_name: "Excel / Visualization / Dashboarding",
         templates: [
           {
-            title: "Visual Design",
-            example: "Visualize monthly sales trends for 5 regions.",
+            title: "Visualization Choices & Clarity",
+            example: "Build a dashboard to track weekly retention for 5 cohorts.",
             questions: [
-              { id: "da_viz_q1", text: "Did the candidate choose the correct chart type (Line vs Bar)?", type: "rating" },
-              { id: "da_viz_q2", text: "Did they avoid clutter and confusing axes?", type: "rating" },
-              { id: "da_viz_q3", text: "Did they use color effectively to highlight key insights?", type: "rating" },
-              { id: "da_viz_q4", text: "Did they label axes and provide a clear legend?", type: "rating" }
+              { id: "da_viz_q1", text: "Did the candidate choose appropriate chart types for the question (trend vs composition)?", type: "rating" },
+              { id: "da_viz_q2", text: "Did they avoid misleading visuals (axes, truncation, too many colors)?", type: "rating" },
+              { id: "da_viz_q3", text: "Did they label clearly and provide context (WoW/YoY, benchmarks)?", type: "rating" },
+              { id: "da_viz_q4", text: "Did they surface the 'so what' (key insights) rather than just charts?", type: "rating" },
+              { id: "da_viz_q5", text: "Did they consider audience/persona (VP vs IC) for level of detail?", type: "rating" }
             ]
           },
           {
-            title: "Dashboard Logic",
-            example: "Build a tracking dashboard for the Marketing VP.",
+            title: "Dashboard Logic & Operational Use",
+            example: "Interpret this dashboard: traffic up, conversions down—what now?",
             questions: [
-              { id: "da_viz_q5", text: "Did the candidate structure the dashboard from high-level to granular?", type: "rating" },
-              { id: "da_viz_q6", text: "Did they select metrics relevant to the specific persona (VP vs Manager)?", type: "rating" },
-              { id: "da_viz_q7", text: "Did they include comparisons (WoW, YoY) for context?", type: "rating" }
+              { id: "da_viz_q6", text: "Did they propose drill-downs and segmentation to debug changes?", type: "rating" },
+              { id: "da_viz_q7", text: "Did they identify missing metrics that would be needed to act?", type: "rating" },
+              { id: "da_viz_q8", text: "Did they propose alerting thresholds or anomaly detection basics?", type: "rating" },
+              { id: "da_viz_q9", text: "Would you trust them to build dashboards that leadership uses weekly?", type: "boolean" },
+              { id: "da_viz_rem", text: "Overall Visualization/Dashboarding Feedback", type: "text" }
             ]
           }
         ]
       },
+
       // Behavioral / Communication
       "19b309a5-3860-41d4-8c5e-80fdc9300174": {
         skill_name: "Behavioral / Communication",
         templates: [
           {
-            title: "Communication",
+            title: "Communication & Stakeholder Handling",
             example: "Present a complex finding to a non-technical audience.",
             questions: [
-              { id: "da_beh_q1", text: "Did the candidate avoid unnecessary jargon?", type: "rating" },
-              { id: "da_beh_q2", text: "Did they start with the 'So What' (Conclusion first)?", type: "rating" },
-              { id: "da_beh_q3", text: "Was the narrative structure logical and easy to follow?", type: "rating" },
-              { id: "da_beh_q4", text: "Did they check for understanding along the way?", type: "rating" }
+              { id: "da_beh_q1", text: "Did the candidate lead with the conclusion ('so what')?", type: "rating" },
+              { id: "da_beh_q2", text: "Did they avoid jargon and explain trade-offs clearly?", type: "rating" },
+              { id: "da_beh_q3", text: "Was the narrative structured and easy to follow?", type: "rating" },
+              { id: "da_beh_q4", text: "Did they check understanding and handle questions calmly?", type: "rating" },
+              { id: "da_beh_q5", text: "Did they communicate uncertainty appropriately (confidence, assumptions)?", type: "rating" }
             ]
           },
           {
-            title: "Collaboration",
-            example: "Stakeholder keeps changing requirements.",
+            title: "Collaboration & Practical Judgment",
+            example: "Stakeholder keeps changing requirements—what do you do?",
             questions: [
-              { id: "da_beh_q5", text: "Did the candidate show ability to push back constructively?", type: "rating" },
-              { id: "da_beh_q6", text: "Did they propose a process to manage scope creep?", type: "rating" },
-              { id: "da_beh_q7", text: "Did they maintain a collaborative tone?", type: "rating" }
+              { id: "da_beh_q6", text: "Did the candidate propose a process to manage scope creep (spec, sign-off, milestones)?", type: "rating" },
+              { id: "da_beh_q7", text: "Did they push back constructively while staying collaborative?", type: "rating" },
+              { id: "da_beh_q8", text: "Did they show ownership to drive decisions and unblock?", type: "rating" },
+              { id: "da_beh_q9", text: "Would you put them in front of senior stakeholders?", type: "boolean" },
+              { id: "da_beh_rem", text: "Overall Behavioral/Communication Feedback", type: "text" }
             ]
           }
         ]
@@ -310,97 +347,141 @@ export const MASTER_TEMPLATES: Record<number, InterviewProfile> = {
         skill_name: "ML Theory & Algorithms",
         templates: [
           {
-            title: "Theoretical Depth",
-            example: "Derive the loss function for Logistic Regression.",
+            title: "Core Theory & Intuition",
+            example: "Explain bias–variance tradeoff and how it shows up in practice.",
             questions: [
-              { id: "ds_th_q1", text: "Did the candidate understand the mathematical derivation correctly?", type: "rating" },
-              { id: "ds_th_q2", text: "Could they explain the intuition behind the math (e.g., Maximum Likelihood)?", type: "rating" },
-              { id: "ds_th_q3", text: "Did they understand the assumptions of the model?", type: "rating" },
-              { id: "ds_th_q4", text: "Could they explain convergence properties?", type: "rating" }
+              { id: "ds_th_q1", text: "Did the candidate explain the concept correctly (not memorized buzzwords)?", type: "rating" },
+              { id: "ds_th_q2", text: "Did they connect it to overfitting/underfitting and model complexity?", type: "rating" },
+              { id: "ds_th_q3", text: "Did they explain evaluation metrics appropriate to the task (AUC, F1, RMSE)?", type: "rating" },
+              { id: "ds_th_q4", text: "Did they discuss assumptions/limitations of common models?", type: "rating" },
+              { id: "ds_th_q5", text: "Did they show strong intuition for regularization and generalization?", type: "rating" }
             ]
           },
           {
-            title: "Model Selection",
-            example: "Random Forest vs Gradient Boosting.",
+            title: "Algorithm Choice & Trade-offs",
+            example: "When would you use Logistic Regression vs XGBoost?",
             questions: [
-              { id: "ds_th_q5", text: "Did the candidate compare them based on bias/variance?", type: "rating" },
-              { id: "ds_th_q6", text: "Did they discuss training speed and interpretability?", type: "rating" },
-              { id: "ds_th_q7", text: "Did they know when one fails vs the other?", type: "rating" }
+              { id: "ds_th_q6", text: "Did they choose models based on data size, non-linearity, interpretability, latency?", type: "rating" },
+              { id: "ds_th_q7", text: "Did they discuss feature interactions and handling of missing/categorical data?", type: "rating" },
+              { id: "ds_th_q8", text: "Did they mention calibration, thresholds, and business constraints?", type: "rating" },
+              { id: "ds_th_q9", text: "Would you trust their model selection judgment in production?", type: "boolean" },
+              { id: "ds_th_rem", text: "Overall ML Theory Feedback", type: "text" }
             ]
           }
         ]
       },
+
       // Practical ML / Model Debugging
       "a7b9a03b-724d-409a-b80a-5a986bf6a187": {
         skill_name: "Practical ML / Model Debugging",
         templates: [
           {
-            title: "Data Engineering & Prep",
-            example: "Handling missing data and categorical variables.",
+            title: "Debugging Performance Issues",
+            example: "Model overfits and offline gains don’t replicate online.",
             questions: [
-              { id: "ds_pra_q1", text: "Did the candidate propose valid imputation strategies (Mean vs KNN)?", type: "rating" },
-              { id: "ds_pra_q2", text: "Did they handle high-cardinality features correctly?", type: "rating" },
-              { id: "ds_pra_q3", text: "Did they discuss data leakage prevention?", type: "rating" },
-              { id: "ds_pra_q4", text: "Did they check for class imbalance?", type: "rating" }
+              { id: "ds_pra_q1", text: "Did they check for data leakage and train/serve skew first?", type: "rating" },
+              { id: "ds_pra_q2", text: "Did they propose correct validation (time split, stratification, CV) for the problem?", type: "rating" },
+              { id: "ds_pra_q3", text: "Did they analyze error slices (segments where model fails)?", type: "rating" },
+              { id: "ds_pra_q4", text: "Did they suggest regularization/early stopping/feature selection appropriately?", type: "rating" },
+              { id: "ds_pra_q5", text: "Did they consider class imbalance and threshold tuning?", type: "rating" }
             ]
           },
           {
-            title: "Debugging & Improvement",
-            example: "Model is overfitting.",
+            title: "Production & Monitoring Mindset",
+            example: "Feature importance changed after deployment. Why?",
             questions: [
-              { id: "ds_pra_q5", text: "Did the candidate suggest regularization (L1/L2)?", type: "rating" },
-              { id: "ds_pra_q6", text: "Did they discuss feature selection or dimensionality reduction?", type: "rating" },
-              { id: "ds_pra_q7", text: "Did they mention collecting more data or augmentation?", type: "rating" }
+              { id: "ds_pra_q6", text: "Did they identify drift (data/concept) and propose monitoring metrics?", type: "rating" },
+              { id: "ds_pra_q7", text: "Did they propose retraining triggers or cadence logically?", type: "rating" },
+              { id: "ds_pra_q8", text: "Did they consider feedback loops and labeling delays?", type: "rating" },
+              { id: "ds_pra_q9", text: "Would you trust them to own a model in production?", type: "boolean" },
+              { id: "ds_pra_rem", text: "Overall Practical ML Feedback", type: "text" }
             ]
           }
         ]
       },
+
       // Coding (Python / Pandas / Algo)
       "98bfbcf0-73d7-4605-adaa-6cf08a3c605e": {
         skill_name: "Coding (Python / Pandas / Algo)",
         templates: [
           {
-            title: "Data Manipulation",
-            example: "Pandas dataframe aggregation task.",
+            title: "Python + Pandas (Data Manipulation)",
+            example: "Given events data, compute 7-day retention by cohort.",
             questions: [
-              { id: "ds_code_q1", text: "Did the candidate use vectorized operations properly?", type: "rating" },
-              { id: "ds_code_q2", text: "Was the code readable and idiomatic Python?", type: "rating" },
-              { id: "ds_code_q3", text: "Did they handle edge cases (empty DFs, NaNs)?", type: "rating" },
-              { id: "ds_code_q4", text: "Was the memory usage considered?", type: "rating" }
+              { id: "ds_code_q1", text: "Did the candidate write correct logic and produce correct output?", type: "rating" },
+              { id: "ds_code_q2", text: "Was the code readable and idiomatic (naming, structure)?", type: "rating" },
+              { id: "ds_code_q3", text: "Did they handle edge cases (empty dataframes, NaNs, duplicates)?", type: "rating" },
+              { id: "ds_code_q4", text: "Did they use vectorized operations and avoid slow loops where possible?", type: "rating" },
+              { id: "ds_code_q5", text: "Did they validate results (sanity checks) rather than blindly trusting code?", type: "rating" }
             ]
           },
           {
             title: "Algorithmic Thinking",
-            example: "Implement K-Means from scratch.",
+            example: "Solve a medium-level arrays/strings problem.",
             questions: [
-              { id: "ds_code_q5", text: "Did the candidate structure the algorithm logic correctly?", type: "rating" },
-              { id: "ds_code_q6", text: "Did they write clean functions/classes?", type: "rating" },
-              { id: "ds_code_q7", text: "Did they optimize the distance calculation?", type: "rating" }
+              { id: "ds_code_q6", text: "Did they choose an efficient approach (time/space complexity)?", type: "rating" },
+              { id: "ds_code_q7", text: "Did they explain their approach clearly while coding?", type: "rating" },
+              { id: "ds_code_q8", text: "Did they test with custom cases and handle corner cases?", type: "rating" },
+              { id: "ds_code_q9", text: "Would you trust this person to ship data code in a shared repo?", type: "boolean" },
+              { id: "ds_code_rem", text: "Overall Coding Feedback", type: "text" }
             ]
           }
         ]
       },
+
+      // Statistics & Experimentation (ADDED)
+      "e48689a2-6fb8-4134-8ad9-2bea95c09f64": {
+        skill_name: "Statistics & Experimentation",
+        templates: [
+          {
+            title: "Core Statistical Concepts",
+            example: "Explain p-value vs confidence interval, and what each tells you.",
+            questions: [
+              { id: "ds_stat_q1", text: "Did the candidate correctly define p-value and avoid common misconceptions?", type: "rating" },
+              { id: "ds_stat_q2", text: "Did they correctly interpret confidence intervals (range + uncertainty)?", type: "rating" },
+              { id: "ds_stat_q3", text: "Did they discuss Type I/II errors and statistical power?", type: "rating" },
+              { id: "ds_stat_q4", text: "Did they choose the right test based on metric type and assumptions (t-test, chi-square, non-parametric)?", type: "rating" },
+              { id: "ds_stat_q5", text: "Did they show awareness of multiple comparisons / peeking / p-hacking?", type: "rating" }
+            ]
+          },
+          {
+            title: "Applied Experimentation Judgment",
+            example: "A/B test shows small lift but increased latency. What do you do?",
+            questions: [
+              { id: "ds_stat_q6", text: "Did they separate statistical vs practical significance (effect size, business impact)?", type: "rating" },
+              { id: "ds_stat_q7", text: "Did they discuss randomization unit and independence assumptions (user vs session)?", type: "rating" },
+              { id: "ds_stat_q8", text: "Did they consider SRM, novelty, seasonality, and instrumentation changes?", type: "rating" },
+              { id: "ds_stat_q9", text: "Would you trust them to review and sign off experiment readouts?", type: "boolean" },
+              { id: "ds_stat_rem", text: "Overall Statistics/Experimentation Feedback", type: "text" }
+            ]
+          }
+        ]
+      },
+
       // System Design (ML Systems)
       "54c23a69-ab56-42f8-8340-cb63bc1171d9": {
         skill_name: "System Design (ML Systems)",
         templates: [
           {
-            title: "Architecture & Scale",
-            example: "Design a recommendation system for Netflix.",
+            title: "End-to-End ML Architecture",
+            example: "Design a real-time recommendations engine.",
             questions: [
-              { id: "ds_sys_q1", text: "Did the candidate split the system into Retrieval and Ranking?", type: "rating" },
-              { id: "ds_sys_q2", text: "Did they discuss online vs offline serving?", type: "rating" },
-              { id: "ds_sys_q3", text: "Did they handle latency constraints?", type: "rating" },
-              { id: "ds_sys_q4", text: "Did they mention feature stores?", type: "rating" }
+              { id: "ds_sys_q1", text: "Did the candidate clarify functional + non-functional requirements (latency, scale, freshness)?", type: "rating" },
+              { id: "ds_sys_q2", text: "Did they define a clear data flow (events → features → training → serving)?", type: "rating" },
+              { id: "ds_sys_q3", text: "Did they discuss feature store and training-serving parity / skew risks?", type: "rating" },
+              { id: "ds_sys_q4", text: "Did they address retrieval vs ranking and why the split matters?", type: "rating" },
+              { id: "ds_sys_q5", text: "Did they handle reliability concerns (fallbacks, retries, rate limits)?", type: "rating" }
             ]
           },
           {
-            title: "Productionization",
-            example: "Monitoring and retraining strategy.",
+            title: "Deployment, Monitoring & Iteration",
+            example: "How would you deploy and monitor a fraud model at scale?",
             questions: [
-              { id: "ds_sys_q5", text: "Did the candidate discuss drift detection (Data/Concept drift)?", type: "rating" },
-              { id: "ds_sys_q6", text: "Did they propose a valid retraining frequency/trigger?", type: "rating" },
-              { id: "ds_sys_q7", text: "Did they consider A/B testing infrastructure?", type: "rating" }
+              { id: "ds_sys_q6", text: "Did they propose safe rollout strategies (canary, shadow, rollback)?", type: "rating" },
+              { id: "ds_sys_q7", text: "Did they propose drift/quality monitoring and alerting?", type: "rating" },
+              { id: "ds_sys_q8", text: "Did they plan retraining triggers/cadence and model registry/versioning?", type: "rating" },
+              { id: "ds_sys_q9", text: "Would you trust them to own system design discussions with infra teams?", type: "boolean" },
+              { id: "ds_sys_rem", text: "Overall ML System Design Feedback", type: "text" }
             ]
           }
         ]
@@ -409,82 +490,151 @@ export const MASTER_TEMPLATES: Record<number, InterviewProfile> = {
   },
 
   // =========================================================
-  // 4. HR / TALENT ACQUISITION -> ID: 10
+  // 4. HR -> ID: 10
   // =========================================================
   10: {
-    profile_name: "HR / Talent Acquisition",
+    profile_name: "HR",
     skills: {
-      // Behavioral / Scenario-Based
-      "714da49f-f20f-490a-ac24-935c9a4c5faa": {
-        skill_name: "Behavioral / Scenario-Based",
-        templates: [
-          {
-            title: "Ethics & Integrity",
-            example: "Handling a harassment complaint against a top performer.",
-            questions: [
-              { id: "hr_beh_q1", text: "Did the candidate prioritize safety and policy over performance?", type: "rating" },
-              { id: "hr_beh_q2", text: "Did they outline a compliant investigation process?", type: "rating" },
-              { id: "hr_beh_q3", text: "Did they show confidentiality and discretion?", type: "rating" },
-              { id: "hr_beh_q4", text: "Did they manage the communication plan effectively?", type: "rating" }
-            ]
-          },
-          {
-            title: "Empathy & Culture",
-            example: "Managing a layoff or restructuring.",
-            questions: [
-              { id: "hr_beh_q5", text: "Did the candidate demonstrate high empathy for affected employees?", type: "rating" },
-              { id: "hr_beh_q6", text: "Did they consider the impact on the remaining survivors?", type: "rating" },
-              { id: "hr_beh_q7", text: "Did they propose clear, transparent communication?", type: "rating" }
-            ]
-          }
-        ]
-      },
-      // Recruitment Ops & Pipeline
+      // Talent Acquisition
       "559be4aa-9932-4de1-bd75-dd709db3cea2": {
-        skill_name: "Recruitment Ops & Pipeline",
+        skill_name: "Talent Acquisition",
         templates: [
           {
-            title: "Funnel Optimization",
-            example: "Candidate drop-off is high at the offer stage.",
+            title: "Hiring Strategy & Funnel Design",
+            example: "You need to hire 20 people in 60 days for a new business line. How do you plan?",
             questions: [
-              { id: "hr_ops_q1", text: "Did the candidate analyze compensation competitiveness?", type: "rating" },
-              { id: "hr_ops_q2", text: "Did they check the speed of the interview process?", type: "rating" },
-              { id: "hr_ops_q3", text: "Did they review the candidate experience/employer brand?", type: "rating" },
-              { id: "hr_ops_q4", text: "Did they propose data-backed interventions?", type: "rating" }
+              { id: "hr_ta_q1", text: "Did the candidate clarify role requirements, success profile, and prioritization (must-have vs good-to-have)?", type: "rating" },
+              { id: "hr_ta_q2", text: "Did they design a funnel (sources → screen → interviews → offer) with realistic throughput?", type: "rating" },
+              { id: "hr_ta_q3", text: "Did they consider interviewer capacity, SLAs, and scheduling constraints?", type: "rating" },
+              { id: "hr_ta_q4", text: "Did they define TA metrics (time-to-hire, pass-through, offer acceptance, quality-of-hire signals)?", type: "rating" },
+              { id: "hr_ta_q5", text: "Did they identify bottlenecks and propose levers (JD rewrite, sourcing mix, interview loop redesign)?", type: "rating" }
             ]
           },
           {
-            title: "Sourcing Strategy",
-            example: "Hiring for a niche role with few applicants.",
+            title: "Candidate Experience, Closing & Integrity",
+            example: "A top candidate declines at offer stage. Diagnose and fix the process.",
             questions: [
-              { id: "hr_ops_q5", text: "Did the candidate suggest multi-channel sourcing (Outbound, Referrals)?", type: "rating" },
-              { id: "hr_ops_q6", text: "Did they propose reviewing the JD for realistic requirements?", type: "rating" },
-              { id: "hr_ops_q7", text: "Did they mention talent mapping competitors?", type: "rating" }
+              { id: "hr_ta_q6", text: "Did they diagnose likely causes (comp, role clarity, speed, manager, brand, competing offers)?", type: "rating" },
+              { id: "hr_ta_q7", text: "Did they propose specific experience improvements (updates, feedback, transparency, prep, scheduling)?", type: "rating" },
+              { id: "hr_ta_q8", text: "Did they show fairness/compliance awareness (bias reduction, structured interviews)?", type: "rating" },
+              { id: "hr_ta_q9", text: "Would you trust this person to run hiring independently and ethically?", type: "boolean" },
+              { id: "hr_ta_rem", text: "Overall Talent Acquisition Feedback", type: "text" }
             ]
           }
         ]
       },
-      // Stakeholder Management
-      "b639e924-04ce-4eb0-b3f5-d04ec02e262d": {
-        skill_name: "Stakeholder Management",
+
+      // HR Generalist
+      "714da49f-f20f-490a-ac24-935c9a4c5faa": {
+        skill_name: "HR Generalist",
         templates: [
           {
-            title: "Influencing Leaders",
-            example: "Hiring Manager wants to hire a 'culture misfit'.",
+            title: "Employee Lifecycle & Performance",
+            example: "An employee’s performance drops sharply after 6 months. What do you do?",
             questions: [
-              { id: "hr_stake_q1", text: "Did the candidate use data/examples to support their pushback?", type: "rating" },
-              { id: "hr_stake_q2", text: "Did they explain the long-term risk to the team dynamics?", type: "rating" },
-              { id: "hr_stake_q3", text: "Did they maintain a constructive relationship with the manager?", type: "rating" },
-              { id: "hr_stake_q4", text: "Did they escalate appropriately if needed?", type: "rating" }
+              { id: "hr_gen_q1", text: "Did the candidate diagnose root causes (role fit, manager issues, clarity, personal factors) without jumping to conclusions?", type: "rating" },
+              { id: "hr_gen_q2", text: "Did they propose a structured performance process (expectations, feedback, coaching, PIP if needed)?", type: "rating" },
+              { id: "hr_gen_q3", text: "Did they balance empathy with accountability and fairness?", type: "rating" },
+              { id: "hr_gen_q4", text: "Did they emphasize documentation and consistent policy application?", type: "rating" },
+              { id: "hr_gen_q5", text: "Did they consider broader engagement/retention implications for the team?", type: "rating" }
             ]
           },
           {
-            title: "Expectation Management",
-            example: "Closing a candidate with a lower-than-expected budget.",
+            title: "Grievances, Conflict & Sensitive Handling",
+            example: "Two employees report ongoing conflict affecting the team.",
             questions: [
-              { id: "hr_stake_q5", text: "Did the candidate leverage non-monetary benefits (Growth, Culture)?", type: "rating" },
-              { id: "hr_stake_q6", text: "Did they manage the candidate's expectations early in the process?", type: "rating" },
-              { id: "hr_stake_q7", text: "Did they frame the offer holistically (Total Rewards)?", type: "rating" }
+              { id: "hr_gen_q6", text: "Did they listen to both sides and avoid bias?", type: "rating" },
+              { id: "hr_gen_q7", text: "Did they propose mediation steps and clear behavioral expectations?", type: "rating" },
+              { id: "hr_gen_q8", text: "Did they manage confidentiality appropriately?", type: "rating" },
+              { id: "hr_gen_q9", text: "Would you trust them with sensitive employee issues end-to-end?", type: "boolean" },
+              { id: "hr_gen_rem", text: "Overall HR Generalist Feedback", type: "text" }
+            ]
+          }
+        ]
+      },
+
+      // HR Operations
+      "30816e42-6cb8-41c9-a0c6-751eb178536b": {
+        skill_name: "HR Operations",
+        templates: [
+          {
+            title: "Process, Compliance & Accuracy",
+            example: "Payroll errors are reported across teams. How do you respond and prevent repeats?",
+            questions: [
+              { id: "hr_ops_q1", text: "Did the candidate triage with urgency and define immediate containment steps?", type: "rating" },
+              { id: "hr_ops_q2", text: "Did they identify likely failure points (inputs, approvals, HRIS, vendor, cutoffs)?", type: "rating" },
+              { id: "hr_ops_q3", text: "Did they prioritize statutory compliance and auditability?", type: "rating" },
+              { id: "hr_ops_q4", text: "Did they propose root-cause fixes (SOPs, checks, automation) rather than patches?", type: "rating" },
+              { id: "hr_ops_q5", text: "Did they propose measurable operational KPIs (accuracy, TAT, ticket backlog, SLA adherence)?", type: "rating" }
+            ]
+          },
+          {
+            title: "Scale Readiness & HRIS Thinking",
+            example: "Company is scaling 3x—how do HR ops scale without breaking?",
+            questions: [
+              { id: "hr_ops_q6", text: "Did they propose standardization (SOPs, templates, self-serve, ticketing)?", type: "rating" },
+              { id: "hr_ops_q7", text: "Did they show HRIS literacy (workflows, data hygiene, access controls)?", type: "rating" },
+              { id: "hr_ops_q8", text: "Did they anticipate risks (data privacy, access, compliance, vendor failures)?", type: "rating" },
+              { id: "hr_ops_q9", text: "Would you trust them to run HR ops with minimal supervision?", type: "boolean" },
+              { id: "hr_ops_rem", text: "Overall HR Operations Feedback", type: "text" }
+            ]
+          }
+        ]
+      },
+
+      // HR Business Partner
+      "b639e924-04ce-4eb0-b3f5-d04ec02e262d": {
+        skill_name: "HR Business Partner",
+        templates: [
+          {
+            title: "Org Design, Change & Business Alignment",
+            example: "Leadership wants to restructure a function. How do you approach it?",
+            questions: [
+              { id: "hr_bp_q1", text: "Did the candidate clarify business goals and constraints (growth, cost, speed, quality)?", type: "rating" },
+              { id: "hr_bp_q2", text: "Did they diagnose org design issues (ownership, interfaces, spans/layers, incentives)?", type: "rating" },
+              { id: "hr_bp_q3", text: "Did they consider people impact (morale, retention, role clarity, manager load)?", type: "rating" },
+              { id: "hr_bp_q4", text: "Did they propose a change plan (communication, timeline, enablement, feedback loops)?", type: "rating" },
+              { id: "hr_bp_q5", text: "Did they balance business outcomes with employee trust and fairness?", type: "rating" }
+            ]
+          },
+          {
+            title: "Influence, Performance & Conflict Mediation",
+            example: "A manager is toxic but delivers results. What do you do?",
+            questions: [
+              { id: "hr_bp_q6", text: "Did they handle the scenario with strong ethics and policy grounding?", type: "rating" },
+              { id: "hr_bp_q7", text: "Did they propose evidence gathering and documentation (not hearsay decisions)?", type: "rating" },
+              { id: "hr_bp_q8", text: "Did they show ability to influence senior leaders with data and structured reasoning?", type: "rating" },
+              { id: "hr_bp_q9", text: "Would leadership trust this HRBP as a true partner?", type: "boolean" },
+              { id: "hr_bp_rem", text: "Overall HRBP Feedback", type: "text" }
+            ]
+          }
+        ]
+      },
+
+      // COE – HR Functions
+      "f42714f9-1ecb-4943-a62f-0ce1b58052f7": {
+        skill_name: "COE – HR Functions",
+        templates: [
+          {
+            title: "Specialist Depth (C&B / L&D / TM / DEI / Performance)",
+            example: "Design a new performance management framework that managers actually use.",
+            questions: [
+              { id: "hr_coe_q1", text: "Did the candidate demonstrate deep functional expertise (not generic HR talk)?", type: "rating" },
+              { id: "hr_coe_q2", text: "Did they use principles/benchmarks (calibration, fairness, simplicity, manager load)?", type: "rating" },
+              { id: "hr_coe_q3", text: "Did they anticipate failure modes (gaming, bias, manager inconsistency)?", type: "rating" },
+              { id: "hr_coe_q4", text: "Did they propose measurement (adoption, quality, outcomes like attrition/engagement)?", type: "rating" },
+              { id: "hr_coe_q5", text: "Did they balance employee experience with business goals?", type: "rating" }
+            ]
+          },
+          {
+            title: "Rollout, Governance & Change Management",
+            example: "Roll out a new rewards or L&D program across 500+ employees.",
+            questions: [
+              { id: "hr_coe_q6", text: "Did they propose a rollout plan (pilot, phased expansion, training, comms)?", type: "rating" },
+              { id: "hr_coe_q7", text: "Did they define governance and decision rights (COE vs HRBP vs leaders)?", type: "rating" },
+              { id: "hr_coe_q8", text: "Did they include feedback loops and iteration plan?", type: "rating" },
+              { id: "hr_coe_q9", text: "Would you trust them to own a COE program end-to-end?", type: "boolean" },
+              { id: "hr_coe_rem", text: "Overall COE Feedback", type: "text" }
             ]
           }
         ]

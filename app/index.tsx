@@ -53,6 +53,9 @@ const Button = ({ title, onPress, variant = "primary", size = "lg", style, textS
     ]}
     onPress={onPress}
     activeOpacity={0.7}
+    accessibilityRole="button"
+    accessibilityLabel={title}
+    accessibilityHint={`Navigate to ${title === "Start Practicing" ? "sign up page" : title === "Browse Mentors" ? "sign in page" : "relevant page"}`}
   >
     <Text style={[
       { fontFamily: SYSTEM_FONT, fontSize: 14, fontWeight: '700' },
@@ -77,16 +80,41 @@ const HowItWorks = memo(() => {
   ];
 
   return (
-    <View style={styles.sectionContainer}>
-      <Text style={styles.sectionKicker}>HOW IT WORKS</Text>
-      <Text style={[styles.sectionTitle, isSmall && styles.sectionTitleMobile]}>
+    <View 
+      style={styles.sectionContainer}
+      accessibilityRole="region"
+      accessibilityLabel="How it works section"
+    >
+      <Text 
+        style={styles.sectionKicker}
+        accessibilityRole="header"
+        accessibilityLevel={2}
+      >
+        HOW IT WORKS
+      </Text>
+      <Text 
+        style={[styles.sectionTitle, isSmall && styles.sectionTitleMobile]}
+        accessibilityRole="header"
+        accessibilityLevel={3}
+      >
         Three simple steps to better interviews
       </Text>
       <View style={[styles.stepsGrid, isSmall && styles.stepsGridMobile]}>
         {STEPS.map((step, i) => (
-          <View key={i} style={styles.stepCard}>
-            <Text style={styles.stepEmoji}>{step.emoji}</Text>
-            <Text style={styles.stepTitle}>{step.title}</Text>
+          <View 
+            key={i} 
+            style={styles.stepCard}
+            accessibilityRole="summary"
+            accessibilityLabel={`Step ${i + 1}: ${step.title}. ${step.desc}`}
+          >
+            <Text style={styles.stepEmoji} accessibilityLabel={step.emoji}>{step.emoji}</Text>
+            <Text 
+              style={styles.stepTitle}
+              accessibilityRole="header"
+              accessibilityLevel={4}
+            >
+              {step.title}
+            </Text>
             <Text style={styles.stepDesc}>{step.desc}</Text>
           </View>
         ))}
@@ -105,24 +133,49 @@ export default function LandingPage() {
   return (
     <>
       <Head>
-<link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <title>{SITE_TITLE}</title>
         <meta name="description" content={SITE_DESCRIPTION} />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta property="og:title" content={SITE_TITLE} />
+        <meta property="og:description" content={SITE_DESCRIPTION} />
+        <meta property="og:type" content="website" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={SITE_TITLE} />
+        <meta name="twitter:description" content={SITE_DESCRIPTION} />
         <style>{`body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; background-color: #f8f5f0; } * { box-sizing: border-box; }`}</style>
       </Head>
 
-      <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
+      <ScrollView 
+        style={styles.container} 
+        contentContainerStyle={styles.scrollContent}
+        accessibilityRole="main"
+      >
         
         {/* --- HEADER --- */}
-        <View style={styles.header}>
+        <View 
+          style={styles.header}
+          accessibilityRole="navigation"
+          accessibilityLabel="Main navigation"
+        >
           <View style={[styles.headerInner, isSmall && styles.headerInnerMobile]}>
             <BrandHeader style={{ marginBottom: 0 }} small={isSmall} />
             <View style={[styles.navRight, isSmall && styles.navRightMobile]}>
-              <TouchableOpacity onPress={() => router.push('/auth/sign-in')}>
+              <TouchableOpacity 
+                onPress={() => router.push('/auth/sign-in')}
+                accessibilityRole="link"
+                accessibilityLabel="Log in to your account"
+                accessibilityHint="Navigate to sign in page"
+              >
                 <Text style={styles.navLinkText}>Log in</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.btnSmall} onPress={() => router.push('/auth/sign-up')}>
+              <TouchableOpacity 
+                style={styles.btnSmall} 
+                onPress={() => router.push('/auth/sign-up')}
+                accessibilityRole="button"
+                accessibilityLabel="Get Started"
+                accessibilityHint="Navigate to sign up page"
+              >
                 <Text style={styles.btnSmallText}>Get Started</Text>
               </TouchableOpacity>
             </View>
@@ -130,15 +183,30 @@ export default function LandingPage() {
         </View>
 
         {/* --- HERO SECTION --- */}
-        <View style={styles.sectionContainer}>
+        <View 
+          style={styles.sectionContainer}
+          accessibilityRole="region"
+          accessibilityLabel="Hero section"
+        >
           <View style={[styles.heroCentered, isSmall && styles.heroCenteredMobile]}>
-            <View style={styles.badgeContainer}>
+            <View 
+              style={styles.badgeContainer}
+              accessibilityRole="text"
+              accessibilityLabel="New: ML System Design Track"
+            >
               <Text style={styles.badgeText}>🚀 NEW: ML System Design Track</Text>
             </View>
-            <Text style={[styles.heroTitle, isSmall && styles.heroTitleMobile]}>
+            <Text 
+              style={[styles.heroTitle, isSmall && styles.heroTitleMobile]}
+              accessibilityRole="header"
+              accessibilityLevel={1}
+            >
               Practice interviews with{'\n'}<Text style={{ color: CTA_TEAL }}>Real expert mentors</Text>
             </Text>
-            <Text style={[styles.heroSubtitle, isSmall && styles.heroSubtitleMobile]}>
+            <Text 
+              style={[styles.heroSubtitle, isSmall && styles.heroSubtitleMobile]}
+              accessibilityRole="text"
+            >
               Anonymous 1:1 mock interviews. Practice with vetted mentors from top companies.
             </Text>
             <View style={[styles.heroButtons, isSmall && styles.heroButtonsMobile]}>
@@ -166,7 +234,7 @@ export default function LandingPage() {
         <HowItWorks />
 
         {/* --- LAZY SECTIONS (Logos + Rest) --- */}
-        <Suspense fallback={<View style={{ height: 600 }} />}>
+        <Suspense fallback={<View style={{ height: 600 }} accessibilityLabel="Loading content" />}>
           <LazySections />
         </Suspense>
 

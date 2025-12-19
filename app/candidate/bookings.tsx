@@ -16,7 +16,7 @@ import { Heading, AppText, Card, ScreenBackground } from '@/lib/ui';
 // 🟢 SINGLE SOURCE OF TRUTH (Calculates UI state from DB status)
 import { getBookingState, getBookingDetails, BookingUIState } from '@/lib/booking-logic';
 
-const BookingCard = ({ session, onJoin, onViewDetails, onViewEvaluation }: any) => {
+const BookingCard = ({ session, onJoin, onViewDetails, onViewEvaluation, onRebook }: any) => {
   // 🧠 LOGIC: The app calculates 'JOIN' or 'SCHEDULED' based on time, 
   // but the database remains 'confirmed'.
   const uiState = getBookingState(session);
@@ -111,15 +111,25 @@ const BookingCard = ({ session, onJoin, onViewDetails, onViewEvaluation }: any) 
         </View>
       )}
 
-      {/* 5. COMPLETED (DB: 'completed') */}
+      {/* 5. COMPLETED (DB: 'completed') - ✅ UPDATED with Rebook button */}
       {uiState === 'POST_COMPLETED' && (
         <View style={styles.actionRowFull}>
-           <View style={[styles.btnFull, styles.btnDisabled, {flex: 0.8}]}>
-              <AppText style={styles.textGray}>Completed</AppText>
-           </View>
+           <TouchableOpacity 
+              style={[styles.btnFull, styles.btnSecondary]} 
+              onPress={() => onRebook(session.mentor_id)}
+              accessibilityRole="button"
+              accessibilityLabel="Rebook with this mentor"
+              accessibilityHint="Navigate to mentor detail page to book another session"
+            >
+            <Ionicons name="refresh-outline" size={16} color={theme.colors.primary} style={{marginRight: 6}} />
+            <AppText style={styles.textPrimary}>Rebook</AppText>
+          </TouchableOpacity>
            <TouchableOpacity 
               style={[styles.btnFull, styles.btnPrimary]} 
               onPress={() => onViewEvaluation(session.id)}
+              accessibilityRole="button"
+              accessibilityLabel="View feedback"
+              accessibilityHint="View detailed evaluation from your mentor"
             >
             <AppText style={styles.textWhite}>View Feedback</AppText>
           </TouchableOpacity>
@@ -293,6 +303,11 @@ export default function CandidateBookingsScreen() {
     router.push({ pathname: `/candidate/session/[id]`, params: { id: sessionId, mode:'read' } });
   };
 
+  // ✅ NEW: Rebook handler - navigates to mentor detail page
+  const handleRebook = (mentorId: string) => {
+    router.push({ pathname: `/candidate/[id]`, params: { id: mentorId } });
+  };
+
   if (loading && !refreshing) {
       return (
         <View style={styles.loadingContainer}>
@@ -327,6 +342,7 @@ export default function CandidateBookingsScreen() {
                 onJoin={handleJoin}
                 onViewDetails={handleViewDetails}
                 onViewEvaluation={handleViewEvaluation}
+                onRebook={handleRebook}
               />
             ))}
           </View>
@@ -385,4 +401,4 @@ const styles = StyleSheet.create({
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20 },
   modalContent: { backgroundColor: '#fff', padding: 24, borderRadius: 16 },
   modalCloseBtn: { backgroundColor: theme.colors.primary, padding: 12, borderRadius: 8, alignItems: 'center' },
-});
+}); 
