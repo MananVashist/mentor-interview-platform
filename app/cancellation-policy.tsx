@@ -50,7 +50,6 @@ export default function CancellationPolicy() {
       >
         <StandardSection title="1. Candidate Initiated Cancellation">
           <StandardParagraph>
-            Refunds are determined based on the notice provided before the session start time:
           </StandardParagraph>
           <StandardBulletList
             items={[
@@ -67,13 +66,13 @@ export default function CancellationPolicy() {
 
         <StandardSection title="2. Mentor Cancellation">
           <StandardParagraph>
-            If a mentor does not show up for the session, the candidate receives a <StandardBold>100% automatic refund</StandardBold> regardless of timing. The mentor's reliability score may be impacted.
+            If a mentor does not show up for the session for upto 15 mins after start time, the candidate receives a <StandardBold>100% automatic refund</StandardBold>. The mentor's reliability score may be impacted.
           </StandardParagraph>
         </StandardSection>
 
         <StandardSection title="3. No-Show Policy">
           <StandardParagraph>
-            If a candidate does not join the session within 15 minutes of the start time without prior notice, it is considered a no-show. No refund will be issued, and the full payment is released to the mentor.
+            If a mentor/candidate does not join the session within 15 minutes of the start time, it is considered a no-show. No refund will be issued to the late party.
           </StandardParagraph>
           <StandardParagraph>
             If a mentor does not join within 15 minutes, candidates should report it immediately. A full refund will be issued, and the mentor may face account restrictions.
@@ -82,7 +81,7 @@ export default function CancellationPolicy() {
 
         <StandardSection title="4. Rescheduling">
           <StandardParagraph>
-            Each booking allows <StandardBold>one free reschedule</StandardBold> Additional reschedule requests are subject to mentor approval.
+            Each mentor is allowed <StandardBold>one free reschedule</StandardBold> 
           </StandardParagraph>
         </StandardSection>
 
@@ -125,7 +124,7 @@ export default function CancellationPolicy() {
 
         <StandardSection title="9. Mentor Cancellation Fees">
           <StandardParagraph>
-            Mentors who repeatedly cancel sessions may face:
+            Mentors who repeatedly dont show up for sessions may face:
           </StandardParagraph>
           <StandardBulletList
             items={[

@@ -25,7 +25,7 @@ export default function HowItWorks() {
     { 
       number: '2', 
       title: 'Browse Mentors & Book', 
-      description: 'Filter vetted mentors by expertise (BA/DA, HR, PM, etc.). Choose a time slot, and securely complete the payment.' 
+      description: 'Filter vetted mentors by expertise (BA/DA, HR, PM, etc.). Choose a topic to practice, a time slot, and securely complete the payment.' 
     },
     { 
       number: '3', 
@@ -137,10 +137,9 @@ export default function HowItWorks() {
             • Prepare for the interview as if it's the real thing
           </StandardParagraph>
           <StandardParagraph>
-            <StandardBold>During the Session (60-90 mins):</StandardBold>{'\n'}
-            • Brief introductions (5 mins){'\n'}
+            <StandardBold>During the Session (55 mins):</StandardBold>{'\n'}
             • Mock interview questions (45 mins){'\n'}
-            • Live feedback and discussion (10-15 mins)
+            • Live feedback and discussion (10 mins)
           </StandardParagraph>
           <StandardParagraph>
             <StandardBold>After the Session:</StandardBold>{'\n'}
@@ -164,17 +163,12 @@ export default function HowItWorks() {
         <StandardSection title="Frequently Asked Questions">
           <StandardParagraph>
             <StandardBold>How long are the sessions?</StandardBold>{'\n'}
-            Most sessions are 60 minutes long. This includes time for the interview simulation and dedicated time for verbal feedback at the end.
-          </StandardParagraph>
-          
-          <StandardParagraph>
-            <StandardBold>What happens if I need to cancel?</StandardBold>{'\n'}
-            You can reschedule for free if you give more than 24 hours' notice. Cancellations within 24 hours may be subject to a fee to compensate the mentor for their time.
+            Most sessions are 55 minutes long. This includes time for the interview simulation and dedicated time for verbal feedback at the end.
           </StandardParagraph>
 
           <StandardParagraph>
             <StandardBold>Who are the mentors?</StandardBold>{'\n'}
-            Our mentors are vetted professionals currently working at top tech companies (FAANG/MANG). They are verified for their identity and current employment status.
+            Our mentors are vetted professionals currently working at top companies (FAANG/MANG). They are verified for their identity and current employment status.
           </StandardParagraph>
         </StandardSection>
 
@@ -243,7 +237,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     textAlign: 'center',
   },
-  ctaButton: {
+  ctaButton: {  
     backgroundColor: '#fff',
     paddingHorizontal: 32,
     paddingVertical: 14,
