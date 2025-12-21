@@ -51,9 +51,7 @@ export const Footer = () => {
           </Text>
           <View style={styles.socialRow}>
             {/* Replace with your actual profiles */}
-            <TouchableOpacity onPress={() => openExternal('https://twitter.com/crackjobs')} accessibilityLabel="Follow us on Twitter">
-              <TwitterIcon size={24} color="#ccc" />
-            </TouchableOpacity>
+            
             <TouchableOpacity onPress={() => openExternal('https://linkedin.com/company/crackjobs')} accessibilityLabel="Follow us on LinkedIn">
               <LinkedInIcon size={24} color="#ccc" />
             </TouchableOpacity>

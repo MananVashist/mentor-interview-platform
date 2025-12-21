@@ -16,7 +16,7 @@ export const SplashScreen = () => {
   const logoScale = useRef(new Animated.Value(0)).current;
   const logoOpacity = useRef(new Animated.Value(0)).current;
   const [displayedText, setDisplayedText] = useState('');
-  const fullTagline = "Interview with real professionals";
+  const fullTagline = "Anonymous mock interviews with real mentors";
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {

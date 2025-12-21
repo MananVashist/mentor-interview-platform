@@ -13,17 +13,17 @@ import { useAuthStore } from '@/lib/store';
 import { theme } from '@/lib/theme';
 import { Heading, AppText, Card, ScreenBackground } from '@/lib/ui';
 
+// Components
+import RatingModal from '@/components/RatingModal';
+
 // 🟢 SINGLE SOURCE OF TRUTH (Calculates UI state from DB status)
 import { getBookingState, getBookingDetails, BookingUIState } from '@/lib/booking-logic';
 
-const BookingCard = ({ session, onJoin, onViewDetails, onViewEvaluation, onRebook }: any) => {
-  // 🧠 LOGIC: The app calculates 'JOIN' or 'SCHEDULED' based on time, 
-  // but the database remains 'confirmed'.
+const BookingCard = ({ session, onJoin, onViewDetails, onViewEvaluation, onRebook, onRateSession }: any) => {
   const uiState = getBookingState(session);
   const details = getBookingDetails(session);
   const counterpartName = details.getCounterpartName('candidate'); 
 
-  // Fallback for skill name if not present (backward compatibility)
   const skillName = session.skill_name || 'Interview Session';
 
   return (
@@ -35,7 +35,6 @@ const BookingCard = ({ session, onJoin, onViewDetails, onViewEvaluation, onReboo
             {details.profileName} interview with {counterpartName}
           </Heading>
           
-          {/* 🟢 CHANGED: Display Skill Name instead of Round */}
           <View style={styles.infoRow}>
             <Ionicons name="bulb-outline" size={14} color="#6B7280" />
             <AppText style={styles.infoText}>{skillName}</AppText>
@@ -62,9 +61,9 @@ const BookingCard = ({ session, onJoin, onViewDetails, onViewEvaluation, onReboo
 
       <View style={styles.cardDivider} />
 
-      {/* --- DYNAMIC ACTIONS (Only UI changes, DB stays 'confirmed') --- */}
+      {/* --- DYNAMIC ACTIONS --- */}
 
-      {/* 1. PENDING (DB: 'pending') */}
+      {/* 1. PENDING */}
       {uiState === 'APPROVAL' && (
         <View style={styles.actionRowFull}>
           <View style={[styles.btnFull, styles.btnDisabled]}>
@@ -74,7 +73,7 @@ const BookingCard = ({ session, onJoin, onViewDetails, onViewEvaluation, onReboo
         </View>
       )}
 
-      {/* 2. CONFIRMED Future (DB: 'confirmed') */}
+      {/* 2. CONFIRMED Future */}
       {uiState === 'SCHEDULED' && (
         <View style={styles.actionRowFull}>
            <View style={[styles.btnFull, styles.btnDisabled]}>
@@ -83,7 +82,6 @@ const BookingCard = ({ session, onJoin, onViewDetails, onViewEvaluation, onReboo
           </View>
           <TouchableOpacity 
             style={[styles.btnFull, styles.btnSecondary]} 
-            // 🟢 CHANGED: Pass full session object to show Skill details
             onPress={() => onViewDetails(session)}
           >
             <AppText style={styles.textPrimary}>View Details</AppText>
@@ -91,7 +89,7 @@ const BookingCard = ({ session, onJoin, onViewDetails, onViewEvaluation, onReboo
         </View>
       )}
 
-      {/* 3. LIVE NOW (DB: 'confirmed' + Time is correct) */}
+      {/* 3. LIVE NOW */}
       {uiState === 'JOIN' && (
         <View style={styles.actionRowFull}>
            <TouchableOpacity style={[styles.btnFull, styles.btnGreen]} onPress={() => onJoin(session.meeting_link)}>
@@ -101,7 +99,7 @@ const BookingCard = ({ session, onJoin, onViewDetails, onViewEvaluation, onReboo
         </View>
       )}
 
-      {/* 4. PAST (DB: 'confirmed' + Time passed) */}
+      {/* 4. PAST */}
       {uiState === 'POST_PENDING' && (
         <View style={styles.actionRowFull}>
           <View style={[styles.btnFull, styles.btnDisabled]}>
@@ -111,29 +109,50 @@ const BookingCard = ({ session, onJoin, onViewDetails, onViewEvaluation, onReboo
         </View>
       )}
 
-      {/* 5. COMPLETED (DB: 'completed') - ✅ UPDATED with Rebook button */}
+      {/* 5. COMPLETED - With Rate Session */}
       {uiState === 'POST_COMPLETED' && (
-        <View style={styles.actionRowFull}>
-           <TouchableOpacity 
+        <>
+          <View style={styles.actionRowFull}>
+            <TouchableOpacity 
               style={[styles.btnFull, styles.btnSecondary]} 
               onPress={() => onRebook(session.mentor_id)}
-              accessibilityRole="button"
-              accessibilityLabel="Rebook with this mentor"
-              accessibilityHint="Navigate to mentor detail page to book another session"
             >
-            <Ionicons name="refresh-outline" size={16} color={theme.colors.primary} style={{marginRight: 6}} />
-            <AppText style={styles.textPrimary}>Rebook</AppText>
-          </TouchableOpacity>
-           <TouchableOpacity 
+              <Ionicons name="refresh-outline" size={16} color={theme.colors.primary} style={{marginRight: 6}} />
+              <AppText style={styles.textPrimary}>Rebook</AppText>
+            </TouchableOpacity>
+            <TouchableOpacity 
               style={[styles.btnFull, styles.btnPrimary]} 
               onPress={() => onViewEvaluation(session.id)}
-              accessibilityRole="button"
-              accessibilityLabel="View feedback"
-              accessibilityHint="View detailed evaluation from your mentor"
             >
-            <AppText style={styles.textWhite}>View Feedback</AppText>
-          </TouchableOpacity>
-        </View>
+              <AppText style={styles.textWhite}>View Feedback</AppText>
+            </TouchableOpacity>
+          </View>
+          
+          {/* 🆕 Rate Session Button - Only show if not rated yet */}
+          {!session.has_review && (
+            <TouchableOpacity 
+              style={[styles.btnFull, styles.btnRating, { marginTop: 10 }]} 
+              onPress={() => onRateSession(session)}
+            >
+              <Ionicons name="star-outline" size={16} color="#F59E0B" style={{marginRight: 6}} />
+              <AppText style={styles.textRating}>Rate Session</AppText>
+            </TouchableOpacity>
+          )}
+
+          {/* Show rating if already rated */}
+          {session.has_review && session.review_rating && (
+            <View style={styles.ratedContainer}>
+              <AppText style={styles.ratedLabel}>Your rating:</AppText>
+              <View style={styles.starsRow}>
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <AppText key={star} style={styles.starText}>
+                    {star <= session.review_rating ? '⭐' : '☆'}
+                  </AppText>
+                ))}
+              </View>
+            </View>
+          )}
+        </>
       )}
     </Card>
   );
@@ -165,9 +184,13 @@ export default function CandidateBookingsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Modal State
+  // Detail Modal State
   const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [detailContent, setDetailContent] = useState<{name: string, desc: string} | null>(null);
+
+  // 🆕 Rating Modal State
+  const [ratingModalVisible, setRatingModalVisible] = useState(false);
+  const [selectedSession, setSelectedSession] = useState<any>(null);
 
   const fetchBookings = async () => {
     let currentUser = user;
@@ -182,49 +205,84 @@ export default function CandidateBookingsScreen() {
     }
     
     try {
-      // 🟢 CHANGED: Removed 'round', Added 'skill_id'
+      // 1. Fetch Sessions
       const { data: sessionsData, error } = await supabase
         .from('interview_sessions')
-        .select(`
-          id, scheduled_at, status, skill_id, meeting_link, mentor_id,
-          package:interview_packages!package_id ( id, interview_profile_id )
-        `)
+        .select('id, scheduled_at, status, skill_id, meeting_link, mentor_id, package_id')
         .eq('candidate_id', currentUser.id)
         .order('scheduled_at', { ascending: true });
 
       if (error) throw error;
       if (!sessionsData || sessionsData.length === 0) {
-          setSessions([]); return;
+        setSessions([]);
+        setLoading(false); setRefreshing(false);
+        return;
       }
 
-      // 1. Fetch Mentors
+      // 🆕 2. Fetch Reviews for these packages
+      const packageIds = sessionsData.map((s: any) => s.package_id).filter(Boolean);
+      let reviewsMap: any = {};
+
+      if (packageIds.length > 0) {
+        const { data: reviewsData } = await supabase
+          .from('candidate_reviews')
+          .select('package_id, rating')
+          .in('package_id', packageIds);
+
+        if (reviewsData) {
+          reviewsMap = reviewsData.reduce((acc: any, curr: any) => {
+            acc[curr.package_id] = curr.rating;
+            return acc;
+          }, {});
+        }
+      }
+
+      // 3. Fetch Mentors
       const mentorIds = [...new Set(sessionsData.map((s: any) => s.mentor_id))];
-      const { data: profiles } = await supabase
+      const { data: mentorData } = await supabase
         .from('mentors')
         .select('id, professional_title')
         .in('id', mentorIds);
-      
-      const profileMap = (profiles || []).reduce((acc: any, p: any) => {
-          acc[p.id] = p; return acc;
+
+      const profileMap = (mentorData || []).reduce((acc: any, curr: any) => {
+         acc[curr.id] = curr; return acc;
       }, {});
 
-      // 2. Fetch Profiles (Context)
-      const interviewProfileIds = [...new Set(sessionsData.map((s: any) => s.package?.interview_profile_id).filter(Boolean))];
+      // 4. Fetch Packages & Profiles
+      const pkgIds = [...new Set(sessionsData.map((s: any) => s.package_id).filter(Boolean))];
       let interviewProfileMap: any = {};
-      
-      if (interviewProfileIds.length > 0) {
-         const { data: ipData } = await supabase
-            .from('interview_profiles_admin')
-            .select('id, name, description')
-            .in('id', interviewProfileIds);
-         if (ipData) {
-            interviewProfileMap = ipData.reduce((acc:any, curr:any) => {
-                acc[curr.id] = curr; return acc;
+      let packageProfileMap: any = {};
+
+      if (pkgIds.length > 0) {
+         const { data: pkgData } = await supabase
+           .from('interview_packages')
+           .select('id, interview_profile_id')
+           .in('id', pkgIds);
+
+         if (pkgData) {
+            packageProfileMap = pkgData.reduce((acc: any, curr: any) => {
+              acc[curr.id] = curr.interview_profile_id;
+              return acc;
             }, {});
+
+            const profileIds = [...new Set(pkgData.map((p:any) => p.interview_profile_id))];
+            
+            if (profileIds.length > 0) {
+               const { data: ipData } = await supabase
+                  .from('interview_profiles_admin')
+                  .select('id, name, description')
+                  .in('id', profileIds);
+               
+               if (ipData) {
+                  interviewProfileMap = ipData.reduce((acc:any, curr:any) => {
+                      acc[curr.id] = curr; return acc;
+                  }, {});
+               }
+            }
          }
       }
 
-      // 🟢 3. NEW: Fetch Skills
+      // 5. Fetch Skills
       const skillIds = [...new Set(sessionsData.map((s: any) => s.skill_id).filter(Boolean))];
       let skillMap: any = {};
 
@@ -241,22 +299,29 @@ export default function CandidateBookingsScreen() {
           }
       }
 
-      // 4. Merge Data
+      // 6. Merge Data
       const merged = sessionsData.map((s: any) => {
-          const profileMeta = s.package ? interviewProfileMap[s.package.interview_profile_id] : null;
+          const profileId = packageProfileMap[s.package_id];
+          const profileMeta = profileId ? interviewProfileMap[profileId] : null;
           const skillMeta = s.skill_id ? skillMap[s.skill_id] : null;
+
+          // Check if review exists
+          const hasReview = reviewsMap[s.package_id] !== undefined;
+          const reviewRating = reviewsMap[s.package_id] || null;
 
           return {
             ...s,
             mentor_name: profileMap[s.mentor_id]?.professional_title || 'Mentor',
-            // 🟢 Attach Skill Data
             skill_name: skillMeta?.name || 'Mock Interview',
             skill_description: skillMeta?.description || '',
-            package: s.package ? {
-                ...s.package,
+            package: s.package_id ? {
+                id: s.package_id,
+                interview_profile_id: profileId,
                 interview_profile_name: profileMeta?.name || 'Mock Interview',
                 interview_profile_description: profileMeta?.description || 'No description available.'
-            } : null
+            } : null,
+            has_review: hasReview,
+            review_rating: reviewRating
           };
       });
 
@@ -286,9 +351,7 @@ export default function CandidateBookingsScreen() {
     Linking.openURL(link).catch(err => Alert.alert("Error", "Could not open link."));
   };
 
-  // 🟢 CHANGED: Now accepts the full session object to access skill info
   const handleViewDetails = (session: any) => {
-    // Prefer Skill info, fallback to Profile info
     const title = session.skill_name || session.package?.interview_profile_name || 'Interview Details';
     const description = session.skill_description || session.package?.interview_profile_description || 'No additional details provided.';
 
@@ -303,10 +366,73 @@ export default function CandidateBookingsScreen() {
     router.push({ pathname: `/candidate/session/[id]`, params: { id: sessionId, mode:'read' } });
   };
 
-  // ✅ NEW: Rebook handler - navigates to mentor detail page
   const handleRebook = (mentorId: string) => {
     router.push({ pathname: `/candidate/[id]`, params: { id: mentorId } });
   };
+
+  // 🆕 Rating Handler
+  const handleRateSession = (session: any) => {
+    setSelectedSession(session);
+    setRatingModalVisible(true);
+  };
+
+  // 🆕 Submit Rating to Database
+    const handleSubmitRating = async (rating: number, reviewText: string) => {
+  if (!selectedSession || !user) {
+    console.error('Missing session or user');
+    return;
+  }
+
+  // 🔍 COMPREHENSIVE DEBUG LOGGING
+  console.log('========================================');
+  console.log('🔍 SUBMIT RATING DEBUG');
+  console.log('========================================');
+  console.log('📊 Rating:', rating);
+  console.log('📝 Review Text (raw):', `"${reviewText}"`);
+  console.log('📏 Review Text Length:', reviewText.length);
+  console.log('✂️  Review Text (trimmed):', `"${reviewText.trim()}"`);
+  console.log('📏 Trimmed Length:', reviewText.trim().length);
+  console.log('💾 Will save as:', reviewText.trim() || null);
+  console.log('📦 Package ID:', selectedSession.package_id);
+  console.log('👤 Candidate ID:', user.id);
+  console.log('👨‍🏫 Mentor ID:', selectedSession.mentor_id);
+  console.log('========================================');
+
+  try {
+    const trimmedReview = reviewText.trim();
+    
+    const payload = {
+      package_id: selectedSession.package_id,
+      candidate_id: user.id,
+      mentor_id: selectedSession.mentor_id,
+      rating: rating,
+      review_text: trimmedReview.length > 0 ? trimmedReview : null
+    };
+
+    console.log('📤 Full Payload:', JSON.stringify(payload, null, 2));
+
+    const { data, error } = await supabase
+      .from('candidate_reviews')
+      .insert(payload)
+      .select('*'); // Return the inserted row
+
+    if (error) {
+      console.error('❌ Insert Error:', error);
+      throw error;
+    }
+
+    console.log('✅ Successfully Inserted:');
+    console.log(JSON.stringify(data, null, 2));
+    console.log('========================================');
+    
+    Alert.alert('Success', 'Thank you for your feedback!');
+    await fetchBookings();
+  } catch (error: any) {
+    console.error('❌ Failed to submit review:', error);
+    Alert.alert('Error', 'Failed to submit review. Please try again.');
+    throw error;
+  }
+};
 
   if (loading && !refreshing) {
       return (
@@ -327,7 +453,10 @@ export default function CandidateBookingsScreen() {
         <Heading level={3}>My Bookings</Heading>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent} 
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      >
         {sessions.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons name="calendar-outline" size={48} color="#9CA3AF" />
@@ -343,12 +472,14 @@ export default function CandidateBookingsScreen() {
                 onViewDetails={handleViewDetails}
                 onViewEvaluation={handleViewEvaluation}
                 onRebook={handleRebook}
+                onRateSession={handleRateSession}
               />
             ))}
           </View>
         )}
       </ScrollView>
 
+      {/* Details Modal */}
       <Modal visible={detailModalVisible} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -364,6 +495,17 @@ export default function CandidateBookingsScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* 🆕 Rating Modal */}
+      <RatingModal
+        visible={ratingModalVisible}
+        mentorName={selectedSession?.mentor_name || 'your mentor'}
+        onClose={() => {
+          setRatingModalVisible(false);
+          setSelectedSession(null);
+        }}
+        onSubmit={handleSubmitRating}
+      />
     </ScreenBackground>
   );
 }
@@ -395,10 +537,16 @@ const styles = StyleSheet.create({
   btnSecondary: { backgroundColor: '#eff6ff' },
   btnGreen: { backgroundColor: '#059669' },
   btnDisabled: { backgroundColor: '#f3f4f6', borderWidth: 1, borderColor: '#e5e7eb' },
+  btnRating: { backgroundColor: '#FEF3C7', borderWidth: 1, borderColor: '#FDE68A' },
   textWhite: { color: '#fff', fontWeight: '600', fontSize: 13 },
   textPrimary: { color: theme.colors.primary, fontWeight: '600', fontSize: 13 },
   textGray: { color: '#6B7280', fontSize: 13, fontWeight: '600' },
+  textRating: { color: '#F59E0B', fontSize: 13, fontWeight: '600' },
+  ratedContainer: { marginTop: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  ratedLabel: { color: '#6B7280', fontSize: 14, fontWeight: '500' },
+  starsRow: { flexDirection: 'row', gap: 2 },
+  starText: { fontSize: 16 },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20 },
   modalContent: { backgroundColor: '#fff', padding: 24, borderRadius: 16 },
   modalCloseBtn: { backgroundColor: theme.colors.primary, padding: 12, borderRadius: 8, alignItems: 'center' },
-}); 
+});

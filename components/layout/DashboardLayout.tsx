@@ -44,14 +44,13 @@ export function DashboardLayout({
   const isDesktop = width >= 768;
 
   const Sidebar = () => (
-    <View style={[styles.sidebar, isDesktop && { height: height, position: 'sticky' as any, top: 0 }]}>
+    <View style={[styles.sidebar, isDesktop && { height: height, position: 'sticky' as any, top: 0 }, !isDesktop && { flex: 1 }]}>
       
       {/* --- BRAND HEADER --- */}
       <View style={styles.brandSection}>
         <TouchableOpacity onPress={() => router.push('/')} activeOpacity={0.8}>
           <View style={{ alignItems: 'center' }}> 
              <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
-                {/* REMOVED DANCINGSCRIPT */}
                 <Text style={styles.logoMainCrack}>Crack</Text>
                 <Text style={styles.logoMainJobs}>Jobs</Text>
              </View>
@@ -66,7 +65,7 @@ export function DashboardLayout({
             </Text>
           </View>
           <View style={styles.welcomeTextGroup}>
-            <Text style={styles.welcomeLabel}>Welcome back,</Text>
+            <Text style={styles.welcomeLabel}>WELCOME BACK,</Text>
             <Text style={styles.welcomeName} numberOfLines={1}>
               {userProfile?.full_name?.split(' ')[0] || 'User'}
             </Text>
@@ -75,45 +74,43 @@ export function DashboardLayout({
       </View>
 
       {/* --- MENU --- */}
-      <View style={styles.navContainer}>
-        <ScrollView 
-          contentContainerStyle={styles.menuScrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Added Label for clarity */}
-          <Text style={styles.sectionLabel}>MENU</Text> 
-          {menuItems.map((item) => {
-            const isExact = pathname === item.path;
-            const isSub = pathname.startsWith(`${item.path}/`);
-            const betterMatchExists = menuItems.some(other => 
-              other.path !== item.path && 
-              pathname.startsWith(other.path) && 
-              other.path.length > item.path.length
-            );
-            const active = isExact || (isSub && !betterMatchExists);
+      <ScrollView 
+        style={styles.navContainer}
+        contentContainerStyle={styles.menuScrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <Text style={styles.sectionLabel}>MENU</Text> 
+        {menuItems.map((item) => {
+          const isExact = pathname === item.path;
+          const isSub = pathname.startsWith(`${item.path}/`);
+          const betterMatchExists = menuItems.some(other => 
+            other.path !== item.path && 
+            pathname.startsWith(other.path) && 
+            other.path.length > item.path.length
+          );
+          const active = isExact || (isSub && !betterMatchExists);
 
-            return (
-              <TouchableOpacity
-                key={item.path}
-                style={[styles.menuItem, active && styles.menuItemActive]}
-                onPress={() => {
-                  router.push(item.path as any);
-                  setMenuOpen(false);
-                }}
-              >
-                <Ionicons 
-                  name={item.icon} 
-                  size={22} 
-                  color={active ? theme.colors.primary : theme.colors.text.light} 
-                />
-                <Text style={[styles.menuText, active && styles.menuTextActive]}>
-                  {item.name}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-      </View>
+          return (
+            <TouchableOpacity
+              key={item.path}
+              style={[styles.menuItem, active && styles.menuItemActive]}
+              onPress={() => {
+                router.push(item.path as any);
+                setMenuOpen(false);
+              }}
+            >
+              <Ionicons 
+                name={item.icon} 
+                size={22} 
+                color={active ? theme.colors.primary : theme.colors.text.light} 
+              />
+              <Text style={[styles.menuText, active && styles.menuTextActive]}>
+                {item.name}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
 
       {/* --- FOOTER --- */}
       <View style={styles.footerSection}>
@@ -135,7 +132,6 @@ export function DashboardLayout({
             <Ionicons name="menu" size={24} color={theme.colors.text.main} />
           </TouchableOpacity>
           <View style={styles.mobileLogoGroup}>
-            {/* REMOVED DANCINGSCRIPT */}
             <Text style={styles.logoMainCrackMobile}>Crack</Text>
             <Text style={styles.logoMainJobsMobile}>Jobs</Text>
           </View>
@@ -150,7 +146,7 @@ export function DashboardLayout({
         {!isDesktop && menuOpen && (
           <>
             <Pressable style={styles.overlay} onPress={() => setMenuOpen(false)} />
-            <View style={[styles.sidebarMobile, { height: height }]}>
+            <View style={styles.sidebarMobile}>
               <Sidebar />
             </View>
           </>
@@ -181,22 +177,26 @@ const styles = StyleSheet.create({
     backgroundColor: '#f8f5f0',
     borderRightWidth: 1, 
     borderRightColor: theme.colors.border,
-    display: 'flex',
     flexDirection: 'column',
   },
   sidebarMobile: { 
     position: 'absolute', 
     top: 0, 
-    left: 0, 
+    left: 0,
+    bottom: 0,
     width: 260, 
     backgroundColor: '#f8f5f0', 
     zIndex: 50,
     borderRightWidth: 1,
     borderRightColor: theme.colors.border,
+    elevation: 5,
   },
   overlay: { 
     position: 'absolute', 
-    inset: 0, 
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     backgroundColor: 'rgba(0,0,0,0.5)', 
     zIndex: 40 
   },
@@ -204,33 +204,29 @@ const styles = StyleSheet.create({
   // Brand
   brandSection: { 
     paddingTop: 40,
-    paddingBottom: 20,
+    paddingBottom: 16,
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
   },
   logoMainCrack: { 
     fontSize: 40, 
     color: theme.colors.text.main, 
     fontWeight: '700',
-    // Removed fontFamily: 'DancingScript'
-    ...(Platform.OS === 'web' && { WebkitTextStroke: '0.5px #111827' })
   },
   logoMainJobs: { 
     fontSize: 40, 
     color: theme.colors.primary, 
     fontWeight: '700',
-    // Removed fontFamily: 'DancingScript'
-    ...(Platform.OS === 'web' && { WebkitTextStroke: `0.5px ${CTA_TEAL}` })
   },
   
   // Welcome Styles
   welcomeContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 32,
+    marginTop: 24,
     paddingHorizontal: 20,
     width: '100%',
-    gap: 12,
   },
   avatarCircle: {
     width: 40,
@@ -249,13 +245,13 @@ const styles = StyleSheet.create({
   },
   welcomeTextGroup: {
     flex: 1,
+    marginLeft: 12,
   },
   welcomeLabel: {
-    fontSize: 12,
-    color: theme.colors.text.light,
-    fontWeight: '500',
+    fontSize: 11,
+    color: '#94A3B8',
+    fontWeight: '600',
     marginBottom: 2,
-    textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   welcomeName: { 
@@ -267,18 +263,16 @@ const styles = StyleSheet.create({
   // Navigation
   navContainer: {
     flex: 1,
-    overflow: 'hidden',
   },
   menuScrollContent: { 
     paddingHorizontal: 16, 
-    paddingTop: 24, 
+    paddingTop: 20, 
     paddingBottom: 20,
-    gap: 4 
   },
   sectionLabel: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#94A3B8', // Slate 400
+    color: '#94A3B8',
     marginLeft: 12,
     marginBottom: 8,
     letterSpacing: 1,
@@ -286,8 +280,9 @@ const styles = StyleSheet.create({
   menuItem: { 
     flexDirection: 'row', 
     alignItems: 'center', 
-    gap: 12, 
-    padding: 12, 
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    marginBottom: 4,
     borderRadius: 8 
   },
   menuItemActive: { 
@@ -296,7 +291,8 @@ const styles = StyleSheet.create({
   menuText: { 
     color: theme.colors.text.light, 
     fontWeight: '500',
-    fontSize: 14
+    fontSize: 14,
+    marginLeft: 12,
   },
   menuTextActive: { 
     color: theme.colors.primary, 
@@ -309,30 +305,31 @@ const styles = StyleSheet.create({
     borderTopWidth: 1, 
     borderTopColor: theme.colors.border, 
     backgroundColor: '#f8f5f0',
+    flexShrink: 0,
   },
   signOutButton: { 
     flexDirection: 'row', 
     alignItems: 'center', 
-    gap: 12, 
-    padding: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
     borderRadius: 8,
   },
   signOutText: { 
     color: '#ef4444', 
     fontWeight: '600',
-    fontSize: 14
+    fontSize: 14,
+    marginLeft: 12,
   },
 
-  // Header Mobile (Fixed)
+  // Header Mobile
   mobileHeader: { 
     flexDirection: 'row', 
     justifyContent: 'space-between', 
-    // FIX: Dynamic padding for status bar safety
     paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 24) + 16 : 50, 
     paddingBottom: 16,
     paddingHorizontal: 20,
     backgroundColor: '#f8f5f0', 
-    borderBottomWidth: 1, 
+    borderBottomWidth: 1,
     borderBottomColor: theme.colors.border, 
     alignItems: 'center',
     elevation: 4, 
