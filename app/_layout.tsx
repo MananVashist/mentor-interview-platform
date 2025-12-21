@@ -6,123 +6,146 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NotificationProvider } from '@/lib/ui/NotificationBanner';
 import { supabase } from '@/lib/supabase/client';
 import { Session } from '@supabase/supabase-js';
-// 👇 Add Asset import
-import { Asset } from 'expo-asset';
+import * as Font from 'expo-font';
+import {
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+  Inter_700Bold,
+  Inter_800ExtraBold,
+} from '@expo-google-fonts/inter';
 
-// Only load fonts on native platforms (iOS/Android)
-let fontsLoaded = true; 
-let fontError: Error | undefined = undefined;
+// ⬇️ IMPORTANT: alias import to avoid name collision
+import { SplashScreen as AppSplash } from '@/components/SplashScreen';
 
-// 👇 Require the icon font file to get the asset URI for Web
-const ioniconsFont = require('@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Ionicons.ttf');
-
-if (Platform.OS !== 'web') {
-  const { 
-    useFonts, 
-    Inter_400Regular, 
-    Inter_500Medium, 
-    Inter_600SemiBold, 
-    Inter_700Bold, 
-    Inter_800ExtraBold 
-  } = require('@expo-google-fonts/inter');
-  
-  const [loaded, error] = useFonts({
-    // Native loading
-    'Ionicons': ioniconsFont, // reusing the require from above
-    Inter_400Regular,
-    Inter_500Medium,
-    Inter_600SemiBold,
-    Inter_700Bold,
-    Inter_800ExtraBold,
-  });
-  
-  fontsLoaded = loaded;
-  fontError = error;
-}
-
+// Prevent native splash from auto-hiding
 SplashScreen.preventAutoHideAsync();
 
-// 🔧 FIX: Prevent client-side routing for static files
+// Web static routing safeguard
 if (Platform.OS === 'web' && typeof window !== 'undefined') {
   const staticPaths = ['/robots.txt', '/sitemap.xml', '/_headers'];
-  const currentPath = window.location.pathname;
-  
-  if (staticPaths.includes(currentPath)) {
-    // Force reload to let server handle these requests directly
+  if (staticPaths.includes(window.location.pathname)) {
     window.location.reload();
   }
 }
 
 export default function RootLayout() {
+  const [fontsLoaded, setFontsLoaded] = useState(false);
   const [isReady, setIsReady] = useState(false);
+  const [showSplash, setShowSplash] = useState(true);
   const [session, setSession] = useState<Session | null>(null);
 
-  // 👇 Resolve URI for Web
-  const ioniconsUri = Asset.fromModule(ioniconsFont).uri;
+  // Load fonts
+  useEffect(() => {
+    async function loadFonts() {
+      try {
+        if (Platform.OS === 'web') {
+          setFontsLoaded(true);
+          return;
+        }
 
+        await Font.loadAsync({
+          Inter_400Regular,
+          Inter_500Medium,
+          Inter_600SemiBold,
+          Inter_700Bold,
+          Inter_800ExtraBold,
+        });
+
+        setFontsLoaded(true);
+      } catch (e) {
+        console.error('Font load error:', e);
+        setFontsLoaded(true);
+      }
+    }
+
+    loadFonts();
+  }, []);
+
+  // Init session
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setIsReady(true);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-    });
+    const { data: { subscription } } =
+      supabase.auth.onAuthStateChange((_event, session) => {
+        setSession(session);
+      });
 
     return () => subscription.unsubscribe();
   }, []);
 
+  // Native splash → animated splash → app
   useEffect(() => {
     if (fontsLoaded && isReady) {
       SplashScreen.hideAsync();
+
+      if (Platform.OS === 'web') {
+      setShowSplash(false);
+      return;
+    }
+
+      const timer = setTimeout(() => {
+        setShowSplash(false);
+      }, 4000); // match your animation duration
+
+      return () => clearTimeout(timer);
     }
   }, [fontsLoaded, isReady]);
 
+  // Phase 0: native splash still visible
   if (!fontsLoaded || !isReady) {
     return null;
   }
 
+  // Phase 1: animated splash
+  if (showSplash) {
+    return <AppSplash />;
+  }
+
+  // Phase 2: app
   return (
     <SafeAreaProvider>
       <NotificationProvider>
         <Head>
-          <title>CrackJobs | Mock Interviews for Product Manager, Data Analyst, Data Scientist & HR</title>
-          <meta name="description" content="Master your interview skills with expert mentors from FAANG." />
+          <title>
+            CrackJobs | Mock Interviews for Product Manager, Data Analyst,
+            Data Scientist & HR
+          </title>
+          <meta
+            name="description"
+            content="Master your interview skills with expert mentors from FAANG."
+          />
           <meta name="theme-color" content="#11998e" />
           <meta property="og:site_name" content="CrackJobs" />
           <meta property="og:type" content="website" />
           <meta name="twitter:card" content="summary_large_image" />
-          
+
           {Platform.OS === 'web' && (
             <>
-              {/* Google Fonts (Inter) - This part is fine */}
               <link rel="preconnect" href="https://fonts.googleapis.com" />
-              <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-              <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" />
-              
-              {/* 👇 FIX: Preload Ionicons */}
-              <link 
-                rel="preload" 
-                href={ioniconsUri} 
-                as="font" 
-                type="font/ttf" 
-                crossOrigin="anonymous" 
+              <link
+                rel="preconnect"
+                href="https://fonts.gstatic.com"
+                crossOrigin="anonymous"
               />
-
-              {/* 👇 FIX: Inject proper CSS for React Native Web */}
-              {/* Removed the <script> tags for ionicons.esm.js as they conflict */}
-              <style type="text/css">{`
+              <link
+                rel="stylesheet"
+                href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+              />
+              <style>{`
                 @font-face {
                   font-family: 'Ionicons';
-                  src: url('${ioniconsUri}') format('truetype');
+                  src: url('https://cdn.jsdelivr.net/npm/@expo/vector-icons@14.0.4/build/vendor/react-native-vector-icons/Fonts/Ionicons.ttf') format('truetype');
                   font-display: swap;
                 }
               `}</style>
             </>
           )}
         </Head>
-        
+
         <Slot />
       </NotificationProvider>
     </SafeAreaProvider>

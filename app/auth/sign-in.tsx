@@ -135,12 +135,10 @@ export default function SignInScreen() {
         <ScrollView 
           contentContainerStyle={styles.scrollContent} 
           showsVerticalScrollIndicator={false}
-          accessibilityRole="main"
         >
           <View style={styles.formWrapper}>
             <View 
               style={styles.content}
-              accessibilityRole="form"
               accessibilityLabel="Sign in form"
             >
               <BrandHeader />
@@ -148,10 +146,7 @@ export default function SignInScreen() {
               <View style={styles.spacer} />
 
               <View style={styles.section}>
-                <Text 
-                  style={styles.label}
-                  accessibilityRole="text"
-                >
+                <Text style={styles.label}>
                   EMAIL ADDRESS
                 </Text>
                 <TextInput
@@ -170,10 +165,7 @@ export default function SignInScreen() {
               </View>
 
               <View style={styles.section}>
-                <Text 
-                  style={styles.label}
-                  accessibilityRole="text"
-                >
+                <Text style={styles.label}>
                   PASSWORD
                 </Text>
                 <TextInput
@@ -206,14 +198,11 @@ export default function SignInScreen() {
                 )}
               </TouchableOpacity>
 
-              <View 
-                style={styles.authFooter}
-                accessibilityRole="text"
-              >
+              <View style={styles.authFooter}>
                 <Text style={styles.authFooterText}>Don't have an account? </Text>
                 <Link href="/auth/sign-up" asChild>
                   <TouchableOpacity
-                    accessibilityRole="link"
+                    accessibilityRole="button"
                     accessibilityLabel="Sign up"
                     accessibilityHint="Navigate to sign up page to create a new account"
                   >

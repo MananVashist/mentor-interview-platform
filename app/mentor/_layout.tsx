@@ -6,7 +6,7 @@ import { useAuthStore } from '@/lib/store';
 import { authService } from '@/services/auth.service';
 import { mentorService } from '@/services/mentor.service';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { supabase } from '@/lib/supabase/client'; // 🟢 Import supabase directly
+import { supabase } from '@/lib/supabase/client'; 
 
 export default function MentorLayout() {
   const router = useRouter();
@@ -32,7 +32,6 @@ export default function MentorLayout() {
           }
 
           // We have a session, but no profile data in store. Fetch it.
-          // Assuming authService has a method to get profile, or we fetch it manually
           const { data: fetchedProfile, error } = await supabase
             .from('profiles')
             .select('*')
@@ -77,7 +76,6 @@ export default function MentorLayout() {
 
         if (!isApproved && !isUnderReviewPage) {
           // Not approved yet -> Force them to the "Under Review" page
-          // (Don't sign out, just redirect)
           router.replace('/mentor/under-review');
         } else if (isApproved && isUnderReviewPage) {
           // Approved but trying to see "Under Review" -> Send to Dashboard
@@ -92,7 +90,7 @@ export default function MentorLayout() {
     };
 
     checkMentorStatus();
-  }, [pathname, user, profile]); // Keep dependencies, but logic handles nulls now
+  }, [pathname, user, profile]); 
 
   const handleSignOut = async () => {
     await authService.signOut();
@@ -103,6 +101,7 @@ export default function MentorLayout() {
   const mentorMenuItems = [
     { name: 'My Profile', path: '/mentor/profile', icon: 'person-outline' as const },
     { name: 'My Bookings', path: '/mentor/bookings', icon: 'calendar-outline' as const },
+    { name: 'Mentorship', path: '/mentor/mentorship', icon: 'trophy-outline' as const },
   ];
 
   if (isCheckingStatus) {
@@ -128,4 +127,4 @@ export default function MentorLayout() {
       <Slot />
     </DashboardLayout>
   );
-}
+}   

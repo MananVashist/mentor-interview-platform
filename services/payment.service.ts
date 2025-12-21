@@ -113,13 +113,13 @@ export const paymentService = {
           razorpayKeyId = orderData.key_id;     
         }
 
-        // ✅ Updated Payload to match your new Schema
+        // ✅ Create package in database
         const pkgPayload = {
           candidate_id: candidateId,
           mentor_id: mentorId,
           interview_profile_id: interviewProfileId,
           
-          total_amount_inr: totalPrice, // ✅ FIXED: Changed from total_price_inr
+          total_amount_inr: totalPrice,
           mentor_payout_inr: mentorPayout,
           platform_fee_inr: platformFee,
           
@@ -173,72 +173,146 @@ export const paymentService = {
   },
 
   async verifyPayment(pkgId: string, orderId: string, payId: string, sig: string) {
-    // 1. Verify Signature
-    const { data, error } = await supabase.functions.invoke(
-      "verify-razorpay-signature",
-      { body: { orderId, paymentId: payId, signature: sig } }
-    );
+    console.log("[Payment Service] 🔐 Starting verification...", {
+      packageId: pkgId,
+      orderId,
+      paymentId: payId,
+      signature: sig ? "✓ Present" : "✗ Missing"
+    });
 
-    if (error || !data?.valid) throw new Error("Payment verification failed");
+    try {
+      // ✅ Call Edge Function with ALL required data
+      // The Edge Function will:
+      // 1. Verify the signature
+      // 2. Update the database with razorpay_order_id, razorpay_payment_id, razorpay_signature
+      // 3. Return the updated package
+      const { data, error } = await supabase.functions.invoke(
+        "verify-razorpay-signature",
+        { 
+          body: { 
+            packageId: pkgId,
+            orderId, 
+            paymentId: payId, 
+            signature: sig 
+          } 
+        }
+      );
 
-    // 2. Fetch Package
-    const { data: pkgData } = await supabase.from('interview_packages').select('*').eq('id', pkgId).single();
-    if (!pkgData) throw new Error("Package not found.");
+      console.log("[Payment Service] Edge Function Response:", { data, error });
 
-    const { skill_id, scheduled_at } = pkgData.booking_metadata || {};
-    
-    // 3. Double check conflict
-    await this.checkBookingConflict(pkgData.mentor_id, [scheduled_at]);
+      // ❌ Check for errors
+      if (error) {
+        console.error("[Payment Service] ❌ Edge Function error:", error);
+        throw new Error(`Verification failed: ${error.message || 'Unknown error'}`);
+      }
 
-    // 4. Update Package
-    const { error: pkgError } = await supabase
-      .from("interview_packages")
-      .update({
-        payment_status: "held_in_escrow",
-        razorpay_payment_id: payId,
-        razorpay_signature: sig,
-        razorpay_order_id: orderId,
-      })
-      .eq("id", pkgId);
+      if (!data?.valid) {
+        console.error("[Payment Service] ❌ Invalid signature:", data);
+        throw new Error(data?.error || "Payment verification failed");
+      }
 
-    if (pkgError) throw pkgError;
+      // ✅ Signature is valid and database is already updated by Edge Function
+      console.log("[Payment Service] ✅ Payment verified! Package updated:", data.package?.id);
 
-    // 5. Create Session
-    const meetingLink = `https://meet.jit.si/interview-${pkgId}-${Date.now()}`;
-    const { error: sessionError } = await supabase
-      .from("interview_sessions")
-      .insert({
-        package_id: pkgId,
-        candidate_id: pkgData.candidate_id,
-        mentor_id: pkgData.mentor_id,
-        skill_id: skill_id,
-        scheduled_at: scheduled_at,
-        status: "pending",
-        meeting_link: meetingLink,
-      });
+      // Fetch the updated package to get booking metadata
+      const { data: pkgData, error: pkgFetchError } = await supabase
+        .from('interview_packages')
+        .select('*')
+        .eq('id', pkgId)
+        .single();
 
-    if (sessionError) throw sessionError;
+      if (pkgFetchError || !pkgData) {
+        console.error("[Payment Service] ❌ Failed to fetch package:", pkgFetchError);
+        throw new Error("Package not found after verification.");
+      }
 
-    // 6. Send Emails
-    this.triggerBookingConfirmationEmails(pkgId, meetingLink);
-    
-    return { success: true, meetingLink };
+      const { skill_id, scheduled_at } = pkgData.booking_metadata || {};
+      
+      // ✅ Double check for booking conflicts
+      console.log("[Payment Service] 🔍 Checking for booking conflicts...");
+      await this.checkBookingConflict(pkgData.mentor_id, [scheduled_at]);
+
+      // ✅ Create interview session
+      console.log("[Payment Service] 📅 Creating interview session...");
+      const meetingLink = `https://meet.jit.si/interview-${pkgId}-${Date.now()}`;
+      
+      const { error: sessionError } = await supabase
+        .from("interview_sessions")
+        .insert({
+          package_id: pkgId,
+          candidate_id: pkgData.candidate_id,
+          mentor_id: pkgData.mentor_id,
+          skill_id: skill_id,
+          scheduled_at: scheduled_at,
+          status: "pending",
+          meeting_link: meetingLink,
+        });
+
+      if (sessionError) {
+        console.error("[Payment Service] ❌ Session creation failed:", sessionError);
+        throw sessionError;
+      }
+
+      console.log("[Payment Service] ✅ Session created successfully!");
+
+      // ✅ Send confirmation emails
+      console.log("[Payment Service] 📧 Triggering confirmation emails...");
+      this.triggerBookingConfirmationEmails(pkgId, meetingLink);
+      
+      return { success: true, meetingLink };
+
+    } catch (err: any) {
+      console.error("[Payment Service] 💥 Fatal error in verifyPayment:", err);
+      throw new Error(err.message || "Payment verification failed");
+    }
   },
 
   async triggerBookingConfirmationEmails(pkgId: string, link: string) {
     try {
-        const { data: pkg } = await supabase.from('interview_packages').select('candidate_id, mentor_id, interview_profile_id').eq('id', pkgId).single();
-        if (!pkg) return;
+        console.log("[Email] 📧 Sending booking confirmation emails for package:", pkgId);
 
-        const { data: mentor } = await supabase.from('mentors').select('professional_title, profile:profiles!id(email, full_name)').eq('id', pkg.mentor_id).single();
-        const { data: candidate } = await supabase.from('candidates').select('professional_title, profile:profiles!id(email, full_name)').eq('id', pkg.candidate_id).single();
-        const { data: profile } = await supabase.from('interview_profiles_admin').select('name').eq('id', pkg.interview_profile_id).single();
-        const { data: session } = await supabase.from('interview_sessions').select('scheduled_at, skill:interview_skills_admin!skill_id(name)').eq('package_id', pkgId).single();
+        const { data: pkg } = await supabase
+          .from('interview_packages')
+          .select('candidate_id, mentor_id, interview_profile_id')
+          .eq('id', pkgId)
+          .single();
+        
+        if (!pkg) {
+          console.error("[Email] ❌ Package not found:", pkgId);
+          return;
+        }
 
-        const dateTime = session?.scheduled_at ? new Date(session.scheduled_at).toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }) : 'TBD';
+        const { data: mentor } = await supabase
+          .from('mentors')
+          .select('professional_title, profile:profiles!id(email, full_name)')
+          .eq('id', pkg.mentor_id)
+          .single();
+        
+        const { data: candidate } = await supabase
+          .from('candidates')
+          .select('professional_title, profile:profiles!id(email, full_name)')
+          .eq('id', pkg.candidate_id)
+          .single();
+        
+        const { data: profile } = await supabase
+          .from('interview_profiles_admin')
+          .select('name')
+          .eq('id', pkg.interview_profile_id)
+          .single();
+        
+        const { data: session } = await supabase
+          .from('interview_sessions')
+          .select('scheduled_at, skill:interview_skills_admin!skill_id(name)')
+          .eq('package_id', pkgId)
+          .single();
+
+        const dateTime = session?.scheduled_at 
+          ? new Date(session.scheduled_at).toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }) 
+          : 'TBD';
 
         // Send to Candidate
         if (candidate?.profile?.email) {
+          console.log("[Email] 📧 Sending to candidate:", candidate.profile.email);
           await sendEmail(
             candidate.profile.email,
             `✅ Interview Confirmed - ${profile?.name}`,
@@ -256,6 +330,7 @@ export const paymentService = {
 
         // Send to Mentor
         if (mentor?.profile?.email) {
+          console.log("[Email] 📧 Sending to mentor:", mentor.profile.email);
           await sendEmail(
             mentor.profile.email,
             `🎯 New Booking Confirmed - ${profile?.name}`,
@@ -271,8 +346,10 @@ export const paymentService = {
           );
         }
 
+        console.log("[Email] ✅ Booking confirmation emails sent successfully!");
+
       } catch (err) { 
-        console.warn("Booking confirmation emails failed:", err); 
+        console.error("[Email] ❌ Booking confirmation emails failed:", err); 
       }
   },
 

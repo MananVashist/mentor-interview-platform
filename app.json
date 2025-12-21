@@ -34,10 +34,6 @@
         "CAMERA",
         "RECORD_AUDIO",
         "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE",
-        "CAMERA",
-        "RECORD_AUDIO",
-        "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE"
       ]
     },
@@ -111,17 +107,10 @@
       "technical interviews",
       "behavioral interviews",
       "PM interviews",
-      "SDE interviews",
       "HR interviews",
       "data science interviews",
       "interview skills",
       "job coaching"
-    ],
-    "runtimeVersion": {
-      "policy": "appVersion"
-    },
-    "updates": {
-      "url": "https://u.expo.dev/ecaacc3d-80b3-4cd6-b148-87ab80b8246f"
-    }
+    ]
   }
 }
