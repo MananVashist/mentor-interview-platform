@@ -1,4 +1,4 @@
-import { Platform } from 'react-native';
+﻿import { Platform } from 'react-native';
 
 /**
  * Google Analytics helper for tracking custom events
