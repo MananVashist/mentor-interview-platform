@@ -1,6 +1,6 @@
 ﻿import { useEffect, useState } from 'react';
 import { Platform } from 'react-native';
-import { Slot, SplashScreen } from 'expo-router';
+import { Slot, SplashScreen, usePathname } from 'expo-router';
 import Head from 'expo-router/head';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NotificationProvider } from '@/lib/ui/NotificationBanner';
@@ -14,6 +14,7 @@ import {
   Inter_700Bold,
   Inter_800ExtraBold,
 } from '@expo-google-fonts/inter';
+import { trackPageView } from '@/lib/analytics';
 
 // ⬇️ IMPORTANT: alias import to avoid name collision
 import { SplashScreen as AppSplash } from '@/components/SplashScreen';
@@ -34,6 +35,7 @@ export default function RootLayout() {
   const [isReady, setIsReady] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
   const [session, setSession] = useState<Session | null>(null);
+  const pathname = usePathname();
 
   // Load fonts
   useEffect(() => {
@@ -94,6 +96,13 @@ export default function RootLayout() {
       return () => clearTimeout(timer);
     }
   }, [fontsLoaded, isReady]);
+
+  // Track page views on route changes (web only)
+  useEffect(() => {
+    if (Platform.OS === 'web' && !showSplash) {
+      trackPageView(pathname);
+    }
+  }, [pathname, showSplash]);
 
   // Phase 0: native splash still visible
   if (!fontsLoaded || !isReady) {
