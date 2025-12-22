@@ -88,12 +88,12 @@ const SEO_CONFIG = {
   }
 };
 
-// Routes to pre-render
+// Routes to pre-render - matches sitemap.xml exactly
 const routes = [
   { path: '', seo: SEO_CONFIG.home },
+  { path: 'how-it-works', seo: SEO_CONFIG.howItWorks },
   { path: 'about', seo: SEO_CONFIG.about },
   { path: 'contact', seo: SEO_CONFIG.contact },
-  { path: 'how-it-works', seo: SEO_CONFIG.howItWorks },
   { path: 'faq', seo: SEO_CONFIG.faq },
   { path: 'privacy', seo: SEO_CONFIG.privacy },
   { path: 'terms', seo: SEO_CONFIG.terms },
@@ -165,8 +165,22 @@ routes.forEach(route => {
     html = html.replace(/<meta property="twitter:.*?">\s*/g, '');
     html = html.replace(/<meta name="twitter:.*?">\s*/g, '');
     
-    // Add new SEO tags before </head>
-    const metaTags = `
+    // Google Analytics - inject GA script (always include)
+    const gaScript = `
+    <!-- Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-CWRLH08BSK"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-CWRLH08BSK', {
+        page_path: window.location.pathname,
+      });
+    </script>
+    `;
+    
+    // Add new SEO tags + GA before </head>
+    const metaTags = `${gaScript}
     <link rel="canonical" href="${seo.canonical}">
     <meta name="description" content="${seo.description}">
     
