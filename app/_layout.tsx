@@ -125,6 +125,24 @@ export default function RootLayout() {
 
           {Platform.OS === 'web' && (
             <>
+              {/* Google Analytics */}
+              <script
+                async
+                src={`https://www.googletagmanager.com/gtag/js?id=${process.env.EXPO_PUBLIC_GA_MEASUREMENT_ID}`}
+              />
+              <script
+                dangerouslySetInnerHTML={{
+                  __html: `
+                    window.dataLayer = window.dataLayer || [];
+                    function gtag(){dataLayer.push(arguments);}
+                    gtag('js', new Date());
+                    gtag('config', '${process.env.EXPO_PUBLIC_GA_MEASUREMENT_ID}', {
+                      page_path: window.location.pathname,
+                    });
+                  `,
+                }}
+              />
+
               <link rel="preconnect" href="https://fonts.googleapis.com" />
               <link
                 rel="preconnect"
