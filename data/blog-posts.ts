@@ -22,6 +22,282 @@ export type BlogPost = {
 
 export const blogPosts: BlogPost[] = [
   {
+    slug: "talent-acquisition-guide",
+    title: "Talent Acquisition Explained: A Technical Guide to Modern TA Functions (2025)",
+    excerpt: "Beyond generic definitions: Learn the strategic TA framework that interviewers actually test. Covers workforce planning, metrics, and stakeholder management for senior HR interviews.",
+    author: "CrackJobs Team",
+    publishedAt: "2024-12-22",
+    thumbnailUrl: "https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=800", // HR/recruitment teamwork
+    tags: ["HR", "Talent Acquisition", "Interview Prep"],
+    content: `
+    <h1>Talent Acquisition Explained: A Technical Guide to Modern TA Functions (2025)</h1>
+    
+    <p><em>By CrackJobs Team | 12 min read</em></p>
+    
+    <p>When people search for "Talent Acquisition roles and responsibilities" or "what does a Talent Acquisition professional do", they usually find generic definitions.</p>
+    
+    <p>But in real interviews—and real organisations—Talent Acquisition (TA) is a technical HR function, not just hiring coordination.</p>
+    
+    <p>This guide breaks down Talent Acquisition as a system, covering:</p>
+    
+    <ul>
+      <li>Core Talent Acquisition responsibilities</li>
+      <li>Key TA processes and frameworks</li>
+      <li>Metrics interviewers actually care about</li>
+      <li>How TA is evaluated in senior HR interviews</li>
+    </ul>
+    
+    <p>If you're preparing for Talent Acquisition interviews, this is the depth interviewers expect.</p>
+    
+    <h2>What Is Talent Acquisition? (Beyond Recruitment)</h2>
+    
+    <p>Talent Acquisition is a long-term, strategic HR function focused on building sustainable talent pipelines aligned with business goals.</p>
+    
+    <p>Unlike recruitment, which is transactional, TA involves:</p>
+    
+    <ul>
+      <li>Workforce planning</li>
+      <li>Capability forecasting</li>
+      <li>Hiring manager calibration</li>
+      <li>Interview design</li>
+      <li>Quality-of-hire optimization</li>
+    </ul>
+    
+    <h3>Talent Acquisition vs Recruitment</h3>
+    
+    <table>
+      <thead>
+        <tr>
+          <th>Recruitment</th>
+          <th>Talent Acquisition</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Short-term hiring</td>
+          <td>Long-term workforce strategy</td>
+        </tr>
+        <tr>
+          <td>Role-based</td>
+          <td>Capability-based</td>
+        </tr>
+        <tr>
+          <td>Speed-focused</td>
+          <td>Quality and retention focused</td>
+        </tr>
+        <tr>
+          <td>Reactive</td>
+          <td>Proactive</td>
+        </tr>
+      </tbody>
+    </table>
+    
+    <p><strong>Interview insight:</strong> Candidates who fail TA interviews usually treat Talent Acquisition as execution, not strategy.</p>
+    
+    <h2>Core Talent Acquisition Functions</h2>
+    
+    <h3>1. Workforce Planning & Demand Forecasting</h3>
+    
+    <p>Workforce planning is the foundation of any strong Talent Acquisition strategy.</p>
+    
+    <p>TA teams work with:</p>
+    
+    <ul>
+      <li>Business growth forecasts</li>
+      <li>Attrition and backfill data</li>
+      <li>Skill gap analysis</li>
+      <li>Time-to-productivity benchmarks</li>
+    </ul>
+    
+    <p><strong>Common interview question:</strong> "How do you plan hiring when headcount visibility is unclear?"</p>
+    
+    <p><strong>What interviewers expect:</strong></p>
+    
+    <ul>
+      <li>Hiring against capabilities, not just open requisitions</li>
+      <li>Scenario-based planning (best / worst case)</li>
+      <li>Prioritization under uncertainty</li>
+    </ul>
+    
+    <h3>2. Job Description & Role Design</h3>
+    
+    <p>A poorly designed role leads to:</p>
+    
+    <ul>
+      <li>Low-quality applicants</li>
+      <li>Interview confusion</li>
+      <li>High early attrition</li>
+    </ul>
+    
+    <p>A technical Talent Acquisition professional:</p>
+    
+    <ul>
+      <li>Separates must-have skills from trainable skills</li>
+      <li>Defines success metrics upfront</li>
+      <li>Avoids inflated or generic job descriptions</li>
+    </ul>
+    
+    <p><strong>Example:</strong> Instead of "strong communication skills," define: "Ability to deliver decision-ready insights to stakeholders"</p>
+    
+    <h3>3. Sourcing Strategy & Talent Pipelines</h3>
+    
+    <p>Sourcing is not about channels—it's about signal quality.</p>
+    
+    <p>Strong TA sourcing strategies include:</p>
+    
+    <ul>
+      <li>Passive vs active candidate mapping</li>
+      <li>Skill adjacency hiring</li>
+      <li>Community and referral pipelines</li>
+      <li>Source-to-quality tracking</li>
+    </ul>
+    
+    <p><strong>Advanced TA metric:</strong> Source-to-quality-of-hire ratio</p>
+    
+    <p>Interviewers look for candidates who understand why certain sources produce better hires, not just where candidates came from.</p>
+    
+    <h3>4. Interview Process Design & Evaluation Frameworks</h3>
+    
+    <p>One of the most technical Talent Acquisition responsibilities is interview design.</p>
+    
+    <p>Common hiring failures occur due to:</p>
+    
+    <ul>
+      <li>Too many interview rounds</li>
+      <li>Overlapping evaluation criteria</li>
+      <li>Lack of interviewer calibration</li>
+    </ul>
+    
+    <p>A strong TA framework:</p>
+    
+    <ul>
+      <li>Maps each interview round to a specific signal</li>
+      <li>Uses structured evaluation rubrics</li>
+      <li>Eliminates redundancy</li>
+    </ul>
+    
+    <p><strong>Example interview structure:</strong></p>
+    
+    <table>
+      <thead>
+        <tr>
+          <th>Round</th>
+          <th>Signal Evaluated</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Round 1</td>
+          <td>Problem-solving approach</td>
+        </tr>
+        <tr>
+          <td>Round 2</td>
+          <td>Role depth & execution</td>
+        </tr>
+        <tr>
+          <td>Round 3</td>
+          <td>Stakeholder judgment</td>
+        </tr>
+      </tbody>
+    </table>
+    
+    <h3>5. Hiring Manager Alignment & Stakeholder Management</h3>
+    
+    <p>Hiring manager calibration is one of the most critical Talent Acquisition skills.</p>
+    
+    <p>TA professionals must:</p>
+    
+    <ul>
+      <li>Push back on vague feedback</li>
+      <li>Identify rejection patterns</li>
+      <li>Reset expectations using data</li>
+    </ul>
+    
+    <p><strong>Typical TA interview question:</strong> "How do you handle a hiring manager who keeps rejecting candidates?"</p>
+    
+    <p><strong>Strong answer includes:</strong></p>
+    
+    <ul>
+      <li>Pattern recognition</li>
+      <li>Evidence-based feedback</li>
+      <li>Escalation using hiring data, not opinions</li>
+    </ul>
+    
+    <h3>6. Offer Management & Candidate Closure</h3>
+    
+    <p>Offer management is risk mitigation, not persuasion.</p>
+    
+    <p>TA teams evaluate:</p>
+    
+    <ul>
+      <li>Compensation band flexibility</li>
+      <li>Internal parity vs urgency</li>
+      <li>Counter-offer likelihood</li>
+      <li>Candidate motivation drivers</li>
+    </ul>
+    
+    <p>Well-designed closure strategies reduce:</p>
+    
+    <ul>
+      <li>Offer drop-offs</li>
+      <li>Renegotiations</li>
+      <li>Early exits post-joining</li>
+    </ul>
+    
+    <h2>Key Talent Acquisition Metrics That Matter</h2>
+    
+    <p>Vanity metrics don't impress interviewers.</p>
+    
+    <p>Real Talent Acquisition KPIs include:</p>
+    
+    <ul>
+      <li>Time to productivity</li>
+      <li>Quality of hire (6–12 months)</li>
+      <li>Interview-to-offer ratio</li>
+      <li>Early attrition rate</li>
+      <li>Hiring manager satisfaction (with data)</li>
+    </ul>
+    
+    <p><strong>Interview tip:</strong> Always explain why a metric matters—not just what it measures.</p>
+    
+    <h2>Why Talent Acquisition Interviews Are Hard</h2>
+    
+    <p>TA interviews test:</p>
+    
+    <ul>
+      <li>Judgment under ambiguity</li>
+      <li>Stakeholder conflict handling</li>
+      <li>Trade-off decision-making</li>
+    </ul>
+    
+    <p>These skills cannot be memorised or scripted.</p>
+    
+    <p>This is why candidates who rely only on:</p>
+    
+    <ul>
+      <li>HR theory</li>
+      <li>Online courses</li>
+      <li>Generic interview answers</li>
+    </ul>
+    
+    <p>often struggle in real interviews.</p>
+    
+    <h2>Final Thoughts: Talent Acquisition as a Strategic HR Function</h2>
+    
+    <p>Talent Acquisition plays a defining role in how organisations grow, execute, and sustain performance over time. When Talent Acquisition is treated as a transactional support function, the result is often misaligned hires, early attrition, and constant firefighting. When it is treated as a strategic HR function, it becomes a competitive advantage.</p>
+    
+    <p>Senior Talent Acquisition professionals are expected to think in systems, not requisitions. They must balance speed with quality, advocate for long-term capability building, and make judgment calls under ambiguity. Being able to clearly explain Talent Acquisition as a structured, end-to-end system is often what separates strong candidates from average ones in senior HR interviews.</p>
+    
+    <h2>Preparing for Talent Acquisition Interviews?</h2>
+    
+    <p>At CrackJobs, candidates practice real Talent Acquisition interview scenarios with experienced HR leaders—under real interview pressure, with structured feedback.</p>
+    
+    <p>Because Talent Acquisition interviews are less about recalling frameworks and more about demonstrating judgment developed through experience.</p>
+    
+    <p><strong><a href="https://crackjobs.com/">Book a Talent Acquisition Mock Interview on CrackJobs</a></strong></p>
+    `
+  },
+  {
     slug: "pm-technical-interviews-guide",
     title: "The PM's Guide to Technical Interviews: Think Like a Partner, Not a Pseudo-Engineer",
     excerpt: "Master PM technical interviews with this 5-step framework. Learn why depth matters less than trade-offs, and why over-answering kills your chances.",
