@@ -25,6 +25,7 @@ type MentorRow = {
 type InterviewProfile = {
   id: number;
   name: string;
+  is_active: boolean;
 };
 
 export default function MentorProfileScreen() {
@@ -80,8 +81,9 @@ export default function MentorProfileScreen() {
         }
 
         const { data: profilesData } = await supabase
-          .from('interview_profiles_admin')
-          .select('id, name')
+          .from('interview_profiles_admin') 
+          .select('id, name, is_active')
+          .eq('is_active', true)
           .order('name', { ascending: true });
 
         if (profilesData && mounted) {
