@@ -217,6 +217,14 @@ export default function SignUpScreen() {
                   </TouchableOpacity>
                 </View>
               </View>
+              {/* --- PRIVACY NOTE --- */}
+              {/* --- PRIVACY NOTE --- */}
+<View style={styles.privacyNoteContainer}>
+  <Text style={styles.privacyNoteText}>
+    All personal details except professional title will be kept private
+  </Text>
+</View>
+
 
               {/* --- COMMON FIELDS --- */}
               <View style={styles.section}>
@@ -285,7 +293,7 @@ export default function SignUpScreen() {
               {/* --- CANDIDATE SPECIFIC FIELDS --- */}
               {role === 'candidate' && (
                 <View style={styles.section}>
-                  <Text style={styles.label}>PROFESSIONAL TITLE <Text style={styles.required}>*</Text></Text>
+                  <Text style={styles.label}>PROFESSIONAL TITLE (VISIBLE TO MENTORS)<Text style={styles.required}>*</Text></Text>
                   <TextInput
                     style={styles.input}
                     value={candidateTitle}
@@ -300,7 +308,7 @@ export default function SignUpScreen() {
               {role === 'mentor' && (
                 <>
                   <View style={styles.section}>
-                    <Text style={styles.label}>PROFESSIONAL TITLE <Text style={styles.required}>*</Text></Text>
+                    <Text style={styles.label}>PROFESSIONAL TITLE (VISIBLE TO CANDIDATES)<Text style={styles.required}>*</Text></Text>
                     <TextInput
                       style={styles.input}
                       value={professionalTitle}
@@ -605,7 +613,24 @@ const styles = StyleSheet.create({
     padding: 14,
     borderRadius: 999,
     alignItems: 'center',
-  },
+  },    
+  privacyNoteContainer: {
+  backgroundColor: '#F0FDF9', // very light teal
+  borderRadius: 8,
+  paddingVertical: 8,
+  paddingHorizontal: 12,
+  marginTop: 0,
+  marginBottom: 16,
+},
+
+privacyNoteText: {
+  fontSize: 12,
+  color: '#065F46', // readable, trust-oriented
+  fontWeight: '500',
+  textAlign: 'center',
+},
+
+    
   modalDoneText: {
     color: '#fff',
     fontWeight: '700',

@@ -11,6 +11,12 @@
       "resizeMode": "contain",
       "backgroundColor": "#11998e"
     },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/ecaacc3d-80b3-4cd6-b148-87ab80b8246f"
+    },
     "assetBundlePatterns": [
       "**/*"
     ],
