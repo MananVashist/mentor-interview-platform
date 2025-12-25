@@ -137,9 +137,14 @@ export default function LandingPage() {
         <title>{SITE_TITLE}</title>
         <meta name="description" content={SITE_DESCRIPTION} />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        
+        {/* ✅ ADDED: Canonical tag for homepage */}
+        <link rel="canonical" href="https://crackjobs.com/" />
+        
         <meta property="og:title" content={SITE_TITLE} />
         <meta property="og:description" content={SITE_DESCRIPTION} />
         <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://crackjobs.com/" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={SITE_TITLE} />
         <meta name="twitter:description" content={SITE_DESCRIPTION} />
@@ -270,7 +275,7 @@ const styles = StyleSheet.create({
   heroButtonsMobile: { flexDirection: 'column', width: '100%', paddingHorizontal: 20 },
   btnBig: { borderRadius: 100, minWidth: 160 },
   stepsGrid: { flexDirection: 'row', gap: 32, justifyContent: 'center', alignItems: 'center' },
-  stepsGridMobile: { flexDirection: 'column'    },
+  stepsGridMobile: { flexDirection: 'column' },
   stepCard: { flex: 1, maxWidth: 320, backgroundColor: '#fff', padding: 32, borderRadius: 16, alignItems: 'center', borderWidth: 1, borderColor: '#f0f0f0' },
   stepEmoji: { fontSize: 48, marginBottom: 16 },
   stepTitle: { fontFamily: SYSTEM_FONT, fontWeight: '700', fontSize: 20, color: TEXT_DARK, marginBottom: 8, textAlign: 'center' },

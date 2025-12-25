@@ -63,7 +63,7 @@ export const SplashScreen = () => {
           intervalRef.current = null;
         }
       }
-    }, 80); // 80ms per character = smooth and readable
+    }, 50); // 80ms per character = smooth and readable
   };
 
   return (

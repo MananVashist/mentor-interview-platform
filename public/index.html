@@ -1,12 +1,11 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
     
-    <!-- Default canonical - will be overridden by SEO component on specific pages -->
-    <link rel="canonical" href="https://crackjobs.com/" />
+    <!-- ✅ No static canonical - handled by SEO component -->
     
     <title>CrackJobs | Anonymous mock interviews with real professionals</title>
 
@@ -53,7 +52,41 @@
             "@type": "Offer",
             "priceCurrency": "USD",
             "price": "30.00",
-            "availability": "https://schema.org/InStock"
+            "priceValidUntil": "2026-12-31",
+            "availability": "https://schema.org/InStock",
+            "url": "https://crackjobs.com/auth/sign-up",
+            "hasMerchantReturnPolicy": {
+              "@type": "MerchantReturnPolicy",
+              "applicableCountry": "US",
+              "returnPolicyCategory": "https://schema.org/MerchantReturnFiniteReturnWindow",
+              "merchantReturnDays": 0,
+              "returnMethod": "https://schema.org/ReturnByMail",
+              "returnFees": "https://schema.org/FreeReturn",
+              "refundType": "https://schema.org/FullRefund"
+            },
+            "shippingDetails": {
+              "@type": "OfferShippingDetails",
+              "shippingRate": {
+                "@type": "MonetaryAmount",
+                "value": "0",
+                "currency": "USD"
+              },
+              "deliveryTime": {
+                "@type": "ShippingDeliveryTime",
+                "handlingTime": {
+                  "@type": "QuantitativeValue",
+                  "minValue": 0,
+                  "maxValue": 0,
+                  "unitCode": "DAY"
+                },
+                "transitTime": {
+                  "@type": "QuantitativeValue",
+                  "minValue": 0,
+                  "maxValue": 0,
+                  "unitCode": "DAY"
+                }
+              }
+            }
           }
         },
         {
@@ -102,7 +135,7 @@
 
     <noscript>
       <main style="font-family: sans-serif; max-width: 800px; margin: 40px auto; padding: 0 16px;">
-        <h1>CrackJobs � Anonymous Mock Interviews with Expert Mentors</h1>
+        <h1>CrackJobs – Anonymous Mock Interviews with Expert Mentors</h1>
         <p>
           CrackJobs helps you practice for Product Manager, Data Analyst, Data Scientist,
           and HR interviews with structured, real mock interviews.
@@ -120,5 +153,5 @@
         </ul>
       </main>
     </noscript>
-    </body>
+  </body>
 </html>

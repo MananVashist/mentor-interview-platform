@@ -49,7 +49,7 @@ const BookingCard = ({ session, onAccept, onReschedule, onViewDetails, onJoin, o
           </View>
           <View style={styles.infoRow}>
             <Ionicons name="time-outline" size={14} color="#6B7280" />
-            <AppText style={styles.infoText}>60 mins</AppText>
+            <AppText style={styles.infoText}>55 mins</AppText>
           </View>
           <View style={styles.payoutRow}>
             <Ionicons name="wallet-outline" size={14} color="#059669" />
@@ -567,7 +567,7 @@ const styles = StyleSheet.create({
   statsGrid: { flexDirection: 'row', gap: 12, marginBottom: 24 },
   statCard: { flex: 1, alignItems: 'center', padding: 16, borderRadius: 16, backgroundColor: '#FFF', borderWidth: 1, borderColor: theme.colors.border },
   earningsCard: { backgroundColor: theme.colors.primary, borderWidth: 0 },
-  statValue: { fontSize: 20, fontWeight: '700', color: theme.colors.text.main, marginTop: 8 },
+  statValue: { fontSize: 18, fontWeight: '700', color: theme.colors.text.main, marginTop: 8 },
   statLabel: { fontSize: 12, color: theme.colors.text.light },
   availabilityBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#0E9384', paddingVertical: 14, borderRadius: 12, marginBottom: 24, gap: 8 },
   availabilityBtnText: { color: '#FFF', fontSize: 16, fontWeight: '600' },
