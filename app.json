@@ -26,7 +26,9 @@
       "buildNumber": "1.0.0",
       "infoPlist": {
         "CFBundleDisplayName": "CrackJobs",
-        "CFBundleName": "CrackJobs"
+        "CFBundleName": "CrackJobs",
+        "NSCameraUsageDescription": "CrackJobs needs camera access for video interviews with mentors.",
+        "NSMicrophoneUsageDescription": "CrackJobs needs microphone access for audio during video interviews."
       }
     },
     "android": {
@@ -38,7 +40,9 @@
       "versionCode": 1,
       "permissions": [
         "CAMERA",
-        "RECORD_AUDIO",
+        "RECORD_AUDIO"
+      ],
+      "blockedPermissions": [
         "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE"
       ]
@@ -48,7 +52,7 @@
       "bundler": "metro",
       "name": "CrackJobs - Anonymous Mock interviews with real professionals",
       "shortName": "CrackJobs",
-      "description": "Master your interview skills with expert mentors. Practice mock interviews across Product Management, Data Analayst/Data Science, HR roles, get personalized feedback, and land your dream job. Structured interview preparation platform.",
+      "description": "Master your interview skills with expert mentors. Practice mock interviews across Product Management, Data Analyst/Data Science, HR roles, get personalized feedback, and land your dream job. Structured interview preparation platform.",
       "themeColor": "#11998e",
       "backgroundColor": "#ffffff",
       "lang": "en",

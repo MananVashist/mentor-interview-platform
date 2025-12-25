@@ -1,8 +1,7 @@
-﻿// components/StandardPageTemplate.tsx - FIXED VERSION
+﻿// components/StandardPageTemplate.tsx - FIXED VERSION (No duplicate meta tags)
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, useWindowDimensions, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
-import Head from 'expo-router/head'; // ✅ FIXED: Default import, not named import
 import { PageLayout } from './PageLayout';
 import { injectMultipleSchemas, createBreadcrumbSchema } from '@/lib/structured-data';
 
@@ -33,14 +32,12 @@ interface StandardPageTemplateProps {
 }
 
 export const StandardPageTemplate = ({
-  title,
-  metaDescription,
-  pageUrl,
   pageTitle,
   lastUpdated,
   children,
   additionalSchema,
   relatedPages,
+  pageUrl,
 }: StandardPageTemplateProps) => {
   const router = useRouter();
   const { width } = useWindowDimensions();
@@ -52,27 +49,22 @@ export const StandardPageTemplate = ({
     { name: pageTitle, url: pageUrl },
   ]);
 
-  // Combine schemas
-  const schemas = additionalSchema 
-    ? [breadcrumbSchema, additionalSchema]
-    : [breadcrumbSchema];
+  // Combine schemas and inject them
+  React.useEffect(() => {
+    if (Platform.OS === 'web') {
+      const schemas = additionalSchema 
+        ? [breadcrumbSchema, additionalSchema]
+        : [breadcrumbSchema];
+      
+      const cleanup = injectMultipleSchemas(schemas);
+      return () => cleanup && cleanup();
+    }
+  }, [additionalSchema, breadcrumbSchema]);
 
   return (
     <PageLayout>
-      <Head>
-        <title>{title}</title>
-        <meta name="description" content={metaDescription} />
-        <link rel="canonical" href={pageUrl} />
-        <meta property="og:title" content={title} />
-        <meta property="og:description" content={metaDescription} />
-        <meta property="og:url" content={pageUrl} />
-        <meta property="og:type" content="website" />
-        <meta name="twitter:card" content="summary" />
-        <meta name="twitter:title" content={title} />
-        <meta name="twitter:description" content={metaDescription} />
-        {injectMultipleSchemas(schemas)}
-      </Head>
-
+      {/* ✅ REMOVED: Duplicate <Head> section - SEO component handles all meta tags */}
+      
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         <View style={[styles.content, isSmall && styles.contentMobile]}>
           <Text style={[styles.pageTitle, isSmall && styles.pageTitleMobile]} accessibilityRole="header" aria-level={1}>
@@ -120,8 +112,8 @@ export const StandardSection = ({ title, children }: { title?: string; children:
   </View>
 );
 
-export const StandardParagraph = ({ children }: { children: React.ReactNode }) => (
-  <Text style={styles.paragraph}>{children}</Text>
+export const StandardParagraph = ({ children, style }: { children: React.ReactNode; style?: any }) => (
+  <Text style={[styles.paragraph, style]}>{children}</Text>
 );
 
 export const StandardBulletList = ({ items }: { items: React.ReactNode[] }) => (
@@ -135,8 +127,8 @@ export const StandardBulletList = ({ items }: { items: React.ReactNode[] }) => (
   </View>
 );
 
-export const StandardBold = ({ children }: { children: React.ReactNode }) => (
-  <Text style={styles.bold}>{children}</Text>
+export const StandardBold = ({ children, style }: { children: React.ReactNode; style?: any }) => (
+  <Text style={[styles.bold, style]}>{children}</Text>
 );
 
 export const StandardLink = ({ children, onPress }: { children: React.ReactNode; onPress?: () => void }) => (
