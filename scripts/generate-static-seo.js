@@ -2,7 +2,6 @@
 const path = require('path');
 
 // Import your actual SEO config
-// For now, I'll inline it - you can import from your config file later
 const SEO_CONFIG = {
   home: {
     title: 'CrackJobs | Anonymous Mock Interviews with Real Professionals',
@@ -124,6 +123,7 @@ let errorCount = 0;
 routes.forEach(route => {
   try {
     const { seo } = route;
+    const isRootRoute = !route.path; // True for home route
     
     // Create directory
     const dirPath = route.path 
@@ -179,8 +179,26 @@ routes.forEach(route => {
     </script>
     `;
     
-    // Add new SEO tags + GA before </head>
-    const metaTags = `${gaScript}
+    // 🔥 CRITICAL FIX: For root index.html (served for ALL routes in SPA),
+    // DO NOT add canonical tag - let React SEO component handle it
+    const metaTags = isRootRoute ? `${gaScript}
+    <!-- ✅ NO canonical in root HTML - SEO component handles it dynamically -->
+    <meta name="description" content="${seo.description}">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="${seo.canonical}">
+    <meta property="og:title" content="${seo.title}">
+    <meta property="og:description" content="${seo.description}">
+    <meta property="og:image" content="${seo.ogImage}">
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="${seo.canonical}">
+    <meta property="twitter:title" content="${seo.title}">
+    <meta property="twitter:description" content="${seo.description}">
+    <meta property="twitter:image" content="${seo.ogImage}">
+  ` : `${gaScript}
     <link rel="canonical" href="${seo.canonical}">
     <meta name="description" content="${seo.description}">
     
@@ -208,7 +226,7 @@ routes.forEach(route => {
       : path.join(__dirname, '..', 'dist', 'index.html');
     
     fs.writeFileSync(filePath, html);
-    console.log(`✅ Generated: /${route.path || 'home'}`);
+    console.log(`✅ Generated: /${route.path || 'home'}${isRootRoute ? ' (NO canonical - handled by React)' : ''}`);
     successCount++;
     
   } catch (error) {
