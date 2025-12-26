@@ -21,7 +21,7 @@ const LazySections = React.lazy(() => import('../components/LazySections'));
 // --- CONSTANTS ---
 const BRAND_ORANGE = '#f58742';
 const CTA_TEAL = '#18a7a7';
-const BG_CREAM = '#f8f5f0';
+const BG_CREAM = '#f8f5f0';     
 const TEXT_DARK = '#222';
 const TEXT_GRAY = '#555';
 
