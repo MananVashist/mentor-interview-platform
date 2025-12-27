@@ -500,7 +500,7 @@ const styles = StyleSheet.create({
   dayCardTimeOff: { backgroundColor: '#FEF2F2', borderColor: '#FECACA' }, 
   dayCardFull: { opacity: 0.6, backgroundColor: '#F3F4F6' },
   dayCardWeekday: { fontSize: 11, color: '#888', marginBottom: 2 },
-  dayCardDate: { fontSize: 16, fontWeight: '700', color: '#333', marginBottom: 6 },
+  dayCardDate: { fontSize: 14, fontWeight: '700', color: '#333', marginBottom: 6 },
   dayCardStatus: { fontSize: 9, color: '#666', marginTop: 4 },
   dayCardTextSelected: { color: theme.colors.primary, fontWeight: '700' },
   statusDot: { width: 6, height: 6, borderRadius: 3 },

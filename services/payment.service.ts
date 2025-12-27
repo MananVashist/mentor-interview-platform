@@ -145,23 +145,37 @@ export const paymentService = {
         console.log("✅ Package Created:", pkg.id);
         const packageId = pkg.id;
 
-        // If Razorpay is disabled (Test Mode) - Create session immediately
-        if (!ENABLE_RAZORPAY) {
-           const meetingLink = `https://meet.jit.si/interview-${packageId}-${Date.now()}`;
-           
-           const { error: sessionError } = await supabase.from('interview_sessions').insert({
-              package_id: packageId,
-              candidate_id: candidateId,
-              mentor_id: mentorId,
-              skill_id: skillId,
-              scheduled_at: selectedSlot,
-              status: 'pending',
-              meeting_link: meetingLink
-           });
+        // 🔥 NEW: Create interview_session IMMEDIATELY to block the slot
+        console.log("📅 Creating interview session to block slot...");
+        const meetingLink = `https://meet.jit.si/interview-${packageId}-${Date.now()}`;
+        
+        const { error: sessionError } = await supabase.from('interview_sessions').insert({
+          package_id: packageId,
+          candidate_id: candidateId,
+          mentor_id: mentorId,
+          skill_id: skillId,
+          scheduled_at: selectedSlot,
+          status: 'pending', // Will remain pending until payment confirmed
+          meeting_link: meetingLink
+        });
 
-           if (sessionError) throw sessionError;
-           
-           this.triggerBookingConfirmationEmails(packageId, meetingLink);
+        if (sessionError) {
+          console.error("Session Creation Error:", sessionError);
+          
+          // If session creation fails (e.g., duplicate booking), clean up the package
+          await supabase.from('interview_packages').delete().eq('id', packageId);
+          
+          if (sessionError.code === '23505') { // Unique constraint violation
+            throw new Error('This slot was just booked by someone else. Please select another time.');
+          }
+          throw new Error('Unable to reserve slot. Please try again.');
+        }
+
+        console.log("✅ Session Created - Slot is now blocked!");
+
+        // Send emails only if payment is disabled (test mode)
+        if (!ENABLE_RAZORPAY) {
+          this.triggerBookingConfirmationEmails(packageId, meetingLink);
         }
 
         return { package: pkg, orderId: razorpayOrderId, keyId: razorpayKeyId, amount: amountToSend, error: null };
@@ -232,28 +246,24 @@ export const paymentService = {
       console.log("[Payment Service] 🔍 Checking for booking conflicts...");
       await this.checkBookingConflict(pkgData.mentor_id, [scheduled_at]);
 
-      // ✅ Create interview session
-      console.log("[Payment Service] 📅 Creating interview session...");
-      const meetingLink = `https://meet.jit.si/interview-${pkgId}-${Date.now()}`;
+      // 🔥 CHANGED: Session already exists from createPackage, just fetch its meeting link
+      // Keep status as 'pending' for mentor approval workflow
+      console.log("[Payment Service] 📝 Payment verified - session remains 'pending' for mentor approval...");
       
-      const { error: sessionError } = await supabase
+      const { data: sessionData, error: sessionFetchError } = await supabase
         .from("interview_sessions")
-        .insert({
-          package_id: pkgId,
-          candidate_id: pkgData.candidate_id,
-          mentor_id: pkgData.mentor_id,
-          skill_id: skill_id,
-          scheduled_at: scheduled_at,
-          status: "pending",
-          meeting_link: meetingLink,
-        });
+        .select('meeting_link')
+        .eq('package_id', pkgId)
+        .single();
 
-      if (sessionError) {
-        console.error("[Payment Service] ❌ Session creation failed:", sessionError);
-        throw sessionError;
+      if (sessionFetchError) {
+        console.error("[Payment Service] ❌ Session fetch failed:", sessionFetchError);
+        throw sessionFetchError;
       }
 
-      console.log("[Payment Service] ✅ Session created successfully!");
+      console.log("[Payment Service] ✅ Session found - awaiting mentor approval!");
+
+      const meetingLink = sessionData?.meeting_link || `https://meet.jit.si/interview-${pkgId}`;
 
       // ✅ Send confirmation emails
       console.log("[Payment Service] 📧 Triggering confirmation emails...");
@@ -345,6 +355,27 @@ export const paymentService = {
             }
           );
         }
+
+        // Send to Helpdesk
+        console.log("[Email] 📧 Sending to helpdesk: crackjobshelpdesk@gmail.com");
+        await sendEmail(
+          'crackjobshelpdesk@gmail.com',
+          `🔔 New Booking Alert - ${profile?.name}`,
+          EMAIL_TEMPLATES.HELPDESK_BOOKING_NOTIFICATION,
+          {
+            packageId: pkgId,
+            candidateName: candidate?.profile?.full_name || 'N/A',
+            candidateTitle: candidate?.professional_title || 'N/A',
+            candidateEmail: candidate?.profile?.email || 'N/A',
+            mentorName: mentor?.profile?.full_name || 'N/A',
+            mentorTitle: mentor?.professional_title || 'N/A',
+            mentorEmail: mentor?.profile?.email || 'N/A',
+            profileName: profile?.name || 'N/A',
+            skillName: session?.skill?.name || 'N/A',
+            dateTime: dateTime,
+            meetingLink: link,
+          }
+        );
 
         console.log("[Email] ✅ Booking confirmation emails sent successfully!");
 

@@ -566,5 +566,371 @@ export const EMAIL_TEMPLATES = {
   </div>
 </body>
 </html>
+  `,
+
+  HELPDESK_BOOKING_NOTIFICATION: `
+    <!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>New Booking Alert</title>
+  <style>
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; 
+      line-height: 1.6; 
+      color: #333; 
+      margin: 0; 
+      padding: 0; 
+      background-color: #f3f4f6;
+    }
+    .container { 
+      max-width: 600px; 
+      margin: 0 auto; 
+      padding: 20px; 
+    }
+    .header { 
+      background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%); 
+      color: white; 
+      padding: 30px; 
+      border-radius: 8px 8px 0 0; 
+      text-align: center; 
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 600;
+    }
+    .content { 
+      background: #fff; 
+      padding: 30px; 
+      border: 1px solid #e5e7eb; 
+      border-top: none; 
+      border-radius: 0 0 8px 8px;
+    }
+    .alert-badge { 
+      background: #FEE2E2; 
+      color: #991B1B; 
+      padding: 8px 16px; 
+      border-radius: 20px; 
+      display: inline-block; 
+      font-weight: 600; 
+      margin: 10px 0; 
+      font-size: 14px;
+    }
+    .details { 
+      background: #f9fafb; 
+      padding: 20px; 
+      border-radius: 6px; 
+      margin: 20px 0; 
+      border: 1px solid #e5e7eb;
+    }
+    .detail-row { 
+      margin: 12px 0; 
+      padding-bottom: 12px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .detail-row:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+    .label { 
+      color: #6b7280; 
+      font-size: 12px; 
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+    .value { 
+      color: #1f2937; 
+      font-weight: 600; 
+      font-size: 15px; 
+    }
+    .value a {
+      color: #0E9384;
+      word-break: break-all;
+    }
+    .section-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #1f2937;
+      margin: 25px 0 15px 0;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #0E9384;
+    }
+    .footer { 
+      text-align: center; 
+      color: #6b7280; 
+      font-size: 12px; 
+      margin-top: 30px; 
+      padding: 20px;
+    }
+    .footer p {
+      margin: 5px 0;
+    }
+    .pkg-id {
+      background: #FEF3C7;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 13px;
+      color: #92400E;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🔔 New Booking Alert</h1>
+    </div>
+    <div class="content">
+      <div style="text-align: center;">
+        <span class="alert-badge">Action Required</span>
+      </div>
+
+      <p><strong>A new interview session has been successfully booked and paid for on CrackJobs.</strong></p>
+      
+      <p>Package ID: <span class="pkg-id">{{packageId}}</span></p>
+
+      <div class="section-title">📅 Session Details</div>
+      <div class="details">
+        <div class="detail-row">
+          <div class="label">Interview Type</div>
+          <div class="value">{{profileName}} - {{skillName}}</div>
+        </div>
+        <div class="detail-row">
+          <div class="label">Scheduled For</div>
+          <div class="value">{{dateTime}}</div>
+        </div>
+        <div class="detail-row">
+          <div class="label">Meeting Link</div>
+          <div class="value"><a href="{{meetingLink}}">{{meetingLink}}</a></div>
+        </div>
+      </div>
+
+      <div class="section-title">👤 Candidate Information</div>
+      <div class="details">
+        <div class="detail-row">
+          <div class="label">Name</div>
+          <div class="value">{{candidateName}}</div>
+        </div>
+        <div class="detail-row">
+          <div class="label">Professional Title</div>
+          <div class="value">{{candidateTitle}}</div>
+        </div>
+        <div class="detail-row">
+          <div class="label">Email</div>
+          <div class="value"><a href="mailto:{{candidateEmail}}">{{candidateEmail}}</a></div>
+        </div>
+      </div>
+
+      <div class="section-title">🎯 Mentor Information</div>
+      <div class="details">
+        <div class="detail-row">
+          <div class="label">Name</div>
+          <div class="value">{{mentorName}}</div>
+        </div>
+        <div class="detail-row">
+          <div class="label">Professional Title</div>
+          <div class="value">{{mentorTitle}}</div>
+        </div>
+        <div class="detail-row">
+          <div class="label">Email</div>
+          <div class="value"><a href="mailto:{{mentorEmail}}">{{mentorEmail}}</a></div>
+        </div>
+      </div>
+
+      <p style="color: #6b7280; font-size: 14px; margin-top: 25px; padding: 15px; background: #f9fafb; border-radius: 6px;">
+        <strong>Note:</strong> Both mentor and candidate have received their respective confirmation emails with session details.
+      </p>
+    </div>
+    <div class="footer">
+      <p><strong>CrackJobs Helpdesk</strong></p>
+      <p>This is an automated notification</p>
+    </div>
+  </div>
+</body>
+</html>
+  `,
+
+  HELPDESK_SIGNUP_NOTIFICATION: `
+    <!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>New User Signup</title>
+  <style>
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; 
+      line-height: 1.6; 
+      color: #333; 
+      margin: 0; 
+      padding: 0; 
+      background-color: #f3f4f6;
+    }
+    .container { 
+      max-width: 600px; 
+      margin: 0 auto; 
+      padding: 20px; 
+    }
+    .header { 
+      background: linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%); 
+      color: white; 
+      padding: 30px; 
+      border-radius: 8px 8px 0 0; 
+      text-align: center; 
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 600;
+    }
+    .content { 
+      background: #fff; 
+      padding: 30px; 
+      border: 1px solid #e5e7eb; 
+      border-top: none; 
+      border-radius: 0 0 8px 8px;
+    }
+    .signup-badge { 
+      background: #EDE9FE; 
+      color: #5B21B6; 
+      padding: 8px 16px; 
+      border-radius: 20px; 
+      display: inline-block; 
+      font-weight: 600; 
+      margin: 10px 0; 
+      font-size: 14px;
+    }
+    .details { 
+      background: #f9fafb; 
+      padding: 20px; 
+      border-radius: 6px; 
+      margin: 20px 0; 
+      border: 1px solid #e5e7eb;
+    }
+    .detail-row { 
+      margin: 12px 0; 
+      padding-bottom: 12px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .detail-row:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+    .label { 
+      color: #6b7280; 
+      font-size: 12px; 
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+    .value { 
+      color: #1f2937; 
+      font-weight: 600; 
+      font-size: 15px; 
+    }
+    .value a {
+      color: #7C3AED;
+      word-break: break-all;
+    }
+    .role-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .role-mentor {
+      background: #DBEAFE;
+      color: #1E40AF;
+    }
+    .role-candidate {
+      background: #D1FAE5;
+      color: #065F46;
+    }
+    .footer { 
+      text-align: center; 
+      color: #6b7280; 
+      font-size: 12px; 
+      margin-top: 30px; 
+      padding: 20px;
+    }
+    .footer p {
+      margin: 5px 0;
+    }
+    .timestamp {
+      background: #FEF3C7;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 13px;
+      color: #92400E;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>👋 New User Signup</h1>
+    </div>
+    <div class="content">
+      <div style="text-align: center;">
+        <span class="signup-badge">New Registration</span>
+      </div>
+
+      <p><strong>A new user has signed up on CrackJobs!</strong></p>
+
+      <div class="details">
+        <div class="detail-row">
+          <div class="label">User Type</div>
+          <div class="value">
+            <span class="role-badge role-{{userRole}}">{{userRole}}</span>
+          </div>
+        </div>
+        <div class="detail-row">
+          <div class="label">Full Name</div>
+          <div class="value">{{fullName}}</div>
+        </div>
+        <div class="detail-row">
+          <div class="label">Email</div>
+          <div class="value"><a href="mailto:{{email}}">{{email}}</a></div>
+        </div>
+        <div class="detail-row">
+          <div class="label">Professional Title</div>
+          <div class="value">{{professionalTitle}}</div>
+        </div>
+        <div class="detail-row">
+          <div class="label">User ID</div>
+          <div class="value"><span class="timestamp">{{userId}}</span></div>
+        </div>
+        <div class="detail-row">
+          <div class="label">Signup Time</div>
+          <div class="value">{{signupTime}}</div>
+        </div>
+      </div>
+
+      <p style="color: #6b7280; font-size: 14px; margin-top: 25px; padding: 15px; background: #f9fafb; border-radius: 6px;">
+        <strong>Next Steps:</strong><br>
+        {{#if isMentor}}
+        • Mentor account is pending approval<br>
+        • Review profile and verify credentials<br>
+        • Approve or reject from admin dashboard
+        {{else}}
+        • Candidate can now browse mentors<br>
+        • No action required from admin
+        {{/if}}
+      </p>
+    </div>
+    <div class="footer">
+      <p><strong>CrackJobs Helpdesk</strong></p>
+      <p>This is an automated notification</p>
+    </div>
+  </div>
+</body>
+</html>
   `
 };

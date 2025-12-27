@@ -125,7 +125,6 @@ export default function CandidateViewEvaluation() {
 
       // 7. Session display info
       const mentorName =
-        session.mentor?.profile?.full_name ||
         session.mentor?.professional_title ||
         'Senior Mentor';
       const date = new Date(session.scheduled_at).toLocaleDateString('en-US', {

@@ -205,10 +205,13 @@ export default function CandidateBookingsScreen() {
     }
     
     try {
-      // 1. Fetch Sessions
+      // 1. Fetch Sessions with package payment status
       const { data: sessionsData, error } = await supabase
         .from('interview_sessions')
-        .select('id, scheduled_at, status, skill_id, meeting_link, mentor_id, package_id')
+        .select(`
+          id, scheduled_at, status, skill_id, meeting_link, mentor_id, package_id,
+          package:interview_packages!package_id(id, payment_status, interview_profile_id)
+        `)
         .eq('candidate_id', currentUser.id)
         .order('scheduled_at', { ascending: true });
 
@@ -219,8 +222,13 @@ export default function CandidateBookingsScreen() {
         return;
       }
 
+      // Filter out sessions where payment is still pending (exclude unpaid bookings)
+      const paidSessions = sessionsData.filter((s: any) => 
+        s.package?.payment_status && s.package.payment_status !== 'pending'
+      );
+
       // 🆕 2. Fetch Reviews for these packages
-      const packageIds = sessionsData.map((s: any) => s.package_id).filter(Boolean);
+      const packageIds = paidSessions.map((s: any) => s.package_id).filter(Boolean);
       let reviewsMap: any = {};
 
       if (packageIds.length > 0) {
@@ -238,7 +246,7 @@ export default function CandidateBookingsScreen() {
       }
 
       // 3. Fetch Mentors
-      const mentorIds = [...new Set(sessionsData.map((s: any) => s.mentor_id))];
+      const mentorIds = [...new Set(paidSessions.map((s: any) => s.mentor_id))];
       const { data: mentorData } = await supabase
         .from('mentors')
         .select('id, professional_title')
@@ -248,42 +256,25 @@ export default function CandidateBookingsScreen() {
          acc[curr.id] = curr; return acc;
       }, {});
 
-      // 4. Fetch Packages & Profiles
-      const pkgIds = [...new Set(sessionsData.map((s: any) => s.package_id).filter(Boolean))];
+      // 4. Fetch Interview Profiles
+      const profileIds = [...new Set(paidSessions.map((s: any) => s.package?.interview_profile_id).filter(Boolean))];
       let interviewProfileMap: any = {};
-      let packageProfileMap: any = {};
 
-      if (pkgIds.length > 0) {
-         const { data: pkgData } = await supabase
-           .from('interview_packages')
-           .select('id, interview_profile_id')
-           .in('id', pkgIds);
-
-         if (pkgData) {
-            packageProfileMap = pkgData.reduce((acc: any, curr: any) => {
-              acc[curr.id] = curr.interview_profile_id;
-              return acc;
-            }, {});
-
-            const profileIds = [...new Set(pkgData.map((p:any) => p.interview_profile_id))];
-            
-            if (profileIds.length > 0) {
-               const { data: ipData } = await supabase
-                  .from('interview_profiles_admin')
-                  .select('id, name, description')
-                  .in('id', profileIds);
-               
-               if (ipData) {
-                  interviewProfileMap = ipData.reduce((acc:any, curr:any) => {
-                      acc[curr.id] = curr; return acc;
-                  }, {});
-               }
-            }
-         }
+      if (profileIds.length > 0) {
+        const { data: ipData } = await supabase
+          .from('interview_profiles_admin')
+          .select('id, name, description')
+          .in('id', profileIds);
+        
+        if (ipData) {
+          interviewProfileMap = ipData.reduce((acc:any, curr:any) => {
+            acc[curr.id] = curr; return acc;
+          }, {});
+        }
       }
 
       // 5. Fetch Skills
-      const skillIds = [...new Set(sessionsData.map((s: any) => s.skill_id).filter(Boolean))];
+      const skillIds = [...new Set(paidSessions.map((s: any) => s.skill_id).filter(Boolean))];
       let skillMap: any = {};
 
       if (skillIds.length > 0) {
@@ -300,8 +291,8 @@ export default function CandidateBookingsScreen() {
       }
 
       // 6. Merge Data
-      const merged = sessionsData.map((s: any) => {
-          const profileId = packageProfileMap[s.package_id];
+      const merged = paidSessions.map((s: any) => {
+          const profileId = s.package?.interview_profile_id;
           const profileMeta = profileId ? interviewProfileMap[profileId] : null;
           const skillMeta = s.skill_id ? skillMap[s.skill_id] : null;
 
@@ -447,9 +438,6 @@ export default function CandidateBookingsScreen() {
     <ScreenBackground style={styles.container}>
       <StatusBar barStyle="dark-content" />
       <View style={styles.topBar}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-            <Ionicons name="arrow-back" size={24} color={theme.colors.text.main} />
-        </TouchableOpacity>
         <Heading level={3}>My Bookings</Heading>
       </View>
 
