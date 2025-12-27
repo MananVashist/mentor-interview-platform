@@ -37,7 +37,7 @@
         "backgroundColor": "#11998e"
       },
       "package": "com.crackjobs.app",
-      "versionCode": 1,
+      "versionCode": 3,
       "permissions": [
         "CAMERA",
         "RECORD_AUDIO"
@@ -49,33 +49,7 @@
     },
     "web": {
       "favicon": "./assets/favicon.png",
-      "bundler": "metro",
-      "name": "CrackJobs - Anonymous Mock interviews with real professionals",
-      "shortName": "CrackJobs",
-      "description": "Master your interview skills with expert mentors. Practice mock interviews across Product Management, Data Analyst/Data Science, HR roles, get personalized feedback, and land your dream job. Structured interview preparation platform.",
-      "themeColor": "#11998e",
-      "backgroundColor": "#ffffff",
-      "lang": "en",
-      "scope": "/",
-      "startUrl": "/",
-      "display": "standalone",
-      "orientation": "portrait-primary",
-      "categories": [
-        "education",
-        "business",
-        "productivity"
-      ],
-      "screenshots": [],
-      "related_applications": [],
-      "prefer_related_applications": false,
-      "meta": {
-        "apple-mobile-web-app-capable": "yes",
-        "apple-mobile-web-app-status-bar-style": "default",
-        "apple-mobile-web-app-title": "CrackJobs",
-        "application-name": "CrackJobs",
-        "msapplication-TileColor": "#11998e",
-        "msapplication-tap-highlight": "no"
-      }
+      "bundler": "metro"
     },
     "plugins": [
       "expo-router",
@@ -84,14 +58,15 @@
         "expo-build-properties",
         {
           "android": {
-            "compileSdkVersion": 34,
-            "targetSdkVersion": 34,
-            "buildToolsVersion": "34.0.0"
+            "compileSdkVersion": 35,
+            "targetSdkVersion": 35,
+            "buildToolsVersion": "35.0.0"
           }
         }
       ],
       "expo-font",
-      "expo-asset"
+      "expo-asset",
+      "@react-native-community/datetimepicker"
     ],
     "scheme": "crackjobs",
     "extra": {
@@ -103,24 +78,6 @@
       }
     },
     "owner": "mananvashist",
-    "description": "Master your interview skills with expert mentors. Practice mock interviews across different roles (PM, SDE, HR, Data Science), get detailed feedback after each round, and crack your dream job. Structured 3-round interview preparation with personalized mentorship.",
-    "primaryColor": "#11998e",
-    "keywords": [
-      "interview preparation",
-      "mock interviews",
-      "career coaching",
-      "job interview practice",
-      "mentor platform",
-      "interview feedback",
-      "career development",
-      "job search",
-      "technical interviews",
-      "behavioral interviews",
-      "PM interviews",
-      "HR interviews",
-      "data science interviews",
-      "interview skills",
-      "job coaching"
-    ]
+    "description": "Practice mock interviews with verified expert mentors from Google, Amazon, Meta and top companies. Get comprehensive feedback, improve your interview skills, and land your dream job."
   }
 }
