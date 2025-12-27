@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import Svg, { Path } from 'react-native-svg';
 import { theme } from '@/lib/theme'; 
 
 const CTA_TEAL = '#18a7a7';
@@ -29,6 +30,19 @@ interface DashboardLayoutProps {
   onSignOut: () => void;
   brandSubtitle?: string;
 }
+
+// SVG Hamburger Menu Icon
+const HamburgerIcon = ({ size = 24, color = '#111827' }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M3 12H21M3 6H21M3 18H21"
+      stroke={color}
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
 
 export function DashboardLayout({ 
   children, 
@@ -129,7 +143,7 @@ export function DashboardLayout({
       {!isDesktop && (
         <View style={styles.mobileHeader}>
           <TouchableOpacity onPress={() => setMenuOpen(!menuOpen)}>
-            <Ionicons name="menu" size={24} color={theme.colors.text.main} />
+            <HamburgerIcon size={24} color={theme.colors.text.main} />
           </TouchableOpacity>
           <View style={styles.mobileLogoGroup}>
             <Text style={styles.logoMainCrackMobile}>Crack</Text>
