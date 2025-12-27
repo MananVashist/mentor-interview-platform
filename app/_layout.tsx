@@ -6,7 +6,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NotificationProvider } from '@/lib/ui/NotificationBanner';
 import { supabase } from '@/lib/supabase/client';
 import { Session } from '@supabase/supabase-js';
-import * as Font from 'expo-font';
+import { useFonts } from 'expo-font';
 import {
   Inter_400Regular,
   Inter_500Medium,
@@ -31,38 +31,27 @@ if (Platform.OS === 'web' && typeof window !== 'undefined') {
 }
 
 export default function RootLayout() {
-  const [fontsLoaded, setFontsLoaded] = useState(false);
   const [isReady, setIsReady] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
   const [session, setSession] = useState<Session | null>(null);
   const pathname = usePathname();
 
-  // Load fonts
-  useEffect(() => {
-    async function loadFonts() {
-      try {
-        if (Platform.OS === 'web') {
-          setFontsLoaded(true);
-          return;
+  // Load fonts using useFonts hook
+  const [fontsLoaded] = useFonts(
+    Platform.OS === 'web'
+      ? {
+          // For web, load Ionicons from local assets
+          Ionicons: require('../assets/fonts/Ionicons.ttf'),
         }
-
-        await Font.loadAsync({
+      : {
+          // For native, load Inter fonts
           Inter_400Regular,
           Inter_500Medium,
           Inter_600SemiBold,
           Inter_700Bold,
           Inter_800ExtraBold,
-        });
-
-        setFontsLoaded(true);
-      } catch (e) {
-        console.error('Font load error:', e);
-        setFontsLoaded(true);
-      }
-    }
-
-    loadFonts();
-  }, []);
+        }
+  );
 
   // Init session
   useEffect(() => {
@@ -85,9 +74,9 @@ export default function RootLayout() {
       SplashScreen.hideAsync();
 
       if (Platform.OS === 'web') {
-      setShowSplash(false);
-      return;
-    }
+        setShowSplash(false);
+        return;
+      }
 
       const timer = setTimeout(() => {
         setShowSplash(false);
@@ -162,13 +151,6 @@ export default function RootLayout() {
                 rel="stylesheet"
                 href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
               />
-              <style>{`
-                @font-face {
-                  font-family: 'Ionicons';
-                  src: url('https://cdn.jsdelivr.net/npm/@expo/vector-icons@14.0.4/build/vendor/react-native-vector-icons/Fonts/Ionicons.ttf') format('truetype');
-                  font-display: swap;
-                }
-              `}</style>
             </>
           )}
         </Head>
