@@ -298,7 +298,7 @@ export default function SignUpScreen() {
                     style={styles.input}
                     value={candidateTitle}
                     onChangeText={setCandidateTitle}
-                    placeholder="Software Engineer"
+                    placeholder="eg. Product Manager at Oracle"
                     placeholderTextColor="#9CA3AF"
                   />
                 </View>

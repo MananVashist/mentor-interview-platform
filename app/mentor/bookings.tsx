@@ -169,18 +169,25 @@ export default function MentorBookingsScreen() {
   const fetchSessions = async () => {
     if (!user) return;
     try {
+      // Fetch Sessions with package payment status
       const { data, error } = await supabase
         .from('interview_sessions')
         .select(`
         id, scheduled_at, status, skill_id, meeting_link,
-        package:interview_packages!package_id ( id, mentor_payout_inr, interview_profile_id ),
+        package:interview_packages!package_id ( id, mentor_payout_inr, interview_profile_id, payment_status ),
         candidate:candidates!candidate_id ( professional_title, resume_url )
       `)
         .eq('mentor_id', user.id)
         .order('scheduled_at', { ascending: true });
 
       if (error) throw error;
-      const rawSessions = data || [];
+      
+      // Filter out sessions where payment is still pending (exclude unpaid bookings)
+      const paidSessions = (data || []).filter((s: any) => 
+        s.package?.payment_status && s.package.payment_status !== 'pending'
+      );
+      
+      const rawSessions = paidSessions;
 
       // 1. Fetch Profile Data
       const profileIds = Array.from(new Set(rawSessions.map((s: any) => s.package?.interview_profile_id).filter((id: any) => id != null)));
@@ -234,7 +241,7 @@ export default function MentorBookingsScreen() {
       let totalEarnings = 0;
 
       enrichedSessions.forEach((s: any) => {
-        if (s.status === 'confirmed' || s.status === 'pending') upcoming++;
+        if (s.status === 'confirmed' || s.status === 'pending') upcoming++; // pending = awaiting mentor approval
         if (s.status === 'completed') {
             completedCount++;
             totalEarnings += (s.package?.mentor_payout_inr || 0);

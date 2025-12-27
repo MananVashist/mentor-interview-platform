@@ -1,6 +1,7 @@
 ﻿// services/auth.service.ts
 import { supabase } from '../lib/supabase/client';
 import { Session, AuthChangeEvent } from '@supabase/supabase-js';
+import { EMAIL_TEMPLATES } from './email.templates';
 
 export type Profile = {
   id: string;
@@ -104,7 +105,66 @@ async function signUp(
       },
     })
   );
+
+  // Send helpdesk notification for new signups (non-blocking)
+  if (data?.user && !error) {
+    console.log('[AUTH] 📧 Sending helpdesk signup notification...');
+    sendHelpdeskSignupNotification(data.user.id, email, fullName, role).catch(err => {
+      console.error('[AUTH] ⚠️ Helpdesk notification failed (non-critical):', err);
+    });
+  }
+
   return { user: data?.user ?? null, session: data?.session ?? null, error: error ?? null };
+}
+
+/**
+ * Send helpdesk notification for new user signups
+ */
+async function sendHelpdeskSignupNotification(
+  userId: string,
+  email: string,
+  fullName: string,
+  role: string
+) {
+  try {
+    const signupTime = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
+    
+    // Compile template manually (simple replacement)
+    let html = EMAIL_TEMPLATES.HELPDESK_SIGNUP_NOTIFICATION
+      .replace(/{{userRole}}/g, role)
+      .replace(/{{fullName}}/g, fullName)
+      .replace(/{{email}}/g, email)
+      .replace(/{{professionalTitle}}/g, 'Pending profile completion')
+      .replace(/{{userId}}/g, userId)
+      .replace(/{{signupTime}}/g, signupTime);
+    
+    // Handle conditional mentor/candidate logic
+    if (role === 'mentor') {
+      html = html.replace(/{{#if isMentor}}/g, '')
+        .replace(/{{else}}/g, '<!--')
+        .replace(/{{\/if}}/g, '-->');
+    } else {
+      html = html.replace(/{{#if isMentor}}[\s\S]*?{{else}}/g, '<!--')
+        .replace(/{{\/if}}/g, '-->');
+    }
+    
+    const { error } = await supabase.functions.invoke('send-email', {
+      body: {
+        to: 'crackjobshelpdesk@gmail.com',
+        subject: `🆕 New ${role.charAt(0).toUpperCase() + role.slice(1)} Signup - ${fullName}`,
+        html: html,
+        type: 'helpdesk-signup'
+      }
+    });
+
+    if (error) {
+      console.error('[AUTH] Helpdesk email error:', error);
+    } else {
+      console.log('[AUTH] ✅ Helpdesk signup notification sent');
+    }
+  } catch (err) {
+    console.error('[AUTH] Exception sending helpdesk notification:', err);
+  }
 }
 
 /**

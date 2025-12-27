@@ -1,6 +1,7 @@
 // lib/ui/NotificationBanner.tsx
 import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
 import { Animated, StyleSheet, Text } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, spacing } from '@/lib/theme';
 
 type NotificationBannerProps = {
@@ -22,6 +23,7 @@ export const NotificationBanner: React.FC<NotificationBannerProps> = ({
   type = 'success',
   onHide,
 }) => {
+  const insets = useSafeAreaInsets();
   const translateY = useRef(new Animated.Value(-80)).current;
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -63,6 +65,7 @@ export const NotificationBanner: React.FC<NotificationBannerProps> = ({
         styles.container,
         {
           backgroundColor: bgColor,
+          paddingTop: insets.top + spacing.sm,
           transform: [{ translateY }],
         },
       ]}
@@ -118,7 +121,7 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    paddingVertical: spacing.sm,
+    paddingBottom: spacing.sm,
     paddingHorizontal: spacing.md,
     zIndex: 1000,
   },

@@ -63,17 +63,17 @@ export default function MentorEvaluationScreen() {
       if (error) throw error;
       if (!session) throw new Error('Session not found');
 
-      // 2. Fetch Candidate Name
+      // 2. Fetch Candidate Professional Title for anonymity
       let candidateName = 'Candidate';
       if (session.candidate_id) {
-        const { data: userData } = await supabase
-          .from('profiles') // Check if 'users' or 'profiles' table
-          .select('full_name')
+        const { data: candidateData } = await supabase
+          .from('candidates')
+          .select('professional_title')
           .eq('id', session.candidate_id)
           .single();
         
-        if (userData?.full_name) {
-          candidateName = userData.full_name;
+        if (candidateData?.professional_title) {
+          candidateName = candidateData.professional_title;
         }
       }
 

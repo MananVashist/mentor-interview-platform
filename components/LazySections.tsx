@@ -8,6 +8,7 @@ import {
   Platform,
   useWindowDimensions,
   Image as RNImage,
+  Linking,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Asset } from 'expo-asset';
@@ -43,6 +44,11 @@ const COMPANIES = [
   { name: 'Microsoft', image: MicrosoftImg, width: 110 },
   { name: 'Capgemini', image: CapgeminiImg, width: 120 },
   { name: 'Adobe', image: AdobeImg, width: 120 },   
+];
+
+const STATS = [
+  { id: 1, number: '500+', label: 'Interviews Conducted' },
+  { id: 2, number: '4.8★', label: 'Average Mentor Rating' },
 ];
 
 const INTERVIEW_TRACKS = [
@@ -169,6 +175,55 @@ const InterviewTracks = memo(() => {
           </TouchableOpacity>
         ))}
       </View>
+    </View>
+  );
+});
+
+const SocialProof = memo(() => {
+  const { width } = useWindowDimensions();
+  const isSmall = width < 900;
+
+  const handleLinkedInPress = () => {
+    const linkedInUrl = 'https://www.linkedin.com/company/crackjobs';
+    Linking.openURL(linkedInUrl).catch(err => console.error('Failed to open LinkedIn:', err));
+  };
+
+  return (
+    <View 
+      style={styles.socialProofSection}
+      accessibilityRole="region"
+      accessibilityLabel="Platform statistics and social proof"
+    >
+      <View style={[styles.statsGrid, isSmall && styles.statsGridMobile]}>
+        {STATS.map((stat) => (
+          <View 
+            key={stat.id} 
+            style={styles.statCard}
+            accessibilityRole="text"
+            accessibilityLabel={`${stat.number} ${stat.label}`}
+          >
+            <Text 
+              style={styles.statNumber}
+              accessibilityRole="header"
+              accessibilityLevel={3}
+            >
+              {stat.number}
+            </Text>
+            <Text style={styles.statLabel}>{stat.label}</Text>
+          </View>
+        ))}
+      </View>
+      
+      <TouchableOpacity
+        style={styles.linkedinButton}
+        onPress={handleLinkedInPress}
+        activeOpacity={0.8}
+        accessibilityRole="link"
+        accessibilityLabel="Check us out on LinkedIn"
+        accessibilityHint="Opens CrackJobs LinkedIn page in your browser"
+      >
+        <Text style={styles.linkedinButtonText}>Check us out on LinkedIn →</Text>
+      </TouchableOpacity>
     </View>
   );
 });
@@ -326,6 +381,7 @@ export default function LazySections() {
     <>
       <LogoWall />
       <InterviewTracks />
+      <SocialProof />
       <Reviews />
       <FAQSection />
       <BottomCTA />
@@ -347,6 +403,69 @@ const styles = StyleSheet.create({
   logoWall: { flexDirection: 'row', justifyContent: 'center', gap: 60, flexWrap: 'wrap', alignItems: 'center' },
   logoWallMobile: { gap: 30, paddingHorizontal: 20 },
   logoWrapper: { height: 50, justifyContent: 'center', alignItems: 'center' },
+
+  // Social Proof Stats
+  socialProofSection: { 
+    backgroundColor: BG_CREAM, 
+    paddingVertical: 60, 
+    paddingHorizontal: 24,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0'
+  },
+  statsGrid: { 
+    flexDirection: 'row', 
+    justifyContent: 'center', 
+    gap: 48, 
+    flexWrap: 'wrap',
+    maxWidth: 900,
+    alignSelf: 'center',
+    width: '100%',
+    marginBottom: 32
+  },
+  statsGridMobile: { 
+    gap: 32,
+    paddingHorizontal: 20
+  },
+  statCard: { 
+    alignItems: 'center',
+    minWidth: 140
+  },
+  statNumber: { 
+    fontFamily: SYSTEM_FONT, 
+    fontWeight: '800', 
+    fontSize: 48, 
+    color: BRAND_ORANGE,
+    marginBottom: 8,
+    lineHeight: 52
+  },
+  statLabel: { 
+    fontFamily: SYSTEM_FONT, 
+    fontSize: 14, 
+    color: TEXT_GRAY,
+    textAlign: 'center',
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5
+  },
+  linkedinButton: {
+    alignSelf: 'center',
+    backgroundColor: '#0077b5',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3
+  },
+  linkedinButtonText: {
+    fontFamily: SYSTEM_FONT,
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#fff',
+    letterSpacing: 0.3
+  },
 
   // Tracks
   tracksSection: { backgroundColor: BG_CREAM },
