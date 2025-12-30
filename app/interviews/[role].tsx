@@ -1,4 +1,4 @@
-﻿import React from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -42,27 +42,35 @@ export default function RoleLandingPage() {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const isSmall = width < 900;
+  const [isParamsReady, setIsParamsReady] = useState(false);
+
+  const [fontsLoaded] = useFonts({
+    ...MaterialCommunityIcons.font,
+  });
+
+  // Wait for params to be ready
+  useEffect(() => {
+    if (role) {
+      setIsParamsReady(true);
+    }
+  }, [role]);
 
   // 1. Get Data
   const roleKey = typeof role === 'string' ? role : '';
   const data = ROLE_DATA[roleKey];
   const seoData = SEO_CONFIG.interviews[roleKey as keyof typeof SEO_CONFIG.interviews];
 
-  const [fontsLoaded] = useFonts({
-    ...MaterialCommunityIcons.font,
-  });
+  // Show loading while fonts or params aren't ready
+  if (!fontsLoaded || !isParamsReady) {
+    return <View style={{ flex: 1, backgroundColor: BG_CREAM }} />;
+  }
 
-  // 2. Redirect if invalid role
+  // 2. Redirect if invalid role (only after params are confirmed ready)
   if (!data || !seoData) {
     return <Redirect href="/" />;
   }
 
-  if (!fontsLoaded) {
-    return <View style={{ flex: 1, backgroundColor: BG_CREAM }} />;
-  }
-
   // 3. Construct Canonical URL
-  // This tells Google: "The official version of this page is https://crackjobs.com/interviews/[role]"
   const canonicalUrl = `${BASE_URL}/interviews/${roleKey}`;
 
   return (

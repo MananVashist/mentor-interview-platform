@@ -22,549 +22,1217 @@ export type BlogPost = {
 
 export const blogPosts: BlogPost[] = [
   {
-    slug: "talent-acquisition-guide",
-    title: "Talent Acquisition Explained: A Technical Guide to Modern TA Functions (2025)",
-    excerpt: "Beyond generic definitions: Learn the strategic TA framework that interviewers actually test. Covers workforce planning, metrics, and stakeholder management for senior HR interviews.",
-    author: "CrackJobs Team",
-    publishedAt: "2024-12-22",
-    thumbnailUrl: "https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=800", // HR/recruitment teamwork
-    tags: ["HR", "Talent Acquisition", "Interview Prep"],
-    content: `
-    <h1>Talent Acquisition Explained: A Technical Guide to Modern TA Functions (2025)</h1>
-    
-    <p><em>By CrackJobs Team | 12 min read</em></p>
-    
-    <p>When people search for "Talent Acquisition roles and responsibilities" or "what does a Talent Acquisition professional do", they usually find generic definitions.</p>
-    
-    <p>But in real interviews—and real organisations—Talent Acquisition (TA) is a technical HR function, not just hiring coordination.</p>
-    
-    <p>This guide breaks down Talent Acquisition as a system, covering:</p>
-    
-    <ul>
-      <li>Core Talent Acquisition responsibilities</li>
-      <li>Key TA processes and frameworks</li>
-      <li>Metrics interviewers actually care about</li>
-      <li>How TA is evaluated in senior HR interviews</li>
-    </ul>
-    
-    <p>If you're preparing for Talent Acquisition interviews, this is the depth interviewers expect.</p>
-    
-    <h2>What Is Talent Acquisition? (Beyond Recruitment)</h2>
-    
-    <p>Talent Acquisition is a long-term, strategic HR function focused on building sustainable talent pipelines aligned with business goals.</p>
-    
-    <p>Unlike recruitment, which is transactional, TA involves:</p>
-    
-    <ul>
-      <li>Workforce planning</li>
-      <li>Capability forecasting</li>
-      <li>Hiring manager calibration</li>
-      <li>Interview design</li>
-      <li>Quality-of-hire optimization</li>
-    </ul>
-    
-    <h3>Talent Acquisition vs Recruitment</h3>
-    
-    <table>
-      <thead>
-        <tr>
-          <th>Recruitment</th>
-          <th>Talent Acquisition</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>Short-term hiring</td>
-          <td>Long-term workforce strategy</td>
-        </tr>
-        <tr>
-          <td>Role-based</td>
-          <td>Capability-based</td>
-        </tr>
-        <tr>
-          <td>Speed-focused</td>
-          <td>Quality and retention focused</td>
-        </tr>
-        <tr>
-          <td>Reactive</td>
-          <td>Proactive</td>
-        </tr>
-      </tbody>
-    </table>
-    
-    <p><strong>Interview insight:</strong> Candidates who fail TA interviews usually treat Talent Acquisition as execution, not strategy.</p>
-    
-    <h2>Core Talent Acquisition Functions</h2>
-    
-    <h3>1. Workforce Planning & Demand Forecasting</h3>
-    
-    <p>Workforce planning is the foundation of any strong Talent Acquisition strategy.</p>
-    
-    <p>TA teams work with:</p>
-    
-    <ul>
-      <li>Business growth forecasts</li>
-      <li>Attrition and backfill data</li>
-      <li>Skill gap analysis</li>
-      <li>Time-to-productivity benchmarks</li>
-    </ul>
-    
-    <p><strong>Common interview question:</strong> "How do you plan hiring when headcount visibility is unclear?"</p>
-    
-    <p><strong>What interviewers expect:</strong></p>
-    
-    <ul>
-      <li>Hiring against capabilities, not just open requisitions</li>
-      <li>Scenario-based planning (best / worst case)</li>
-      <li>Prioritization under uncertainty</li>
-    </ul>
-    
-    <h3>2. Job Description & Role Design</h3>
-    
-    <p>A poorly designed role leads to:</p>
-    
-    <ul>
-      <li>Low-quality applicants</li>
-      <li>Interview confusion</li>
-      <li>High early attrition</li>
-    </ul>
-    
-    <p>A technical Talent Acquisition professional:</p>
-    
-    <ul>
-      <li>Separates must-have skills from trainable skills</li>
-      <li>Defines success metrics upfront</li>
-      <li>Avoids inflated or generic job descriptions</li>
-    </ul>
-    
-    <p><strong>Example:</strong> Instead of "strong communication skills," define: "Ability to deliver decision-ready insights to stakeholders"</p>
-    
-    <h3>3. Sourcing Strategy & Talent Pipelines</h3>
-    
-    <p>Sourcing is not about channels—it's about signal quality.</p>
-    
-    <p>Strong TA sourcing strategies include:</p>
-    
-    <ul>
-      <li>Passive vs active candidate mapping</li>
-      <li>Skill adjacency hiring</li>
-      <li>Community and referral pipelines</li>
-      <li>Source-to-quality tracking</li>
-    </ul>
-    
-    <p><strong>Advanced TA metric:</strong> Source-to-quality-of-hire ratio</p>
-    
-    <p>Interviewers look for candidates who understand why certain sources produce better hires, not just where candidates came from.</p>
-    
-    <h3>4. Interview Process Design & Evaluation Frameworks</h3>
-    
-    <p>One of the most technical Talent Acquisition responsibilities is interview design.</p>
-    
-    <p>Common hiring failures occur due to:</p>
-    
-    <ul>
-      <li>Too many interview rounds</li>
-      <li>Overlapping evaluation criteria</li>
-      <li>Lack of interviewer calibration</li>
-    </ul>
-    
-    <p>A strong TA framework:</p>
-    
-    <ul>
-      <li>Maps each interview round to a specific signal</li>
-      <li>Uses structured evaluation rubrics</li>
-      <li>Eliminates redundancy</li>
-    </ul>
-    
-    <p><strong>Example interview structure:</strong></p>
-    
-    <table>
-      <thead>
-        <tr>
-          <th>Round</th>
-          <th>Signal Evaluated</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>Round 1</td>
-          <td>Problem-solving approach</td>
-        </tr>
-        <tr>
-          <td>Round 2</td>
-          <td>Role depth & execution</td>
-        </tr>
-        <tr>
-          <td>Round 3</td>
-          <td>Stakeholder judgment</td>
-        </tr>
-      </tbody>
-    </table>
-    
-    <h3>5. Hiring Manager Alignment & Stakeholder Management</h3>
-    
-    <p>Hiring manager calibration is one of the most critical Talent Acquisition skills.</p>
-    
-    <p>TA professionals must:</p>
-    
-    <ul>
-      <li>Push back on vague feedback</li>
-      <li>Identify rejection patterns</li>
-      <li>Reset expectations using data</li>
-    </ul>
-    
-    <p><strong>Typical TA interview question:</strong> "How do you handle a hiring manager who keeps rejecting candidates?"</p>
-    
-    <p><strong>Strong answer includes:</strong></p>
-    
-    <ul>
-      <li>Pattern recognition</li>
-      <li>Evidence-based feedback</li>
-      <li>Escalation using hiring data, not opinions</li>
-    </ul>
-    
-    <h3>6. Offer Management & Candidate Closure</h3>
-    
-    <p>Offer management is risk mitigation, not persuasion.</p>
-    
-    <p>TA teams evaluate:</p>
-    
-    <ul>
-      <li>Compensation band flexibility</li>
-      <li>Internal parity vs urgency</li>
-      <li>Counter-offer likelihood</li>
-      <li>Candidate motivation drivers</li>
-    </ul>
-    
-    <p>Well-designed closure strategies reduce:</p>
-    
-    <ul>
-      <li>Offer drop-offs</li>
-      <li>Renegotiations</li>
-      <li>Early exits post-joining</li>
-    </ul>
-    
-    <h2>Key Talent Acquisition Metrics That Matter</h2>
-    
-    <p>Vanity metrics don't impress interviewers.</p>
-    
-    <p>Real Talent Acquisition KPIs include:</p>
-    
-    <ul>
-      <li>Time to productivity</li>
-      <li>Quality of hire (6–12 months)</li>
-      <li>Interview-to-offer ratio</li>
-      <li>Early attrition rate</li>
-      <li>Hiring manager satisfaction (with data)</li>
-    </ul>
-    
-    <p><strong>Interview tip:</strong> Always explain why a metric matters—not just what it measures.</p>
-    
-    <h2>Why Talent Acquisition Interviews Are Hard</h2>
-    
-    <p>TA interviews test:</p>
-    
-    <ul>
-      <li>Judgment under ambiguity</li>
-      <li>Stakeholder conflict handling</li>
-      <li>Trade-off decision-making</li>
-    </ul>
-    
-    <p>These skills cannot be memorised or scripted.</p>
-    
-    <p>This is why candidates who rely only on:</p>
-    
-    <ul>
-      <li>HR theory</li>
-      <li>Online courses</li>
-      <li>Generic interview answers</li>
-    </ul>
-    
-    <p>often struggle in real interviews.</p>
-    
-    <h2>Final Thoughts: Talent Acquisition as a Strategic HR Function</h2>
-    
-    <p>Talent Acquisition plays a defining role in how organisations grow, execute, and sustain performance over time. When Talent Acquisition is treated as a transactional support function, the result is often misaligned hires, early attrition, and constant firefighting. When it is treated as a strategic HR function, it becomes a competitive advantage.</p>
-    
-    <p>Senior Talent Acquisition professionals are expected to think in systems, not requisitions. They must balance speed with quality, advocate for long-term capability building, and make judgment calls under ambiguity. Being able to clearly explain Talent Acquisition as a structured, end-to-end system is often what separates strong candidates from average ones in senior HR interviews.</p>
-    
-    <h2>Preparing for Talent Acquisition Interviews?</h2>
-    
-    <p>At CrackJobs, candidates practice real Talent Acquisition interview scenarios with experienced HR leaders—under real interview pressure, with structured feedback.</p>
-    
-    <p>Because Talent Acquisition interviews are less about recalling frameworks and more about demonstrating judgment developed through experience.</p>
-    
-    <p><strong><a href="https://crackjobs.com/">Book a Talent Acquisition Mock Interview on CrackJobs</a></strong></p>
-    `
-  },
-  {
-    slug: "pm-technical-interviews-guide",
-    title: "The PM's Guide to Technical Interviews: Think Like a Partner, Not a Pseudo-Engineer",
-    excerpt: "Master PM technical interviews with this 5-step framework. Learn why depth matters less than trade-offs, and why over-answering kills your chances.",
-    author: "CrackJobs Team",
-    publishedAt: "2024-12-18",
-    thumbnailUrl: "https://images.unsplash.com/photo-1551434678-e076c223a692?w=800", // Technical teamwork image
-    tags: ["PM", "Technical Interviews", "Interview Prep"],
-    content: `
-    <h1>The PM's Guide to Technical Interviews: Think Like a Partner, Not a Pseudo-Engineer</h1>
-    
-    <p><em>By CrackJobs Team | 8 Min Read</em></p>
-    
-    <p>Getting nervous before you give technical interviews as a PM? Let us break it down for you.</p>
-    
-    <p>Technical interviews for Product Managers are not about writing code or explaining how threads are scheduled. They're about showing you can <strong>collaborate with engineers</strong>, <strong>make smart trade-offs</strong>, and <strong>communicate clearly</strong> without pretending to be a backend engineer.</p>
-    
-    <p>Here's the 5-step framework that works.</p>
-    
-    <h2>First, Clarify the Intent of the Question</h2>
-    
-    <p>Before answering, ask yourself (or out loud):</p>
-    
-    <ul>
-      <li>"Is the interviewer testing depth, trade-offs, or collaboration?"</li>
-    </ul>
-    
-    <p>Most PM technical questions are not about correctness. They're about:</p>
-    
-    <ul>
-      <li>Can you reason with engineers?</li>
-      <li>Can you make trade-offs under constraints?</li>
-      <li>Can you communicate clearly with engineers without pretending to be one?</li>
-    </ul>
-    
-    <p>Understanding the intent helps you calibrate your answer. Don't go deep if they're testing breadth. Don't stay surface-level if they want trade-offs.</p>
-    
-    <h2>Secondly, Frame the System Before Diving In</h2>
-    
-    <p>Always start with a high-level system view:</p>
-    
-    <blockquote>
-      <p>"At a high level, this system has 4 parts…"</p>
-    </blockquote>
-    
-    <p><strong>Example:</strong></p>
-    
-    <ol>
-      <li>Client (mobile/web)</li>
-      <li>API layer</li>
-      <li>Core services</li>
-      <li>Data stores</li>
-    </ol>
-    
-    <p>This instantly shows <strong>structured thinking</strong> and prevents rambling. It also gives the interviewer a roadmap of where you're going.</p>
-    
-    <p>Without framing, you'll jump between components randomly, and the interviewer will lose track of your thought process.</p>
-    
-    <h2>Thirdly, Go One Layer Deep — Not Five</h2>
-    
-    <p>A good rule of thumb:</p>
-    
-    <p><strong>👉 Depth = 1 layer deeper than a non-PM</strong><br>
-    <strong>👉 Shallower than a backend engineer</strong></p>
-    
-    <p><strong>Example:</strong></p>
-    
-    <ul>
-      <li>✅ Say <em>why</em> you'd use async processing</li>
-      <li>❌ Don't explain <em>how</em> threads are scheduled</li>
-    </ul>
-    
-    <p>You're not here to prove you can code. You're here to prove you can:</p>
-    
-    <ul>
-      <li>Identify the right technical approach</li>
-      <li>Understand implications for the product</li>
-      <li>Communicate with engineers respectfully</li>
-    </ul>
-    
-    <p>Going too deep makes you look like you're overcompensating. Going too shallow makes you look unprepared.</p>
-    
-    <h2>Fourthly, Call Out Trade-Offs Explicitly (This Is the Cheat Code)</h2>
-    
-    <p>Every strong PM answer includes trade-offs:</p>
-    
-    <ul>
-      <li>Latency vs consistency</li>
-      <li>Speed vs reliability</li>
-      <li>Cost vs scalability</li>
-    </ul>
-    
-    <p>Even if your design isn't perfect, <strong>explicit trade-offs save you</strong>.</p>
-    
-    <p><strong>Interviewers care more about how you choose than what you choose.</strong></p>
-    
-    <p><strong>Example:</strong></p>
-    
-    <blockquote>
-      <p>"We could cache this data for faster response times, but that introduces eventual consistency issues. Given that our users prioritize speed over real-time accuracy in this context, I'd opt for caching with a 5-minute TTL."</p>
-    </blockquote>
-    
-    <p>See what happened there? You:</p>
-    
-    <ol>
-      <li>Named the trade-off</li>
-      <li>Explained the constraint</li>
-      <li>Made a decision</li>
-      <li>Justified it with user needs</li>
-    </ol>
-    
-    <p>This is <strong>PM thinking</strong>, not engineering thinking.</p>
-    
-    <h2>And Lastly, Know When to Stop</h2>
-    
-    <p>The best ending line in a PM technical answer:</p>
-    
-    <blockquote>
-      <p>"At this stage, I'd validate this with engineering before going deeper."</p>
-    </blockquote>
-    
-    <p>This shows:</p>
-    
-    <ul>
-      <li>Collaboration</li>
-      <li>Self-awareness</li>
-      <li>Real-world PM behavior</li>
-    </ul>
-    
-    <p>You're not expected to have all the answers. You're expected to know <em>who</em> to ask and <em>when</em> to ask them.</p>
-    
-    <h2>TL;DR for PM Technical Interviews</h2>
-    
-    <ul>
-      <li><strong>Structure first</strong> — Frame the system before diving in</li>
-      <li><strong>One-layer depth</strong> — Deeper than a non-PM, shallower than an engineer</li>
-      <li><strong>Trade-offs > details</strong> — Explicit trade-offs are your cheat code</li>
-      <li><strong>Think like a partner, not a pseudo-engineer</strong> — Know when to collaborate</li>
-    </ul>
-    
-    <h2>The Real Problem: Over-Answering</h2>
-    
-    <p>If you're a PM preparing for interviews, <strong>practice saying less — but better</strong>.</p>
-    
-    <p>We've seen great PMs fail interviews because they over-answered. And average PMs clear them because they <strong>framed the problem right</strong>.</p>
-    
-    <p>The technical interview is not a test of how much you know. It's a test of how you <strong>think</strong>, how you <strong>prioritize</strong>, and how you <strong>communicate</strong>.</p>
-    
-    <p>Don't let nerves push you into rambling mode. Structure your answer, go one layer deep, call out trade-offs, and know when to stop.</p>
-    
-    <p><strong>Ready to practice with real PMs who've been on both sides of the table? <a href="https://crackjobs.com/">Book a Technical Mock Interview on Crackjobs</a></strong></p>
-    `
-  },
-  {
-    slug: "cracking-pm-case-study",
-  title: "Cracking the PM Case Study: How to \"Design X\" Without Getting Lost",
-  excerpt: "Learn the proven framework for acing product design interviews. Avoid the #1 mistake candidates make and discover why practicing alone is dangerous.",
-  author: "CrackJobs Team",
-  publishedAt: "2024-12-02",
-  thumbnailUrl: "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=800", // PM interview image
-  tags: ["PM", "Interview Prep", "Case Study"],
+  slug: "sql-interview-mistakes-data-analysts",
+  title: "7 SQL Interview Mistakes That Cost Data Analysts the Job (And How to Fix Them)",
+  excerpt:
+    "Most data analysts don’t fail interviews because they don’t know SQL—they fail because of how they think, explain, and apply it. These 7 real SQL interview mistakes explain why.",
+  thumbnailUrl: "https://images.unsplash.com/photo-1555949963-aa79dcee981c",
   content: `
-    <h1>Cracking the PM Case Study: How to "Design X" Without Getting Lost</h1>
-    
-    <p><em>By CrackJobs Team | 12 Min Read</em></p>
-    
-    <p>"Design a vending machine for astronauts." "How would you improve Spotify's retention?" "Should Google enter the ride-sharing market?"</p>
-    
-    <p>If you are applying for a Product Manager (PM) role, you know these questions. Unlike coding interviews, where the code either runs or it doesn't, PM interviews are ambiguous. There is no single right answer, but there are definitely wrong ways to get there.</p>
-    
-    <p>The <strong>Product Sense</strong> (or Product Design) round is the "make or break" moment for aspiring PMs. It tests your product thinking, your user empathy, and your ability to structure chaos.</p>
-    
-    <p>Here is how to approach the dreaded Case Study interview and why practicing alone is dangerous.</p>
-    
-    <h2>The Trap: Jumping to Solutions</h2>
-    
-    <p>The #1 mistake candidates make in mock interviews on <strong>Crackjobs</strong> is the "Feature Vomit."</p>
-    
-    <p><strong>Interviewer:</strong> "Design a better experience for finding a roommate."</p>
-    <p><strong>Candidate:</strong> "Okay! So, we build an app with a Tinder-like swipe feature, and then we add AI to match personalities, and maybe a video intro feature..."</p>
-    
-    <p><strong>The Verdict:</strong> Fail.</p>
-    
-    <p>Senior PMs don't hire idea generators; they hire problem solvers. By jumping straight to features, you proved you don't care about <em>who</em> the user is or <em>what</em> their actual problem is.</p>
-    
-    <h2>The Framework: Structure Is Your Safety Net</h2>
-    
-    <p>To survive the ambiguity, you need a framework. The most popular is <strong>CIRCLES</strong>, but you can adapt it. The key is moving step-by-step.</p>
-    
-    <h3>1. Clarify the Goal</h3>
-    
-    <p>Never start without asking questions.</p>
-    
-    <ul>
-      <li><em>"Is our goal to increase revenue, engagement, or user acquisition?"</em></li>
-      <li><em>"Are we constrained by budget or technology?"</em></li>
-    </ul>
-    
-    <h3>2. Define the User (The "Who")</h3>
-    
-    <p>You cannot build for everyone. Pick a specific segment.</p>
-    
-    <ul>
-      <li><em>Example:</em> If designing an alarm clock for the blind, are we targeting the elderly (who need simplicity) or tech-savvy professionals (who want integrations)?</li>
-    </ul>
-    
-    <h3>3. Identify Pain Points (The "Why")</h3>
-    
-    <p>This is where you show empathy. What sucks about the current experience for that specific user?</p>
-    
-    <ul>
-      <li><em>Pain Point:</em> "It's hard for blind users to know if they set the alarm for AM or PM."</li>
-    </ul>
-    
-    <h3>4. Brainstorm Solutions (The "What")</h3>
-    
-    <p>Now—and only now—can you suggest features. Go wide. Be creative. Then, prioritize <em>one</em> solution based on impact vs. effort.</p>
-    
-    <h3>5. Define Success Metrics</h3>
-    
-    <p>How will you know if it worked?</p>
-    
-    <ul>
-      <li><em>North Star Metric:</em> "Percentage of users who successfully wake up on time."</li>
-      <li><em>Counter Metric:</em> "Battery usage" (Did our cool feature drain the battery?)</li>
-    </ul>
-    
-    <h2>The "Rambling" Problem</h2>
-    
-    <p>In a 45-minute interview, time management is a skill. Many candidates get stuck on the "User Persona" section for 15 minutes and have 2 minutes left for the actual solution.</p>
-    
-    <p>This is a communication red flag. A Product Manager must lead meetings efficiently. If you can't manage the time in your interview, how can you manage a roadmap?</p>
-    
-    <h2>Why You Can't Practice Case Studies Alone</h2>
-    
-    <p>You can practice SQL queries alone. You can practice Excel formulas alone. <strong>You cannot practice Product Sense alone.</strong></p>
-    
-    <p>When you practice in front of a mirror, you always agree with your own ideas. You don't hear:</p>
-    
-    <ul>
-      <li><em>"Your user segment was too broad."</em></li>
-      <li><em>"You didn't tie your solution back to the business goal."</em></li>
-      <li><em>"You sounded defensive when I questioned your prioritization."</em></li>
-    </ul>
-    
-    <h2>The Value of a Verified PM Mentor</h2>
-    
-    <p>On <strong>Crackjobs</strong>, you can roleplay these scenarios with mentors who are actual PMs at companies like Uber, Airbnb, and Microsoft.</p>
-    
-    <p>They act as the "skeptical stakeholder." They will interrupt you. They will throw curveballs (e.g., <em>"Oh wait, the CEO just cut the budget by half. Now what?"</em>).</p>
-    
-    <p>This pressure tests your <strong>Product Execution</strong> skills—your ability to stay calm and pivot when requirements change.</p>
-    
-    <h2>Conclusion: It's Not About the Idea, It's About the Journey</h2>
-    
-    <p>Recruiters don't care if your "Vending Machine for Astronauts" idea is actually feasible. They care about:</p>
-    
-    <ol>
-      <li>Did you structure your thoughts?</li>
-      <li>Did you show empathy for the user?</li>
-      <li>Did you communicate clearly?</li>
-    </ol>
-    
-    <p>Don't let your first attempt at a case study be in front of a hiring manager.</p>
-    
-    <p><strong>Sharpen your product sense before the big day. <a href="https://crackjobs.com/">Book a PM Mock Interview on Crackjobs</a></strong></p>
-    `
-  }
+<h1>7 SQL Interview Mistakes That Cost Data Analysts the Job (And How to Fix Them)</h1>
+
+<h2>Who this article is for</h2>
+<p>
+This article is for data analysts and business analysts who:
+</p>
+<ul>
+  <li>Clear SQL screenings but fail final rounds</li>
+  <li>Know joins, aggregations, and window functions—but still get rejected</li>
+  <li>Hear feedback like “good SQL, but lacked depth”</li>
+  <li>Feel confident practicing alone, but freeze in live interviews</li>
+</ul>
+
+<p>
+If you’ve ever thought, <em>“I solved the query… why didn’t it land?”</em> — this article is for you.
+</p>
+
+<h2>What SQL interviews are actually testing (context most candidates miss)</h2>
+<p>
+SQL interviews are not about writing syntactically correct queries.
+</p>
+
+<p>
+They are about whether interviewers can trust you to:
+</p>
+<ul>
+  <li>Reason through messy, ambiguous data</li>
+  <li>Choose the simplest correct solution</li>
+  <li>Explain your thinking clearly</li>
+  <li>Anticipate edge cases and scale</li>
+</ul>
+
+<p>
+Most rejections happen not because the final query was wrong—but because the <strong>thinking process was invisible, brittle, or shallow</strong>.
+</p>
+
+<p>
+That’s why many candidates fail real <a href="/interviews/data-analytics">data analytics interviews</a> despite knowing SQL well.
+</p>
+
+<hr />
+
+<h2>Mistake #1: Overcomplicating SQL When a Simple Join Works</h2>
+
+<h3>Why candidates do this</h3>
+<ul>
+  <li>They want to “impress” the interviewer</li>
+  <li>They’ve learned advanced SQL and want to show it</li>
+  <li>They confuse complexity with competence</li>
+</ul>
+
+<h3>What the interviewer sees</h3>
+<p>
+Unnecessary complexity signals poor judgement.
+</p>
+
+<p>
+Interviewers ask themselves:
+</p>
+<ul>
+  <li>Can this person maintain production queries?</li>
+  <li>Do they know when <em>not</em> to be fancy?</li>
+</ul>
+
+<h3>Example</h3>
+<p><strong>Question:</strong> Find total orders per customer.</p>
+
+<p><strong>Overcomplicated answer:</strong></p>
+<pre>
+SELECT customer_id, COUNT(*)
+FROM (
+  SELECT DISTINCT o.id, o.customer_id
+  FROM orders o
+  JOIN customers c ON o.customer_id = c.id
+) t
+GROUP BY customer_id;
+</pre>
+
+<p><strong>Better answer:</strong></p>
+<pre>
+SELECT customer_id, COUNT(*)
+FROM orders
+GROUP BY customer_id;
+</pre>
+
+<h3>Strong interview signal</h3>
+<p>
+“I’m keeping this simple for readability. If we later need deduplication, we can add it deliberately.”
+</p>
+
+<h3>Seniority expectations</h3>
+<ul>
+  <li><strong>Junior:</strong> Correct logic</li>
+  <li><strong>Mid-level:</strong> Clear, minimal queries</li>
+  <li><strong>Senior:</strong> Actively removes unnecessary complexity</li>
+</ul>
+
+<hr />
+
+<h2>Mistake #2: Staying Silent While Writing SQL</h2>
+
+<h3>Why candidates do this</h3>
+<ul>
+  <li>They’re concentrating</li>
+  <li>They fear saying something wrong</li>
+  <li>They assume the code speaks for itself</li>
+</ul>
+
+<h3>Why this fails</h3>
+<p>
+Interviewers cannot evaluate invisible thinking.
+</p>
+
+<p>
+Silence is often interpreted as:
+</p>
+<ul>
+  <li>Uncertainty</li>
+  <li>Trial-and-error coding</li>
+  <li>Lack of structure</li>
+</ul>
+
+<h3>Weak behavior</h3>
+<p>
+Typing quietly for 5 minutes, then saying “done”.
+</p>
+
+<h3>Strong behavior</h3>
+<p>
+“I’ll first confirm the grain of the table. Since this is one row per order, I can safely aggregate by customer_id.”
+</p>
+
+<p>
+This habit alone dramatically improves outcomes in live <a href="/interviews/data-analytics">analytics interviews</a>.
+</p>
+
+<hr />
+
+<h2>Mistake #3: Ignoring Edge Cases (NULLs, Duplicates, Empty Tables)</h2>
+
+<h3>Why this matters</h3>
+<p>
+Real data is messy. Interviewers expect you to assume that by default.
+</p>
+
+<p>
+Ignoring edge cases signals:
+</p>
+<ul>
+  <li>No production exposure</li>
+  <li>Over-reliance on toy datasets</li>
+</ul>
+
+<h3>Example</h3>
+<p><strong>Question:</strong> Average order value per customer.</p>
+
+<p><strong>Naive answer:</strong></p>
+<pre>
+SELECT customer_id, AVG(order_value)
+FROM orders
+GROUP BY customer_id;
+</pre>
+
+<p><strong>Stronger answer:</strong></p>
+<pre>
+SELECT customer_id, AVG(order_value)
+FROM orders
+WHERE order_value IS NOT NULL
+GROUP BY customer_id;
+</pre>
+
+<p><strong>Even stronger (spoken):</strong></p>
+<p>
+“I’m excluding NULLs. If zero-value orders exist, I’d confirm whether they represent refunds or free orders.”
+</p>
+
+<hr />
+
+<h2>Mistake #4: Memorizing Syntax Instead of Understanding Logic</h2>
+
+<h3>The common failure</h3>
+<p>
+Candidates freeze trying to recall exact syntax for:
+</p>
+<ul>
+  <li>Window functions</li>
+  <li>HAVING vs WHERE</li>
+  <li>RANK vs DENSE_RANK</li>
+</ul>
+
+<h3>What interviewers actually care about</h3>
+<p>
+Logical intent.
+</p>
+
+<p>
+Strong candidates say:
+</p>
+<p>
+“Conceptually, I want to rank users by revenue within each month. The exact syntax may vary slightly.”
+</p>
+
+<p>
+This mindset also overlaps with how reasoning is evaluated in <a href="/interviews/product-management">product management interviews</a>.
+</p>
+
+<hr />
+
+<h2>Mistake #5: Not Discussing Query Performance</h2>
+
+<h3>Why this separates candidates</h3>
+<p>
+Anyone can write SQL that works on small data.
+</p>
+
+<p>
+Fewer candidates consider:
+</p>
+<ul>
+  <li>Indexes</li>
+  <li>Joins on large tables</li>
+  <li>GROUP BY cost</li>
+</ul>
+
+<h3>Strong signal</h3>
+<p>
+“If this table is large, I’d ensure indexes on customer_id. Otherwise, this aggregation could be expensive.”
+</p>
+
+<p>
+This single sentence often separates strong mid-level analysts from juniors.
+</p>
+
+<hr />
+
+<h2>Mistake #6: Poor Communication of Results</h2>
+
+<h3>The hidden problem</h3>
+<p>
+Not every interviewer is technical.
+</p>
+
+<p>
+Explaining SQL output using raw jargon loses:
+</p>
+<ul>
+  <li>Product managers</li>
+  <li>Business stakeholders</li>
+</ul>
+
+<h3>Weak explanation</h3>
+<p>
+“This query aggregates revenue grouped by cohort.”
+</p>
+
+<h3>Strong explanation</h3>
+<p>
+“This shows which customer groups generate the most revenue over time, helping us prioritise retention.”
+</p>
+
+<hr />
+
+<h2>Mistake #7: Not Practicing Real Business Scenarios</h2>
+
+<h3>Why practice often fails</h3>
+<p>
+Most candidates practice:
+</p>
+<ul>
+  <li>Isolated SQL problems</li>
+  <li>LeetCode-style prompts</li>
+</ul>
+
+<p>
+Real interviews ask:
+</p>
+<ul>
+  <li>Why did revenue drop?</li>
+  <li>Which users should we target?</li>
+  <li>How would you validate this metric?</li>
+</ul>
+
+<p>
+SQL is the tool. Business reasoning is the test.
+</p>
+
+<p>
+This is exactly what differentiates strong candidates in real <a href="/interviews/data-analytics">data analytics interviews</a>.
+</p>
+
+<hr />
+
+<h2>Final thoughts: SQL isn’t failing you—execution is</h2>
+
+<p>
+Most SQL interview failures are execution failures:
+</p>
+<ul>
+  <li>Thinking isn’t visible</li>
+  <li>Edge cases aren’t considered</li>
+  <li>Business context is missing</li>
+</ul>
+
+<p>
+These issues are hard to catch practicing alone.
+</p>
+
+<p>
+That’s why structured mock interviews help—not to teach SQL, but to expose blind spots before real interviews do.
+</p>
+`,
+  author: "CrackJobs Team",
+  publishedAt: "2025-01-10",
+  tags: ["SQL", "Data Analytics", "Interviews", "Careers"],
+},
+
+  {
+  slug: "machine-learning-interview-mistakes-data-scientists",
+  title: "8 Machine Learning Interview Mistakes That Make Data Scientists Fail (Even With Strong Models)",
+  excerpt:
+    "Many data scientists fail interviews not because their models are weak, but because their judgement, framing, and communication fall short. These 8 machine learning interview mistakes explain why.",
+  thumbnailUrl: "https://images.unsplash.com/photo-1677442136019-21780ecad995",
+  content: `
+<h1>8 Machine Learning Interview Mistakes That Make Data Scientists Fail (Even With Strong Models)</h1>
+
+<h2>Who this article is for</h2>
+<p>
+This article is for data scientists and ML engineers who:
+</p>
+<ul>
+  <li>Know the algorithms but struggle in live interviews</li>
+  <li>Perform well on Kaggle or projects but fail onsite rounds</li>
+  <li>Receive feedback like “strong technically, but lacked depth or ownership”</li>
+  <li>Feel interviews test something <em>different</em> from what they prepared for</li>
+</ul>
+
+<p>
+If you’ve ever thought, <em>“My model was correct… why wasn’t that enough?”</em> — this article is your answer.
+</p>
+
+<h2>What machine learning interviews are actually testing</h2>
+<p>
+Machine learning interviews are not exams on algorithms.
+</p>
+
+<p>
+They are simulations of how you would operate as a data scientist inside a real company.
+</p>
+
+<p>
+Interviewers are evaluating whether they can trust you to:
+</p>
+<ul>
+  <li>Frame ambiguous business problems</li>
+  <li>Make principled trade-offs</li>
+  <li>Work with imperfect data</li>
+  <li>Explain decisions to non-ML stakeholders</li>
+  <li>Own a model beyond training accuracy</li>
+</ul>
+
+<p>
+Most candidates optimise for correctness. Strong candidates demonstrate judgement.
+</p>
+
+<p>
+This distinction is central to real <a href="/interviews/data-science">data science interviews</a>.
+</p>
+
+<hr />
+
+<h2>Mistake #1: Jumping to Models Without Defining the Problem</h2>
+
+<h3>Why candidates fall into this trap</h3>
+<ul>
+  <li>They associate ML skill with algorithm choice</li>
+  <li>They fear silence in interviews</li>
+  <li>They want to demonstrate competence early</li>
+</ul>
+
+<h3>What interviewers see</h3>
+<p>
+Solution-first thinking without understanding the problem.
+</p>
+
+<h3>Example</h3>
+<p><strong>Question:</strong> “We want to predict customer churn.”</p>
+
+<p><strong>Weak response:</strong></p>
+<p>
+“I’d train a logistic regression or XGBoost model.”
+</p>
+
+<p><strong>Strong response:</strong></p>
+<p>
+“First, I’d clarify how churn is defined—cancellation, inactivity, or non-renewal—and what action the business will take based on the prediction.”
+</p>
+
+<p>
+This framing signals ownership and maturity.
+</p>
+
+<h3>Seniority expectations</h3>
+<ul>
+  <li><strong>Junior:</strong> Ask clarifying questions</li>
+  <li><strong>Mid-level:</strong> Tie framing to downstream decisions</li>
+  <li><strong>Senior:</strong> Question whether ML is even needed</li>
+</ul>
+
+<hr />
+
+<h2>Mistake #2: Optimising for Accuracy Instead of Business Metrics</h2>
+
+<h3>The common misconception</h3>
+<p>
+Accuracy feels objective and safe.
+</p>
+
+<p>
+In real problems, it’s often meaningless.
+</p>
+
+<h3>Example</h3>
+<p>
+In fraud detection or medical diagnosis, false negatives are far more costly than false positives.
+</p>
+
+<p>
+Strong candidates say:
+</p>
+<p>
+“Accuracy isn’t the right metric here. I’d prioritise recall to minimise missed fraud, even if that increases false positives.”
+</p>
+
+<p>
+Metric reasoning is also heavily tested in <a href="/interviews/data-analytics">data analytics interviews</a>.
+</p>
+
+<hr />
+
+<h2>Mistake #3: Treating the Data as Clean and Complete</h2>
+
+<h3>Why this signals inexperience</h3>
+<p>
+Real-world data is messy by default.
+</p>
+
+<p>
+Ignoring this suggests:
+</p>
+<ul>
+  <li>No production exposure</li>
+  <li>Over-reliance on curated datasets</li>
+</ul>
+
+<h3>Strong candidates proactively discuss</h3>
+<ul>
+  <li>Missing values</li>
+  <li>Label leakage</li>
+  <li>Feature availability at inference time</li>
+  <li>Bias and imbalance</li>
+</ul>
+
+<p>
+For example:
+</p>
+<p>
+“I’d verify that none of these features leak future information and that labels aren’t delayed.”
+</p>
+
+<hr />
+
+<h2>Mistake #4: Knowing Algorithms but Not Their Trade-offs</h2>
+
+<h3>The failure pattern</h3>
+<p>
+Candidates can explain how models work but struggle to explain why one is appropriate.
+</p>
+
+<h3>What interviewers care about</h3>
+<ul>
+  <li>Interpretability</li>
+  <li>Latency</li>
+  <li>Cost</li>
+  <li>Maintenance</li>
+</ul>
+
+<p>
+Strong candidates say:
+</p>
+<p>
+“I’d use logistic regression if explainability is critical, even if performance is slightly lower.”
+</p>
+
+<p>
+This mirrors the trade-off thinking expected in <a href="/interviews/product-management">product management interviews</a>.
+</p>
+
+<hr />
+
+<h2>Mistake #5: Weak Explanation of Model Decisions</h2>
+
+<h3>The hidden rejection reason</h3>
+<p>
+If stakeholders don’t trust your model, it won’t be used.
+</p>
+
+<h3>Weak explanation</h3>
+<p>
+“The model learned complex non-linear interactions.”
+</p>
+
+<h3>Strong explanation</h3>
+<p>
+“Users with declining engagement and unresolved support tickets are more likely to churn, which aligns with how dissatisfaction builds.”
+</p>
+
+<p>
+Clear explanations build confidence—even with non-technical interviewers.
+</p>
+
+<hr />
+
+<h2>Mistake #6: Ignoring Deployment, Monitoring, and Model Decay</h2>
+
+<h3>Where candidates usually stop</h3>
+<p>
+Training and evaluation.
+</p>
+
+<h3>Where interviews continue</h3>
+<ul>
+  <li>Deployment strategy</li>
+  <li>Monitoring</li>
+  <li>Data drift</li>
+  <li>Retraining cadence</li>
+</ul>
+
+<p>
+Even a high-level answer signals real-world readiness:
+</p>
+<p>
+“I’d monitor feature drift and retrain periodically when performance degrades.”
+</p>
+
+<hr />
+
+<h2>Mistake #7: Overengineering Simple Problems</h2>
+
+<h3>Why this backfires</h3>
+<p>
+Complex models increase:
+</p>
+<ul>
+  <li>Risk</li>
+  <li>Maintenance cost</li>
+  <li>Debugging difficulty</li>
+</ul>
+
+<p>
+Strong candidates say:
+</p>
+<p>
+“I’d start with a simple baseline and only add complexity if it meaningfully improves outcomes.”
+</p>
+
+<p>
+This signals maturity and judgement.
+</p>
+
+<hr />
+
+<h2>Mistake #8: Not Practicing Real ML Interviews</h2>
+
+<h3>The uncomfortable truth</h3>
+<p>
+Kaggle trains modeling. Courses teach theory.
+</p>
+
+<p>
+Neither trains:
+</p>
+<ul>
+  <li>Live reasoning</li>
+  <li>Handling follow-ups</li>
+  <li>Explaining trade-offs under pressure</li>
+</ul>
+
+<p>
+That’s why strong candidates still fail.
+</p>
+
+<p>
+Structured mock interviews help surface blind spots before real interviews do—not by teaching ML, but by improving execution.
+</p>
+
+<hr />
+
+<h2>Final thoughts: Strong models don’t guarantee offers</h2>
+
+<p>
+Machine learning interviews reward:
+</p>
+<ul>
+  <li>Judgement</li>
+  <li>Clarity</li>
+  <li>Trade-offs</li>
+  <li>Communication</li>
+</ul>
+
+<p>
+If you keep failing despite knowing ML, it’s likely an execution gap—not a knowledge gap.
+</p>
+`,
+  author: "CrackJobs Team",
+  publishedAt: "2025-01-15",
+  tags: ["Machine Learning", "Data Science", "ML Interviews", "Careers"],
+},
+
+  {
+  slug: "hr-interview-mistakes-talent-acquisition",
+  title: "7 HR Interview Mistakes That Cost Talent Acquisition Professionals the Job (And How to Fix Them)",
+  excerpt:
+    "Most HR and Talent Acquisition professionals don’t fail interviews due to lack of HR knowledge—they fail because they don’t demonstrate judgement, stakeholder thinking, and real-world ownership. These 7 interview mistakes explain why.",
+  thumbnailUrl: "https://images.unsplash.com/photo-1522071820081-009f0129c71c",
+  content: `
+<h1>7 HR Interview Mistakes That Cost Talent Acquisition Professionals the Job (And How to Fix Them)</h1>
+
+<h2>Who this article is for</h2>
+<p>
+This article is for:
+</p>
+<ul>
+  <li>HR Generalists and Talent Acquisition professionals</li>
+  <li>HRBPs preparing for mid-level and senior roles</li>
+  <li>Recruiters who clear screenings but fail final rounds</li>
+  <li>Candidates who hear feedback like “good HR knowledge, but limited business depth”</li>
+</ul>
+
+<p>
+If you’ve ever walked out of an HR interview feeling like you “answered everything correctly” but still didn’t convert, this article explains why.
+</p>
+
+<h2>What HR interviews are actually testing (and rarely stated clearly)</h2>
+<p>
+HR interviews are not primarily testing whether you know policies, frameworks, or definitions.
+</p>
+
+<p>
+They are testing whether leaders can trust you to:
+</p>
+<ul>
+  <li>Handle ambiguity and people problems</li>
+  <li>Balance empathy with business outcomes</li>
+  <li>Influence stakeholders without authority</li>
+  <li>Make judgement calls when there is no “right” answer</li>
+</ul>
+
+<p>
+Most HR interview rejections happen not because the answer was wrong—but because the candidate didn’t demonstrate <strong>ownership, judgement, or stakeholder awareness</strong>.
+</p>
+
+<p>
+This is exactly how modern <a href="/interviews/hr">HR interviews</a> are evaluated.
+</p>
+
+<hr />
+
+<h2>Mistake #1: Giving Textbook HR Answers Instead of Real Decisions</h2>
+
+<h3>Why candidates do this</h3>
+<ul>
+  <li>HR education emphasizes frameworks and theory</li>
+  <li>Candidates want “safe” answers</li>
+  <li>They fear saying something controversial</li>
+</ul>
+
+<h3>What interviewers hear</h3>
+<p>
+Generic answers that sound correct but reveal nothing about judgement.
+</p>
+
+<h3>Example</h3>
+<p><strong>Question:</strong> How do you handle conflict between a manager and employee?</p>
+
+<p><strong>Weak response:</strong></p>
+<p>
+“I’d listen to both sides, follow policy, and ensure fairness.”
+</p>
+
+<p><strong>Strong response:</strong></p>
+<p>
+“I’d first understand whether this is a performance issue, a communication breakdown, or a role misalignment. My approach would differ in each case.”
+</p>
+
+<h3>Why this matters</h3>
+<p>
+Interviewers want to see how you <em>diagnose</em> people problems, not just how you describe them.
+</p>
+
+<hr />
+
+<h2>Mistake #2: Avoiding Business Trade-offs</h2>
+
+<h3>The common HR trap</h3>
+<p>
+Candidates over-index on employee empathy and avoid discussing business impact.
+</p>
+
+<h3>Why this fails</h3>
+<p>
+Modern HR roles are business roles.
+</p>
+
+<p>
+Interviewers expect you to balance:
+</p>
+<ul>
+  <li>Employee experience</li>
+  <li>Manager effectiveness</li>
+  <li>Company outcomes</li>
+</ul>
+
+<h3>Strong signal</h3>
+<p>
+“I care deeply about employee well-being, but I also need to ensure the business can execute. My role is to balance both.”
+</p>
+
+<p>
+This same trade-off thinking is expected in <a href="/interviews/product-management">product management interviews</a> as well.
+</p>
+
+<hr />
+
+<h2>Mistake #3: Not Demonstrating Stakeholder Management</h2>
+
+<h3>Why this is a major rejection reason</h3>
+<p>
+HR professionals rarely work in isolation.
+</p>
+
+<p>
+They constantly navigate:
+</p>
+<ul>
+  <li>Founders and leadership</li>
+  <li>Line managers</li>
+  <li>Employees</li>
+</ul>
+
+<h3>Weak answers</h3>
+<p>
+“I escalated to leadership.”
+</p>
+
+<h3>Strong answers</h3>
+<p>
+“I aligned stakeholders early, clarified trade-offs, and ensured everyone understood the decision—even if they disagreed.”
+</p>
+
+<p>
+This skill is often what separates senior HRBPs from junior generalists.
+</p>
+
+<hr />
+
+<h2>Mistake #4: Treating Hiring as a Transaction</h2>
+
+<h3>Common misconception</h3>
+<p>
+Hiring is just sourcing, interviewing, and closing.
+</p>
+
+<h3>What interviewers want to hear</h3>
+<ul>
+  <li>How you define hiring success</li>
+  <li>How you partner with hiring managers</li>
+  <li>How you improve signal quality</li>
+</ul>
+
+<h3>Strong signal</h3>
+<p>
+“I focus on improving hiring quality by aligning on role expectations upfront, not just filling positions quickly.”
+</p>
+
+<p>
+This mindset overlaps heavily with how success is evaluated in <a href="/interviews/data-analytics">data analytics interviews</a>, where signal quality matters more than volume.
+</p>
+
+<hr />
+
+<h2>Mistake #5: Weak Handling of Difficult Conversations</h2>
+
+<h3>Why interviewers probe here</h3>
+<p>
+HR professionals are often responsible for delivering uncomfortable messages.
+</p>
+
+<h3>Weak framing</h3>
+<p>
+“I’d explain the policy and move on.”
+</p>
+
+<h3>Strong framing</h3>
+<p>
+“I’d ensure the employee understands the rationale, feels heard, and knows what support is available—even if the outcome is non-negotiable.”
+</p>
+
+<p>
+This demonstrates emotional intelligence <em>and</em> ownership.
+</p>
+
+<hr />
+
+<h2>Mistake #6: Not Using Data to Support HR Decisions</h2>
+
+<h3>The modern expectation</h3>
+<p>
+HR is no longer intuition-only.
+</p>
+
+<p>
+Interviewers expect comfort with:
+</p>
+<ul>
+  <li>Attrition metrics</li>
+  <li>Hiring funnel data</li>
+  <li>Engagement surveys</li>
+</ul>
+
+<h3>Strong signal</h3>
+<p>
+“I’d use attrition trends and exit feedback to identify patterns, not just anecdotes.”
+</p>
+
+<p>
+This analytical thinking mirrors expectations in <a href="/interviews/data-analytics">analytics interviews</a>.
+</p>
+
+<hr />
+
+<h2>Mistake #7: Not Practicing Real HR Interview Scenarios</h2>
+
+<h3>Why preparation often fails</h3>
+<p>
+Most HR candidates prepare by:
+</p>
+<ul>
+  <li>Reading HR theory</li>
+  <li>Memorising frameworks</li>
+</ul>
+
+<p>
+Real interviews test:
+</p>
+<ul>
+  <li>Judgement under pressure</li>
+  <li>Stakeholder pushback</li>
+  <li>Ambiguous people problems</li>
+</ul>
+
+<p>
+These are hard to simulate alone.
+</p>
+
+<hr />
+
+<h2>Final thoughts: HR interviews reward judgement, not perfection</h2>
+
+<p>
+HR interviews don’t reward “perfect” answers.
+</p>
+
+<p>
+They reward:
+</p>
+<ul>
+  <li>Judgement</li>
+  <li>Empathy with boundaries</li>
+  <li>Business alignment</li>
+  <li>Stakeholder awareness</li>
+</ul>
+
+<p>
+If you keep failing HR interviews despite strong experience, the issue is usually execution—not knowledge.
+</p>
+`,
+  author: "CrackJobs Team",
+  publishedAt: "2025-01-18",
+  tags: ["HR", "Talent Acquisition", "HR Interviews", "Careers"],
+},
+
+  {
+  slug: "product-manager-interview-execution-mistakes",
+  title: "7 Product Manager Interview Execution Mistakes That Get Strong Candidates Rejected",
+  excerpt:
+    "Many product managers fail interviews not because they lack ideas, but because their execution thinking, structure, and trade-offs fall apart under pressure. These 7 execution mistakes explain why.",
+  thumbnailUrl: "https://images.unsplash.com/photo-1551836022-deb4988cc6c0",
+  content: `
+<h1>7 Product Manager Interview Execution Mistakes That Get Strong Candidates Rejected</h1>
+
+<h2>Who this article is for</h2>
+<p>
+This article is for product managers who:
+</p>
+<ul>
+  <li>Clear product sense rounds but fail execution interviews</li>
+  <li>Receive feedback like “good ideas, but not structured enough”</li>
+  <li>Struggle with technical or data-heavy follow-ups</li>
+  <li>Feel interviews expect something more than frameworks</li>
+</ul>
+
+<h2>What execution interviews are actually testing</h2>
+<p>
+Execution interviews test whether interviewers can trust you to ship under constraints.
+</p>
+
+<p>
+They evaluate:
+</p>
+<ul>
+  <li>How you reason with incomplete data</li>
+  <li>How you make trade-offs</li>
+  <li>How you work with engineering and analytics</li>
+  <li>How you decide <em>what not to do</em></li>
+</ul>
+
+<p>
+This is central to real <a href="/interviews/product-management">product management interviews</a>.
+</p>
+
+<hr />
+
+<h2>Mistake #1: Treating Execution as Feature Brainstorming</h2>
+
+<p>
+Many candidates jump straight to solutions without clarifying constraints.
+</p>
+
+<p><strong>Weak signal:</strong></p>
+<p>
+“I’d add more features to increase engagement.”
+</p>
+
+<p><strong>Strong signal:</strong></p>
+<p>
+“I’d first understand the bottleneck—discovery, activation, or retention—before proposing solutions.”
+</p>
+
+<hr />
+
+<h2>Mistake #2: Weak Metrics Thinking</h2>
+
+<p>
+Execution interviews probe metric ownership.
+</p>
+
+<p>
+Candidates fail when they:
+</p>
+<ul>
+  <li>Choose vanity metrics</li>
+  <li>Can’t define success clearly</li>
+  <li>Don’t anticipate trade-offs</li>
+</ul>
+
+<p>
+Strong PMs align metrics with business outcomes—similar to expectations in <a href="/interviews/data-analytics">data analytics interviews</a>.
+</p>
+
+<hr />
+
+<h2>Mistake #3: Avoiding Technical Depth Entirely</h2>
+
+<p>
+You don’t need to code—but you must reason technically.
+</p>
+
+<p>
+Interviewers look for:
+</p>
+<ul>
+  <li>API-level thinking</li>
+  <li>System constraints</li>
+  <li>Data flow awareness</li>
+</ul>
+
+<p>
+This overlap with data and ML expectations is why PMs increasingly fail execution rounds.
+</p>
+
+<hr />
+
+<h2>Mistake #4: Not Considering Edge Cases</h2>
+
+<p>
+Edge cases reveal ownership.
+</p>
+
+<p>
+Strong candidates proactively discuss:
+</p>
+<ul>
+  <li>Abuse scenarios</li>
+  <li>Failure states</li>
+  <li>Scale constraints</li>
+</ul>
+
+<hr />
+
+<h2>Mistake #5: Poor Stakeholder Trade-offs</h2>
+
+<p>
+Execution is multi-stakeholder by nature.
+</p>
+
+<p>
+Interviewers expect you to balance:
+</p>
+<ul>
+  <li>User value</li>
+  <li>Engineering cost</li>
+  <li>Business priorities</li>
+</ul>
+
+<hr />
+
+<h2>Mistake #6: Treating Data as Validation Only</h2>
+
+<p>
+Strong PMs use data to:
+</p>
+<ul>
+  <li>Discover problems</li>
+  <li>Prioritise work</li>
+  <li>Kill bad ideas early</li>
+</ul>
+
+<p>
+This mirrors analytical depth expected in <a href="/interviews/data-science">data science interviews</a>.
+</p>
+
+<hr />
+
+<h2>Mistake #7: Not Practicing Real Execution Interviews</h2>
+
+<p>
+Execution interviews test live reasoning.
+</p>
+
+<p>
+Framework memorisation doesn’t survive follow-ups.
+</p>
+
+<hr />
+
+<h2>Final thoughts</h2>
+<p>
+Execution interviews reward judgement, not feature lists.
+</p>
+
+<p>
+If you keep failing despite strong experience, the gap is often execution clarity—not capability.
+</p>
+`,
+  author: "CrackJobs Team",
+  publishedAt: "2025-01-20",
+  tags: ["Product Management", "PM Interviews", "Execution", "Careers"],
+},
+
+  {
+  slug: "product-manager-interview-product-sense-mistakes",
+  title: "6 Product Sense Interview Mistakes That Cost Product Managers the Offer",
+  excerpt:
+    "Product sense interviews reject candidates not for lack of ideas, but for weak prioritisation, shallow user thinking, and poor trade-offs. These 6 mistakes explain why.",
+  thumbnailUrl: "https://images.unsplash.com/photo-1552664730-d307ca884978",
+  content: `
+<h1>6 Product Sense Interview Mistakes That Cost Product Managers the Offer</h1>
+
+<h2>Who this article is for</h2>
+<p>
+This article is for PMs who:
+</p>
+<ul>
+  <li>Struggle with open-ended design questions</li>
+  <li>Get feedback like “interesting ideas, but lacked depth”</li>
+  <li>Over-index on frameworks</li>
+  <li>Feel unsure how to prioritise under ambiguity</li>
+</ul>
+
+<h2>What product sense interviews are really testing</h2>
+<p>
+Product sense interviews test how you think when there is no correct answer.
+</p>
+
+<p>
+Interviewers evaluate:
+</p>
+<ul>
+  <li>User empathy</li>
+  <li>Problem selection</li>
+  <li>Prioritisation logic</li>
+  <li>Strategic trade-offs</li>
+</ul>
+
+<p>
+This is foundational to <a href="/interviews/product-management">product management interviews</a>.
+</p>
+
+<hr />
+
+<h2>Mistake #1: Designing Without a Clear User</h2>
+
+<p>
+Candidates often say “users” instead of <em>a specific user</em>.
+</p>
+
+<p>
+Strong PMs anchor decisions in:
+</p>
+<ul>
+  <li>Context</li>
+  <li>Motivation</li>
+  <li>Constraints</li>
+</ul>
+
+<hr />
+
+<h2>Mistake #2: Treating Frameworks as Answers</h2>
+
+<p>
+Frameworks are tools, not solutions.
+</p>
+
+<p>
+Interviewers reject candidates who:
+</p>
+<ul>
+  <li>List steps without insight</li>
+  <li>Can’t adapt frameworks</li>
+</ul>
+
+<hr />
+
+<h2>Mistake #3: Weak Prioritisation Logic</h2>
+
+<p>
+Saying “I’d prioritise impact vs effort” is not enough.
+</p>
+
+<p>
+Strong candidates explain:
+</p>
+<ul>
+  <li>Why this problem matters now</li>
+  <li>What they are explicitly deprioritising</li>
+</ul>
+
+<hr />
+
+<h2>Mistake #4: Ignoring Business Constraints</h2>
+
+<p>
+Product sense without business reality is fantasy.
+</p>
+
+<p>
+Interviewers expect awareness of:
+</p>
+<ul>
+  <li>Revenue models</li>
+  <li>Cost structures</li>
+  <li>Strategic goals</li>
+</ul>
+
+<hr />
+
+<h2>Mistake #5: Not Connecting to Metrics</h2>
+
+<p>
+Every product decision implies a metric.
+</p>
+
+<p>
+This is why PM product sense overlaps heavily with <a href="/interviews/data-analytics">analytics interviews</a>.
+</p>
+
+<hr />
+
+<h2>Mistake #6: Not Practicing Real Product Sense Interviews</h2>
+
+<p>
+Product sense interviews test live thinking, not memorised answers.
+</p>
+
+<hr />
+
+<h2>Final thoughts</h2>
+<p>
+Product sense interviews reward clarity, judgement, and prioritisation—not creativity alone.
+</p>
+`,
+  author: "CrackJobs Team",
+  publishedAt: "2025-01-22",
+  tags: ["Product Management", "Product Sense", "PM Interviews", "Careers"],
+}
 ];
 
 // =============================================

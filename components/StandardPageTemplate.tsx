@@ -1,6 +1,6 @@
-﻿// components/StandardPageTemplate.tsx - FIXED VERSION (No duplicate meta tags)
+﻿// components/StandardPageTemplate.tsx - FIXED VERSION (No nested ScrollView)
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, useWindowDimensions, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, useWindowDimensions, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { PageLayout } from './PageLayout';
 import { injectMultipleSchemas, createBreadcrumbSchema } from '@/lib/structured-data';
@@ -63,43 +63,40 @@ export const StandardPageTemplate = ({
 
   return (
     <PageLayout>
-      {/* ✅ REMOVED: Duplicate <Head> section - SEO component handles all meta tags */}
-      
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-        <View style={[styles.content, isSmall && styles.contentMobile]}>
-          <Text style={[styles.pageTitle, isSmall && styles.pageTitleMobile]} accessibilityRole="header" aria-level={1}>
-            {pageTitle}
+      {/* ✅ REMOVED: Nested ScrollView - PageLayout already provides scrolling */}
+      <View style={[styles.content, isSmall && styles.contentMobile]}>
+        <Text style={[styles.pageTitle, isSmall && styles.pageTitleMobile]} accessibilityRole="header" aria-level={1}>
+          {pageTitle}
+        </Text>
+        
+        {lastUpdated && (
+          <Text style={styles.lastUpdated}>
+            Last Updated: {lastUpdated}
           </Text>
-          
-          {lastUpdated && (
-            <Text style={styles.lastUpdated}>
-              Last Updated: {lastUpdated}
-            </Text>
-          )}
+        )}
 
-          {children}
+        {children}
 
-          {relatedPages && relatedPages.length > 0 && (
-            <View style={styles.relatedSection}>
-              <Text style={styles.relatedTitle}>Related Pages</Text>
-              <View style={[styles.relatedGrid, isSmall && styles.relatedGridMobile]}>
-                {relatedPages.map((page, index) => (
-                  <TouchableOpacity
-                    key={index}
-                    style={[styles.relatedCard, isSmall && styles.relatedCardMobile]}
-                    onPress={() => router.push(page.route as any)}
-                    accessibilityRole="link"
-                  >
-                    <Text style={styles.relatedCardIcon}>{page.icon}</Text>
-                    <Text style={styles.relatedCardTitle}>{page.title}</Text>
-                    <Text style={styles.relatedCardDesc}>{page.description}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
+        {relatedPages && relatedPages.length > 0 && (
+          <View style={styles.relatedSection}>
+            <Text style={styles.relatedTitle}>Related Pages</Text>
+            <View style={[styles.relatedGrid, isSmall && styles.relatedGridMobile]}>
+              {relatedPages.map((page, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={[styles.relatedCard, isSmall && styles.relatedCardMobile]}
+                  onPress={() => router.push(page.route as any)}
+                  accessibilityRole="link"
+                >
+                  <Text style={styles.relatedCardIcon}>{page.icon}</Text>
+                  <Text style={styles.relatedCardTitle}>{page.title}</Text>
+                  <Text style={styles.relatedCardDesc}>{page.description}</Text>
+                </TouchableOpacity>
+              ))}
             </View>
-          )}
-        </View>
-      </ScrollView>
+          </View>
+        )}
+      </View>
     </PageLayout>
   );
 };
@@ -144,10 +141,7 @@ export const StandardContactEmail = ({ children, onPress }: { children: React.Re
 );
 
 const styles = StyleSheet.create({
-  scrollView: { flex: 1 },
-  scrollContent: { flexGrow: 1 },
-  
-  // Layout
+  // Layout - removed scrollView styles since we're not using ScrollView anymore
   content: {
     maxWidth: 1000,
     width: '100%',
