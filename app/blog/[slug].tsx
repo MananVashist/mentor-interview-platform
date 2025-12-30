@@ -1,5 +1,5 @@
 ﻿// app/blog/[slug].tsx
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -24,29 +24,17 @@ export default function BlogPost() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const { width } = useWindowDimensions();
   const isSmall = width < 900;
+  const [isParamsReady, setIsParamsReady] = useState(false);
+
+  // Wait for params to be ready
+  useEffect(() => {
+    if (slug) {
+      setIsParamsReady(true);
+    }
+  }, [slug]);
 
   // Get the blog post
   const post = getPostBySlug(slug as string);
-
-  // If post not found, show 404
-  if (!post) {
-    return (
-      <PageLayout>
-        <View style={styles.notFound}>
-          <Text style={styles.notFoundTitle}>404 - Post Not Found</Text>
-          <Text style={styles.notFoundText}>
-            The blog post you're looking for doesn't exist.
-          </Text>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => router.push('/blog')}
-          >
-            <Text style={styles.backButtonText}>← Back to Blog</Text>
-          </TouchableOpacity>
-        </View>
-      </PageLayout>
-    );
-  }
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -78,6 +66,37 @@ export default function BlogPost() {
   }, [post]);
 
   const contentWidth = isSmall ? width - 40 : 800;
+
+  // Show loading state while params aren't ready
+  if (!isParamsReady) {
+    return (
+      <PageLayout>
+        <View style={styles.loading}>
+          <Text style={styles.loadingText}>Loading...</Text>
+        </View>
+      </PageLayout>
+    );
+  }
+
+  // If post not found (only after params are confirmed ready), show 404
+  if (!post) {
+    return (
+      <PageLayout>
+        <View style={styles.notFound}>
+          <Text style={styles.notFoundTitle}>404 - Post Not Found</Text>
+          <Text style={styles.notFoundText}>
+            The blog post you're looking for doesn't exist.
+          </Text>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => router.push('/blog')}
+          >
+            <Text style={styles.backButtonText}>← Back to Blog</Text>
+          </TouchableOpacity>
+        </View>
+      </PageLayout>
+    );
+  }
 
   return (
     <PageLayout>
@@ -187,6 +206,20 @@ const styles = StyleSheet.create({
   },
   containerMobile: {
     paddingHorizontal: 20,
+  },
+
+  // Loading State
+  loading: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 40,
+    minHeight: 400,
+  },
+  loadingText: {
+    fontFamily: theme.typography.fontFamily.regular,
+    fontSize: 18,
+    color: theme.colors.text.body,
   },
 
   // Back Link
