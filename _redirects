@@ -1,8 +1,0 @@
-/assets/*  200
-/robots.txt  200
-/sitemap.xml  200
-/_expo/*  200
-
-/api/*  404
-
-/*  /index.html  200
