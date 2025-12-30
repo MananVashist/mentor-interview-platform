@@ -15,7 +15,8 @@ const filesToCopy = [
   'robots.txt',
   'sitemap.xml',
   'hero.webp',
-  '_headers' // Cloudflare Pages headers file (if it exists)
+  '_headers', // Cloudflare Pages headers file
+  '_routes.json' // Cloudflare Pages routing configuration
 ];
 
 console.log('📦 Copying public files to dist...\n');

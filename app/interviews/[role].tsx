@@ -7,6 +7,7 @@ import {
   Platform,
   useWindowDimensions,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import { useLocalSearchParams, useRouter, Redirect } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -38,39 +39,96 @@ const SYSTEM_FONT = Platform.select({
 }) as string;
 
 export default function RoleLandingPage() {
-  const { role } = useLocalSearchParams<{ role: string }>();
+  const params = useLocalSearchParams<{ role: string }>();
   const router = useRouter();
   const { width } = useWindowDimensions();
   const isSmall = width < 900;
-  const [isParamsReady, setIsParamsReady] = useState(false);
+  
+  // Track when component is ready to render
+  const [isReady, setIsReady] = useState(false);
 
   const [fontsLoaded] = useFonts({
     ...MaterialCommunityIcons.font,
   });
 
-  // Wait for params to be ready
+  // DEBUG: Log component mount
   useEffect(() => {
-    if (role) {
-      setIsParamsReady(true);
-    }
-  }, [role]);
+    console.log('[RolePage] Component mounted');
+    console.log('[RolePage] Initial params:', JSON.stringify(params));
+    console.log('[RolePage] Platform:', Platform.OS);
+  }, []);
 
-  // 1. Get Data
+  // Get role - handle both string and array cases
+  const role = Array.isArray(params.role) ? params.role[0] : params.role;
   const roleKey = typeof role === 'string' ? role : '';
-  const data = ROLE_DATA[roleKey];
-  const seoData = SEO_CONFIG.interviews[roleKey as keyof typeof SEO_CONFIG.interviews];
+  
+  // DEBUG: Log role processing
+  console.log('[RolePage] Raw role param:', params.role);
+  console.log('[RolePage] Processed roleKey:', roleKey);
+  console.log('[RolePage] Type of role:', typeof params.role);
+  
+  // Get data
+  const data = roleKey ? ROLE_DATA[roleKey] : null;
+  const seoData = roleKey ? SEO_CONFIG.interviews[roleKey as keyof typeof SEO_CONFIG.interviews] : null;
 
-  // Show loading while fonts or params aren't ready
-  if (!fontsLoaded || !isParamsReady) {
-    return <View style={{ flex: 1, backgroundColor: BG_CREAM }} />;
+  // DEBUG: Log data availability
+  console.log('[RolePage] Data exists:', !!data);
+  console.log('[RolePage] SEO data exists:', !!seoData);
+  if (data) {
+    console.log('[RolePage] Data title:', data.title);
   }
 
-  // 2. Redirect if invalid role (only after params are confirmed ready)
+  // Wait for everything to be ready before rendering
+  useEffect(() => {
+    console.log('[RolePage] Fonts loaded:', fontsLoaded);
+    
+    if (fontsLoaded) {
+      console.log('[RolePage] Starting ready timer...');
+      
+      // Give browser a moment to ensure params are populated
+      const timer = setTimeout(() => {
+        console.log('[RolePage] Timer fired - setting isReady to true');
+        console.log('[RolePage] Final roleKey at ready time:', roleKey);
+        console.log('[RolePage] Final data exists:', !!data);
+        setIsReady(true);
+      }, 50);
+      
+      return () => {
+        console.log('[RolePage] Cleaning up timer');
+        clearTimeout(timer);
+      };
+    }
+  }, [fontsLoaded, roleKey, data]);
+
+  // DEBUG: Log render states
+  console.log('[RolePage] Render state - isReady:', isReady, 'fontsLoaded:', fontsLoaded);
+
+  // Show loading indicator while not ready
+  if (!isReady) {
+    console.log('[RolePage] Showing loading state');
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={CTA_TEAL} />
+        {/* DEBUG: Show loading message in dev */}
+        {__DEV__ && (
+          <Text style={{ marginTop: 20, color: TEXT_GRAY }}>
+            Loading... (roleKey: {roleKey || 'empty'})
+          </Text>
+        )}
+      </View>
+    );
+  }
+
+  // Redirect if invalid role
   if (!data || !seoData) {
+    console.log('[RolePage] Invalid role - redirecting to home');
+    console.log('[RolePage] Redirect reason - data:', !!data, 'seoData:', !!seoData);
     return <Redirect href="/" />;
   }
 
-  // 3. Construct Canonical URL
+  console.log('[RolePage] Rendering full page for role:', roleKey);
+
+  // Construct Canonical URL
   const canonicalUrl = `${BASE_URL}/interviews/${roleKey}`;
 
   return (
@@ -199,6 +257,15 @@ export default function RoleLandingPage() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: BG_CREAM },
   scrollContent: { minHeight: '100%' },
+  
+  // Loading state
+  loadingContainer: { 
+    flex: 1, 
+    backgroundColor: BG_CREAM, 
+    alignItems: 'center', 
+    justifyContent: 'center',
+    minHeight: 400,
+  },
 
   // Header
   header: { backgroundColor: BG_CREAM, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: 'rgba(0,0,0,0.05)' },
