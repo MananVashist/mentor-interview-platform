@@ -12,14 +12,14 @@ import {
   Modal,
 } from 'react-native';
 import { Link, useRouter } from 'expo-router';
-import Head from 'expo-router/head'; // 👈 Added Import
+import Head from 'expo-router/head';
 import { Ionicons } from '@expo/vector-icons';
 import { authService } from '@/services/auth.service';
 import { useAuthStore } from '@/lib/store';
 import { supabase } from '@/lib/supabase/client';
 import { BrandHeader } from '@/lib/ui';
 import { useNotification } from '@/lib/ui/NotificationBanner';
-import { Footer } from '@/components/Footer'; // 👈 Added Import
+import { Footer } from '@/components/Footer';
 
 // --- Types ---
 type InterviewProfile = { id: number; name: string };
@@ -28,7 +28,7 @@ export default function SignUpScreen() {
   const router = useRouter();
   const { setUser, setProfile } = useAuthStore();
   const { showNotification } = useNotification();
-  const isWeb = Platform.OS === 'web'; // 👈 Added check
+  const isWeb = Platform.OS === 'web';
 
   // --- State ---
   const [role, setRole] = useState<'candidate' | 'mentor'>('candidate');
@@ -66,26 +66,83 @@ export default function SignUpScreen() {
     }
   }, [role]);
 
-  // --- Validation ---
-  const isCommonValid =
-    name.trim().length > 0 && 
-    email.trim().length > 0 && 
-    password.length >= 6 && 
-    password === confirmPassword;
+  // --- Validation Function ---
+  const validateForm = (): string | null => {
+    // Common validations
+    if (!name.trim()) {
+      return 'Please enter your full name';
+    }
 
-  const isPhoneValid = role === 'mentor' ? phone.trim().length >= 10 : true;
+    if (!email.trim()) {
+      return 'Please enter your email address';
+    }
 
-  const isCandidateValid = isCommonValid && candidateTitle.trim().length > 0;
+    // Basic email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      return 'Please enter a valid email address';
+    }
 
-  const isMentorValid =
-    isCommonValid &&
-    isPhoneValid && 
-    linkedinUrl.trim().includes('linkedin.com') &&
-    professionalTitle.trim().length > 0 &&
-    yearsOfExp.trim().length > 0 &&
-    selectedProfiles.length > 0;
+    if (!password) {
+      return 'Please enter a password';
+    }
 
-  const isFormValid = role === 'candidate' ? isCandidateValid : isMentorValid;
+    if (password.length < 6) {
+      return 'Password must be at least 6 characters long';
+    }
+
+    if (!confirmPassword) {
+      return 'Please confirm your password';
+    }
+
+    if (password !== confirmPassword) {
+      return 'Passwords do not match';
+    }
+
+    // Role-specific validations
+    if (role === 'candidate') {
+      if (!candidateTitle.trim()) {
+        return 'Please enter your professional title';
+      }
+    }
+
+    if (role === 'mentor') {
+      if (!phone.trim()) {
+        return 'Please enter your phone number';
+      }
+
+      if (phone.trim().length < 10) {
+        return 'Please enter a valid phone number (minimum 10 digits)';
+      }
+
+      if (!linkedinUrl.trim()) {
+        return 'Please enter your LinkedIn profile URL';
+      }
+
+      if (!linkedinUrl.trim().includes('linkedin.com')) {
+        return 'Please enter a valid LinkedIn URL (must contain linkedin.com)';
+      }
+
+      if (!professionalTitle.trim()) {
+        return 'Please enter your professional title';
+      }
+
+      if (!yearsOfExp.trim()) {
+        return 'Please enter your years of experience';
+      }
+
+      const yearsNum = parseInt(yearsOfExp);
+      if (isNaN(yearsNum) || yearsNum < 0) {
+        return 'Please enter a valid number for years of experience';
+      }
+
+      if (selectedProfiles.length === 0) {
+        return 'Please select at least one interview profile';
+      }
+    }
+
+    return null; // No errors
+  };
 
   // --- Handlers ---
   const toggleProfileSelection = (profileName: string) => {
@@ -97,8 +154,10 @@ export default function SignUpScreen() {
   };
 
   const handleSignUp = async () => {
-    if (!isFormValid) {
-      showNotification('Please fill in all required fields.', 'error');
+    // Validate form
+    const validationError = validateForm();
+    if (validationError) {
+      showNotification(validationError, 'error');
       return;
     }
 
@@ -176,7 +235,6 @@ export default function SignUpScreen() {
 
   return (
     <View style={styles.container}>
-      {/* 🟢 SEO TITLE ADDED */}
       <Head>
         <title>Sign Up | CrackJobs</title>
         <meta name="description" content="Create a CrackJobs account to start practicing mock interviews or become a mentor." />
@@ -217,14 +275,13 @@ export default function SignUpScreen() {
                   </TouchableOpacity>
                 </View>
               </View>
-              {/* --- PRIVACY NOTE --- */}
-              {/* --- PRIVACY NOTE --- */}
-<View style={styles.privacyNoteContainer}>
-  <Text style={styles.privacyNoteText}>
-    All personal details except professional title will be kept private
-  </Text>
-</View>
 
+              {/* --- PRIVACY NOTE --- */}
+              <View style={styles.privacyNoteContainer}>
+                <Text style={styles.privacyNoteText}>
+                  All personal details except professional title will be kept private
+                </Text>
+              </View>
 
               {/* --- COMMON FIELDS --- */}
               <View style={styles.section}>
@@ -261,6 +318,7 @@ export default function SignUpScreen() {
                   placeholder="••••••••"
                   placeholderTextColor="#9CA3AF"
                 />
+                <Text style={styles.hintText}>Minimum 6 characters</Text>
               </View>
 
               <View style={styles.section}>
@@ -275,47 +333,46 @@ export default function SignUpScreen() {
                 />
               </View>
 
-              {/* --- PHONE NUMBER (MENTOR ONLY) --- */}
-              {role === 'mentor' && (
-                <View style={styles.section}>
-                  <Text style={styles.label}>PHONE NUMBER <Text style={styles.required}>*</Text></Text>
-                  <TextInput
-                    style={styles.input}
-                    value={phone}
-                    onChangeText={setPhone}
-                    keyboardType="phone-pad"
-                    placeholder="+91 98765 43210"
-                    placeholderTextColor="#9CA3AF"
-                  />
-                </View>
-              )}
-
-              {/* --- CANDIDATE SPECIFIC FIELDS --- */}
+              {/* --- CANDIDATE FIELDS --- */}
               {role === 'candidate' && (
                 <View style={styles.section}>
-                  <Text style={styles.label}>PROFESSIONAL TITLE (VISIBLE TO MENTORS)<Text style={styles.required}>*</Text></Text>
+                  <Text style={styles.label}>PROFESSIONAL TITLE <Text style={styles.required}>*</Text></Text>
                   <TextInput
                     style={styles.input}
                     value={candidateTitle}
                     onChangeText={setCandidateTitle}
-                    placeholder="eg. Product Manager at Oracle"
+                    placeholder="e.g., Product Manager"
                     placeholderTextColor="#9CA3AF"
                   />
+                  <Text style={styles.hintText}>This will be visible to mentors</Text>
                 </View>
               )}
 
-              {/* --- MENTOR SPECIFIC FIELDS --- */}
+              {/* --- MENTOR FIELDS --- */}
               {role === 'mentor' && (
                 <>
                   <View style={styles.section}>
-                    <Text style={styles.label}>PROFESSIONAL TITLE (VISIBLE TO CANDIDATES)<Text style={styles.required}>*</Text></Text>
+                    <Text style={styles.label}>PHONE NUMBER <Text style={styles.required}>*</Text></Text>
+                    <TextInput
+                      style={styles.input}
+                      value={phone}
+                      onChangeText={setPhone}
+                      keyboardType="phone-pad"
+                      placeholder="9876543210"
+                      placeholderTextColor="#9CA3AF"
+                    />
+                  </View>
+
+                  <View style={styles.section}>
+                    <Text style={styles.label}>PROFESSIONAL TITLE <Text style={styles.required}>*</Text></Text>
                     <TextInput
                       style={styles.input}
                       value={professionalTitle}
                       onChangeText={setProfessionalTitle}
-                      placeholder="Senior Product Manager at Google"
+                      placeholder="e.g., Senior Product Manager at Google"
                       placeholderTextColor="#9CA3AF"
                     />
+                    <Text style={styles.hintText}>This will be visible to candidates</Text>
                   </View>
 
                   <View style={styles.section}>
@@ -343,15 +400,12 @@ export default function SignUpScreen() {
                   </View>
 
                   <View style={styles.section}>
-                    <Text style={styles.label}>INTERVIEW EXPERTISE <Text style={styles.required}>*</Text></Text>
-                    <TouchableOpacity
-                      style={styles.dropdownButton}
-                      onPress={() => setProfilesModalVisible(true)}
-                    >
+                    <Text style={styles.label}>INTERVIEW PROFILES <Text style={styles.required}>*</Text></Text>
+                    <TouchableOpacity style={styles.dropdownButton} onPress={() => setProfilesModalVisible(true)}>
                       <Text style={styles.dropdownText}>
-                        {selectedProfiles.length > 0
-                          ? `${selectedProfiles.length} profile(s) selected`
-                          : 'Select interview profiles'}
+                        {selectedProfiles.length > 0 
+                          ? `${selectedProfiles.length} selected` 
+                          : 'Select profiles'}
                       </Text>
                       <Ionicons name="chevron-down" size={20} color="#6B7280" />
                     </TouchableOpacity>
@@ -364,16 +418,15 @@ export default function SignUpScreen() {
                         ))}
                       </View>
                     )}
-                    <Text style={styles.hintText}>Select the types of interviews you can conduct</Text>
                   </View>
                 </>
               )}
 
-              {/* --- SIGN UP BUTTON --- */}
+              {/* --- SIGN UP BUTTON (Always Active) --- */}
               <TouchableOpacity
+                style={styles.signUpButton}
                 onPress={handleSignUp}
-                disabled={!isFormValid || loading}
-                style={[styles.signUpButton, (!isFormValid || loading) && styles.signUpButtonDisabled]}
+                disabled={loading}
               >
                 {loading ? (
                   <ActivityIndicator color="#fff" />
@@ -394,7 +447,6 @@ export default function SignUpScreen() {
             </View>
           </View>
           
-          {/* 🟢 FOOTER ADDED HERE */}
           {isWeb && <Footer />}
 
         </ScrollView>
@@ -545,9 +597,6 @@ const styles = StyleSheet.create({
     padding: 14,
     marginTop: 8,
   },
-  signUpButtonDisabled: {
-    backgroundColor: '#9CA3AF',
-  },
   signUpButtonText: {
     color: '#fff',
     fontWeight: '700',
@@ -615,22 +664,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },    
   privacyNoteContainer: {
-  backgroundColor: '#F0FDF9', // very light teal
-  borderRadius: 8,
-  paddingVertical: 8,
-  paddingHorizontal: 12,
-  marginTop: 0,
-  marginBottom: 16,
-},
-
-privacyNoteText: {
-  fontSize: 12,
-  color: '#065F46', // readable, trust-oriented
-  fontWeight: '500',
-  textAlign: 'center',
-},
-
-    
+    backgroundColor: '#F0FDF9',
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    marginTop: 0,
+    marginBottom: 16,
+  },
+  privacyNoteText: {
+    fontSize: 12,
+    color: '#065F46',
+    fontWeight: '500',
+    textAlign: 'center',
+  },
   modalDoneText: {
     color: '#fff',
     fontWeight: '700',

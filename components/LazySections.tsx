@@ -1,4 +1,4 @@
-﻿// components/LazySections.tsx
+﻿    // components/LazySections.tsx
 import React, { memo } from 'react';
 import {
   View,
@@ -425,7 +425,7 @@ const MentorTiers = memo(() => {
       Badge: BronzeBadge,
       title: 'Bronze Mentor',
       sessions: '1-10 sessions',
-      benefits: ['Bronze Badge next to your profile', 'LinkedIn bronze badge'],
+      benefits: ['Bronze Badge next to your profile'],
       bgGradient: { background: 'linear-gradient(135deg, #fef3e7 0%, #fde8d0 100%)' },
       borderColor: '#f0bb84',
       titleColor: '#8b4513',
@@ -436,7 +436,7 @@ const MentorTiers = memo(() => {
       Badge: SilverBadge,
       title: 'Silver Mentor',
       sessions: '11-30 sessions',
-      benefits: ['Silver Badge next to your profile', 'LinkedIn silver badge', 'LinkedIn appreciation post'],
+      benefits: ['Silver Badge next to your profile', 'LinkedIn silver mentor certificate', 'LinkedIn appreciation post'],
       bgGradient: { background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)' },
       borderColor: '#9ca3af',
       titleColor: '#4b5563',
@@ -447,7 +447,7 @@ const MentorTiers = memo(() => {
       Badge: GoldBadge,
       title: 'Gold Mentor',
       sessions: '31+ sessions',
-      benefits: ['Gold Badge next to your profile', 'LinkedIn gold badge', 'LinkedIn appreciation post', 'Exclusive gold mentor community'],
+      benefits: ['Gold Badge next to your profile', 'LinkedIn gold mentor certificate', 'LinkedIn appreciation post', 'Exclusive gold mentor community'],
       bgGradient: { background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)' },
       borderColor: '#d97706',
       titleColor: '#b45309',

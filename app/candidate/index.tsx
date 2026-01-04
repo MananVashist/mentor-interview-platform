@@ -158,6 +158,21 @@ const SearchIcon = ({ size = 48, color = "#9CA3AF" }: { size?: number; color?: s
   </Svg>
 );
 
+// Medal/Badge Icon for tiers
+const MedalIcon = ({ size = 14, color = "#CD7F32" }: { size?: number; color?: string }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Circle cx="12" cy="15" r="6" fill={color} stroke={color} strokeWidth="1.5" />
+    <Path
+      d="M9 9L7 3L12 6L17 3L15 9"
+      stroke={color}
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      fill="none"
+    />
+  </Svg>
+);
+
 // ============================================
 // STAR RATING COMPONENT
 // ============================================
@@ -186,6 +201,47 @@ const StarRating = ({ rating }: { rating: number }) => {
     <View style={styles.ratingSection}>
       <View style={styles.starsContainer}>{stars}</View>
       <AppText style={styles.ratingText}>{rating.toFixed(1)}</AppText>
+    </View>
+  );
+};
+
+// ============================================
+// TIER BADGE COMPONENT
+// ============================================
+
+const TierBadge = ({ totalSessions }: { totalSessions: number }) => {
+  let tierName = '';
+  let tierColor = '';
+  let bgColor = '';
+  let borderColor = '';
+  let medalColor = '';
+
+  if (totalSessions >= 31) {
+    tierName = 'Gold';
+    tierColor = '#B8860B';
+    bgColor = '#FFF9E6';
+    borderColor = '#FFE999';
+    medalColor = '#FFD700';
+  } else if (totalSessions >= 11) {
+    tierName = 'Silver';
+    tierColor = '#6B7280';
+    bgColor = '#F3F4F6';
+    borderColor = '#D1D5DB';
+    medalColor = '#9CA3AF';
+  } else if (totalSessions >= 1) {
+    tierName = 'Bronze';
+    tierColor = '#92400E';
+    bgColor = '#FEF3C7';
+    borderColor = '#FDE68A';
+    medalColor = '#CD7F32';
+  }
+
+  if (!tierName) return null;
+
+  return (
+    <View style={[styles.tierBadge, { backgroundColor: bgColor, borderColor: borderColor }]}>
+      <MedalIcon size={14} color={medalColor} />
+      <AppText style={[styles.tierText, { color: tierColor }]}>{tierName}</AppText>
     </View>
   );
 };
@@ -363,15 +419,36 @@ export default function CandidateDashboard() {
     (async () => {
       setProfilesLoading(true);
       try {
-        const res = await fetch(
+        // Fetch profiles
+        const profilesRes = await fetch(
           `${SUPABASE_URL}/rest/v1/interview_profiles_admin?select=*`, 
           { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
         );
-        const data = await res.json();
-        if (res.ok) {
-          const actives = (data || []).filter((p: AdminProfile) => p.is_active !== false);
-          setAdminProfiles(actives);
-          if (actives.length > 0) setSelectedProfile(actives[0].name);
+        const profilesData = await profilesRes.json();
+        
+        // Fetch all mentors to count per profile
+        const mentorsRes = await fetch(
+          `${SUPABASE_URL}/rest/v1/mentors?select=*&status=eq.approved`, 
+          { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
+        );
+        const allMentors = await mentorsRes.json();
+        
+        if (profilesRes.ok && mentorsRes.ok) {
+          const actives = (profilesData || []).filter((p: AdminProfile) => p.is_active !== false);
+          
+          // Count mentors per profile
+          const profileMentorCounts = actives.map((profile: AdminProfile) => {
+            const mentorCount = (allMentors || []).filter((m: Mentor) => 
+              Array.isArray(m.expertise_profiles) && m.expertise_profiles.includes(profile.name)
+            ).length;
+            return { ...profile, mentorCount };
+          });
+          
+          // Sort profiles by mentor count (descending - most mentors first)
+          const sortedProfiles = profileMentorCounts.sort((a, b) => b.mentorCount - a.mentorCount);
+          
+          setAdminProfiles(sortedProfiles);
+          if (sortedProfiles.length > 0) setSelectedProfile(sortedProfiles[0].name);
         }
       } catch (err) { 
         console.log("Error fetching profiles", err); 
@@ -396,10 +473,18 @@ export default function CandidateDashboard() {
         const filtered = (data || []).filter((m: Mentor) => 
           Array.isArray(m.expertise_profiles) ? m.expertise_profiles.includes(profileName) : false
         );
-        setMentors(filtered);
+        
+        // Sort mentors by total_sessions (number of bookings) in descending order
+        const sortedMentors = filtered.sort((a: Mentor, b: Mentor) => {
+          const aBookings = a.total_sessions ?? 0;
+          const bBookings = b.total_sessions ?? 0;
+          return bBookings - aBookings;
+        });
+        
+        setMentors(sortedMentors);
 
         // Fetch availability for each mentor using the new logic
-        const availabilityPromises = filtered.map(async (m: Mentor) => {
+        const availabilityPromises = sortedMentors.map(async (m: Mentor) => {
           const slot = await findNextAvailableSlot(m.id);
           return { id: m.id, slot };
         });
@@ -514,7 +599,7 @@ export default function CandidateDashboard() {
               const displayPrice = price ? Math.round(price * 1.2) : 0;
               
               const totalSessions = m.total_sessions ?? 0;
-              const isNewMentor = totalSessions < 5;
+              const isNewMentor = totalSessions === 0;
               
               // Get rating from mentors.average_rating
               const averageRating = m.average_rating ?? 0;
@@ -553,8 +638,11 @@ export default function CandidateDashboard() {
                       )}
                     </View>
 
-                    {/* 2. Stats Row (Sessions/New Badge + Rating + Availability) */}
+                    {/* 2. Stats Row (Tier Badge + Sessions/New Badge + Rating + Availability) */}
                     <View style={styles.statsRow}>
+                      {/* Tier Badge (Bronze/Silver/Gold) */}
+                      <TierBadge totalSessions={totalSessions} />
+                      
                       {/* Sessions or New Badge */}
                       {isNewMentor ? (
                         <View style={styles.statItem}>
@@ -813,6 +901,22 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     color: '#1E40AF',
+  },
+
+  // Tier Badge
+  tierBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+  },
+  
+  tierText: {
+    fontSize: 12,
+    fontWeight: '600',
   },
   
   // Rating Section

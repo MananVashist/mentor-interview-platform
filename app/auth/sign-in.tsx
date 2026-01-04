@@ -165,9 +165,18 @@ export default function SignInScreen() {
               </View>
 
               <View style={styles.section}>
-                <Text style={styles.label}>
-                  PASSWORD
-                </Text>
+                <View style={styles.passwordHeader}>
+                  <Text style={styles.label}>PASSWORD</Text>
+                  <Link href="/auth/forgot-password" asChild>
+                    <TouchableOpacity
+                      accessibilityRole="button"
+                      accessibilityLabel="Forgot password"
+                      accessibilityHint="Navigate to password reset page"
+                    >
+                      <Text style={styles.forgotPasswordLink}>Forgot?</Text>
+                    </TouchableOpacity>
+                  </Link>
+                </View>
                 <TextInput
                   style={styles.input}
                   value={password}
@@ -238,11 +247,21 @@ const styles = StyleSheet.create({
   },
   spacer: { marginBottom: 24 },
   section: { marginBottom: 16 },
+  passwordHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
   label: { 
     fontSize: 12, 
     fontWeight: '600', 
-    marginBottom: 6, 
     color: '#334155' 
+  },
+  forgotPasswordLink: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#0E9384',
   },
   input: {
     borderWidth: 1,

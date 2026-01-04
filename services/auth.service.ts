@@ -2,6 +2,7 @@
 import { supabase } from '../lib/supabase/client';
 import { Session, AuthChangeEvent } from '@supabase/supabase-js';
 import { EMAIL_TEMPLATES } from './email.templates';
+import { Platform } from 'react-native';
 
 export type Profile = {
   id: string;
@@ -168,6 +169,69 @@ async function sendHelpdeskSignupNotification(
 }
 
 /**
+ * REQUEST PASSWORD RESET
+ * Uses custom edge function to send email via Resend
+ */
+async function requestPasswordReset(email: string) {
+  console.log('================ PASSWORD RESET REQUEST ================');
+  console.log('📧 Requesting password reset for:', email);
+  
+  try {
+    // Call custom edge function that generates link and sends email
+    const { data, error } = await supabase.functions.invoke('send-email', {
+      body: {
+        type: 'password-reset',
+        email: email.trim(),
+        to: email.trim(),
+      }
+    });
+
+    console.log('[AUTH] Password reset response:', { data, error });
+
+    if (error) {
+      console.error('[AUTH] Password reset request error:', error);
+      return { error: { message: error.message || 'Failed to send reset email' } };
+    }
+
+    if (!data?.success) {
+      console.error('[AUTH] Password reset failed:', data);
+      return { error: { message: 'Failed to send reset email' } };
+    }
+
+    console.log('✅ Password reset email sent successfully');
+    return { error: null };
+  } catch (err: any) {
+    console.error('❌ Password reset request exception:', err);
+    return { error: { message: err?.message || 'Failed to send reset email' } };
+  }
+}
+
+/**
+ * UPDATE PASSWORD
+ * Updates the user's password (used in reset password flow)
+ */
+async function updatePassword(newPassword: string) {
+  console.log('================ UPDATE PASSWORD ================');
+  
+  try {
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword
+    });
+
+    if (error) {
+      console.error('[AUTH] Password update error:', error);
+      return { error };
+    }
+
+    console.log('✅ Password updated successfully');
+    return { error: null };
+  } catch (err: any) {
+    console.error('❌ Password update exception:', err);
+    return { error: { message: err?.message || 'Failed to update password' } };
+  }
+}
+
+/**
  * SIGN OUT
  */
 async function signOut() {
@@ -231,4 +295,6 @@ export const authService = {
   getCurrentUserProfile,
   getUserProfileById,
   onAuthStateChange,
+  requestPasswordReset,
+  updatePassword,
 };

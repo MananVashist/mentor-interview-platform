@@ -1,6 +1,6 @@
 ﻿// app/mentor/mentorship.tsx
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, ActivityIndicator, ScrollView, TouchableOpacity, Linking, Alert } from 'react-native';
+import { View, StyleSheet, ActivityIndicator, ScrollView, TouchableOpacity, Linking, Alert, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 // Libs
@@ -16,13 +16,357 @@ const SUPPORT_EMAIL = "support@crackjobs.com";
 
 type MentorRow = {
   id: string;
-  profile_ids: number[]; // Interview profile type IDs
+  profile_ids: number[];
   total_sessions?: number;
   expertise_profiles?: string[];
+  rating?: number;
   [key: string]: any;
 };
 
 type BannerState = { type: 'success' | 'error'; message: string } | null;
+
+
+// 🎓 CERTIFICATE TEMPLATE GENERATOR
+function generateCertificateHTML(data: {
+  mentorName: string;
+  tier: 'silver' | 'gold';
+}): string {
+  const tierLabel = data.tier === 'gold' ? 'Gold' : 'Silver';
+  
+  // Silver Certificate Template
+  if (data.tier === 'silver') {
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Silver Mentor Certificate - CrackJobs</title>
+  <style>
+    @page { size: A4 landscape; margin: 0; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      width: 297mm; height: 210mm; background: #f8f5f0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+      display: flex; align-items: center; justify-content: center;
+      padding: 0; margin: 0;
+    }
+    .certificate {
+      width: 1050px; height: 740px;
+      border: 6px solid #18a7a7; padding: 12px;
+      position: relative; background: #f8f5f0;
+      box-shadow: inset 0 0 60px rgba(24, 167, 167, 0.05);
+    }
+    .inner-border {
+      width: 100%; height: 100%;
+      border: 2px solid #18a7a7; padding: 35px 40px;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      position: relative; overflow: hidden;
+    }
+    .logo-section { margin-bottom: 18px; }
+    .logo {
+      font-size: 38px; font-weight: 900;
+      color: #000; line-height: 1;
+      text-align: center; letter-spacing: -1px;
+    }
+    .logo-jobs { color: #18a7a7; }
+    .divider {
+      width: 320px; height: 2px;
+      background: linear-gradient(90deg, transparent, #18a7a7, transparent);
+      margin: 16px 0;
+    }
+    .title {
+      font-size: 36px; font-weight: 900;
+      color: #f58742; margin-bottom: 6px;
+      letter-spacing: 3px; text-transform: uppercase;
+    }
+    .subtitle {
+      font-size: 18px; color: #555;
+      margin-bottom: 25px; font-weight: 300;
+      letter-spacing: 2px;
+    }
+    .medal-container { margin-bottom: 25px; }
+    .medal {
+      width: 90px; height: 90px; border-radius: 50%;
+      background: linear-gradient(135deg, #e5e7eb 0%, #c0c0c0 50%, #9ca3af 100%);
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+      position: relative;
+    }
+    .medal::before {
+      content: ''; position: absolute;
+      width: 76px; height: 76px;
+      border-radius: 50%; background: white;
+    }
+    .medal-icon {
+      font-size: 50px; position: relative; z-index: 1;
+      filter: grayscale(100%) brightness(0.95);
+    }
+    .presented-to {
+      font-size: 16px; color: #555;
+      margin-bottom: 16px; font-weight: 400;
+    }
+    .mentor-name {
+      font-size: 48px; font-weight: 900;
+      color: #18a7a7; margin-bottom: 12px;
+    }
+    .name-underline {
+      width: 400px; height: 2px;
+      background: #333; margin-bottom: 24px;
+    }
+    .achievement-text {
+      font-size: 17px; color: #333;
+      text-align: center; line-height: 1.5;
+      margin-bottom: 35px; max-width: 600px;
+    }
+    .achievement-highlight {
+      color: #f58742; font-weight: 700;
+    }
+    .signature-section {
+      margin-top: 20px; text-align: center;
+    }
+    .signature {
+      font-size: 26px; font-style: italic;
+      color: #333; margin-bottom: 6px;
+      font-family: 'Brush Script MT', cursive;
+    }
+    .signature-line {
+      width: 180px; height: 1px;
+      background: #333; margin: 8px auto;
+    }
+    .signature-name {
+      font-size: 15px; color: #333;
+      margin-bottom: 3px; font-weight: 600;
+    }
+    .signature-title {
+      font-size: 13px; color: #666; font-weight: 400;
+    }
+    .corner {
+      position: absolute; width: 35px; height: 35px;
+      border: 3px solid #18a7a7;
+    }
+    .corner-tl {
+      top: 8px; left: 8px;
+      border-right: none; border-bottom: none;
+    }
+    .corner-tr {
+      top: 8px; right: 8px;
+      border-left: none; border-bottom: none;
+    }
+    .corner-bl {
+      bottom: 8px; left: 8px;
+      border-right: none; border-top: none;
+    }
+    .corner-br {
+      bottom: 8px; right: 8px;
+      border-left: none; border-top: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="certificate">
+    <div class="inner-border">
+      <div class="corner corner-tl"></div>
+      <div class="corner corner-tr"></div>
+      <div class="corner corner-bl"></div>
+      <div class="corner corner-br"></div>
+      <div class="logo-section">
+        <div class="logo">Crack<span class="logo-jobs">Jobs</span></div>
+      </div>
+      <div class="divider"></div>
+      <div class="title">Certificate</div>
+      <div class="subtitle">OF ACHIEVEMENT</div>
+      <div class="medal-container">
+        <div class="medal">
+          <div class="medal-icon">🏆</div>
+        </div>
+      </div>
+      <div class="presented-to">This certificate is presented to</div>
+      <div class="mentor-name">${data.mentorName}</div>
+      <div class="name-underline"></div>
+      <div class="achievement-text">
+        For achieving <span class="achievement-highlight">${tierLabel} Mentor</span> status on CrackJobs<br>
+        and helping candidates crack their interviews<br>
+        at top companies
+      </div>
+      <div class="signature-section">
+        <div class="signature">Manan Vashist</div>
+        <div class="signature-line"></div>
+        <div class="signature-name">Manan Vashist</div>
+        <div class="signature-title">Founder, CrackJobs</div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>`;
+  }
+  
+  // Gold Certificate Template
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gold Mentor Certificate - CrackJobs</title>
+  <style>
+    @page { size: A4 landscape; margin: 0; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      width: 297mm; height: 210mm; background: #f8f5f0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+      display: flex; align-items: center; justify-content: center;
+      padding: 0; margin: 0;
+    }
+    .certificate {
+      width: 1050px; height: 740px;
+      border: 6px solid #d97706; padding: 12px;
+      position: relative; background: #f8f5f0;
+      box-shadow: inset 0 0 60px rgba(217, 119, 6, 0.05);
+    }
+    .inner-border {
+      width: 100%; height: 100%;
+      border: 2px solid #f59e0b; padding: 35px 40px;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      position: relative; overflow: hidden;
+    }
+    .logo-section { margin-bottom: 18px; }
+    .logo {
+      font-size: 38px; font-weight: 900;
+      color: #000; line-height: 1;
+      text-align: center; letter-spacing: -1px;
+    }
+    .logo-jobs { color: #18a7a7; }
+    .divider {
+      width: 320px; height: 2px;
+      background: linear-gradient(90deg, transparent, #d97706, transparent);
+      margin: 16px 0;
+    }
+    .title {
+      font-size: 36px; font-weight: 900;
+      color: #f58742; margin-bottom: 6px;
+      letter-spacing: 3px; text-transform: uppercase;
+    }
+    .subtitle {
+      font-size: 18px; color: #555;
+      margin-bottom: 25px; font-weight: 300;
+      letter-spacing: 2px;
+    }
+    .medal-container { margin-bottom: 25px; }
+    .medal {
+      width: 90px; height: 90px; border-radius: 50%;
+      background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%);
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 6px 12px rgba(217, 119, 6, 0.3);
+      position: relative;
+    }
+    .medal::before {
+      content: ''; position: absolute;
+      width: 76px; height: 76px;
+      border-radius: 50%; background: white;
+    }
+    .medal-icon {
+      font-size: 50px; position: relative; z-index: 1;
+    }
+    .presented-to {
+      font-size: 16px; color: #555;
+      margin-bottom: 16px; font-weight: 400;
+    }
+    .mentor-name {
+      font-size: 48px; font-weight: 900;
+      color: #d97706; margin-bottom: 12px;
+    }
+    .name-underline {
+      width: 400px; height: 2px;
+      background: #333; margin-bottom: 24px;
+    }
+    .achievement-text {
+      font-size: 17px; color: #333;
+      text-align: center; line-height: 1.5;
+      margin-bottom: 35px; max-width: 600px;
+    }
+    .achievement-highlight {
+      color: #f58742; font-weight: 700;
+    }
+    .signature-section {
+      margin-top: 20px; text-align: center;
+    }
+    .signature {
+      font-size: 26px; font-style: italic;
+      color: #333; margin-bottom: 6px;
+      font-family: 'Brush Script MT', cursive;
+    }
+    .signature-line {
+      width: 180px; height: 1px;
+      background: #333; margin: 8px auto;
+    }
+    .signature-name {
+      font-size: 15px; color: #333;
+      margin-bottom: 3px; font-weight: 600;
+    }
+    .signature-title {
+      font-size: 13px; color: #666; font-weight: 400;
+    }
+    .corner {
+      position: absolute; width: 35px; height: 35px;
+      border: 3px solid #d97706;
+    }
+    .corner-tl {
+      top: 8px; left: 8px;
+      border-right: none; border-bottom: none;
+    }
+    .corner-tr {
+      top: 8px; right: 8px;
+      border-left: none; border-bottom: none;
+    }
+    .corner-bl {
+      bottom: 8px; left: 8px;
+      border-right: none; border-top: none;
+    }
+    .corner-br {
+      bottom: 8px; right: 8px;
+      border-left: none; border-top: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="certificate">
+    <div class="inner-border">
+      <div class="corner corner-tl"></div>
+      <div class="corner corner-tr"></div>
+      <div class="corner corner-bl"></div>
+      <div class="corner corner-br"></div>
+      <div class="logo-section">
+        <div class="logo">Crack<span class="logo-jobs">Jobs</span></div>
+      </div>
+      <div class="divider"></div>
+      <div class="title">Certificate</div>
+      <div class="subtitle">OF ACHIEVEMENT</div>
+      <div class="medal-container">
+        <div class="medal">
+          <div class="medal-icon">🏆</div>
+        </div>
+      </div>
+      <div class="presented-to">This certificate is presented to</div>
+      <div class="mentor-name">${data.mentorName}</div>
+      <div class="name-underline"></div>
+      <div class="achievement-text">
+        For achieving <span class="achievement-highlight">${tierLabel} Mentor</span> status on CrackJobs<br>
+        and helping candidates crack their interviews<br>
+        at top companies
+      </div>
+      <div class="signature-section">
+        <div class="signature">Manan Vashist</div>
+        <div class="signature-line"></div>
+        <div class="signature-name">Manan Vashist</div>
+        <div class="signature-title">Founder, CrackJobs</div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>`;
+}
+
 
 export default function MentorshipScreen() {
   const { profile } = useAuthStore();
@@ -30,6 +374,7 @@ export default function MentorshipScreen() {
   const [loading, setLoading] = useState(true);
   const [mentor, setMentor] = useState<MentorRow | null>(null);
   const [banner, setBanner] = useState<BannerState>(null);
+  const [downloadingCert, setDownloadingCert] = useState(false);
 
   useEffect(() => {
     if (!profile?.id) return;
@@ -94,6 +439,69 @@ export default function MentorshipScreen() {
     }
   };
 
+  const handleDownloadCertificate = async (tier: 'silver' | 'gold') => {
+    if (!profile?.id || !mentor) return;
+
+    try {
+      setDownloadingCert(true);
+
+
+      // Prepare certificate data
+      const certData = {
+        mentorName: profile.full_name || 'Mentor',
+        tier,
+      };
+
+      if (Platform.OS === 'web') {
+        // Generate HTML certificate
+        const html = generateCertificateHTML(certData);
+        
+        // Open in new window and trigger print dialog
+        const printWindow = window.open('', '', 'width=1122,height=793');
+        if (printWindow) {
+          printWindow.document.write(html);
+          printWindow.document.close();
+          
+          // Wait for content to load, then open print dialog
+          printWindow.onload = () => {
+            setTimeout(() => {
+              printWindow.print();
+            }, 500);
+          };
+        }
+
+        setBanner({
+          type: 'success',
+          message: 'Certificate opened! Use "Save as PDF" in the print dialog.',
+        });
+      } else {
+        // Mobile: Direct to web version
+        Alert.alert(
+          'Certificate Available',
+          'Please visit the web version of CrackJobs to download your certificate.',
+          [
+            { text: 'OK', style: 'default' },
+            {
+              text: 'Email Me',
+              onPress: () => {
+                const mailUrl = `mailto:${SUPPORT_EMAIL}?subject=Send My ${tier} Mentor Certificate&body=Please send my ${tier} mentor certificate to this email.`;
+                Linking.openURL(mailUrl);
+              },
+            },
+          ]
+        );
+      }
+    } catch (error) {
+      console.error('[certificate] Error:', error);
+      setBanner({
+        type: 'error',
+        message: 'Failed to generate certificate. Please try again.',
+      });
+    } finally {
+      setDownloadingCert(false);
+    }
+  };
+
   if (loading) {
     return (
       <ScreenBackground>
@@ -111,10 +519,8 @@ export default function MentorshipScreen() {
     );
   }
 
-  // Tier Logic - using total_sessions from mentor table
+  // Tier Logic
   const totalSessions = mentor?.total_sessions || 0;
-  
-  console.log('[mentorship] 🎯 Calculating tier for sessions:', totalSessions);
   
   let currentTier = 'new';
   let nextTier = 'Bronze';
@@ -133,8 +539,6 @@ export default function MentorshipScreen() {
     nextTier = 'Silver';
     target = 11;
   }
-
-  console.log('[mentorship] 🏆 Current tier:', currentTier, `(${totalSessions}/${target} sessions)`);
 
   return (
     <ScreenBackground>
@@ -176,7 +580,7 @@ export default function MentorshipScreen() {
                 />
               </View>
               <View style={styles.tierInfo}>
-                <AppText style={styles.tierLabel}>Current Level</AppText>
+                <AppText style={styles.tierLabel}>Your Current Status</AppText>
                 <AppText style={styles.tierName}>
                   {currentTier === 'gold' ? 'Gold Mentor' :
                    currentTier === 'silver' ? 'Silver Mentor' :
@@ -184,49 +588,48 @@ export default function MentorshipScreen() {
                 </AppText>
               </View>
             </View>
-            
-            <View style={styles.tierProgress}>
-              <View style={styles.progressBar}>
-                <View 
-                  style={[
-                    styles.progressFill, 
-                    { 
-                      width: `${Math.min((totalSessions / target) * 100, 100)}%`,
-                      backgroundColor: 
-                        currentTier === 'gold' ? '#D97706' :
-                        currentTier === 'silver' ? '#9CA3AF' : 
-                        currentTier === 'bronze' ? '#B45309' : theme.colors.primary
-                    }
-                  ]} 
-                />
+
+            {currentTier !== 'gold' && (
+              <View style={styles.tierProgress}>
+                <View style={styles.progressBar}>
+                  <View
+                    style={[
+                      styles.progressFill,
+                      {
+                        backgroundColor: theme.colors.primary,
+                        width: `${(totalSessions / target) * 100}%`,
+                      },
+                    ]}
+                  />
+                </View>
+                <View style={styles.progressInfo}>
+                  <AppText style={styles.progressText}>
+                    {totalSessions} / {target} sessions
+                  </AppText>
+                  <AppText style={styles.progressText}>
+                    {target - totalSessions} more to {nextTier}
+                  </AppText>
+                </View>
               </View>
-              <View style={styles.progressInfo}>
-                <AppText style={styles.progressText}>
-                  {totalSessions} {currentTier === 'gold' ? 'sessions' : `/ ${target} sessions`}
-                </AppText>
-                {currentTier !== 'gold' && (
-                  <AppText style={styles.progressText}>Next: {nextTier}</AppText>
-                )}
-              </View>
-            </View>
+            )}
           </Card>
         </Section>
 
-        {/* Mentor Levels */}
+        {/* Progression Path */}
         <Section>
           <Card style={styles.card}>
             <View style={styles.cardHeader}>
-              <Ionicons name="ribbon-outline" size={20} color={theme.colors.primary} />
-              <Heading level={3} style={styles.cardTitle}>Mentor Levels</Heading>
+              <Ionicons name="trending-up" size={20} color={theme.colors.primary} />
+              <AppText style={styles.cardTitle}>Your Journey</AppText>
             </View>
             <AppText style={styles.cardDescription}>
-              Complete more sessions to unlock benefits and recognition
+              Complete sessions to unlock exclusive benefits and recognition.
             </AppText>
 
             {/* Bronze Level */}
             <View style={[styles.levelCard, currentTier === 'bronze' && styles.levelCardActive]}>
               <View style={styles.levelHeader}>
-                <View style={[styles.levelIcon, { backgroundColor: '#FEF3C7' }]}>
+                <View style={[styles.levelIcon, { backgroundColor: '#FEF3E7' }]}>
                   <Ionicons name="medal" size={20} color="#B45309" />
                 </View>
                 <View style={styles.levelInfo}>
@@ -241,23 +644,19 @@ export default function MentorshipScreen() {
               </View>
               
               <AppText style={styles.levelDescription}>
-                Welcome to the mentor community! Start building your reputation.
+                Welcome to the mentorship community!
               </AppText>
               
               <View style={styles.benefitsList}>
                 <View style={styles.benefitItem}>
                   <Ionicons name="checkmark-circle" size={16} color="#047857" />
-                  <AppText style={styles.benefitText}>Profile badge</AppText>
-                </View>
-                <View style={styles.benefitItem}>
-                  <Ionicons name="checkmark-circle" size={16} color="#047857" />
-                  <AppText style={styles.benefitText}>LinkedIn sharable certificate</AppText>
+                  <AppText style={styles.benefitText}>Trust Badge on your CrackJobs profile</AppText>
                 </View>
               </View>
 
               {currentTier === 'bronze' && (
                 <View style={styles.levelPerks}>
-                  <TouchableOpacity 
+                  <TouchableOpacity         
                     style={[styles.actionBtn, { borderColor: '#0077B5', backgroundColor: '#0077B5' }]}
                     onPress={() => handleClaim('linkedin', 'Bronze')}
                   >
@@ -292,11 +691,11 @@ export default function MentorshipScreen() {
               <View style={styles.benefitsList}>
                 <View style={styles.benefitItem}>
                   <Ionicons name="checkmark-circle" size={16} color="#047857" />
-                  <AppText style={styles.benefitText}>All Bronze benefits</AppText>
+                  <AppText style={styles.benefitText}>Silver badge on profile</AppText>
                 </View>
                 <View style={styles.benefitItem}>
                   <Ionicons name="checkmark-circle" size={16} color="#047857" />
-                  <AppText style={styles.benefitText}>Enhanced profile visibility</AppText>
+                  <AppText style={styles.benefitText}>Downloadable certificate</AppText>
                 </View>
                 <View style={styles.benefitItem}>
                   <Ionicons name="checkmark-circle" size={16} color="#047857" />
@@ -305,22 +704,44 @@ export default function MentorshipScreen() {
               </View>
 
               {currentTier === 'silver' && (
-                <View style={styles.levelPerks}>
+                <>
+                  {/* Certificate Download Button */}
                   <TouchableOpacity 
-                    style={[styles.actionBtn, { borderColor: '#0077B5', backgroundColor: '#0077B5' }]}
-                    onPress={() => handleClaim('linkedin', 'Silver')}
+                    style={[styles.certificateBtn, downloadingCert && styles.certificateBtnDisabled]}
+                    onPress={() => handleDownloadCertificate('silver')}
+                    disabled={downloadingCert}
                   >
-                    <Ionicons name="logo-linkedin" size={14} color="#FFF" />
-                    <AppText style={[styles.actionBtnText, { color: '#FFF' }]}>Share on LinkedIn</AppText>
+                    <Ionicons 
+                      name={downloadingCert ? "hourglass-outline" : "document-text"} 
+                      size={16} 
+                      color="#FFF" 
+                    />
+                    <AppText style={styles.certificateBtnText}>
+                      {downloadingCert ? 'Generating...' : 'Download Silver Certificate'}
+                    </AppText>
                   </TouchableOpacity>
-                  <TouchableOpacity 
-                    style={[styles.actionBtn, { borderColor: theme.colors.primary, backgroundColor: 'transparent' }]}
-                    onPress={() => handleClaim('request_post', 'Silver')}
-                  >
-                    <Ionicons name="megaphone-outline" size={14} color={theme.colors.primary} />
-                    <AppText style={[styles.actionBtnText, { color: theme.colors.primary }]}>Request Post</AppText>
-                  </TouchableOpacity>
-                </View>
+
+                  <AppText style={styles.certHelpText}>
+                    Add to LinkedIn Licenses & Certifications or Featured section
+                  </AppText>
+
+                  <View style={styles.levelPerks}>
+                    <TouchableOpacity 
+                      style={[styles.actionBtn, { borderColor: '#0077B5', backgroundColor: '#0077B5' }]}
+                      onPress={() => handleClaim('linkedin', 'Silver')}
+                    >
+                      <Ionicons name="logo-linkedin" size={14} color="#FFF" />
+                      <AppText style={[styles.actionBtnText, { color: '#FFF' }]}>Share on LinkedIn</AppText>
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                      style={[styles.actionBtn, { borderColor: theme.colors.primary, backgroundColor: 'transparent' }]}
+                      onPress={() => handleClaim('request_post', 'Silver')}
+                    >
+                      <Ionicons name="megaphone-outline" size={14} color={theme.colors.primary} />
+                      <AppText style={[styles.actionBtnText, { color: theme.colors.primary }]}>Request Post</AppText>
+                    </TouchableOpacity>
+                  </View>
+                </>
               )}
             </View>
 
@@ -348,7 +769,7 @@ export default function MentorshipScreen() {
               <View style={styles.benefitsList}>
                 <View style={styles.benefitItem}>
                   <Ionicons name="checkmark-circle" size={16} color="#047857" />
-                  <AppText style={styles.benefitText}>All Silver benefits</AppText>
+                  <AppText style={styles.benefitText}>Gold badge on profile</AppText>
                 </View>
                 <View style={styles.benefitItem}>
                   <Ionicons name="checkmark-circle" size={16} color="#047857" />
@@ -356,7 +777,7 @@ export default function MentorshipScreen() {
                 </View>
                 <View style={styles.benefitItem}>
                   <Ionicons name="checkmark-circle" size={16} color="#047857" />
-                  <AppText style={styles.benefitText}>Featured mentor spotlight</AppText>
+                  <AppText style={styles.benefitText}>Downloadable certificate</AppText>
                 </View>
                 <View style={styles.benefitItem}>
                   <Ionicons name="checkmark-circle" size={16} color="#047857" />
@@ -365,31 +786,51 @@ export default function MentorshipScreen() {
               </View>
 
               {currentTier === 'gold' && (
-                <View style={styles.levelPerks}>
+                <>
+                  {/* Certificate Download Button */}
                   <TouchableOpacity 
-                    style={[styles.actionBtn, { borderColor: '#0077B5', backgroundColor: '#0077B5' }]}
-                    onPress={() => handleClaim('linkedin', 'Gold')}
+                    style={[styles.certificateBtn, downloadingCert && styles.certificateBtnDisabled]}
+                    onPress={() => handleDownloadCertificate('gold')}
+                    disabled={downloadingCert}
                   >
-                    <Ionicons name="logo-linkedin" size={14} color="#FFF" />
-                    <AppText style={[styles.actionBtnText, { color: '#FFF' }]}>Share on LinkedIn</AppText>
+                    <Ionicons 
+                      name={downloadingCert ? "hourglass-outline" : "document-text"} 
+                      size={16} 
+                      color="#FFF" 
+                    />
+                    <AppText style={styles.certificateBtnText}>
+                      {downloadingCert ? 'Generating...' : 'Download Gold Certificate'}
+                    </AppText>
                   </TouchableOpacity>
-                  <TouchableOpacity 
-                    style={[styles.actionBtn, { borderColor: theme.colors.primary, backgroundColor: 'transparent' }]}
-                    onPress={() => handleClaim('request_post', 'Gold')}
-                  >
-                    <Ionicons name="megaphone-outline" size={14} color={theme.colors.primary} />
-                    <AppText style={[styles.actionBtnText, { color: theme.colors.primary }]}>Request Post</AppText>
-                  </TouchableOpacity>
-                </View>
-              )}
 
-              {currentTier === 'gold' && (
-                <View style={styles.levelFooter}>
-                  <Ionicons name="sparkles-outline" size={14} color="#D97706" />
-                  <AppText style={styles.levelFooterText}>
-                    You've reached the highest mentor level! Keep up the amazing work.
+                  <AppText style={styles.certHelpText}>
+                    Add to LinkedIn Licenses & Certifications or Featured section
                   </AppText>
-                </View>
+
+                  <View style={styles.levelPerks}>
+                    <TouchableOpacity 
+                      style={[styles.actionBtn, { borderColor: '#0077B5', backgroundColor: '#0077B5' }]}
+                      onPress={() => handleClaim('linkedin', 'Gold')}
+                    >
+                      <Ionicons name="logo-linkedin" size={14} color="#FFF" />
+                      <AppText style={[styles.actionBtnText, { color: '#FFF' }]}>Share on LinkedIn</AppText>
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                      style={[styles.actionBtn, { borderColor: theme.colors.primary, backgroundColor: 'transparent' }]}
+                      onPress={() => handleClaim('request_post', 'Gold')}
+                    >
+                      <Ionicons name="megaphone-outline" size={14} color={theme.colors.primary} />
+                      <AppText style={[styles.actionBtnText, { color: theme.colors.primary }]}>Request Post</AppText>
+                    </TouchableOpacity>
+                  </View>
+
+                  <View style={styles.levelFooter}>
+                    <Ionicons name="sparkles-outline" size={14} color="#D97706" />
+                    <AppText style={styles.levelFooterText}>
+                      You've reached the highest mentor level! Keep up the amazing work.
+                    </AppText>
+                  </View>
+                </>
               )}
             </View>
           </Card>
@@ -439,4 +880,32 @@ const styles = StyleSheet.create({
   levelFooterText: { flex: 1, fontSize: 12, color: theme.colors.text.light },
   actionBtn: { flexDirection: 'row', alignItems: 'center', padding: 10, borderWidth: 1, borderRadius: 8, gap: 8, marginTop: 4, justifyContent: 'center' },
   actionBtnText: { fontSize: 12, fontWeight: '600' },
+  
+  // Certificate Button Styles
+  certificateBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.colors.primary,
+    padding: 12,
+    borderRadius: 8,
+    gap: 8,
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  certificateBtnDisabled: {
+    opacity: 0.6,
+  },
+  certificateBtnText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFF',
+  },
+  certHelpText: {
+    fontSize: 11,
+    color: theme.colors.text.light,
+    textAlign: 'center',
+    marginBottom: 8,
+    fontStyle: 'italic',
+  },
 });
