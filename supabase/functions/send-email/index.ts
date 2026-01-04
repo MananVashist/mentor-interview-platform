@@ -1,126 +1,176 @@
-﻿import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+﻿// supabase/functions/send-email/index.ts
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+
+const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')!
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
 serve(async (req) => {
-  // Handle CORS preflight
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { 
-      headers: corsHeaders,
-      status: 200 
-    });
-  }
-
   try {
-    const { to, subject, html, templateId, templateData, type } = await req.json() as {
-      to: string;
-      subject: string;
-      html?: string;
-      templateId?: string;
-      templateData?: Record<string, any>;
-      type: string;
-    };
+    const { to, subject, html, type, email } = await req.json()
 
-    console.log(`[Email Service] Processing '${type}' for: ${to}`);
+    let emailSubject = subject
+    let emailHtml = html
 
-    // Basic Validation
-    if (!to || !subject) {
-      throw new Error("Missing required fields: to, subject");
-    }
-
-    if (!html && !templateId) {
-      throw new Error("Must provide either 'html' or 'templateId'");
-    }
-
-    const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-    if (!RESEND_API_KEY) {
-      console.error("[Email Service] Missing Resend API key");
-      throw new Error("Email service configuration missing");
-    }
-
-    // ---------------------------------------------------------
-    // CONSTRUCT RESEND PAYLOAD
-    // ---------------------------------------------------------
-    
-    // ⚠️ REPLACE THIS WITH YOUR VERIFIED DOMAIN ONCE READY
-    const FROM_EMAIL = "CrackJobs <no-reply@crackjobs.com>";
-    // const FROM_EMAIL = "CrackJobs <onboarding@resend.dev>"; 
-
-    let resendPayload: any = {
-      from: FROM_EMAIL,
-      to: [to],
-      subject: subject,
-    };
-
-    if (templateId) {
-      // ✅ CORRECT SYNTAX for Resend Dashboard Templates
-      resendPayload.template_id = templateId;
-      resendPayload.data = templateData || {}; 
-      console.log(`[Email Service] Using Template: ${templateId}`);
-    } else {
-      // Raw HTML Fallback
-      resendPayload.html = html;
-      console.log("[Email Service] Using raw HTML");
-    }
-
-    // ---------------------------------------------------------
-    // SEND REQUEST TO RESEND
-    // ---------------------------------------------------------
-    const response = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${RESEND_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(resendPayload),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      console.error("[Email Service] ❌ Resend API Error:", data);
-      // Return 500 so the client knows it failed
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: data.message || "Failed to send email via Resend",
-          details: data
-        }),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 500,
+    // Handle password reset type
+    if (type === 'password-reset') {
+      console.log('[send-email] Generating password reset link for:', email)
+      
+      // Create Supabase admin client
+      const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
         }
-      );
+      })
+
+      // Generate recovery link
+      const { data, error } = await supabaseAdmin.auth.admin.generateLink({
+        type: 'recovery',
+        email: email,
+      })
+
+      if (error) {
+        console.error('[send-email] Error generating reset link:', error)
+        throw error
+      }
+
+      const resetLink = data.properties.action_link
+      console.log('[send-email] Reset link generated successfully')
+
+      // Create branded email
+      emailSubject = 'Reset Your CrackJobs Password'
+      emailHtml = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <style>
+            body { 
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+              line-height: 1.6; 
+              color: #333;
+              margin: 0;
+              padding: 0;
+              background-color: #f3f4f6;
+            }
+            .container { 
+              max-width: 600px; 
+              margin: 0 auto; 
+              padding: 20px; 
+            }
+            .header { 
+              background: linear-gradient(135deg, #0E9384 0%, #059669 100%); 
+              color: white; 
+              padding: 30px; 
+              border-radius: 8px 8px 0 0; 
+              text-align: center; 
+            }
+            .header h1 {
+              margin: 0;
+              font-size: 24px;
+              font-weight: 600;
+            }
+            .content { 
+              background: #fff; 
+              padding: 30px; 
+              border: 1px solid #e5e7eb;
+              border-top: none;
+              border-radius: 0 0 8px 8px;
+            }
+            .button { 
+              display: inline-block; 
+              background: #0E9384; 
+              color: white !important; 
+              padding: 14px 28px; 
+              text-decoration: none; 
+              border-radius: 6px; 
+              font-weight: 600;
+              margin: 20px 0;
+            }
+            .footer {
+              text-align: center;
+              color: #6b7280;
+              font-size: 12px;
+              margin-top: 30px;
+              padding: 20px;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>🔐 Reset Your Password</h1>
+            </div>
+            <div class="content">
+              <p>Hello,</p>
+              <p>You requested to reset your password for your CrackJobs account.</p>
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${resetLink}" class="button">Reset Password</a>
+              </div>
+              <p style="color: #6b7280; font-size: 14px; margin-top: 20px;">
+                If you didn't request this, you can safely ignore this email. This link expires in 1 hour.
+              </p>
+            </div>
+            <div class="footer">
+              <p><strong>CrackJobs</strong> - Mock Interview Platform</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `
     }
 
-    console.log("[Email Service] ✅ Sent Successfully! ID:", data.id);
+    console.log('[send-email] Sending email to:', to)
+
+    // Send email via Resend
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${RESEND_API_KEY}`,
+      },
+      body: JSON.stringify({
+        from: 'CrackJobs <no-reply@crackjobs.com>',
+        to: Array.isArray(to) ? to : [to],
+        subject: emailSubject,
+        html: emailHtml,
+      }),
+    })
+
+    const resData = await res.json()
+
+    if (!res.ok) {
+      console.error('[send-email] Resend error:', resData)
+      throw new Error(`Resend API error: ${JSON.stringify(resData)}`)
+    }
+
+    console.log('[send-email] ✅ Email sent successfully:', resData.id)
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
-        emailId: data.id 
-      }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      JSON.stringify({ success: true, id: resData.id }),
+      { 
         status: 200,
+        headers: { 
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        } 
       }
-    );
+    )
 
   } catch (error: any) {
-    console.error("[Email Service] Exception:", error.message);
+    console.error('[send-email] ❌ Error:', error)
     return new Response(
-      JSON.stringify({
-        success: false,
-        error: String(error.message || error),
-      }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 500, // Internal Server Error
+      JSON.stringify({ success: false, error: error.message }),
+      { 
+        status: 400, 
+        headers: { 
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        } 
       }
-    );
+    )
   }
-});
+})
