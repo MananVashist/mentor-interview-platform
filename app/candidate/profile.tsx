@@ -77,7 +77,22 @@ export default function ProfileScreen() {
           // Update Local Form State
           setFullName(profileData?.full_name || '');
           setProfessionalTitle(candidateData?.professional_title || '');
-          setResumeUrl(candidateData?.resume_url || '');
+          
+          // 🟢 FIX: Handle both old path-based URLs and new full URLs
+          let resumeUrlToSet = candidateData?.resume_url || '';
+          if (resumeUrlToSet && !resumeUrlToSet.startsWith('http')) {
+            // Old format: just a path like "user-id/resume.pdf"
+            // Convert to public URL
+            const { data: publicUrlData } = supabase.storage
+              .from('resumes')
+              .getPublicUrl(resumeUrlToSet);
+            
+            if (publicUrlData?.publicUrl) {
+              resumeUrlToSet = publicUrlData.publicUrl;
+              console.log('[ProfileScreen] Converted old path to URL:', resumeUrlToSet);
+            }
+          }
+          setResumeUrl(resumeUrlToSet);
 
           // Update Global Store (Critical for hydration)
           // We manually reconstruct the profile object if it was missing
@@ -162,7 +177,17 @@ export default function ProfileScreen() {
 
       if (uploadError) throw uploadError;
 
-      setResumeUrl(filePath); 
+      // 🟢 FIX: Generate public URL instead of saving just the path
+      const { data: publicUrlData } = supabase.storage
+        .from('resumes')
+        .getPublicUrl(filePath);
+
+      if (!publicUrlData?.publicUrl) {
+        throw new Error('Failed to generate public URL');
+      }
+
+      console.log('[Upload] Public URL generated:', publicUrlData.publicUrl);
+      setResumeUrl(publicUrlData.publicUrl); 
       Alert.alert('Success', 'Resume uploaded. Click Save to finish.');
 
     } catch (error: any) {
@@ -174,18 +199,6 @@ export default function ProfileScreen() {
   };
 
   const handleSave = async () => {
-    // Robust check: Get ID from store OR session
-    let userId = profile?.id;
-    if (!userId) {
-       const { data } = await supabase.auth.getUser();
-       userId = data.user?.id;
-    }
-
-    if (!userId) {
-        Alert.alert("Error", "No user session found.");
-        return;
-    }
-
     if (!fullName.trim()) {
       Alert.alert('Error', 'Full name is required');
       return;
@@ -193,6 +206,23 @@ export default function ProfileScreen() {
 
     setLoading(true);
     try {
+      // 🔥 CRITICAL FIX: Always get fresh user from auth - don't trust store
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !user) {
+        Alert.alert('Authentication Error', 'Your session has expired. Please log in again.');
+        setLoading(false);
+        return;
+      }
+      
+      const userId = user.id; // Use fresh auth ID, not store
+      
+      console.log('===== SAVE DEBUG =====');
+      console.log('Using userId:', userId);
+      console.log('User email:', user.email);
+      console.log('Store profile.id:', profile?.id);
+      console.log('IDs match:', profile?.id === userId);
+      console.log('=====================');
       // 1. Update Core Profile
       const { error: profileError } = await supabase
         .from('profiles')
@@ -208,11 +238,58 @@ export default function ProfileScreen() {
         updated_at: new Date(),
       };
 
-      const { error: candidateError } = await supabase
-        .from('candidates')
-        .upsert({ id: userId, ...updatedCandidate });
+      console.log('[Save] Attempting to save candidate:', {
+        userId,
+        auth_uid_match: true, // We'll verify this
+        professional_title: updatedCandidate.professional_title,
+        resume_url: updatedCandidate.resume_url,
+      });
 
-      if (candidateError) throw candidateError;
+      // 🟢 FIX: Try UPDATE first, if no rows affected, then INSERT
+      // This is more efficient than checking existence first
+      const { data: updateData, error: updateError } = await supabase
+        .from('candidates')
+        .update(updatedCandidate)
+        .eq('id', userId)
+        .select();
+
+      let candidateData = updateData;
+      let candidateError = updateError;
+
+      // If update affected 0 rows, candidate doesn't exist - INSERT it
+      if (!updateError && (!updateData || updateData.length === 0)) {
+        console.log('[Save] No existing candidate found, inserting...');
+        const { data: insertData, error: insertError } = await supabase
+          .from('candidates')
+          .insert({ id: userId, ...updatedCandidate })
+          .select();
+        
+        candidateData = insertData;
+        candidateError = insertError;
+        
+        if (insertError) {
+          console.error('[Save] INSERT failed:', insertError);
+          console.error('[Save] Attempted to insert with userId:', userId);
+          
+          // Log auth state for debugging
+          const { data: { user: authUser } } = await supabase.auth.getUser();
+          console.error('[Save] Current auth.uid():', authUser?.id);
+          console.error('[Save] Match:', authUser?.id === userId);
+        } else {
+          console.log('[Save] Inserted new candidate successfully');
+        }
+      } else if (updateError) {
+        console.error('[Save] UPDATE failed:', updateError);
+      } else {
+        console.log('[Save] Updated existing candidate successfully');
+      }
+
+      if (candidateError) {
+        console.error('[Save] Candidate save error:', candidateError);
+        throw candidateError;
+      }
+
+      console.log('[Save] Candidate saved successfully:', candidateData);
 
       // 3. Update Local Store
       if (profile) setProfile({ ...profile, full_name: fullName });

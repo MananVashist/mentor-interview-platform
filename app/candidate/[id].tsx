@@ -36,7 +36,7 @@ export default function MentorDetailsScreen() {
       try {
         const { data, error } = await supabase
           .from('mentors')
-          .select('session_price_inr, professional_title, experience_description, expertise_profiles, profile_ids, years_of_experience, profile:profiles(*)')
+          .select('session_price_inr, professional_title, experience_description, expertise_profiles, profile_ids, years_of_experience, average_rating, total_sessions, status, profile:profiles(*)')
           .eq('id', id)
           .single();
           
@@ -45,6 +45,12 @@ export default function MentorDetailsScreen() {
         if (data) {
             const basePrice = data.session_price_inr || 1000;
             const totalPrice = Math.round(basePrice * 1.2);
+            
+            // Calculate tier based on session count
+            const sessionCount = data.total_sessions || 0;
+            let tier = 'Bronze';
+            if (sessionCount > 30) tier = 'Gold';
+            else if (sessionCount > 10) tier = 'Silver';
             
             const profilesList = data.expertise_profiles?.join(", ") || "Tech";
             const aboutText = data.experience_description 
@@ -59,13 +65,14 @@ export default function MentorDetailsScreen() {
                 expertise: data.expertise_profiles || ["Software Engineer"],
                 profileIds: data.profile_ids || [], 
                 totalPrice: totalPrice,
-                avatarChar: data.profile?.full_name?.charAt(0) || 'M'
+                avatarChar: data.profile?.full_name?.charAt(0) || 'M',
+                rating: data.average_rating || 0,
+                sessionCount: sessionCount,
+                tier: tier,
+                isVerified: data.status === 'approved'
             });
 
-            // Default selection
-            if (data.expertise_profiles?.length > 0) {
-                setSelectedProfile(data.expertise_profiles[0]);
-            }
+            // No default selection - user must choose explicitly
         }
       } catch (e) {
         console.error(e);
@@ -98,8 +105,8 @@ export default function MentorDetailsScreen() {
 
         if (!error && data) {
             setSkills(data);
-            if (data.length > 0) setSelectedSkill(data[0]);
-            else setSelectedSkill(null);
+            // No default selection - user must choose explicitly
+            setSelectedSkill(null);
         }
     }
     fetchSkills();
@@ -151,7 +158,12 @@ export default function MentorDetailsScreen() {
                 <AppText style={styles.avatarText}>{mentor.avatarChar}</AppText>
             </View>
             <View style={{ flex: 1 }}>
-                <AppText style={styles.headerTitle}>{mentor.title}</AppText>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                  <AppText style={styles.headerTitle}>{mentor.title}</AppText>
+                  {mentor.isVerified && (
+                    <Ionicons name="checkmark-circle" size={18} color="#0E9384" />
+                  )}
+                </View>
                 {mentor.exp != null && (
                   <View style={styles.badge}>
                       <Ionicons name="briefcase" size={10} color={theme.colors.text.body} style={{ marginRight: 4 }} />
@@ -160,6 +172,53 @@ export default function MentorDetailsScreen() {
                 )}
             </View>
           </View>
+
+          {/* Stats Row */}
+          <View style={styles.statsRow}>
+            {/* Tier Badge */}
+            <View style={[
+              styles.tierBadge, 
+              mentor.tier === 'Gold' && styles.tierGold,
+              mentor.tier === 'Silver' && styles.tierSilver,
+              mentor.tier === 'Bronze' && styles.tierBronze
+            ]}>
+              <Ionicons 
+                name="trophy" 
+                size={12} 
+                color={
+                  mentor.tier === 'Gold' ? '#D97706' :
+                  mentor.tier === 'Silver' ? '#6B7280' :
+                  '#CD7F32'
+                } 
+                style={{ marginRight: 4 }} 
+              />
+              <AppText style={[
+                styles.tierText,
+                mentor.tier === 'Gold' && styles.tierTextGold,
+                mentor.tier === 'Silver' && styles.tierTextSilver,
+                mentor.tier === 'Bronze' && styles.tierTextBronze
+              ]}>
+                {mentor.tier}
+              </AppText>
+            </View>
+
+            {/* Rating */}
+            <View style={styles.statItem}>
+              <Ionicons name="star" size={14} color="#F59E0B" style={{ marginRight: 4 }} />
+              <AppText style={styles.statText}>
+                {mentor.rating > 0 ? mentor.rating.toFixed(1) : 'New'}
+              </AppText>
+            </View>
+
+            {/* Sessions */}
+            <View style={styles.statItem}>
+              <Ionicons name="people" size={14} color="#6B7280" style={{ marginRight: 4 }} />
+              <AppText style={styles.statText}>
+                {mentor.sessionCount} {mentor.sessionCount === 1 ? 'session' : 'sessions'}
+              </AppText>
+            </View>
+          </View>
+
           <View style={styles.divider} />
           <View style={styles.sectionHeader}>
              <Ionicons name="information-circle-outline" size={20} color={theme.colors.text.light} style={{ marginRight: 8 }} />
@@ -247,11 +306,20 @@ export default function MentorDetailsScreen() {
       <SafeAreaView style={styles.footerWrapper}>
         <View style={styles.footerContent}>
           <TouchableOpacity 
-            style={styles.scheduleButton}
+            style={[
+              styles.scheduleButton,
+              (!selectedProfile || !selectedSkill) && styles.scheduleButtonDisabled
+            ]}
             activeOpacity={0.9}
             onPress={handleSchedule}
+            disabled={!selectedProfile || !selectedSkill}
           >
-            <AppText style={styles.scheduleButtonText}>Select Time Slot</AppText>
+            <AppText style={[
+              styles.scheduleButtonText,
+              (!selectedProfile || !selectedSkill) && styles.scheduleButtonTextDisabled
+            ]}>
+              Select Time Slot
+            </AppText>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -274,9 +342,20 @@ const styles = StyleSheet.create({
   bioHeader: { flexDirection: "row", alignItems: "center", gap: 16, marginBottom: 16 },
   avatarPlaceholder: { width: 56, height: 56, borderRadius: 28, backgroundColor: theme.colors.primary, alignItems: "center", justifyContent: "center" },
   avatarText: { fontSize: 24, fontWeight: "700", color: "#FFF" },
-  headerTitle: { fontSize: 20, fontWeight: "800", color: theme.colors.text.main, marginBottom: 6 },
+  headerTitle: { fontSize: 20, fontWeight: "800", color: theme.colors.text.main },
   badge: { flexDirection: "row", alignItems: "center", backgroundColor: theme.colors.gray[100], borderWidth: 0, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, alignSelf: "flex-start" },
   badgeText: { fontSize: 11, fontWeight: "700", color: theme.colors.text.body, letterSpacing: 0.5 },
+  statsRow: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginTop: 12, marginBottom: 16 },
+  tierBadge: { flexDirection: "row", alignItems: "center", paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6, borderWidth: 1.5 },
+  tierGold: { backgroundColor: '#FFFBEB', borderColor: '#F59E0B' },
+  tierSilver: { backgroundColor: '#F3F4F6', borderColor: '#9CA3AF' },
+  tierBronze: { backgroundColor: '#FEF2F2', borderColor: '#CD7F32' },
+  tierText: { fontSize: 12, fontWeight: "700", letterSpacing: 0.3 },
+  tierTextGold: { color: '#D97706' },
+  tierTextSilver: { color: '#6B7280' },
+  tierTextBronze: { color: '#CD7F32' },
+  statItem: { flexDirection: "row", alignItems: "center", backgroundColor: theme.colors.gray[50], paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6 },
+  statText: { fontSize: 12, fontWeight: "600", color: theme.colors.text.body },
   divider: { height: 1, backgroundColor: theme.colors.border, marginBottom: 16 },
   sectionHeader: { flexDirection: "row", alignItems: "center", marginBottom: 12 },
   sectionTitle: { fontSize: 16, fontWeight: "700", color: theme.colors.text.main },
@@ -297,5 +376,7 @@ const styles = StyleSheet.create({
   footerWrapper: { position: "absolute", bottom: 0, left: 0, right: 0, backgroundColor: "#f8f5f0", borderTopWidth: 1, borderTopColor: theme.colors.border },
   footerContent: { paddingHorizontal: 24, paddingVertical: 16 },
   scheduleButton: { backgroundColor: theme.colors.primary, paddingVertical: 16, borderRadius: 12, alignItems: "center", justifyContent: "center", shadowColor: theme.colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 4 },
+  scheduleButtonDisabled: { backgroundColor: '#D1D5DB', shadowOpacity: 0, elevation: 0 },
   scheduleButtonText: { fontSize: 16, fontWeight: "700", color: "#FFF" },
+  scheduleButtonTextDisabled: { color: '#9CA3AF' },
 });

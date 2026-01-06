@@ -151,7 +151,6 @@ export default function MentorProfileScreen() {
       setSaving(true);
 
       const payload: any = {
-        id: profile.id,
         professional_title: professionalTitle.trim() || null,
         years_of_experience: yrs,
         profile_ids: selectedProfiles,
@@ -166,7 +165,8 @@ export default function MentorProfileScreen() {
 
       const { error } = await supabase
         .from('mentors')
-        .upsert(payload);
+        .update(payload)
+        .eq('id', profile.id);
 
       if (error) {
         showNotification('Could not save profile: ' + error.message, 'error');

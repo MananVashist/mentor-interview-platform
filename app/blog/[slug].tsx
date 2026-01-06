@@ -1,5 +1,4 @@
-﻿// app/blog/[slug].tsx
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect } from 'react';
 import {
   View,
   Text,
@@ -14,36 +13,28 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { PageLayout } from '@/components/PageLayout';
 import { BlogRenderer } from '@/components/BlogRenderer';
 import { theme } from '@/lib/theme';
-import { getPostBySlug } from '@/data/blog-posts';
+import { getPostBySlug, getAllPosts } from '@/data/blog-posts';
 import { createBreadcrumbSchema, createArticleSchema, injectMultipleSchemas } from '@/lib/structured-data';
 import { Ionicons } from '@expo/vector-icons';
 import { SEO } from '@/components/SEO';
 
+// 1. Static Paths Generation
+export async function generateStaticParams() {
+  const posts = getAllPosts();
+  return posts.map((post) => ({ slug: post.slug }));
+}
+
 export default function BlogPost() {
   const router = useRouter();
   const { slug } = useLocalSearchParams<{ slug: string }>();
-  const { width } = useWindowDimensions();
-  const isSmall = width < 900;
-  const [isParamsReady, setIsParamsReady] = useState(false);
+  const dimensions = useWindowDimensions();
+  
+  // Safe width fallback for Mobile Renderer
+  const safeWidth = dimensions?.width || 800;
 
-  // Wait for params to be ready
-  useEffect(() => {
-    if (slug) {
-      setIsParamsReady(true);
-    }
-  }, [slug]);
-
-  // Get the blog post
-  const post = getPostBySlug(slug as string);
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
+  // Handle array or string slug safely
+  const slugString = Array.isArray(slug) ? slug[0] : slug;
+  const post = getPostBySlug(slugString as string);
 
   useEffect(() => {
     if (Platform.OS === 'web' && post) {
@@ -65,36 +56,18 @@ export default function BlogPost() {
     }
   }, [post]);
 
-  const contentWidth = isSmall ? width - 40 : 800;
-
-  // Show loading state while params aren't ready
-  if (!isParamsReady) {
-    return (
-      <PageLayout>
-        <View style={styles.loading}>
-          <Text style={styles.loadingText}>Loading...</Text>
-        </View>
-      </PageLayout>
-    );
-  }
-
-  // If post not found (only after params are confirmed ready), show 404
+  // Handle 404s - If post is missing, render a simple "Not Found" state
+  // This prevents build crashes if a slug is malformed
   if (!post) {
     return (
-      <PageLayout>
-        <View style={styles.notFound}>
-          <Text style={styles.notFoundTitle}>404 - Post Not Found</Text>
-          <Text style={styles.notFoundText}>
-            The blog post you're looking for doesn't exist.
-          </Text>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => router.push('/blog')}
-          >
-            <Text style={styles.backButtonText}>← Back to Blog</Text>
-          </TouchableOpacity>
-        </View>
-      </PageLayout>
+       <PageLayout>
+         <View style={styles.notFoundContainer}>
+           <Text style={styles.title}>Post Not Found</Text>
+           <TouchableOpacity onPress={() => router.push('/blog')}>
+             <Text style={styles.backButtonText}>Go Back to Blog</Text>
+           </TouchableOpacity>
+         </View>
+       </PageLayout>
     );
   }
 
@@ -107,48 +80,30 @@ export default function BlogPost() {
         ogImage={post.thumbnailUrl || 'https://crackjobs.com/og-image.png'}
       />
 
-      <ScrollView>
-        <View style={[styles.container, isSmall && styles.containerMobile]}>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <View style={styles.articleContainer}>
+          
           {/* Back Button */}
-          <TouchableOpacity
-            style={styles.backLink}
-            onPress={() => router.push('/blog')}
-          >
+          <TouchableOpacity style={styles.backButton} onPress={() => router.push('/blog')}>
             <Ionicons name="arrow-back" size={20} color={theme.colors.primary} />
-            <Text style={styles.backLinkText}>Back to Blog</Text>
+            <Text style={styles.backButtonText}>Back to Blog</Text>
           </TouchableOpacity>
 
           {/* Header */}
           <View style={styles.header}>
-            {/* Tags */}
-            {post.tags && post.tags.length > 0 && (
-              <View style={styles.tags}>
-                {post.tags.map((tag) => (
-                  <View key={tag} style={styles.tag}>
-                    <Text style={styles.tagText}>{tag}</Text>
-                  </View>
-                ))}
-              </View>
-            )}
-
-            {/* Title */}
-            <Text style={[styles.title, isSmall && styles.titleMobile]} accessibilityRole="header" aria-level={1}>
+            <Text style={styles.title} accessibilityRole="header" aria-level={1}>
               {post.title}
             </Text>
-
-            {/* Meta */}
-            <View style={styles.meta}>
-              <Text style={styles.metaText}>{post.author}</Text>
-              <Text style={styles.metaDot}>•</Text>
-              <Text style={styles.metaText}>{formatDate(post.publishedAt)}</Text>
-            </View>
+            <Text style={styles.meta}>
+              {post.author} • {new Date(post.publishedAt).toLocaleDateString()}
+            </Text>
           </View>
 
           {/* Thumbnail */}
           {post.thumbnailUrl && (
             <Image
               source={{ uri: post.thumbnailUrl }}
-              style={[styles.thumbnail, isSmall && styles.thumbnailMobile]}
+              style={styles.thumbnail}
               resizeMode="cover"
             />
           )}
@@ -157,38 +112,8 @@ export default function BlogPost() {
           <View style={styles.content}>
             <BlogRenderer
               htmlContent={post.content}
-              contentWidth={contentWidth}
+              contentWidth={safeWidth} 
             />
-          </View>
-
-          {/* CTA Section */}
-          <View style={styles.ctaSection}>
-            <Text style={styles.ctaTitle}>Ready to Practice Your Interview Skills?</Text>
-            <Text style={styles.ctaText}>
-              Book a mock interview with experienced professionals from top companies and get personalized feedback to ace your next interview.
-            </Text>
-            <TouchableOpacity
-              style={styles.ctaButton}
-              onPress={() => router.push('/auth/sign-up')}
-            >
-              <Text style={styles.ctaButtonText}>GET STARTED</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Share Section */}
-          <View style={styles.shareSection}>
-            <Text style={styles.shareTitle}>Share this article</Text>
-            <View style={styles.shareButtons}>
-              <TouchableOpacity style={styles.shareButton}>
-                <Ionicons name="logo-twitter" size={20} color="#1DA1F2" />
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.shareButton}>
-                <Ionicons name="logo-linkedin" size={20} color="#0A66C2" />
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.shareButton}>
-                <Ionicons name="link-outline" size={20} color={theme.colors.text.main} />
-              </TouchableOpacity>
-            </View>
           </View>
         </View>
       </ScrollView>
@@ -197,203 +122,55 @@ export default function BlogPost() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    maxWidth: 800,
-    width: '100%',
-    marginHorizontal: 'auto',
-    paddingHorizontal: 40,
+  scrollContent: {
+    flexGrow: 1,
     paddingVertical: 40,
+    alignItems: 'center',
   },
-  containerMobile: {
+  articleContainer: {
+    width: '100%',
+    maxWidth: 800,
     paddingHorizontal: 20,
   },
-
-  // Loading State
-  loading: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 40,
-    minHeight: 400,
-  },
-  loadingText: {
-    fontFamily: theme.typography.fontFamily.regular,
-    fontSize: 18,
-    color: theme.colors.text.body,
-  },
-
-  // Back Link
-  backLink: {
+  backButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
     marginBottom: 32,
-  },
-  backLinkText: {
-    fontFamily: theme.typography.fontFamily.semibold,
+    gap: 8,
+    cursor: 'pointer', // Adds pointer cursor on web
+  } as any,
+  backButtonText: {
+    color: theme.colors.primary,
     fontSize: 16,
-    color: theme.colors.primary,
+    fontWeight: '600',
   },
-
-  // Header
   header: {
-    marginBottom: 32,
+    marginBottom: 24,
   },
-
-  tags: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 16,
-    flexWrap: 'wrap',
-  },
-  tag: {
-    backgroundColor: theme.colors.gray[100],
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 14,
-  },
-  tagText: {
-    fontFamily: theme.typography.fontFamily.semibold,
-    fontSize: 12,
-    color: theme.colors.primary,
-    textTransform: 'uppercase',
-  },
-
   title: {
-    fontFamily: theme.typography.fontFamily.extrabold,
-    fontSize: 48,
-    color: theme.colors.text.main,
-    lineHeight: 56,
-    marginBottom: 16,
-  },
-  titleMobile: {
     fontSize: 32,
+    fontWeight: '800',
+    color: theme.colors.text.main,
+    marginBottom: 16,
     lineHeight: 40,
   },
-
   meta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  metaText: {
-    fontFamily: theme.typography.fontFamily.regular,
     fontSize: 16,
     color: theme.colors.text.light,
   },
-  metaDot: {
-    color: theme.colors.text.light,
-  },
-
-  // Thumbnail
   thumbnail: {
     width: '100%',
-    height: 400,
-    borderRadius: 16,
-    marginBottom: 40,
-    backgroundColor: theme.colors.gray[100],
-  },
-  thumbnailMobile: {
-    height: 250,
-  },
-
-  // Content
-  content: {
-    marginBottom: 60,
-  },
-
-  // CTA Section
-  ctaSection: {
-    backgroundColor: theme.colors.primary,
-    borderRadius: 16,
-    padding: 48,
-    alignItems: 'center',
-    marginBottom: 40,
-  },
-  ctaTitle: {
-    fontFamily: theme.typography.fontFamily.bold,
-    fontSize: 24,
-    color: theme.colors.surface,
-    marginBottom: 12,
-    textAlign: 'center',
-  },
-  ctaText: {
-    fontFamily: theme.typography.fontFamily.regular,
-    fontSize: 16,
-    color: theme.colors.surface,
-    textAlign: 'center',
-    marginBottom: 24,
-    opacity: 0.9,
-  },
-  ctaButton: {
-    backgroundColor: theme.colors.surface,
-    paddingHorizontal: 32,
-    paddingVertical: 14,
+    height: 300,
     borderRadius: 12,
-  },
-  ctaButtonText: {
-    color: theme.colors.primary,
-    fontFamily: theme.typography.fontFamily.extrabold,
-    fontSize: 14,
-    letterSpacing: 0.5,
-  },
-
-  // Share Section
-  shareSection: {
-    borderTopWidth: 1,
-    borderTopColor: theme.colors.border,
-    paddingTop: 32,
-    alignItems: 'center',
-  },
-  shareTitle: {
-    fontFamily: theme.typography.fontFamily.semibold,
-    fontSize: 16,
-    color: theme.colors.text.main,
-    marginBottom: 16,
-  },
-  shareButtons: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  shareButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: theme.colors.gray[100],
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  // 404 Not Found
-  notFound: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 40,
-    minHeight: 400,
-  },
-  notFoundTitle: {
-    fontFamily: theme.typography.fontFamily.extrabold,
-    fontSize: 36,
-    color: theme.colors.text.main,
-    marginBottom: 16,
-  },
-  notFoundText: {
-    fontFamily: theme.typography.fontFamily.regular,
-    fontSize: 18,
-    color: theme.colors.text.body,
-    textAlign: 'center',
     marginBottom: 32,
+    backgroundColor: '#f0f0f0',
   },
-  backButton: {
-    backgroundColor: theme.colors.primary,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
+  content: {
+    width: '100%',
   },
-  backButtonText: {
-    color: theme.colors.surface,
-    fontFamily: theme.typography.fontFamily.semibold,
-    fontSize: 16,
-  },
+  notFoundContainer: {
+    padding: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  }
 });
