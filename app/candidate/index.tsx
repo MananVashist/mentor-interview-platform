@@ -706,7 +706,7 @@ export default function CandidateDashboard() {
                         style={styles.bookBtn} 
                         onPress={() => handleViewMentor(m.id)}
                       >
-                        <AppText style={styles.bookBtnText}>Book</AppText>
+                        <AppText style={styles.bookBtnText}>View and Book</AppText>
                       </TouchableOpacity>
                     </View>
 

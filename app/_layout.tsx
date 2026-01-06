@@ -1,5 +1,5 @@
 ﻿import { useEffect, useState } from 'react';
-import { Platform } from 'react-native';
+import { Platform, View } from 'react-native';
 import { Slot, SplashScreen, usePathname } from 'expo-router';
 import Head from 'expo-router/head';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -32,9 +32,13 @@ if (Platform.OS === 'web' && typeof window !== 'undefined') {
 
 export default function RootLayout() {
   const [isReady, setIsReady] = useState(false);
-  const [showSplash, setShowSplash] = useState(true);
   const [session, setSession] = useState<Session | null>(null);
   const pathname = usePathname();
+  
+  // 1. SEO FIX: Disable custom splash by default on Web.
+  // This allows the "real" content to render immediately during SSG build.
+  // On Native, we start true to show the animation.
+  const [showSplash, setShowSplash] = useState(Platform.OS !== 'web');
 
   // Load fonts using useFonts hook
   const [fontsLoaded] = useFonts(
@@ -70,10 +74,12 @@ export default function RootLayout() {
 
   // Native splash → animated splash → app
   useEffect(() => {
+    // Only run this logic if we actually want to handle the splash logic (mostly native)
     if (fontsLoaded && isReady) {
       SplashScreen.hideAsync();
 
       if (Platform.OS === 'web') {
+        // Double check to ensure it's off on web
         setShowSplash(false);
         return;
       }
@@ -93,12 +99,17 @@ export default function RootLayout() {
     }
   }, [pathname, showSplash]);
 
-  // Phase 0: native splash still visible
-  if (!fontsLoaded || !isReady) {
+  // 2. SEO FIX: Do not return null on Web. 
+  // During `npx expo export`, `isReady` is FALSE because useEffect doesn't run.
+  // If we return null here, we generate blank HTML files.
+  // We allow Web to fall through to the render phase.
+  const shouldBlockRender = Platform.OS !== 'web' && (!fontsLoaded || !isReady);
+
+  if (shouldBlockRender) {
     return null;
   }
 
-  // Phase 1: animated splash
+  // Phase 1: animated splash (Native Only due to useState init above)
   if (showSplash) {
     return <AppSplash />;
   }
@@ -155,6 +166,9 @@ export default function RootLayout() {
           )}
         </Head>
 
+        {/* On Web Build Phase: `session` is null, but public pages (Blog) will render fine.
+            Protected pages should handle their own redirects if session is missing.
+        */}
         <Slot />
       </NotificationProvider>
     </SafeAreaProvider>

@@ -14,7 +14,6 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/lib/supabase/client';
-import { MASTER_TEMPLATES } from '@/lib/evaluation-templates';
 
 export default function CandidateViewEvaluation() {
   const { id } = useLocalSearchParams();
@@ -44,7 +43,9 @@ export default function CandidateViewEvaluation() {
     try {
       if (!id || id === 'undefined') throw new Error('Invalid session ID');
 
-      // 1. Fetch Session Data with linked evaluation + skill
+      // ============================================================================
+      // 1. FETCH SESSION DATA with evaluation
+      // ============================================================================
       const { data: session, error } = await supabase
         .from('interview_sessions')
         .select(`
@@ -60,19 +61,37 @@ export default function CandidateViewEvaluation() {
       if (error) throw error;
       if (!session) throw new Error('Session not found');
 
-      // 2. Pull evaluation row safely
+      // ============================================================================
+      // 2. EXTRACT EVALUATION DATA
+      // ============================================================================
       const evaluationData = Array.isArray(session.evaluation)
         ? session.evaluation[0]
         : session.evaluation;
       setEvaluation(evaluationData || null);
 
-      // 3. Prefer canonical template keys from evaluation.meta (for display logic mainly)
-      const metaProfile =
-        evaluationData?.checklist_data?.meta?.profile_used || null;
-      const metaSkill =
-        evaluationData?.checklist_data?.meta?.skill_used || null;
+      // ============================================================================
+      // 3. 🟢 USE STORED TEMPLATE (from evaluation submission time)
+      //    This ensures we display exactly what was evaluated, even if 
+      //    the template file has been updated since
+      // ============================================================================
+      let displayTemplate: any[] = [];
+      
+      if (evaluationData?.checklist_data?.template) {
+        console.log('✅ [CandidateView] Using stored template from evaluation');
+        displayTemplate = evaluationData.checklist_data.template;
+      } else {
+        console.warn('⚠️ [CandidateView] No stored template found - evaluation may be incomplete');
+      }
 
-      // 4. Determine profile name (Display purposes)
+      setTemplate(displayTemplate);
+
+      // ============================================================================
+      // 4. GET DISPLAY NAMES (from meta or fetch from DB)
+      // ============================================================================
+      const metaProfile = evaluationData?.checklist_data?.meta?.profile_used || null;
+      const metaSkill = evaluationData?.checklist_data?.meta?.skill_used || null;
+
+      // Profile name
       let profileName: string = metaProfile || '';
       if (!profileName && session.package?.interview_profile_id) {
         const { data: p } = await supabase
@@ -83,7 +102,7 @@ export default function CandidateViewEvaluation() {
         if (p?.name) profileName = p.name;
       }
 
-      // 5. Determine skill name (Display purposes)
+      // Skill name
       let skillName: string | undefined = metaSkill || session.skill?.name;
       if (!skillName && session.skill_id) {
         const { data: skillData } = await supabase
@@ -97,33 +116,9 @@ export default function CandidateViewEvaluation() {
         }
       }
 
-      // 🟢 6. Load correct template using IDs (Robust Lookup)
-      let selectedTemplate: any[] = [];
-      const profileId = session.package?.interview_profile_id; // e.g. 7
-      const skillId = session.skill_id; // e.g. "uuid..."
-
-      if (profileId && MASTER_TEMPLATES[profileId]) {
-        const profileEntry = MASTER_TEMPLATES[profileId];
-        
-        // Try exact skill ID match first
-        if (skillId && profileEntry.skills[skillId]) {
-          selectedTemplate = profileEntry.skills[skillId].templates;
-        } 
-        // Fallback: If exact ID fails (legacy data?), use the first available skill
-        else {
-          const firstSkillKey = Object.keys(profileEntry.skills)[0];
-          if (firstSkillKey) {
-            selectedTemplate = profileEntry.skills[firstSkillKey].templates;
-            console.log(`[CandidateEval] Skill ID ${skillId} not found, using fallback: ${profileEntry.skills[firstSkillKey].skill_name}`);
-          }
-        }
-      } else {
-        console.warn(`[CandidateEval] Template not found for Profile ID: ${profileId}`);
-      }
-
-      setTemplate(selectedTemplate || []);
-
-      // 7. Session display info
+      // ============================================================================
+      // 5. SET DISPLAY INFO
+      // ============================================================================
       const mentorName =
         session.mentor?.professional_title ||
         'Senior Mentor';
@@ -140,7 +135,7 @@ export default function CandidateViewEvaluation() {
         date,
       });
     } catch (e: any) {
-      console.error('Load Error:', e);
+      console.error('[CandidateView] Load Error:', e);
       Alert.alert('Error', 'Failed to load session details.');
       router.back();
     } finally {
@@ -206,7 +201,7 @@ export default function CandidateViewEvaluation() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
-      {/* Header – aligned with mentor evaluation UI */}
+      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="close" size={24} color="#1e293b" />
@@ -221,7 +216,7 @@ export default function CandidateViewEvaluation() {
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
-        {/* Session details card (like a compact summary) */}
+        {/* Session details card */}
         <View style={styles.sessionCard}>
           <View style={styles.sessionCardHeader}>
             <Ionicons name="document-text-outline" size={18} color="#0E9384" />
@@ -256,16 +251,27 @@ export default function CandidateViewEvaluation() {
           </View>
         )}
 
-        {/* Detailed evaluation – matches mentor layout but read-only */}
+        {/* Detailed evaluation - using STORED template */}
         {evaluation?.checklist_data &&
           template.map((section, idx) => (
             <View key={idx} style={styles.section}>
               <Text style={styles.sectionHeader}>{section.title}</Text>
 
+              {/* Display example scenarios */}
               {section.example && (
                 <View style={styles.exampleBox}>
                   <Text style={styles.exampleLabel}>SCENARIO DISCUSSED:</Text>
-                  <Text style={styles.exampleText}>{section.example}</Text>
+                  {Array.isArray(section.example) ? (
+                    <View style={{ marginTop: 8 }}>
+                      {section.example.map((item: string, exIdx: number) => (
+                        <Text key={exIdx} style={styles.exampleItem}>
+                          {exIdx + 1}. {item}
+                        </Text>
+                      ))}
+                    </View>
+                  ) : (
+                    <Text style={styles.exampleText}>{section.example}</Text>
+                  )}
                 </View>
               )}
 
@@ -315,7 +321,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFC' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 
-  // Header – same structure as mentor evaluation
+  // Header
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -390,7 +396,7 @@ const styles = StyleSheet.create({
     marginLeft: 16,
   },
 
-  // Section styling – matches mentor’s section card look
+  // Section styling
   section: { marginBottom: 24 },
   sectionHeader: {
     fontSize: 16,
@@ -416,13 +422,19 @@ const styles = StyleSheet.create({
     color: '#0F766E',
     marginBottom: 4,
   },
+  exampleItem: {
+    fontSize: 13,
+    color: '#134E4A',
+    lineHeight: 20,
+    marginBottom: 6,
+  },
   exampleText: {
     fontSize: 13,
     color: '#134E4A',
     fontStyle: 'italic',
   },
 
-  // Question row card – visually aligned with mentor but read-only
+  // Question row card
   qRow: {
     flexDirection: 'row',
     backgroundColor: '#FFFFFF',
@@ -442,7 +454,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
-  // Badge showing answer (Yes/No, 4/5, etc.)
+  // Badge showing answer
   badge: {
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -456,7 +468,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 
-  // Text comment card (for q.type === 'text')
+  // Text comment card
   commentBox: {
     backgroundColor: '#FFFFFF',
     padding: 16,

@@ -1,14 +1,13 @@
-﻿// app/blog/index.tsx
-import React, { useEffect } from 'react';
+﻿import React, { useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  ScrollView,
   Image,
   useWindowDimensions,
   Platform,
+  ScrollView, // Changed to ScrollView for better web scrolling behavior
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { PageLayout } from '@/components/PageLayout';
@@ -22,6 +21,7 @@ export default function BlogListing() {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const isSmall = width < 900;
+  const isMobile = width < 600;
 
   const posts = getAllPosts();
 
@@ -55,98 +55,105 @@ export default function BlogListing() {
     <PageLayout>
       <SEO {...SEO_CONFIG.blog.index} />
 
-      <View style={[styles.container, isSmall && styles.containerMobile]}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={[styles.title, isSmall && styles.titleMobile]} accessibilityRole="header" aria-level={1}>
-            Blog
-          </Text>
-          <Text style={styles.subtitle}>
-            Interview tips, career advice, and industry insights
-          </Text>
-        </View>
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
+        <View style={[styles.container, isSmall && styles.containerMobile]}>
+          {/* Header */}
+          <View style={styles.header}>
+            <Text style={[styles.title, isMobile && styles.titleMobile]} accessibilityRole="header" aria-level={1}>
+              Blog
+            </Text>
+            <Text style={styles.subtitle}>
+              Interview tips, career advice, and industry insights
+            </Text>
+          </View>
 
-        {/* Blog Posts Grid */}
-        <View style={[styles.grid, isSmall && styles.gridMobile]}>
-          {posts.map((post) => (
-            <TouchableOpacity
-              key={post.slug}
-              style={[styles.card, isSmall && styles.cardMobile]}
-              onPress={() => router.push(`/blog/${post.slug}` as any)}
-              accessibilityRole="link"
-            >
-              {/* Thumbnail */}
-              {post.thumbnailUrl && (
-                <Image
-                  source={{ uri: post.thumbnailUrl }}
-                  style={styles.thumbnail}
-                  resizeMode="cover"
-                />
-              )}
-
-              {/* Content */}
-              <View style={styles.cardContent}>
-                {/* Tags */}
-                {post.tags && post.tags.length > 0 && (
-                  <View style={styles.tags}>
-                    {post.tags.slice(0, 2).map((tag) => (
-                      <View key={tag} style={styles.tag}>
-                        <Text style={styles.tagText}>{tag}</Text>
-                      </View>
-                    ))}
-                  </View>
+          {/* Blog Posts Grid */}
+          <View style={[styles.grid, isSmall && styles.gridMobile]}>
+            {posts.map((post) => (
+              <TouchableOpacity
+                key={post.slug}
+                style={[styles.card, isSmall && styles.cardMobile]}
+                onPress={() => router.push(`/blog/${post.slug}` as any)}
+                accessibilityRole="link"
+                activeOpacity={0.9}
+              >
+                {/* Thumbnail */}
+                {post.thumbnailUrl && (
+                  <Image
+                    source={{ uri: post.thumbnailUrl }}
+                    style={styles.thumbnail}
+                    resizeMode="cover"
+                  />
                 )}
 
-                {/* Title */}
-                <Text style={styles.cardTitle} accessibilityRole="header" aria-level={2}>
-                  {post.title}
-                </Text>
+                {/* Content */}
+                <View style={styles.cardContent}>
+                  {/* Tags */}
+                  {post.tags && post.tags.length > 0 && (
+                    <View style={styles.tags}>
+                      {post.tags.slice(0, 2).map((tag) => (
+                        <View key={tag} style={styles.tag}>
+                          <Text style={styles.tagText}>{tag}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  )}
 
-                {/* Excerpt */}
-                <Text style={styles.excerpt} numberOfLines={3}>
-                  {post.excerpt}
-                </Text>
+                  {/* Title */}
+                  <Text style={styles.cardTitle} accessibilityRole="header" aria-level={2}>
+                    {post.title}
+                  </Text>
 
-                {/* Meta */}
-                <View style={styles.meta}>
-                  <Text style={styles.metaText}>{post.author}</Text>
-                  <Text style={styles.metaDot}>•</Text>
-                  <Text style={styles.metaText}>{formatDate(post.publishedAt)}</Text>
+                  {/* Excerpt */}
+                  <Text style={styles.excerpt} numberOfLines={3}>
+                    {post.excerpt}
+                  </Text>
+
+                  {/* Meta */}
+                  <View style={styles.meta}>
+                    <Text style={styles.metaText}>{post.author}</Text>
+                    <Text style={styles.metaDot}>•</Text>
+                    <Text style={styles.metaText}>{formatDate(post.publishedAt)}</Text>
+                  </View>
+
+                  {/* Read More Link */}
+                  <Text style={styles.readMore}>Read More →</Text>
                 </View>
+              </TouchableOpacity>
+            ))}
+          </View>
 
-                {/* Read More Link */}
-                <Text style={styles.readMore}>Read More →</Text>
-              </View>
+          {/* CTA Section */}
+          <View style={styles.ctaSection}>
+            <Text style={styles.ctaTitle}>Ready to Practice?</Text>
+            <Text style={styles.ctaText}>
+              Book a mock interview with industry experts and get personalized feedback
+            </Text>
+            <TouchableOpacity
+              style={styles.ctaButton}
+              onPress={() => router.push('/auth/sign-up')}
+            >
+              <Text style={styles.ctaButtonText}>GET STARTED</Text>
             </TouchableOpacity>
-          ))}
+          </View>
         </View>
-
-        {/* CTA Section */}
-        <View style={styles.ctaSection}>
-          <Text style={styles.ctaTitle}>Ready to Practice?</Text>
-          <Text style={styles.ctaText}>
-            Book a mock interview with industry experts and get personalized feedback
-          </Text>
-          <TouchableOpacity
-            style={styles.ctaButton}
-            onPress={() => router.push('/auth/sign-up')}
-          >
-            <Text style={styles.ctaButtonText}>GET STARTED</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+      </ScrollView>
     </PageLayout>
   );
 }
 
 const styles = StyleSheet.create({
+  scrollContainer: {
+    flexGrow: 1,
+  },
   container: {
     maxWidth: 1200,
     width: '100%',
-    marginHorizontal: 'auto',
+    marginHorizontal: 'auto', // Centers container on web
     paddingHorizontal: 40,
     paddingVertical: 60,
-  },
+    alignSelf: 'center', // Helps center in RN views
+  } as any,
   containerMobile: {
     paddingHorizontal: 20,
     paddingVertical: 40,
@@ -165,13 +172,14 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   titleMobile: {
-    fontSize: 36,
+    fontSize: 32,
   },
   subtitle: {
     fontFamily: theme.typography.fontFamily.regular,
     fontSize: 18,
     color: theme.colors.text.body,
     textAlign: 'center',
+    maxWidth: 600,
   },
 
   // Grid
@@ -187,21 +195,22 @@ const styles = StyleSheet.create({
 
   // Card
   card: {
-    width: 'calc(50% - 12px)', // 2 columns
+    width: '48%', // Approx 2 columns
     backgroundColor: theme.colors.surface,
     borderRadius: 16,
     overflow: 'hidden',
     ...theme.shadows.card,
     borderWidth: 1,
     borderColor: theme.colors.border,
-  },
+    cursor: 'pointer', // Web pointer
+  } as any,
   cardMobile: {
     width: '100%',
   },
 
   thumbnail: {
     width: '100%',
-    height: 200,
+    height: 220,
     backgroundColor: theme.colors.gray[100],
   },
 
@@ -270,7 +279,8 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 48,
     alignItems: 'center',
-    marginTop: 40,
+    marginTop: 20,
+    width: '100%',
   },
   ctaTitle: {
     fontFamily: theme.typography.fontFamily.bold,
@@ -293,7 +303,8 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 12,
     ...theme.shadows.card,
-  },
+    cursor: 'pointer',
+  } as any,
   ctaButtonText: {
     color: theme.colors.surface,
     fontFamily: theme.typography.fontFamily.extrabold,

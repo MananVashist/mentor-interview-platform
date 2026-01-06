@@ -341,7 +341,7 @@ export default function SignUpScreen() {
                     style={styles.input}
                     value={candidateTitle}
                     onChangeText={setCandidateTitle}
-                    placeholder="e.g., Product Manager"
+                    placeholder="e.g., Product Manager at Microsoft"
                     placeholderTextColor="#9CA3AF"
                   />
                   <Text style={styles.hintText}>This will be visible to mentors</Text>
