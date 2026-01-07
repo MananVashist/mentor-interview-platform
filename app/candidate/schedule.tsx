@@ -19,6 +19,9 @@ const SLOT_DURATION_MINUTES = 60;
 const BOOKING_WINDOW_DAYS = 30; 
 const IST_ZONE = 'Asia/Kolkata';
 
+// Day mapping: Luxon weekday (1=Mon, 7=Sun) to our key names
+const DAY_KEY_MAP = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+
 type Slot = {
   time: string;
   isAvailable: boolean;
@@ -140,13 +143,12 @@ export default function ScheduleScreen() {
     fetchMentor();
   }, [mentorId]);
 
-  // 3. FETCH AVAILABILITY (Core Logic remains mostly same)
+  // 3. FETCH AVAILABILITY
   const fetchAvailability = useCallback(async () => {
     if (!mentorId) return;
     setIsLoading(true);
     try {
       // 🧹 STEP 0: Lazy Cleanup
-      // Delete any unpaid bookings older than 15 mins BEFORE calculating availability
       const { error: cleanupError } = await supabase.rpc('delete_expired_pending_packages');
       
       if (cleanupError) {
@@ -155,22 +157,33 @@ export default function ScheduleScreen() {
         console.log('[Schedule] Expired unpaid slots cleaned up.');
       }
 
-      // ... The rest of your existing logic continues below ...
       const now = DateTime.now().setZone(IST_ZONE);
       const startDate = now.plus({ days: 1 }).startOf('day'); 
       const endDate = startDate.plus({ days: BOOKING_WINDOW_DAYS }).endOf('day');
 
+      // Load availability rules with new format
       const { data: rulesData, error: rulesError } = await supabase
         .from('mentor_availability_rules')
         .select('weekdays, weekends')
         .eq('mentor_id', mentorId)
         .maybeSingle();
+      
       if (rulesError && rulesError.code !== 'PGRST116') throw rulesError;
 
+      // Default availability if no rules exist
       const finalRulesData = rulesData || {
-        weekdays: { start: '20:00', end: '22:00', isActive: true },
-        weekends: { start: '12:00', end: '17:00', isActive: true }
-        };
+        weekdays: {
+          monday: { start: '20:00', end: '22:00', isActive: true },
+          tuesday: { start: '20:00', end: '22:00', isActive: true },
+          wednesday: { start: '20:00', end: '22:00', isActive: true },
+          thursday: { start: '20:00', end: '22:00', isActive: true },
+          friday: { start: '20:00', end: '22:00', isActive: true }
+        },
+        weekends: {
+          saturday: { start: '12:00', end: '17:00', isActive: true },
+          sunday: { start: '12:00', end: '17:00', isActive: true }
+        }
+      };
 
       const { data: unavailData } = await supabase
         .from('mentor_unavailability')
@@ -184,101 +197,103 @@ export default function ScheduleScreen() {
         return Interval.fromDateTimes(s, e);
       });
 
+      // Fetch existing bookings (only confirmed or completed)
       const { data: bookingsData } = await supabase
         .from('interview_sessions')
         .select('scheduled_at')
         .eq('mentor_id', mentorId)
-        .gte('scheduled_at', startDate.toISO())
-        .lte('scheduled_at', endDate.toISO())
-        .in('status', ['pending', 'confirmed']);
+        .in('status', ['confirmed', 'completed'])
+        .gte('scheduled_at', startDate.toISO()!)
+        .lte('scheduled_at', endDate.toISO()!);
 
-      const bookedTimesSet = new Set(
-        (bookingsData || []).map(b => DateTime.fromISO(b.scheduled_at, { zone: IST_ZONE }).toFormat('yyyy-MM-dd HH:mm'))
-      );
+      const bookedTimes = new Set((bookingsData || []).map(b => b.scheduled_at));
 
-      const computedDays: DayAvailability[] = [];
+      // Generate availability for each day
+      const daysArray: DayAvailability[] = [];
+      let cursor = startDate;
 
-      for (let i = 0; i < BOOKING_WINDOW_DAYS; i++) {
-        const currentDay = startDate.plus({ days: i });
-        const dateStr = currentDay.toISODate(); 
+      while (cursor <= endDate) {
+        // Map Luxon weekday (1-7, Mon-Sun) to 0-6 (Sun-Sat)
+        const dayOfWeek = cursor.weekday % 7; // 0=Sunday, 1=Monday, ..., 6=Saturday
+        const dayKey = DAY_KEY_MAP[dayOfWeek];
+        const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
         
-        const dayInterval = Interval.fromDateTimes(currentDay.startOf('day'), currentDay.endOf('day'));
-        const isFullDayOff = unavailabilityIntervals.some(u => u.engulfs(dayInterval) || (u.contains(currentDay.startOf('day')) && u.contains(currentDay.endOf('day'))));
+        const source = isWeekend ? finalRulesData.weekends : finalRulesData.weekdays;
+        const dayRule = source[dayKey];
 
-        if (isFullDayOff) {
-          computedDays.push({
-            dateStr: dateStr!,
-            weekdayName: currentDay.toFormat('ccc'),
-            monthDay: currentDay.toFormat('MMM d'),
-            slots: [],
-            isFullDayOff: true,
-          });
-          continue; 
+        let slots: Slot[] = [];
+        let isFullDayOff = false;
+
+        if (!dayRule || dayRule.isActive === false) {
+          isFullDayOff = true;
+        } else {
+          // Check if entire day is marked unavailable
+          const dayStart = cursor.startOf('day');
+          const dayEnd = cursor.endOf('day');
+          const dayInterval = Interval.fromDateTimes(dayStart, dayEnd);
+          
+          const hasFullDayException = unavailabilityIntervals.some(ui => 
+            ui.engulfs(dayInterval)
+          );
+
+          if (hasFullDayException) {
+            isFullDayOff = true;
+          } else {
+            // Generate slots for this day
+            const [startHour, startMin] = dayRule.start.split(':').map(Number);
+            const [endHour, endMin] = dayRule.end.split(':').map(Number);
+            
+            let slotTime = cursor.set({ hour: startHour, minute: startMin, second: 0, millisecond: 0 });
+            const dayEndTime = cursor.set({ hour: endHour, minute: endMin, second: 0, millisecond: 0 });
+
+            while (slotTime < dayEndTime) {
+              const slotEnd = slotTime.plus({ minutes: SLOT_DURATION_MINUTES });
+              
+              // Check if slot is in the past
+              if (slotTime <= now) {
+                slotTime = slotEnd;
+                continue;
+              }
+
+              // Check if slot overlaps with unavailability
+              const slotInterval = Interval.fromDateTimes(slotTime, slotEnd);
+              const isUnavailable = unavailabilityIntervals.some(ui => ui.overlaps(slotInterval));
+              
+              // Check if slot is already booked
+              const isBooked = bookedTimes.has(slotTime.toISO()!);
+
+              slots.push({
+                time: slotTime.toFormat('h:mm a'),
+                isAvailable: !isUnavailable && !isBooked,
+                dateTime: slotTime,
+                reason: isBooked ? 'Booked' : isUnavailable ? 'Unavailable' : undefined
+              });
+
+              slotTime = slotEnd;
+            }
+          }
         }
 
-        const isWeekend = currentDay.weekday >= 6; 
-        const rawRule = isWeekend ? finalRulesData?.weekends : finalRulesData?.weekdays;
-        let dayRules: any[] = [];
-        if (Array.isArray(rawRule)) { dayRules = rawRule; } 
-        else if (rawRule && typeof rawRule === 'object') { dayRules = [rawRule]; }
-
-        const generatedSlots: Slot[] = [];
-
-        dayRules.forEach((rule) => {
-          const isActive = rule.isActive === true || rule.isActive === 'true' || rule.isActive === 't';
-          if (!isActive) return;
-
-          const startStr = String(rule.start); 
-          const endStr = String(rule.end);     
-          const ruleStartDT = DateTime.fromFormat(`${dateStr} ${startStr}`, "yyyy-MM-dd HH:mm", { zone: IST_ZONE });
-          const ruleEndDT = DateTime.fromFormat(`${dateStr} ${endStr}`, "yyyy-MM-dd HH:mm", { zone: IST_ZONE });
-          const duration = rule.slot_duration || rule.slot_duration_minutes || SLOT_DURATION_MINUTES;
-
-          if (!ruleStartDT.isValid || !ruleEndDT.isValid) return;
-
-          let cursor = ruleStartDT;
-          while (cursor < ruleEndDT) {
-            const slotStart = cursor;
-            const slotEnd = cursor.plus({ minutes: duration });
-            if (slotEnd > ruleEndDT) break; 
-
-            const slotKey = slotStart.toFormat('yyyy-MM-dd HH:mm');
-            const timeLabel = slotStart.toFormat('HH:mm');
-            
-            const isBooked = bookedTimesSet.has(slotKey);
-            const slotInterval = Interval.fromDateTimes(slotStart, slotEnd);
-            const isTimeOffSlot = unavailabilityIntervals.some(u => u.overlaps(slotInterval));
-
-            generatedSlots.push({
-              time: timeLabel,
-              isAvailable: !isBooked && !isTimeOffSlot,
-              dateTime: slotStart,
-              reason: isBooked ? 'Booked' : isTimeOffSlot ? 'Time Off' : 'Available'
-            });
-            cursor = slotEnd;
-          }
+        daysArray.push({
+          dateStr: cursor.toISODate()!,
+          weekdayName: cursor.toFormat('EEE'),
+          monthDay: cursor.toFormat('MMM d'),
+          slots,
+          isFullDayOff
         });
 
-        const uniqueSlots = Array.from(new Map(generatedSlots.map(s => [s.time, s])).values())
-                                .sort((a, b) => a.dateTime.toMillis() - b.dateTime.toMillis());
-
-        computedDays.push({
-          dateStr: dateStr!,
-          weekdayName: currentDay.toFormat('ccc'),
-          monthDay: currentDay.toFormat('MMM d'),
-          slots: uniqueSlots,
-          isFullDayOff: false,
-        });
+        cursor = cursor.plus({ days: 1 });
       }
 
-      setAvailabilityData(computedDays);
-      const firstActive = computedDays.find(d => !d.isFullDayOff && d.slots.some(s => s.isAvailable));
-      if (firstActive) setSelectedDay(firstActive);
-      else setSelectedDay(computedDays[0]); 
+      setAvailabilityData(daysArray);
+      
+      // Auto-select first available day
+      const firstAvailable = daysArray.find(d => !d.isFullDayOff && d.slots.some(s => s.isAvailable));
+      if (firstAvailable) setSelectedDay(firstAvailable);
 
     } catch (err) {
-      console.error('[Schedule] Critical Error:', err);
-      Alert.alert('Error', 'Failed to load schedule. Please try again.');
+      console.error('[Schedule] Error fetching availability:', err);
+      Alert.alert('Error', 'Failed to load availability');
     } finally {
       setIsLoading(false);
     }
@@ -288,56 +303,52 @@ export default function ScheduleScreen() {
     fetchAvailability();
   }, [fetchAvailability]);
 
-  // 4. UI HANDLERS 
+  // --- EVENT HANDLERS ---
   const handleDayPress = (day: DayAvailability) => {
     setSelectedDay(day);
+    setSelectedSlot(null); // Reset slot when day changes
   };
 
   const handleSlotPress = (time: string) => {
     if (!selectedDay) return;
-
-    // Toggle logic: if clicking the same slot, deselect it
-    if (selectedSlot?.time === time && selectedSlot?.dateStr === selectedDay.dateStr) {
-        setSelectedSlot(null);
-        return;
-    }
-
-    const dt = DateTime.fromFormat(`${selectedDay.dateStr} ${time}`, "yyyy-MM-dd HH:mm", { zone: IST_ZONE });
+    
+    const slot = selectedDay.slots.find(s => s.time === time);
+    if (!slot || !slot.isAvailable) return;
 
     setSelectedSlot({
       dateStr: selectedDay.dateStr,
       time: time,
       displayDate: selectedDay.monthDay,
-      iso: dt.toISO()!
+      iso: slot.dateTime.toISO()!
     });
   };
 
-  // app/candidate/schedule.tsx
-
-// ... (imports remain the same)
-
-// ... inside ScheduleScreen component ...
-
   const handleConfirm = async () => {
     if (!selectedSlot) {
-      Alert.alert('Incomplete', 'Please select a time slot.');
+      Alert.alert('No Selection', 'Please select a time slot');
       return;
     }
 
-    // 1. Get Fresh User Data
-    const { data: { user: currentUser } } = await supabase.auth.getUser();
-    const finalUserId = currentUser?.id || currentUserId || user?.id;
-
-    if (!finalUserId) {
-      Alert.alert('Sign In Required', 'Please log in to book an interview.');
-      router.push('/auth/sign-in'); 
+    if (!currentUserId) {
+      Alert.alert('Authentication Required', 'Please log in to book a session');
       return;
     }
 
     setBookingInProgress(true);
 
     try {
-      // 2. AUTO-FIX: Ensure candidate row exists
+      const finalUserId = currentUserId;
+
+      // 1. Verify mentor exists
+      const { data: mentorExists } = await supabase
+        .from('mentors')
+        .select('id')
+        .eq('id', mentorId)
+        .maybeSingle();
+
+      if (!mentorExists) throw new Error('Mentor not found');
+
+      // 2. Ensure candidate profile exists
       const { data: existingCandidate } = await supabase
         .from('candidates')
         .select('id')
@@ -347,7 +358,6 @@ export default function ScheduleScreen() {
       if (!existingCandidate) {
         console.log('[Schedule] Candidate profile missing. Creating now...');
         
-        // 🟢 FIX: Removed 'email' because your table doesn't have that column
         const { error: createError } = await supabase
           .from('candidates')
           .insert([{ 

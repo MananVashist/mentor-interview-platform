@@ -1,4 +1,5 @@
-﻿// lib/BrandHeader.tsx
+﻿
+// lib/BrandHeader.tsx
 // ⚡ CRITICAL: Animated brand logo with eyes - used above-the-fold
 import React, { useEffect, useRef } from "react";
 import {
@@ -119,7 +120,7 @@ export const BrandHeader = ({ style, small = false }: BrandHeaderProps) => {
 };
 
 const SYSTEM_FONT = Platform.select({
-  web: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif",
+ web: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif",
   ios: "System",
   android: "Roboto",
   default: "System"
@@ -158,7 +159,7 @@ const styles = StyleSheet.create({
   logoMain: {
     fontFamily: SYSTEM_FONT,
     fontSize: 32,
-    fontWeight: '900',
+    fontWeight: '800',
     lineHeight: 38,
   },
   logoMainSmall: {
@@ -170,7 +171,7 @@ const styles = StyleSheet.create({
   logoTagline: {
     fontFamily: SYSTEM_FONT,
     fontSize: 14,
-    fontWeight: '900',
+    fontWeight: '700',
     color: '#18a7a7',
     marginTop: -4,
   },

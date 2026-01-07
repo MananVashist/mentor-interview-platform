@@ -15,6 +15,8 @@ type MentorRow = {
   years_of_experience: number | null; 
   profile_ids: number[] | null; 
   session_price_inr: number | null;
+  total_sessions: number | null;
+  average_rating: number | null;
   bank_details: {
     holder_name?: string;
     account_number?: string;
@@ -41,6 +43,10 @@ export default function MentorProfileScreen() {
   const [professionalTitle, setProfessionalTitle] = useState('');
   const [yearsOfExperience, setYearsOfExperience] = useState('');
   
+  // Stats
+  const [totalSessions, setTotalSessions] = useState(0);
+  const [averageRating, setAverageRating] = useState(0);
+  
   // Bank Details
   const [accountHolderName, setAccountHolderName] = useState('');
   const [accountNumber, setAccountNumber] = useState('');
@@ -56,7 +62,7 @@ export default function MentorProfileScreen() {
 
         const { data: mentor } = await supabase
           .from('mentors')
-          .select('id, professional_title, years_of_experience, profile_ids, session_price_inr, bank_details')
+          .select('id, professional_title, years_of_experience, profile_ids, session_price_inr, total_sessions, average_rating, bank_details')
           .eq('id', profile.id) 
           .maybeSingle();
         
@@ -65,6 +71,8 @@ export default function MentorProfileScreen() {
           setProfessionalTitle(m.professional_title ?? '');
           setYearsOfExperience(m.years_of_experience != null ? String(m.years_of_experience) : '');
           setSelectedProfiles(m.profile_ids ?? []);
+          setTotalSessions(m.total_sessions ?? 0);
+          setAverageRating(m.average_rating ?? 0);
           
           // Load bank details
           if (m.bank_details) {
@@ -200,6 +208,39 @@ export default function MentorProfileScreen() {
           <Heading level={1}>My profile</Heading>
         </Section>
 
+        {/* STATS CARD */}
+        <Section>
+          <Card style={[styles.statsCard, shadows.card as any]}>
+            <View style={styles.statsContainer}>
+              <View style={styles.statItem}>
+                <View style={styles.statIconContainer}>
+                  <Ionicons name="star" size={24} color="#F59E0B" />
+                </View>
+                <View style={styles.statContent}>
+                  <AppText style={styles.statValue}>
+                    {averageRating > 0 ? averageRating.toFixed(1) : 'N/A'}
+                  </AppText>
+                  <AppText style={styles.statLabel}>Average Rating</AppText>
+                </View>
+              </View>
+
+              <View style={styles.statDivider} />
+
+              <View style={styles.statItem}>
+                <View style={styles.statIconContainer}>
+                  <Ionicons name="trophy" size={24} color={colors.primary} />
+                </View>
+                <View style={styles.statContent}>
+                  <AppText style={styles.statValue}>{totalSessions}</AppText>
+                  <AppText style={styles.statLabel}>
+                    {totalSessions === 1 ? 'Session' : 'Sessions'} Completed
+                  </AppText>
+                </View>
+              </View>
+            </View>
+          </Card>
+        </Section>
+
         {/* SECTION 1: PRICE SETTING */}
         <Section>
           <Card style={[styles.card, shadows.card as any]}>
@@ -256,7 +297,7 @@ export default function MentorProfileScreen() {
                 value={accountNumber}
                 onChangeText={setAccountNumber}
                 keyboardType="number-pad"
-                placeholder="e.g., 1234567890"
+                placeholder="e.g., 12345678901234"
                 style={styles.input}
               />
             </View>
@@ -266,34 +307,37 @@ export default function MentorProfileScreen() {
               <Input
                 value={ifscCode}
                 onChangeText={setIfscCode}
-                autoCapitalize="characters"
                 placeholder="e.g., SBIN0001234"
+                autoCapitalize="characters"
                 style={styles.input}
               />
             </View>
 
-            <View style={styles.bankNotice}>
-              <Ionicons name="shield-checkmark" size={14} color={colors.success} />
-              <AppText style={styles.bankNoticeText}>
-                Your bank details are secure and only used for payouts
-              </AppText>
-            </View>
+            {(accountHolderName || accountNumber || ifscCode) && (
+              <View style={styles.bankNotice}>
+                <Ionicons name="shield-checkmark" size={14} color={colors.success} />
+                <AppText style={styles.bankNoticeText}>
+                  Bank details are securely encrypted
+                </AppText>
+              </View>
+            )}
           </Card>
         </Section>
 
-        {/* SECTION 3: INTERVIEW EXPERTISE */}
+        {/* SECTION 3: INTERVIEW PROFILES */}
         <Section>
           <Card style={[styles.card, shadows.card as any]}>
             <View style={styles.cardHeader}>
-              <Ionicons name="ribbon-outline" size={20} color={colors.primary} />
-              <Heading level={2} style={styles.cardTitle}>Interview Expertise</Heading>
+              <Ionicons name="briefcase-outline" size={20} color={colors.primary} />
+              <Heading level={2} style={styles.cardTitle}>Interview Profiles</Heading>
             </View>
+            
             <AppText style={styles.cardDescription}>
-              Select the roles you are qualified to interview.
+              Select the domains you can mentor in. Candidates will see you when searching for these profiles.
             </AppText>
 
             {availableProfiles.length === 0 ? (
-              <AppText style={styles.emptyText}>No profiles loaded.</AppText>
+              <AppText style={styles.emptyText}>No profiles available</AppText>
             ) : (
               <View style={styles.profilesGrid}>
                 {availableProfiles.map((p) => {
@@ -304,7 +348,7 @@ export default function MentorProfileScreen() {
                       onPress={() => toggleProfile(p.id)}
                       style={[
                         styles.profileCard,
-                        selected && styles.profileCardSelected,
+                        selected && styles.profileCardSelected
                       ]}
                     >
                       <View style={styles.profileCardContent}>
@@ -425,6 +469,53 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     alignItems: 'center', justifyContent: 'center'
   },
+  
+  // Stats Card
+  statsCard: {
+    padding: spacing.lg,
+    borderRadius: borderRadius.lg,
+    backgroundColor: colors.surface,
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+  },
+  statItem: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  statIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: borderRadius.full,
+    backgroundColor: 'rgba(14,147,132,0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statContent: {
+    flex: 1,
+  },
+  statValue: {
+    fontSize: typography.size.xl,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    marginBottom: 2,
+  },
+  statLabel: {
+    fontSize: typography.size.xs,
+    color: colors.textSecondary,
+    lineHeight: 16,
+  },
+  statDivider: {
+    width: 1,
+    height: 40,
+    backgroundColor: colors.border,
+    marginHorizontal: spacing.md,
+  },
+
   card: {
     padding: spacing.lg,
     borderRadius: borderRadius.lg,

@@ -708,7 +708,7 @@ const styles = StyleSheet.create({
   heroMobile: { paddingVertical: 45 },
   badge: { backgroundColor: 'white', borderWidth: 1, borderColor: '#d8eded', paddingHorizontal: 18, paddingVertical: 10, borderRadius: 24, marginBottom: 28 },
   badgeText: { color: CTA_TEAL, fontWeight: '700', fontSize: 12, letterSpacing: 0.6 },
-  heroTitle: { fontFamily: SYSTEM_FONT, fontWeight: '900', fontSize: 56, color: BRAND_ORANGE, lineHeight: 64, textAlign: 'center', marginBottom: 24 },
+  heroTitle: { fontFamily: SYSTEM_FONT, fontWeight: '900', fontSize: 46, color: BRAND_ORANGE, lineHeight: 64, textAlign: 'center', marginBottom: 24 },
   heroTitleMobile: { fontSize: 38, lineHeight: 46 },
   heroSubtitle: { fontFamily: SYSTEM_FONT, fontSize: 20, color: TEXT_GRAY, lineHeight: 32, textAlign: 'center', marginBottom: 42, maxWidth: 780 },
   heroSubtitleMobile: { fontSize: 18, lineHeight: 28 },

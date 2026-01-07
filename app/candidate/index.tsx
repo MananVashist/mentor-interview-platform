@@ -251,6 +251,8 @@ const TierBadge = ({ totalSessions }: { totalSessions: number }) => {
 // (Matches schedule.tsx logic exactly)
 // ============================================
 
+const DAY_KEY_MAP = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+
 const findNextAvailableSlot = async (mentorId: string): Promise<string> => {
   try {
     const now = DateTime.now().setZone(IST_ZONE);
@@ -266,11 +268,21 @@ const findNextAvailableSlot = async (mentorId: string): Promise<string> => {
     
     console.log('🔍 Mentor:', mentorId.slice(0, 8), 'Rules from DB:', rulesData);
     
-    // Default rules matching schedule.tsx
+    // Default rules matching schedule.tsx - NEW FORMAT with individual days
     const finalRulesData = (rulesData && rulesData[0]) || {
-      weekdays: { start: '20:00', end: '22:00', isActive: true },
-      weekends: { start: '12:00', end: '17:00', isActive: true }
+      weekdays: {
+        monday: { start: '20:00', end: '22:00', isActive: true },
+        tuesday: { start: '20:00', end: '22:00', isActive: true },
+        wednesday: { start: '20:00', end: '22:00', isActive: true },
+        thursday: { start: '20:00', end: '22:00', isActive: true },
+        friday: { start: '20:00', end: '22:00', isActive: true }
+      },
+      weekends: {
+        saturday: { start: '12:00', end: '17:00', isActive: true },
+        sunday: { start: '12:00', end: '17:00', isActive: true }
+      }
     };
+
     
     console.log('✅ Final rules used:', finalRulesData);
 
@@ -326,19 +338,21 @@ const findNextAvailableSlot = async (mentorId: string): Promise<string> => {
 
       if (isFullDayOff) continue;
 
-      // Get rules for this day
-      const isWeekend = currentDay.weekday >= 6;
-      const rawRule = isWeekend ? finalRulesData?.weekends : finalRulesData?.weekdays;
+      // Get rules for this specific day
+      const dayOfWeek = currentDay.weekday % 7; // 0=Sunday, 1=Monday, ..., 6=Saturday
+      const dayKey = DAY_KEY_MAP[dayOfWeek];
+      const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+      
+      const source = isWeekend ? finalRulesData?.weekends : finalRulesData?.weekdays;
+      const dayRule = source?.[dayKey];
       
       let dayRules: AvailabilityRule[] = [];
-      if (Array.isArray(rawRule)) { 
-        dayRules = rawRule; 
-      } else if (rawRule && typeof rawRule === 'object') { 
-        dayRules = [rawRule as AvailabilityRule]; 
+      if (dayRule && typeof dayRule === 'object') {
+        dayRules = [dayRule as AvailabilityRule];
       }
 
       if (i === 0) {
-        console.log('📋 First day rules:', { dateStr, isWeekend, rawRule, dayRules });
+        console.log('📋 First day rules:', { dateStr, dayOfWeek, dayKey, isWeekend, dayRule, dayRules });
       }
 
       // Generate slots for this day
