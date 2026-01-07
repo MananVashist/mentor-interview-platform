@@ -1,4 +1,4 @@
-﻿import React, { memo } from 'react';
+﻿import React, { memo, useState, useEffect, Suspense, lazy } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   Platform,
   useWindowDimensions,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter, Redirect } from 'expo-router';
 import Head from 'expo-router/head';
@@ -14,10 +15,11 @@ import Head from 'expo-router/head';
 // ---------------------------------------------------------------------------
 // ⚡️ CRITICAL IMPORTS
 // ---------------------------------------------------------------------------
-// We import these DIRECTLY (not lazy) so the SSG build tool captures the HTML.
-// This ensures the page has content even if JavaScript is disabled.
 import { BrandHeader } from '@/lib/BrandHeader';
-import LazySections from '../components/LazySections'; 
+
+// 🟢 PERFORMANCE FIX: Lazy load the heavy sections
+// This splits the JS bundle so the initial load is tiny.
+const LazySections = lazy(() => import('../components/LazySections'));
 
 // ---------------------------------------------------------------------------
 // 🎨 CONSTANTS & STYLES
@@ -28,7 +30,6 @@ const BG_CREAM = '#f8f5f0';
 const TEXT_DARK = '#222';
 const TEXT_GRAY = '#555';
 
-// Using system fonts guarantees 0ms load time (Performance)
 const SYSTEM_FONT = Platform.select({
   web: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif",
   ios: "System",
@@ -42,7 +43,6 @@ const SITE_DESCRIPTION = 'Practice interview topics anonymously with fully vette
 // ---------------------------------------------------------------------------
 // 🧩 COMPONENT: BUTTON
 // ---------------------------------------------------------------------------
-// Inline definition avoids extra file imports for critical UI
 const Button = ({ title, onPress, variant = "primary", style, textStyle }: {
   title: string;
   onPress: () => void;
@@ -113,11 +113,17 @@ export default function LandingPage() {
   const { width } = useWindowDimensions();
   const isSmall = width < 900;
 
+  // 🟢 STATE: Control client-side rendering
+  const [isReady, setIsReady] = useState(false);
+
+  // 🟢 EFFECT: Trigger load only after mounting (avoids hydration errors)
+  useEffect(() => {
+    setIsReady(true);
+  }, []);
+
   // Android Redirect
   if (Platform.OS === 'android') return <Redirect href="/auth/sign-in" />;
 
-  // 🔍 SEO: JSON-LD SCHEMA
-  // Migrated from your index.html to here for dynamic rendering
   const websiteSchema = {
     "@context": "https://schema.org",
     "@graph": [
@@ -173,20 +179,17 @@ export default function LandingPage() {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="canonical" href="https://crackjobs.com/" />
         
-        {/* Open Graph / Social */}
         <meta property="og:title" content={SITE_TITLE} />
         <meta property="og:description" content={SITE_DESCRIPTION} />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://crackjobs.com/" />
         <meta name="twitter:card" content="summary_large_image" />
         
-        {/* ⚡️ CRITICAL CSS: Inlined to prevent Flash of Unstyled Content (FOUC) */}
         <style>{`
           body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; background-color: #f8f5f0; opacity: 1 !important; visibility: visible !important; }
           * { box-sizing: border-box; }
         `}</style>
 
-        {/* 🔍 SCHEMA INJECTION */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
@@ -249,12 +252,26 @@ export default function LandingPage() {
           </View>
         </View>
 
-        {/* --- HOW IT WORKS --- */}
+        {/* --- HOW IT WORKS (Kept Eager for SEO) --- */}
         <HowItWorks />
 
-        {/* --- SECTIONS (Logos, Reviews, etc.) --- */}
-        {/* Eager loaded to ensure they exist in the HTML snapshot */}
-        <LazySections />
+        {/* 🟢 LAZY SECTIONS WRAPPER */}
+        {/* This effectively defers 70% of your code until after the first paint */}
+        {isReady ? (
+          <Suspense 
+            fallback={
+              // 🟢 CRITICAL: MinHeight 2000 prevents Layout Shift (CLS)
+              <View style={{ minHeight: 2000, justifyContent: 'flex-start', paddingTop: 100, alignItems: 'center' }}>
+                 <ActivityIndicator size="large" color={CTA_TEAL} />
+              </View>
+            }
+          >
+            <LazySections />
+          </Suspense>
+        ) : (
+           // Placeholder for SSG build
+           <View style={{ minHeight: 2000 }} />
+        )}
 
       </ScrollView>
     </>

@@ -12,15 +12,14 @@ import {
   Switch
 } from 'react-native';
 import { useAuthStore } from '@/lib/store';
-import { supabase } from '@/lib/supabase/client'; // <--- Ensure this path is correct for your project
+import { supabase } from '@/lib/supabase/client';
 import { Ionicons } from '@expo/vector-icons'; 
 import { useNotification } from '@/lib/ui/NotificationBanner';
 
 // --- Types ---
 type TimeSlot = string; 
-type DayType = 'weekdays' | 'weekends';
 
-interface ScheduleConfig {
+interface DayScheduleConfig {
   start: TimeSlot;
   end: TimeSlot;
   isActive: boolean;
@@ -33,6 +32,16 @@ interface Unavailability {
 }
 
 // --- Constants ---
+const DAYS_OF_WEEK = [
+  { name: 'Monday', key: 'monday', isWeekend: false },
+  { name: 'Tuesday', key: 'tuesday', isWeekend: false },
+  { name: 'Wednesday', key: 'wednesday', isWeekend: false },
+  { name: 'Thursday', key: 'thursday', isWeekend: false },
+  { name: 'Friday', key: 'friday', isWeekend: false },
+  { name: 'Saturday', key: 'saturday', isWeekend: true },
+  { name: 'Sunday', key: 'sunday', isWeekend: true },
+];
+
 const HOURS = Array.from({ length: 24 }, (_, i) => {
   const hour = i;
   const ampm = hour >= 12 ? 'PM' : 'AM';
@@ -60,8 +69,17 @@ export default function AvailabilityPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   
-  const [weekdays, setWeekdays] = useState<ScheduleConfig>({ start: '20:00', end: '22:00', isActive: true });
-  const [weekends, setWeekends] = useState<ScheduleConfig>({ start: '12:00', end: '17:00', isActive: true });
+  // Store schedule for each day individually
+  const [daySchedules, setDaySchedules] = useState<Record<string, DayScheduleConfig>>({
+    monday: { start: '20:00', end: '22:00', isActive: true },
+    tuesday: { start: '20:00', end: '22:00', isActive: true },
+    wednesday: { start: '20:00', end: '22:00', isActive: true },
+    thursday: { start: '20:00', end: '22:00', isActive: true },
+    friday: { start: '20:00', end: '22:00', isActive: true },
+    saturday: { start: '12:00', end: '17:00', isActive: true },
+    sunday: { start: '12:00', end: '17:00', isActive: true },
+  });
+
   const [exceptions, setExceptions] = useState<Unavailability[]>([]);
   const [isAddingException, setIsAddingException] = useState(false);
   
@@ -76,7 +94,7 @@ export default function AvailabilityPage() {
   const [datePickerVisible, setDatePickerVisible] = useState(false);
   
   const [pickerTarget, setPickerTarget] = useState<{
-    type: DayType | 'exceptionStart' | 'exceptionEnd', 
+    dayKey: string | 'exceptionStart' | 'exceptionEnd', 
     field: 'start' | 'end'
   } | null>(null);
 
@@ -95,12 +113,25 @@ export default function AvailabilityPage() {
           .from('mentor_availability_rules')
           .select('weekdays, weekends')
           .eq('mentor_id', mentorProfile.id)
-          .single();
+          .maybeSingle();
 
         if (rulesData) {
-          // Cast JSONB back to our types
-          if (rulesData.weekdays) setWeekdays(rulesData.weekdays as unknown as ScheduleConfig);
-          if (rulesData.weekends) setWeekends(rulesData.weekends as unknown as ScheduleConfig);
+          // Parse the new format with individual days
+          const weekdaysData = rulesData.weekdays || {};
+          const weekendsData = rulesData.weekends || {};
+          
+          const loadedSchedules: Record<string, DayScheduleConfig> = {};
+          
+          DAYS_OF_WEEK.forEach(day => {
+            const source = day.isWeekend ? weekendsData : weekdaysData;
+            loadedSchedules[day.key] = source[day.key] || {
+              start: day.isWeekend ? '12:00' : '20:00',
+              end: day.isWeekend ? '17:00' : '22:00',
+              isActive: true
+            };
+          });
+          
+          setDaySchedules(loadedSchedules);
         }
 
         // B. Fetch Exceptions
@@ -143,19 +174,31 @@ export default function AvailabilityPage() {
     setSaving(true);
 
     try {
+      // Build weekdays and weekends objects from daySchedules
+      const weekdaysObj: any = {};
+      const weekendsObj: any = {};
+
+      DAYS_OF_WEEK.forEach(day => {
+        const schedule = daySchedules[day.key];
+        if (day.isWeekend) {
+          weekendsObj[day.key] = schedule;
+        } else {
+          weekdaysObj[day.key] = schedule;
+        }
+      });
+
       // 1. Upsert Rules
       const { error: rulesError } = await supabase
         .from('mentor_availability_rules')
         .upsert({
           mentor_id: mentorProfile.id,
-          weekdays: weekdays,
-          weekends: weekends
+          weekdays: weekdaysObj,
+          weekends: weekendsObj
         });
 
       if (rulesError) throw rulesError;
 
-      // 2. Sync Exceptions (Delete old -> Insert new)
-      // First, remove all existing future blocks for this mentor to avoid stale data
+      // 2. Sync Exceptions
       await supabase
         .from('mentor_unavailability')
         .delete()
@@ -184,6 +227,16 @@ export default function AvailabilityPage() {
     }
   };
 
+  const toggleDay = (dayKey: string) => {
+    setDaySchedules(prev => ({
+      ...prev,
+      [dayKey]: {
+        ...prev[dayKey],
+        isActive: !prev[dayKey].isActive
+      }
+    }));
+  };
+
   const addException = () => {
     const start = new Date(`${tempException.startStr}T${tempException.startTime}`);
     const end = new Date(`${tempException.endStr}T${tempException.endTime}`);
@@ -200,23 +253,29 @@ export default function AvailabilityPage() {
     setExceptions(exceptions.filter(e => e.id !== id));
   };
 
-  const openTimePicker = (type: any, field: 'start' | 'end') => {
-    setPickerTarget({ type, field });
+  const openTimePicker = (dayKey: string, field: 'start' | 'end') => {
+    setPickerTarget({ dayKey, field });
     setTimePickerVisible(true);
   };
 
   const handleTimeSelect = (timeValue: string) => {
     if (!pickerTarget) return;
 
-    if (pickerTarget.type === 'weekdays') {
-      setWeekdays(prev => ({ ...prev, [pickerTarget.field]: timeValue }));
-    } else if (pickerTarget.type === 'weekends') {
-      setWeekends(prev => ({ ...prev, [pickerTarget.field]: timeValue }));
-    } else if (pickerTarget.type === 'exceptionStart') {
+    if (pickerTarget.dayKey === 'exceptionStart') {
       setTempException(prev => ({ ...prev, startTime: timeValue }));
-    } else if (pickerTarget.type === 'exceptionEnd') {
+    } else if (pickerTarget.dayKey === 'exceptionEnd') {
       setTempException(prev => ({ ...prev, endTime: timeValue }));
+    } else {
+      // Update specific day schedule
+      setDaySchedules(prev => ({
+        ...prev,
+        [pickerTarget.dayKey]: {
+          ...prev[pickerTarget.dayKey],
+          [pickerTarget.field]: timeValue
+        }
+      }));
     }
+
     setTimePickerVisible(false);
   };
 
@@ -234,106 +293,103 @@ export default function AvailabilityPage() {
     setDatePickerVisible(false);
   };
 
+  const formatTime = (time: string) => {
+    const hour = HOURS.find(h => h.value === time);
+    return hour ? hour.label : time;
+  };
+
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         
+        {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>Availability Settings</Text>
-          <Text style={styles.subtitle}>Manage your recurring schedule and time off.</Text>
+          <Text style={styles.title}>Availability</Text>
+          <Text style={styles.subtitle}>Set your weekly schedule and time-off periods</Text>
         </View>
 
-        {/* --- Section: Recurring Schedule --- */}
+        {/* Weekly Schedule - Individual Days */}
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>Weekly Schedule</Text>
-          <Text style={styles.helperText}>Bookings allowed up to 1 month in advance.</Text>
-          
-          {/* Weekdays */}
-          <View style={styles.scheduleRow}>
-            <View style={styles.rowHeader}>
-              <Text style={styles.dayLabel}>Weekdays (Mon-Fri)</Text>
-              <Switch 
-                value={weekdays.isActive}
-                onValueChange={(v) => setWeekdays({...weekdays, isActive: v})}
-                trackColor={{ false: '#767577', true: '#0E9384' }}
-              />
-            </View>
-            {weekdays.isActive && (
-              <View style={styles.timeSelectorContainer}>
-                <TouchableOpacity onPress={() => openTimePicker('weekdays', 'start')} style={styles.dropdown}>
-                  <Text style={styles.dropdownText}>{weekdays.start}</Text>
-                  <Ionicons name="chevron-down" size={16} color="#666" />
-                </TouchableOpacity>
-                <Text style={styles.toText}>to</Text>
-                <TouchableOpacity onPress={() => openTimePicker('weekdays', 'end')} style={styles.dropdown}>
-                  <Text style={styles.dropdownText}>{weekdays.end}</Text>
-                  <Ionicons name="chevron-down" size={16} color="#666" />
-                </TouchableOpacity>
-              </View>
-            )}
-          </View>
+          <Text style={styles.helperText}>Configure availability for each day of the week</Text>
 
-          <View style={styles.divider} />
+          {DAYS_OF_WEEK.map(day => {
+            const schedule = daySchedules[day.key];
+            return (
+              <View key={day.key} style={styles.scheduleRow}>
+                <View style={styles.rowHeader}>
+                  <Text style={styles.dayLabel}>{day.name}</Text>
+                  <Switch
+                    value={schedule.isActive}
+                    onValueChange={() => toggleDay(day.key)}
+                    trackColor={{ false: '#cbd5e1', true: '#0E9384' }}
+                    thumbColor="#fff"
+                  />
+                </View>
 
-          {/* Weekends */}
-          <View style={styles.scheduleRow}>
-            <View style={styles.rowHeader}>
-              <Text style={styles.dayLabel}>Weekends (Sat-Sun)</Text>
-              <Switch 
-                value={weekends.isActive}
-                onValueChange={(v) => setWeekends({...weekends, isActive: v})}
-                trackColor={{ false: '#767577', true: '#0E9384' }}
-              />
-            </View>
-            {weekends.isActive && (
-              <View style={styles.timeSelectorContainer}>
-                <TouchableOpacity onPress={() => openTimePicker('weekends', 'start')} style={styles.dropdown}>
-                  <Text style={styles.dropdownText}>{weekends.start}</Text>
-                  <Ionicons name="chevron-down" size={16} color="#666" />
-                </TouchableOpacity>
-                <Text style={styles.toText}>to</Text>
-                <TouchableOpacity onPress={() => openTimePicker('weekends', 'end')} style={styles.dropdown}>
-                  <Text style={styles.dropdownText}>{weekends.end}</Text>
-                  <Ionicons name="chevron-down" size={16} color="#666" />
-                </TouchableOpacity>
+                {schedule.isActive && (
+                  <View style={styles.timeSelectorContainer}>
+                    <TouchableOpacity 
+                      style={styles.dropdown} 
+                      onPress={() => openTimePicker(day.key, 'start')}
+                    >
+                      <Text style={styles.dropdownText}>{formatTime(schedule.start)}</Text>
+                      <Ionicons name="chevron-down" size={16} color="#64748b" />
+                    </TouchableOpacity>
+
+                    <Text style={styles.toText}>to</Text>
+
+                    <TouchableOpacity 
+                      style={styles.dropdown} 
+                      onPress={() => openTimePicker(day.key, 'end')}
+                    >
+                      <Text style={styles.dropdownText}>{formatTime(schedule.end)}</Text>
+                      <Ionicons name="chevron-down" size={16} color="#64748b" />
+                    </TouchableOpacity>
+                  </View>
+                )}
               </View>
-            )}
-          </View>
+            );
+          })}
         </View>
 
-        {/* --- Section: Unavailability --- */}
+        {/* Unavailability Blocks */}
         <View style={styles.card}>
           <View style={styles.cardHeaderRow}>
-            <Text style={styles.sectionTitle}>Time Off & Exceptions</Text>
+            <View>
+              <Text style={styles.sectionTitle}>Time Off</Text>
+              <Text style={styles.helperText}>Block out specific dates when unavailable</Text>
+            </View>
             <TouchableOpacity onPress={() => setIsAddingException(true)}>
-              <Text style={styles.linkText}>+ Add Time Off</Text>
+              <Ionicons name="add-circle" size={32} color="#0E9384" />
             </TouchableOpacity>
           </View>
 
           {exceptions.length === 0 ? (
-            <Text style={styles.emptyText}>No upcoming time off scheduled.</Text>
+            <Text style={styles.emptyText}>No time-off blocks scheduled</Text>
           ) : (
-            exceptions.map((ex) => (
+            exceptions.map(ex => (
               <View key={ex.id} style={styles.exceptionItem}>
                 <View>
                   <Text style={styles.exceptionDate}>
-                    {ex.startDate.toLocaleDateString()} {ex.startDate.getHours()}:{ex.startDate.getMinutes().toString().padStart(2, '0')}
+                    {ex.startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                   </Text>
                   <Text style={styles.toTextVertical}>to</Text>
                   <Text style={styles.exceptionDate}>
-                    {ex.endDate.toLocaleDateString()} {ex.endDate.getHours()}:{ex.endDate.getMinutes().toString().padStart(2, '0')}
+                    {ex.endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                   </Text>
                 </View>
                 <TouchableOpacity onPress={() => removeException(ex.id)}>
-                  <Ionicons name="trash-outline" size={20} color="#ef4444" />
+                  <Ionicons name="trash-outline" size={22} color="#ef4444" />
                 </TouchableOpacity>
               </View>
             ))
           )}
         </View>
 
+        {/* Save Button */}
         <TouchableOpacity 
-          style={[styles.saveButton, saving && { opacity: 0.7 }]} 
+          style={styles.saveButton} 
           onPress={handleSave}
           disabled={saving}
         >
@@ -346,7 +402,7 @@ export default function AvailabilityPage() {
 
       </ScrollView>
 
-      {/* --- Modals (Order: Exception -> Time -> Date) --- */}
+      {/* --- Modals --- */}
 
       {/* 1. Add Exception Form Modal */}
       <Modal visible={isAddingException} animationType="slide">
@@ -363,12 +419,10 @@ export default function AvailabilityPage() {
           <View style={styles.inputGroup}>
             <Text style={styles.groupLabel}>Start</Text>
             <View style={styles.rowInputs}>
-              {/* Date */}
               <TouchableOpacity style={styles.inputField} onPress={() => openDatePicker('start')}>
                 <Text style={styles.inputText}>{tempException.startStr}</Text>
                 <Ionicons name="calendar-outline" size={18} color="#64748b" />
               </TouchableOpacity>
-              {/* Time */}
               <TouchableOpacity style={styles.inputField} onPress={() => openTimePicker('exceptionStart', 'start')}>
                  <Text style={styles.inputText}>{tempException.startTime}</Text> 
                  <Ionicons name="time-outline" size={18} color="#64748b" />
@@ -380,12 +434,10 @@ export default function AvailabilityPage() {
           <View style={styles.inputGroup}>
             <Text style={styles.groupLabel}>End</Text>
             <View style={styles.rowInputs}>
-              {/* Date */}
               <TouchableOpacity style={styles.inputField} onPress={() => openDatePicker('end')}>
                 <Text style={styles.inputText}>{tempException.endStr}</Text>
                 <Ionicons name="calendar-outline" size={18} color="#64748b" />
               </TouchableOpacity>
-              {/* Time */}
               <TouchableOpacity style={styles.inputField} onPress={() => openTimePicker('exceptionEnd', 'end')}>
                  <Text style={styles.inputText}>{tempException.endTime}</Text> 
                  <Ionicons name="time-outline" size={18} color="#64748b" />

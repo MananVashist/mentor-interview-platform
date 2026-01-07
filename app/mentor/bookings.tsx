@@ -27,6 +27,9 @@ import { BankDetailsModal } from '@/components/mentor/BankDetailsModal';
 // DayCard Component for Reschedule Modal
 type DayAvailability = { dateStr: string; weekdayName: string; monthDay: string; slots: any[]; isFullDayOff: boolean };
 
+// Day mapping: Luxon weekday (1=Mon, 7=Sun) to day keys
+const DAY_KEY_MAP = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+
 const DayCard = ({ day, isSelected, onPress }: { day: DayAvailability, isSelected: boolean, onPress: () => void }) => {
   const availableCount = day.slots.filter((s: any) => s.isAvailable).length;
   const isTimeOff = day.isFullDayOff;
@@ -94,34 +97,7 @@ const BookingCard = ({ session, onAccept, onReschedule, onJoin, onEvaluate, onVi
   // Helper to check if it's my turn
   const isMyTurn = details.rescheduledBy === 'candidate';
 
-  // 🟢 FIX: Ensure interview_skills_admin.description is shown
-  // session.skill_description comes from the joined interview_skills_admin table.
-  // We default to that, and avoid overwriting it with local templates if we want the description.
   let displayDesc: string | string[] = session.skill_description || session.package?.interview_profile_description || "No details provided.";
-  
-  // NOTE: The block below previously overwrote displayDesc with examples.
-  // We've removed that assignment to prioritize the description as requested.
-  /*
-  try {
-    const rawProfileId = session.package?.interview_profile_id;
-    const profileId = Number(rawProfileId);
-    const skillId = session.skill_id;
-
-    if (profileId && MASTER_TEMPLATES[profileId]) {
-      const skillCategory = MASTER_TEMPLATES[profileId].skills[skillId];
-      if (skillCategory && skillCategory.templates && skillCategory.templates.length > 0) {
-          const localExamples = skillCategory.templates[0].example;
-          // IF we wanted examples, we would use them here. 
-          // But user requested description specifically.
-          // if (Array.isArray(localExamples) && localExamples.length > 0) {
-          //   displayDesc = localExamples; 
-          // }
-      }
-    }
-  } catch (err) {
-    console.log("Error looking up local template details:", err);
-  }
-  */
 
   return (
     <Card style={styles.sessionCard}>
@@ -342,7 +318,6 @@ export default function MentorBookingsScreen() {
   const fetchSessions = async () => {
     if (!user) return;
     try {
-      // 🟢 FIX: Ensure candidate data (including resume_url) is fetched properly
       const { data, error } = await supabase
         .from('interview_sessions')
         .select(`
@@ -543,9 +518,19 @@ export default function MentorBookingsScreen() {
       if (rulesError && rulesError.code !== 'PGRST116') throw rulesError;
 
       const finalRulesData = rulesData || {
-        weekdays: { start: '20:00', end: '22:00', isActive: true },
-        weekends: { start: '12:00', end: '17:00', isActive: true }
+        weekdays: {
+          monday: { start: '20:00', end: '22:00', isActive: true },
+          tuesday: { start: '20:00', end: '22:00', isActive: true },
+          wednesday: { start: '20:00', end: '22:00', isActive: true },
+          thursday: { start: '20:00', end: '22:00', isActive: true },
+          friday: { start: '20:00', end: '22:00', isActive: true }
+        },
+        weekends: {
+          saturday: { start: '12:00', end: '17:00', isActive: true },
+          sunday: { start: '12:00', end: '17:00', isActive: true }
+        }
       };
+
 
       const { data: unavailData } = await supabase
         .from('mentor_unavailability')
@@ -574,9 +559,11 @@ export default function MentorBookingsScreen() {
       let currentDate = startDate;
 
       while (currentDate <= endDate) {
-        const dayOfWeek = currentDate.weekday;
-        const isWeekend = dayOfWeek === 6 || dayOfWeek === 7;
-        const rules = isWeekend ? finalRulesData.weekends : finalRulesData.weekdays;
+        const dayOfWeek = currentDate.weekday % 7; // 0=Sunday, 1=Monday, ..., 6=Saturday
+        const dayKey = DAY_KEY_MAP[dayOfWeek];
+        const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+        const source = isWeekend ? finalRulesData.weekends : finalRulesData.weekdays;
+        const rules = source?.[dayKey] || { start: '09:00', end: '17:00', isActive: false };
 
         const dayInterval = Interval.fromDateTimes(currentDate.startOf('day'), currentDate.endOf('day'));
         const isFullDayOff = unavailabilityIntervals.some(uInterval => 
@@ -705,20 +692,49 @@ export default function MentorBookingsScreen() {
         return; 
     }
     try {
-      // Extract path from full URL if needed
+      // 🟢 FIX 1: Robust path extraction and DECODING
       let path = urlOrPath;
+      
+      // If full URL, try to extract path carefully
       if (urlOrPath.startsWith('http')) {
-        // Full URL: extract path after '/resumes/'
-        const match = urlOrPath.match(/\/resumes\/(.+)$/);
-        path = match ? match[1] : urlOrPath;
+        // Try common supabase pattern or fallback to decoding everything after last slash
+        // Note: decodeURIComponent is critical for files with spaces (e.g. "Resume%20John.pdf")
+        if (urlOrPath.includes('/resumes/')) {
+            const parts = urlOrPath.split('/resumes/');
+            if (parts.length > 1) {
+                path = parts[1];
+            }
+        } else {
+             // Fallback regex for generic paths if bucket name isn't 'resumes'
+             const match = urlOrPath.match(/public\/.+\/(.+)$/); 
+             if (match) path = match[1];
+        }
       }
       
+      // Decode URI components to ensure we send "File Name.pdf" not "File%20Name.pdf" to Supabase
+      path = decodeURIComponent(path);
+
+      // Attempt to sign
       const { data, error } = await supabase.storage.from('resumes').createSignedUrl(path, 3600);
-      if (error || !data?.signedUrl) throw error;
+      
+      if (error || !data?.signedUrl) {
+          // Fallback: If signing fails (maybe it's public?), try opening original URL if it's http
+          if (urlOrPath.startsWith('http')) {
+             Linking.openURL(urlOrPath).catch(() => Alert.alert('Error', 'Could not open resume link.'));
+             return;
+          }
+          throw error || new Error('Could not sign URL');
+      }
+
       Linking.openURL(data.signedUrl).catch(() => Alert.alert('Error', 'Could not open resume link.'));
     } catch (e) {
       console.error('Resume view error:', e);
-      Alert.alert('Error', 'Could not load resume.');
+      // Try one last ditch effort if it's a link
+      if (urlOrPath.startsWith('http')) {
+           Linking.openURL(urlOrPath).catch(() => {});
+      } else {
+           Alert.alert('Error', 'Could not load resume.');
+      }
     }
   };
 
@@ -732,9 +748,10 @@ export default function MentorBookingsScreen() {
 
         let foundRealTimeTemplate = false;
 
+        // 🟢 FIX 2: Standardized lookup logic matching handleViewTemplate
         if (profileIdNum && skillId && MASTER_TEMPLATES[profileIdNum]) {
             const skillData = MASTER_TEMPLATES[profileIdNum].skills[skillId];
-            if (skillData && skillData.templates.length > 0) {
+            if (skillData && skillData.templates && skillData.templates.length > 0) {
                  const tmpl = skillData.templates[0];
                  templateTitle = tmpl.title;
                  templateContent = JSON.stringify(tmpl);
@@ -743,6 +760,7 @@ export default function MentorBookingsScreen() {
         }
 
         if (!foundRealTimeTemplate) {
+            console.log("Using legacy template fallback for session:", session.id);
             const legacyTemplate = getEvaluationTemplate(session);
             templateTitle = legacyTemplate.title;
             templateContent = legacyTemplate.content;

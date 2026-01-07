@@ -26,6 +26,9 @@ import { MASTER_TEMPLATES } from '@/lib/evaluation-templates';
 // 🟢 DayCard Component for Reschedule Modal
 type DayAvailability = { dateStr: string; weekdayName: string; monthDay: string; slots: any[]; isFullDayOff: boolean };
 
+// Day mapping: Luxon weekday (1=Mon, 7=Sun) to day keys
+const DAY_KEY_MAP = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+
 const DayCard = ({ day, isSelected, onPress }: { day: DayAvailability, isSelected: boolean, onPress: () => void }) => {
   const availableCount = day.slots.filter((s: any) => s.isAvailable).length;
   const isTimeOff = day.isFullDayOff;
@@ -589,9 +592,19 @@ export default function CandidateBookingsScreen() {
       if (rulesError && rulesError.code !== 'PGRST116') throw rulesError;
 
       const finalRulesData = rulesData || {
-        weekdays: { start: '20:00', end: '22:00', isActive: true },
-        weekends: { start: '12:00', end: '17:00', isActive: true }
+        weekdays: {
+          monday: { start: '20:00', end: '22:00', isActive: true },
+          tuesday: { start: '20:00', end: '22:00', isActive: true },
+          wednesday: { start: '20:00', end: '22:00', isActive: true },
+          thursday: { start: '20:00', end: '22:00', isActive: true },
+          friday: { start: '20:00', end: '22:00', isActive: true }
+        },
+        weekends: {
+          saturday: { start: '12:00', end: '17:00', isActive: true },
+          sunday: { start: '12:00', end: '17:00', isActive: true }
+        }
       };
+
 
       console.log('[Reschedule] Rules:', finalRulesData);
 
@@ -635,9 +648,11 @@ export default function CandidateBookingsScreen() {
       let currentDate = startDate;
 
       while (currentDate <= endDate) {
-        const dayOfWeek = currentDate.weekday;
-        const isWeekend = dayOfWeek === 6 || dayOfWeek === 7;
-        const rules = isWeekend ? finalRulesData.weekends : finalRulesData.weekdays;
+        const dayOfWeek = currentDate.weekday % 7; // 0=Sunday, 1=Monday, ..., 6=Saturday
+        const dayKey = DAY_KEY_MAP[dayOfWeek];
+        const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+        const source = isWeekend ? finalRulesData.weekends : finalRulesData.weekdays;
+        const rules = source?.[dayKey] || { start: '09:00', end: '17:00', isActive: false };
 
         // Check if full day blocked
         const dayInterval = Interval.fromDateTimes(currentDate.startOf('day'), currentDate.endOf('day'));
@@ -1145,4 +1160,4 @@ const styles = StyleSheet.create({
   bannerTitleWaiting: { fontSize: 14, fontWeight: '700', color: '#4B5563' },
   bannerTextWaiting: { fontSize: 13, color: '#374151', lineHeight: 20, marginBottom: 4 },
   bannerSubTextWaiting: { fontSize: 12, color: '#6B7280' },
-}); 
+});

@@ -36,8 +36,6 @@ export default function RootLayout() {
   const pathname = usePathname();
   
   // 1. SEO FIX: Disable custom splash by default on Web.
-  // This allows the "real" content to render immediately during SSG build.
-  // On Native, we start true to show the animation.
   const [showSplash, setShowSplash] = useState(Platform.OS !== 'web');
 
   // Load fonts using useFonts hook
@@ -74,19 +72,17 @@ export default function RootLayout() {
 
   // Native splash → animated splash → app
   useEffect(() => {
-    // Only run this logic if we actually want to handle the splash logic (mostly native)
     if (fontsLoaded && isReady) {
       SplashScreen.hideAsync();
 
       if (Platform.OS === 'web') {
-        // Double check to ensure it's off on web
         setShowSplash(false);
         return;
       }
 
       const timer = setTimeout(() => {
         setShowSplash(false);
-      }, 4000); // match your animation duration
+      }, 4000); 
 
       return () => clearTimeout(timer);
     }
@@ -99,17 +95,13 @@ export default function RootLayout() {
     }
   }, [pathname, showSplash]);
 
-  // 2. SEO FIX: Do not return null on Web. 
-  // During `npx expo export`, `isReady` is FALSE because useEffect doesn't run.
-  // If we return null here, we generate blank HTML files.
-  // We allow Web to fall through to the render phase.
   const shouldBlockRender = Platform.OS !== 'web' && (!fontsLoaded || !isReady);
 
   if (shouldBlockRender) {
     return null;
   }
 
-  // Phase 1: animated splash (Native Only due to useState init above)
+  // Phase 1: animated splash (Native Only)
   if (showSplash) {
     return <AppSplash />;
   }
@@ -134,9 +126,9 @@ export default function RootLayout() {
 
           {Platform.OS === 'web' && (
             <>
-              {/* Google Analytics */}
+              {/* ✅ OPTIMIZED: Defer GTM so it doesn't block painting */}
               <script
-                async
+                defer
                 src={`https://www.googletagmanager.com/gtag/js?id=${process.env.EXPO_PUBLIC_GA_MEASUREMENT_ID}`}
               />
               <script
@@ -151,24 +143,12 @@ export default function RootLayout() {
                   `,
                 }}
               />
-
-              <link rel="preconnect" href="https://fonts.googleapis.com" />
-              <link
-                rel="preconnect"
-                href="https://fonts.gstatic.com"
-                crossOrigin="anonymous"
-              />
-              <link
-                rel="stylesheet"
-                href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
-              />
+              {/* 🗑️ DELETED: Google Fonts links were here. 
+                  We now rely on system fonts for instant load. */}
             </>
           )}
         </Head>
 
-        {/* On Web Build Phase: `session` is null, but public pages (Blog) will render fine.
-            Protected pages should handle their own redirects if session is missing.
-        */}
         <Slot />
       </NotificationProvider>
     </SafeAreaProvider>

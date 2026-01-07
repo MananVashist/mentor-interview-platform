@@ -35,13 +35,13 @@ type Props = {
 
 // --- CONSTANTS ---
 const DAYS_OF_WEEK = [
-  { name: 'Monday', value: 1 },
-  { name: 'Tuesday', value: 2 },
-  { name: 'Wednesday', value: 3 },
-  { name: 'Thursday', value: 4 },
-  { name: 'Friday', value: 5 },
-  { name: 'Saturday', value: 6 },
-  { name: 'Sunday', value: 0 },
+  { name: 'Monday', value: 1, key: 'monday', isWeekend: false },
+  { name: 'Tuesday', value: 2, key: 'tuesday', isWeekend: false },
+  { name: 'Wednesday', value: 3, key: 'wednesday', isWeekend: false },
+  { name: 'Thursday', value: 4, key: 'thursday', isWeekend: false },
+  { name: 'Friday', value: 5, key: 'friday', isWeekend: false },
+  { name: 'Saturday', value: 6, key: 'saturday', isWeekend: true },
+  { name: 'Sunday', value: 0, key: 'sunday', isWeekend: true },
 ];
 
 const TIME_SLOTS = [
@@ -117,7 +117,6 @@ export default function MentorAvailabilityEditor({ mentorId }: Props) {
     try {
       setLoading(true);
       
-      // 🔥 FIX: Load from mentor_availability_rules
       const { data, error } = await supabase
         .from('mentor_availability_rules')
         .select('weekdays, weekends')
@@ -129,34 +128,35 @@ export default function MentorAvailabilityEditor({ mentorId }: Props) {
       }
 
       if (data) {
-        // 🔥 EXPAND weekdays/weekends JSON into 7-day array
-        const weekdaysData = data.weekdays || { start: '20:00', end: '22:00', isActive: true };
-        const weekendsData = data.weekends || { start: '12:00', end: '17:00', isActive: true };
+        // NEW FORMAT: weekdays/weekends contain individual day objects
+        const weekdaysData = data.weekdays || {};
+        const weekendsData = data.weekends || {};
         
         const expanded = DAYS_OF_WEEK.map(day => {
-          const isWeekend = day.value === 0 || day.value === 6;
-          const source = isWeekend ? weekendsData : weekdaysData;
+          const source = day.isWeekend ? weekendsData : weekdaysData;
+          const dayConfig = source[day.key] || {
+            start: day.isWeekend ? '12:00' : '20:00',
+            end: day.isWeekend ? '17:00' : '22:00',
+            isActive: true
+          };
           
           return {
             day_of_week: day.value,
-            start_time: `${source.start}:00`,
-            end_time: `${source.end}:00`,
-            is_active: source.isActive !== false // Default to true if not specified
+            start_time: `${dayConfig.start}:00`,
+            end_time: `${dayConfig.end}:00`,
+            is_active: dayConfig.isActive !== false
           };
-        }).filter(d => d.is_active); // Only show active days in UI
+        }).filter(d => d.is_active);
         
         setAvailability(expanded);
       } else {
         // No rules exist - use defaults
-        const defaults = DAYS_OF_WEEK.map(d => {
-          const isWeekend = d.value === 0 || d.value === 6;
-          return {
-            day_of_week: d.value,
-            start_time: isWeekend ? '12:00:00' : '20:00:00',
-            end_time: isWeekend ? '17:00:00' : '22:00:00',
-            is_active: true
-          };
-        });
+        const defaults = DAYS_OF_WEEK.map(d => ({
+          day_of_week: d.value,
+          start_time: d.isWeekend ? '12:00:00' : '20:00:00',
+          end_time: d.isWeekend ? '17:00:00' : '22:00:00',
+          is_active: true
+        }));
         setAvailability(defaults);
       }
     } catch (err) {
@@ -195,7 +195,8 @@ export default function MentorAvailabilityEditor({ mentorId }: Props) {
       setAvailability(prev => prev.filter(a => a.day_of_week !== dayVal));
       if (expandedDay === dayVal) setExpandedDay(null);
     } else {
-      const isWeekend = dayVal === 0 || dayVal === 6;
+      const dayInfo = DAYS_OF_WEEK.find(d => d.value === dayVal);
+      const isWeekend = dayInfo?.isWeekend || false;
       setAvailability(prev => [...prev, {
         day_of_week: dayVal,
         start_time: isWeekend ? '12:00:00' : '20:00:00',
@@ -213,66 +214,55 @@ export default function MentorAvailabilityEditor({ mentorId }: Props) {
   };
 
   const handleSaveWeekly = async () => {
-    setSaving(true);
     try {
-      // 🔥 AGGREGATE 7 days into weekdays/weekends JSON
-      const weekdayDays = availability.filter(a => a.day_of_week >= 1 && a.day_of_week <= 5);
-      const weekendDays = availability.filter(a => a.day_of_week === 0 || a.day_of_week === 6);
-      
-      // Aggregate logic: Use most common time or first active day
-      const aggregateSchedule = (days: DaySchedule[]) => {
-        if (days.length === 0) {
-          return { start: '20:00', end: '22:00', isActive: false };
-        }
+      setSaving(true);
+
+      // Build weekdays and weekends objects with individual day schedules
+      const weekdaysObj: any = {};
+      const weekendsObj: any = {};
+
+      DAYS_OF_WEEK.forEach(day => {
+        const daySchedule = availability.find(a => a.day_of_week === day.value);
         
-        // Find most common start/end time
-        const startTimes = days.map(d => d.start_time.substring(0, 5)); // Remove :00 seconds
-        const endTimes = days.map(d => d.end_time.substring(0, 5));
-        
-        const mostCommonStart = startTimes.sort((a, b) =>
-          startTimes.filter(t => t === a).length - startTimes.filter(t => t === b).length
-        ).pop() || startTimes[0];
-        
-        const mostCommonEnd = endTimes.sort((a, b) =>
-          endTimes.filter(t => t === a).length - endTimes.filter(t => t === b).length
-        ).pop() || endTimes[0];
-        
-        return {
-          start: mostCommonStart,
-          end: mostCommonEnd,
+        const config = daySchedule ? {
+          start: daySchedule.start_time.slice(0, 5), // "HH:mm"
+          end: daySchedule.end_time.slice(0, 5),     // "HH:mm"
           isActive: true
+        } : {
+          start: day.isWeekend ? '12:00' : '20:00',
+          end: day.isWeekend ? '17:00' : '22:00',
+          isActive: false
         };
-      };
-      
-      const weekdaysJSON = aggregateSchedule(weekdayDays);
-      const weekendsJSON = aggregateSchedule(weekendDays);
-      
-      // 🔥 SAVE to mentor_availability_rules
+
+        if (day.isWeekend) {
+          weekendsObj[day.key] = config;
+        } else {
+          weekdaysObj[day.key] = config;
+        }
+      });
+
       const { error } = await supabase
         .from('mentor_availability_rules')
         .upsert({
           mentor_id: mentorId,
-          weekdays: weekdaysJSON,
-          weekends: weekendsJSON,
-        }, {
-          onConflict: 'mentor_id'
-        });
-      
+          weekdays: weekdaysObj,
+          weekends: weekendsObj
+        }, { onConflict: 'mentor_id' });
+
       if (error) throw error;
-      
+
       Alert.alert('Success', 'Weekly schedule saved!');
-    } catch (err: any) {
-      Alert.alert('Error', err.message || 'Failed to save schedule');
+    } catch (err) {
       console.error(err);
+      Alert.alert('Error', 'Failed to save availability');
     } finally {
       setSaving(false);
     }
   };
 
-  // --- UNAVAILABILITY LOGIC ---
   const handleAddException = async () => {
     if (!newDate || !newStartTime || !newEndTime) {
-      Alert.alert('Missing Fields', 'Please fill date and time fields');
+      Alert.alert('Missing Fields', 'Please fill in date, start time, and end time');
       return;
     }
 
@@ -319,7 +309,7 @@ export default function MentorAvailabilityEditor({ mentorId }: Props) {
       {/* HEADER */}
       <View style={styles.header}>
         <Text style={styles.title}>Weekly Schedule</Text>
-        <Text style={styles.subtitle}>Set your recurring availability (IST)</Text>
+        <Text style={styles.subtitle}>Set your availability for each day (IST)</Text>
       </View>
 
       {/* WEEKLY LIST */}

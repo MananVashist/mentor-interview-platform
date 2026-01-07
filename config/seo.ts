@@ -57,34 +57,34 @@ export const SEO_CONFIG = {
   
   interviews: {
     hr: {
-      title: 'HR Interview Preparation | Practice with Real HR Professionals - CrackJobs',
-      description: 'Master HR interviews with anonymous 1:1 mock sessions. Get expert feedback on behavioral questions, culture fit, and situational scenarios from experienced HR professionals at Google, Amazon, and Meta.',
+      title: 'HR Interview Preparation | Master HRBP, Conflict Resolution & People Analytics',
+      description: 'Ace HR interviews at Amazon, Google, Flipkart with expert HR leaders. Master HRBP scenarios, conflict resolution, STAR method, compensation strategy, and DEI initiatives. Practice real HR interview questions.',
       canonical: 'https://crackjobs.com/interviews/hr',
-      keywords: 'HR interview preparation, HR mock interview, behavioral interview questions, human resources interview, culture fit interview, HR interview tips',
+      keywords: 'HR interview, HRBP interview, human resources interview, behavioral interview, STAR method, conflict resolution, compensation strategy, DEI, employee relations, HR business partner, talent acquisition',
       ogImage: 'https://crackjobs.com/og-images/hr-interview.png'
     },
     
     'product-management': {
-      title: 'Product Management Interview Prep | PM Mock Interviews - CrackJobs',
-      description: 'Ace your PM interviews with practice sessions from Product Managers at Google, Meta, Amazon, and Microsoft. Master product sense, execution, strategy, and case studies with personalized feedback.',
+      title: 'Product Management Interview Prep | Master CIRCLES, AARM & Product Strategy',
+      description: 'Ace PM interviews at Google, Meta, Amazon with expert Product Managers. Master CIRCLES framework, AARM prioritization, RICE scoring, product strategy, and case studies. Practice real PM interview questions.',
       canonical: 'https://crackjobs.com/interviews/product-management',
-      keywords: 'product management interview, PM interview prep, product manager mock interview, product sense, PM case studies, product execution, product strategy interview',
+      keywords: 'product management interview, PM interview, CIRCLES framework, AARM, RICE scoring, product strategy, product execution, product sense, PM case studies, product prioritization',
       ogImage: 'https://crackjobs.com/og-images/pm-interview.png'
     },
     
     'data-analytics': {
-      title: 'Data Analytics Interview Prep | Practice with Expert Analysts - CrackJobs',
-      description: 'Master data analytics interviews with mock sessions covering SQL, Excel, Tableau, Python, and case studies. Learn from analysts at top tech companies and get actionable feedback.',
+      title: 'Data Analytics Interview Prep | Master SQL, Business Metrics & Dashboards',
+      description: 'Ace Data Analytics interviews at Google, Amazon, Meta with expert analysts. Master SQL queries, business metrics, dashboard design, and data storytelling. Practice real DA interview questions with solutions.',
       canonical: 'https://crackjobs.com/interviews/data-analytics',
-      keywords: 'data analytics interview, SQL interview prep, data analyst mock interview, analytics case studies, Excel interview, Tableau interview, data visualization interview',
+      keywords: 'data analytics interview, SQL interview, business metrics, dashboard design, Tableau, Power BI, data visualization, KPI analysis, funnel analysis, cohort analysis, SQL queries',
       ogImage: 'https://crackjobs.com/og-images/data-analytics-interview.png'
     },
     
     'data-science': {
-      title: 'Data Science Interview Prep | ML & Statistics Mock Interviews - CrackJobs',
-      description: 'Prepare for data science interviews with practice sessions covering machine learning, statistics, Python, A/B testing, and take-home assignments. Get expert feedback from data scientists at leading companies.',
+      title: 'Data Science Interview Prep | Master ML Algorithms, Model Debugging & Python',
+      description: 'Ace Data Science interviews at Google, Amazon, Meta with expert ML engineers. Master machine learning algorithms, model debugging, feature engineering, and Python coding. Practice real DS interview questions.',
       canonical: 'https://crackjobs.com/interviews/data-science',
-      keywords: 'data science interview, machine learning interview, statistics interview prep, data scientist mock interview, ML algorithms, Python interview, A/B testing interview',
+      keywords: 'data science interview, machine learning interview, ML algorithms, model debugging, feature engineering, Python pandas, scikit-learn, XGBoost, neural networks, overfitting, data science preparation',
       ogImage: 'https://crackjobs.com/og-images/data-science-interview.png'
     }
   },
