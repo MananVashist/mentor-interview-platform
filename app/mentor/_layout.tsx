@@ -101,7 +101,6 @@ export default function MentorLayout() {
   const mentorMenuItems = [
     { name: 'My Profile', path: '/mentor/profile', icon: 'person-outline' as const },
     { name: 'My Bookings', path: '/mentor/bookings', icon: 'calendar-outline' as const },
-    { name: 'Mentorship', path: '/mentor/mentorship', icon: 'trophy-outline' as const },
   ];
 
   if (isCheckingStatus) {
@@ -127,4 +126,4 @@ export default function MentorLayout() {
       <Slot />
     </DashboardLayout>
   );
-}   
+}

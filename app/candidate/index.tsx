@@ -33,18 +33,20 @@ type AdminProfile = {
   name: string; 
   description: string | null; 
   is_active: boolean; 
+  mentorCount?: number; // Added for local use
 };
 
 type Mentor = { 
   id: string; 
   professional_title?: string | null; 
   experience_description?: string | null; 
-  expertise_profiles?: string[]; 
+  profile_ids?: number[]; // CHANGED: Replaced expertise_profiles with profile_ids
   session_price_inr?: number | null; 
   session_price?: number | null;
   total_sessions?: number;
   years_of_experience?: number | null;
   average_rating?: number | null;
+  tier?: string | null; // ADDED: tier field from database
 };
 
 type AvailabilityRule = {
@@ -206,29 +208,32 @@ const StarRating = ({ rating }: { rating: number }) => {
 };
 
 // ============================================
-// TIER BADGE COMPONENT
+// TIER BADGE COMPONENT - UPDATED TO USE DB TIER
 // ============================================
 
-const TierBadge = ({ totalSessions }: { totalSessions: number }) => {
+const TierBadge = ({ tier }: { tier?: string | null }) => {
   let tierName = '';
   let tierColor = '';
   let bgColor = '';
   let borderColor = '';
   let medalColor = '';
 
-  if (totalSessions >= 31) {
+  // CHANGED: Use tier from database instead of calculating from total_sessions
+  const normalizedTier = tier?.toLowerCase();
+  
+  if (normalizedTier === 'gold') {
     tierName = 'Gold';
     tierColor = '#B8860B';
     bgColor = '#FFF9E6';
     borderColor = '#FFE999';
     medalColor = '#FFD700';
-  } else if (totalSessions >= 11) {
+  } else if (normalizedTier === 'silver') {
     tierName = 'Silver';
     tierColor = '#6B7280';
     bgColor = '#F3F4F6';
     borderColor = '#D1D5DB';
     medalColor = '#9CA3AF';
-  } else if (totalSessions >= 1) {
+  } else if (normalizedTier === 'bronze') {
     tierName = 'Bronze';
     tierColor = '#92400E';
     bgColor = '#FEF3C7';
@@ -248,7 +253,6 @@ const TierBadge = ({ totalSessions }: { totalSessions: number }) => {
 
 // ============================================
 // AVAILABILITY CALCULATION
-// (Matches schedule.tsx logic exactly)
 // ============================================
 
 const DAY_KEY_MAP = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
@@ -266,8 +270,6 @@ const findNextAvailableSlot = async (mentorId: string): Promise<string> => {
     );
     const rulesData = await rulesRes.json();
     
-    console.log('🔍 Mentor:', mentorId.slice(0, 8), 'Rules from DB:', rulesData);
-    
     // Default rules matching schedule.tsx - NEW FORMAT with individual days
     const finalRulesData = (rulesData && rulesData[0]) || {
       weekdays: {
@@ -283,17 +285,12 @@ const findNextAvailableSlot = async (mentorId: string): Promise<string> => {
       }
     };
 
-    
-    console.log('✅ Final rules used:', finalRulesData);
-
     // Fetch unavailability - Simplified query
     const unavailRes = await fetch(
       `${SUPABASE_URL}/rest/v1/mentor_unavailability?mentor_id=eq.${mentorId}&select=start_at,end_at`,
       { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
     );
     const unavailData = await unavailRes.json();
-    
-    console.log('📅 Unavailability:', unavailData);
     
     // Filter unavailability to only include periods that overlap with our booking window
     const unavailabilityIntervals = (Array.isArray(unavailData) ? unavailData : [])
@@ -323,7 +320,6 @@ const findNextAvailableSlot = async (mentorId: string): Promise<string> => {
     );
 
     let slotsChecked = 0;
-    let availableFound = false;
 
     // Generate slots day by day until we find an available one
     for (let i = 0; i < BOOKING_WINDOW_DAYS; i++) {
@@ -351,17 +347,9 @@ const findNextAvailableSlot = async (mentorId: string): Promise<string> => {
         dayRules = [dayRule as AvailabilityRule];
       }
 
-      if (i === 0) {
-        console.log('📋 First day rules:', { dateStr, dayOfWeek, dayKey, isWeekend, dayRule, dayRules });
-      }
-
       // Generate slots for this day
       for (const rule of dayRules) {
         const isActive = rule.isActive === true || rule.isActive === 'true' || rule.isActive === 't' || rule.isActive === undefined;
-        
-        if (i === 0 && !isActive) {
-          console.log('❌ Rule is inactive:', rule);
-        }
         
         if (!isActive) continue;
 
@@ -371,10 +359,7 @@ const findNextAvailableSlot = async (mentorId: string): Promise<string> => {
         const ruleEndDT = DateTime.fromFormat(`${dateStr} ${endStr}`, "yyyy-MM-dd HH:mm", { zone: IST_ZONE });
         const duration = rule.slot_duration || rule.slot_duration_minutes || SLOT_DURATION_MINUTES;
 
-        if (!ruleStartDT.isValid || !ruleEndDT.isValid) {
-          if (i === 0) console.log('❌ Invalid date format:', { startStr, endStr });
-          continue;
-        }
+        if (!ruleStartDT.isValid || !ruleEndDT.isValid) continue;
 
         let cursor = ruleStartDT;
         while (cursor < ruleEndDT) {
@@ -393,7 +378,6 @@ const findNextAvailableSlot = async (mentorId: string): Promise<string> => {
           if (!isBooked && !isTimeOffSlot) {
             const month = slotStart.toFormat('MMM');
             const day = slotStart.toFormat('d');
-            console.log('✅ Found available slot:', `${month} ${day}`, 'after checking', slotsChecked, 'slots');
             return `${month} ${day}`;
           }
 
@@ -402,7 +386,6 @@ const findNextAvailableSlot = async (mentorId: string): Promise<string> => {
       }
     }
 
-    console.log('❌ No slots found after checking', slotsChecked, 'slots');
     return "No slots available";
   } catch (err) {
     console.log("Error calculating availability:", err);
@@ -423,7 +406,8 @@ export default function CandidateDashboard() {
 
   const [adminProfiles, setAdminProfiles] = useState<AdminProfile[]>([]);
   const [profilesLoading, setProfilesLoading] = useState(true);
-  const [selectedProfile, setSelectedProfile] = useState<string | null>(null);
+  // CHANGED: Tracking ID instead of name
+  const [selectedProfileId, setSelectedProfileId] = useState<number | null>(null);
   const [mentors, setMentors] = useState<Mentor[]>([]);
   const [mentorsLoading, setMentorsLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -440,9 +424,9 @@ export default function CandidateDashboard() {
         );
         const profilesData = await profilesRes.json();
         
-        // Fetch all mentors to count per profile
+        // Fetch all mentors to count per profile - ADDED tier to select
         const mentorsRes = await fetch(
-          `${SUPABASE_URL}/rest/v1/mentors?select=*&status=eq.approved`, 
+          `${SUPABASE_URL}/rest/v1/mentors?select=*,tier&status=eq.approved`, 
           { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
         );
         const allMentors = await mentorsRes.json();
@@ -450,10 +434,10 @@ export default function CandidateDashboard() {
         if (profilesRes.ok && mentorsRes.ok) {
           const actives = (profilesData || []).filter((p: AdminProfile) => p.is_active !== false);
           
-          // Count mentors per profile
+          // Count mentors per profile using ID
           const profileMentorCounts = actives.map((profile: AdminProfile) => {
             const mentorCount = (allMentors || []).filter((m: Mentor) => 
-              Array.isArray(m.expertise_profiles) && m.expertise_profiles.includes(profile.name)
+              Array.isArray(m.profile_ids) && m.profile_ids.includes(profile.id)
             ).length;
             return { ...profile, mentorCount };
           });
@@ -462,7 +446,8 @@ export default function CandidateDashboard() {
           const sortedProfiles = profileMentorCounts.sort((a, b) => b.mentorCount - a.mentorCount);
           
           setAdminProfiles(sortedProfiles);
-          if (sortedProfiles.length > 0) setSelectedProfile(sortedProfiles[0].name);
+          // CHANGED: Select first profile ID
+          if (sortedProfiles.length > 0) setSelectedProfileId(sortedProfiles[0].id);
         }
       } catch (err) { 
         console.log("Error fetching profiles", err); 
@@ -472,20 +457,21 @@ export default function CandidateDashboard() {
     })();
   }, []);
 
-  const fetchMentorsForProfile = useCallback(async (profileName: string | null) => {
-    if (!profileName) return;
+  const fetchMentorsForProfile = useCallback(async (profileId: number | null) => {
+    if (!profileId) return;
     setMentorsLoading(true);
     try {
-      // Fetch mentors - using average_rating from mentors table
+      // Fetch mentors - ADDED tier to select
       const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/mentors?select=*&status=eq.approved`, 
+        `${SUPABASE_URL}/rest/v1/mentors?select=*,tier&status=eq.approved`, 
         { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
       );
       const data = await res.json();
       
       if (res.ok) {
+        // CHANGED: Filter by profile_ids array
         const filtered = (data || []).filter((m: Mentor) => 
-          Array.isArray(m.expertise_profiles) ? m.expertise_profiles.includes(profileName) : false
+          Array.isArray(m.profile_ids) ? m.profile_ids.includes(profileId) : false
         );
         
         // Sort mentors by total_sessions (number of bookings) in descending order
@@ -497,7 +483,7 @@ export default function CandidateDashboard() {
         
         setMentors(sortedMentors);
 
-        // Fetch availability for each mentor using the new logic
+        // Fetch availability for each mentor
         const availabilityPromises = sortedMentors.map(async (m: Mentor) => {
           const slot = await findNextAvailableSlot(m.id);
           return { id: m.id, slot };
@@ -518,12 +504,12 @@ export default function CandidateDashboard() {
   }, []);
 
   useEffect(() => { 
-    if (selectedProfile) fetchMentorsForProfile(selectedProfile); 
-  }, [selectedProfile, fetchMentorsForProfile]);
+    if (selectedProfileId) fetchMentorsForProfile(selectedProfileId); 
+  }, [selectedProfileId, fetchMentorsForProfile]);
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await fetchMentorsForProfile(selectedProfile);
+    await fetchMentorsForProfile(selectedProfileId);
     setRefreshing(false);
   };
 
@@ -568,11 +554,12 @@ export default function CandidateDashboard() {
               <ActivityIndicator color={theme.colors.primary} />
             ) : (
               adminProfiles.map((p) => {
-                const isActive = selectedProfile === p.name;
+                // CHANGED: Compare IDs for active state
+                const isActive = selectedProfileId === p.id;
                 return (
                   <TouchableOpacity
                     key={p.id}
-                    onPress={() => setSelectedProfile(p.name)}
+                    onPress={() => setSelectedProfileId(p.id)} // CHANGED: Set ID
                     style={[styles.pill, isActive ? styles.pillActive : styles.pillInactive]}
                   >
                     {isActive && (
@@ -610,7 +597,7 @@ export default function CandidateDashboard() {
           ) : (
             mentors.map((m) => {
               const price = m.session_price_inr ?? m.session_price ?? 0;
-              const displayPrice = price ? Math.round(price * 1.2) : 0;
+              const displayPrice = price ? Math.round(price * 2.0) : 0;
               
               const totalSessions = m.total_sessions ?? 0;
               const isNewMentor = totalSessions === 0;
@@ -654,8 +641,8 @@ export default function CandidateDashboard() {
 
                     {/* 2. Stats Row (Tier Badge + Sessions/New Badge + Rating + Availability) */}
                     <View style={styles.statsRow}>
-                      {/* Tier Badge (Bronze/Silver/Gold) */}
-                      <TierBadge totalSessions={totalSessions} />
+                      {/* Tier Badge (Bronze/Silver/Gold) - CHANGED: Use tier from DB */}
+                      <TierBadge tier={m.tier} />
                       
                       {/* Sessions or New Badge */}
                       {isNewMentor ? (

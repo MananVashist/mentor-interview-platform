@@ -28,6 +28,9 @@ export default function MentorDetailsScreen() {
   const [skills, setSkills] = useState<any[]>([]);
   const [selectedSkill, setSelectedSkill] = useState<any>(null);
 
+  // 🔧 NEW: Store a proper mapping of profile names to IDs
+  const [profileNameToIdMap, setProfileNameToIdMap] = useState<Record<string, number>>({});
+
   // 1. Fetch Mentor Details
   useEffect(() => {
     async function fetchMentorDetails() {
@@ -44,7 +47,7 @@ export default function MentorDetailsScreen() {
           
         if (data) {
             const basePrice = data.session_price_inr || 1000;
-            const totalPrice = Math.round(basePrice * 1.2);
+            const totalPrice = Math.round(basePrice * 2.0);
             
             // Calculate tier based on session count
             const sessionCount = data.total_sessions || 0;
@@ -57,13 +60,57 @@ export default function MentorDetailsScreen() {
               ? data.experience_description 
               : `Specializes in ${profilesList} interviews.`;
 
+            const expertiseProfiles = data.expertise_profiles || [];
+            const profileIds = data.profile_ids || [];
+            
+            console.log('📊 Mentor Data:');
+            console.log('  Expertise Profiles:', expertiseProfiles);
+            console.log('  Profile IDs:', profileIds);
+
+            // 🔧 BUILD PROPER MAPPING: Fetch actual profile names from DB
+            if (profileIds.length > 0) {
+              const { data: profilesData, error: profilesError } = await supabase
+                .from('interview_profiles_admin')
+                .select('id, name')
+                .in('id', profileIds);
+
+              if (!profilesError && profilesData) {
+                // Create a mapping: profile name -> profile ID
+                const mapping: Record<string, number> = {};
+                profilesData.forEach(profile => {
+                  mapping[profile.name] = profile.id;
+                });
+                
+                console.log('✅ Built Profile Name -> ID Mapping:', mapping);
+                setProfileNameToIdMap(mapping);
+
+                // 🔍 VALIDATION: Check if mentor's expertise_profiles match the actual names
+                const actualProfileNames = profilesData.map(p => p.name).sort();
+                const mentorProfileNames = [...expertiseProfiles].sort();
+                
+                console.log('🔍 Validation:');
+                console.log('  Mentor lists:', mentorProfileNames);
+                console.log('  Actual names:', actualProfileNames);
+                
+                // Check for mismatches
+                const mismatches = expertiseProfiles.filter(
+                  expertiseName => !profilesData.some(p => p.name === expertiseName)
+                );
+                
+                if (mismatches.length > 0) {
+                  console.warn('⚠️ WARNING: Mentor expertise names do not match database:', mismatches);
+                  console.warn('  This could cause skills to not load properly.');
+                }
+              }
+            }
+
             setMentor({
                 id: id, 
                 title: data.professional_title || "Senior Interviewer",
                 exp: data.years_of_experience, 
                 about: aboutText,
-                expertise: data.expertise_profiles || ["Software Engineer"],
-                profileIds: data.profile_ids || [], 
+                expertise: expertiseProfiles,
+                profileIds: profileIds, // Still store original for fallback
                 totalPrice: totalPrice,
                 avatarChar: data.profile?.full_name?.charAt(0) || 'M',
                 rating: data.average_rating || 0,
@@ -71,11 +118,9 @@ export default function MentorDetailsScreen() {
                 tier: tier,
                 isVerified: data.status === 'approved'
             });
-
-            // No default selection - user must choose explicitly
         }
       } catch (e) {
-        console.error(e);
+        console.error('❌ Error fetching mentor details:', e);
       } finally {
         setLoading(false);
       }
@@ -84,33 +129,66 @@ export default function MentorDetailsScreen() {
     fetchMentorDetails();
   }, [id]);
 
-  // 2. Fetch Skills when Profile Changes
+  // 2. Fetch Skills when Profile Changes - ROBUST VERSION
   useEffect(() => {
     async function fetchSkills() {
-        if (!selectedProfile || !mentor) return;
+        if (!selectedProfile || !mentor) {
+          console.log('⏭️ Skipping skill fetch - no profile selected or no mentor data');
+          return;
+        }
 
-        // Find the ID of the selected profile string
-        const index = mentor.expertise.indexOf(selectedProfile);
-        const profileId = mentor.profileIds[index];
+        console.log('🔍 Fetching skills for profile:', selectedProfile);
+
+        // 🔧 METHOD 1: Use the name-to-ID mapping (ROBUST)
+        let profileId = profileNameToIdMap[selectedProfile];
+
+        if (profileId) {
+          console.log(`✅ Found profile ID via mapping: ${selectedProfile} → ${profileId}`);
+        } else {
+          // 🔧 METHOD 2: Fallback to index-based lookup (for backward compatibility)
+          console.warn('⚠️ Mapping not found, falling back to index-based lookup');
+          const index = mentor.expertise.indexOf(selectedProfile);
+          
+          if (index === -1) {
+            console.error('❌ Profile not found in expertise array:', selectedProfile);
+            setSkills([]);
+            return;
+          }
+
+          profileId = mentor.profileIds[index];
+          console.log(`⚠️ Using fallback: index ${index} → profile ID ${profileId}`);
+        }
 
         if (!profileId) {
+            console.error('❌ No profile ID found for:', selectedProfile);
             setSkills([]);
             return;
         }
+
+        console.log('📡 Querying skills for profile_id:', profileId);
 
         const { data, error } = await supabase
             .from('interview_skills_admin')
             .select('*')
             .eq('interview_profile_id', profileId);
 
-        if (!error && data) {
+        if (error) {
+          console.error('❌ Error fetching skills:', error);
+          setSkills([]);
+          return;
+        }
+
+        if (data) {
+            console.log(`✅ Fetched ${data.length} skills:`, data.map(s => s.name));
             setSkills(data);
-            // No default selection - user must choose explicitly
             setSelectedSkill(null);
+        } else {
+          console.warn('⚠️ No skills returned for profile_id:', profileId);
+          setSkills([]);
         }
     }
     fetchSkills();
-  }, [selectedProfile, mentor]);
+  }, [selectedProfile, mentor, profileNameToIdMap]);
 
   const handleSchedule = () => {
     if (!selectedProfile || !selectedSkill) {
@@ -118,17 +196,28 @@ export default function MentorDetailsScreen() {
       return;
     }
 
-    const index = mentor.expertise.indexOf(selectedProfile);
-    const selectedProfileId = mentor.profileIds[index];
+    // 🔧 Use mapping for robust profile ID lookup
+    const selectedProfileId = profileNameToIdMap[selectedProfile] || 
+                              mentor.profileIds[mentor.expertise.indexOf(selectedProfile)];
+
+    if (!selectedProfileId) {
+      Alert.alert("Error", "Could not determine profile ID. Please contact support.");
+      return;
+    }
+
+    console.log('🚀 Scheduling with:');
+    console.log('  Profile:', selectedProfile);
+    console.log('  Profile ID:', selectedProfileId);
+    console.log('  Skill:', selectedSkill.name);
+    console.log('  Skill ID:', selectedSkill.id);
 
     router.push({
         pathname: '/candidate/schedule',
         params: { 
             mentorId: id,
             profileName: selectedProfile, 
-            profileId: selectedProfileId, // Passed for package creation
+            profileId: selectedProfileId,
             price: mentor.totalPrice,
-            // 🟢 Passing Skill Data Forward
             skillId: selectedSkill.id,
             skillName: selectedSkill.name
         } 
@@ -177,26 +266,26 @@ export default function MentorDetailsScreen() {
           <View style={styles.statsRow}>
             {/* Tier Badge */}
             <View style={[
-              styles.tierBadge, 
-              mentor.tier === 'Gold' && styles.tierGold,
-              mentor.tier === 'Silver' && styles.tierSilver,
-              mentor.tier === 'Bronze' && styles.tierBronze
+              styles.tierBadge,
+              mentor.tier === 'Gold' ? styles.tierGold : 
+              mentor.tier === 'Silver' ? styles.tierSilver : 
+              styles.tierBronze
             ]}>
               <Ionicons 
-                name="trophy" 
-                size={12} 
+                name="medal" 
+                size={14} 
                 color={
-                  mentor.tier === 'Gold' ? '#D97706' :
-                  mentor.tier === 'Silver' ? '#6B7280' :
+                  mentor.tier === 'Gold' ? '#D97706' : 
+                  mentor.tier === 'Silver' ? '#6B7280' : 
                   '#CD7F32'
                 } 
-                style={{ marginRight: 4 }} 
+                style={{ marginRight: 6 }} 
               />
               <AppText style={[
                 styles.tierText,
-                mentor.tier === 'Gold' && styles.tierTextGold,
-                mentor.tier === 'Silver' && styles.tierTextSilver,
-                mentor.tier === 'Bronze' && styles.tierTextBronze
+                mentor.tier === 'Gold' ? styles.tierTextGold : 
+                mentor.tier === 'Silver' ? styles.tierTextSilver : 
+                styles.tierTextBronze
               ]}>
                 {mentor.tier}
               </AppText>
@@ -243,7 +332,11 @@ export default function MentorDetailsScreen() {
                 <TouchableOpacity 
                     key={index} 
                     style={[styles.tag, isSelected && styles.tagActive]}
-                    onPress={() => setSelectedProfile(tag)}
+                    onPress={() => {
+                      console.log('🎯 Selected profile:', tag);
+                      setSelectedProfile(tag);
+                      setSelectedSkill(null);
+                    }}
                     activeOpacity={0.7}
                 >
                   {isSelected && <Ionicons name="checkmark" size={14} color="#FFF" style={{marginRight: 6}} />}
@@ -263,8 +356,11 @@ export default function MentorDetailsScreen() {
                         return (
                         <TouchableOpacity 
                             key={skill.id} 
-                            style={[styles.tag, isSelected && styles.skillTagActive]} // Different color style potentially
-                            onPress={() => setSelectedSkill(skill)}
+                            style={[styles.tag, isSelected && styles.skillTagActive]}
+                            onPress={() => {
+                              console.log('🎯 Selected skill:', skill.name, 'with ID:', skill.id);
+                              setSelectedSkill(skill);
+                            }}
                         >
                             <AppText style={[styles.tagText, isSelected && styles.tagTextActive]}>
                                 {skill.name}
@@ -277,6 +373,18 @@ export default function MentorDetailsScreen() {
                     <AppText style={styles.skillDesc}>{selectedSkill.description}</AppText>
                 )}
              </View>
+          )}
+
+          {/* Show message if profile selected but no skills available */}
+          {selectedProfile && skills.length === 0 && (
+            <View style={{ marginTop: 20, paddingTop: 20, borderTopWidth: 1, borderTopColor: '#f0f0f0' }}>
+              <AppText style={styles.subLabel}>Specific Skill to Evaluate:</AppText>
+              <View style={{ padding: 16, backgroundColor: '#FEF2F2', borderRadius: 8, marginTop: 8 }}>
+                <AppText style={{ color: '#DC2626', fontSize: 14, textAlign: 'center' }}>
+                  No skills available for this profile. Please contact support.
+                </AppText>
+              </View>
+            </View>
           )}
         </View>
 
@@ -364,7 +472,7 @@ const styles = StyleSheet.create({
   tagsContainer: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
   tag: { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: theme.colors.border, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 999 },
   tagActive: { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary },
-  skillTagActive: { backgroundColor: '#059669', borderColor: '#059669' }, // Slightly different shade for skills
+  skillTagActive: { backgroundColor: '#059669', borderColor: '#059669' },
   tagText: { fontSize: 14, color: theme.colors.text.body, fontWeight: "500" },
   tagTextActive: { color: "#FFF", fontWeight: "600" },
   skillDesc: { fontSize: 12, color: '#666', marginTop: 8, fontStyle: 'italic' },

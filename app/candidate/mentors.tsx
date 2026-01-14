@@ -114,7 +114,7 @@ export default function CandidateMentorsList() {
             <View style={styles.mentorList}>
               {mentors.map((m) => {
                 const basePrice = m.session_price_inr ?? m.session_price ?? 0;
-                const candidatePrice = basePrice ? Math.round(basePrice * 1.2) : 0;
+                const candidatePrice = basePrice ? Math.round(basePrice * 2.0) : 0;
                 const levelCfg = getLevelBadgeStyle(m.mentor_level);
 
                 const subtitle =

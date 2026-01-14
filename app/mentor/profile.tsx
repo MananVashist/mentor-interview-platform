@@ -17,6 +17,7 @@ type MentorRow = {
   session_price_inr: number | null;
   total_sessions: number | null;
   average_rating: number | null;
+  experience_description: string | null;
   bank_details: {
     holder_name?: string;
     account_number?: string;
@@ -42,6 +43,7 @@ export default function MentorProfileScreen() {
   const [selectedProfiles, setSelectedProfiles] = useState<number[]>([]);
   const [professionalTitle, setProfessionalTitle] = useState('');
   const [yearsOfExperience, setYearsOfExperience] = useState('');
+  const [experienceDescription, setExperienceDescription] = useState('');
   
   // Stats
   const [totalSessions, setTotalSessions] = useState(0);
@@ -62,7 +64,7 @@ export default function MentorProfileScreen() {
 
         const { data: mentor } = await supabase
           .from('mentors')
-          .select('id, professional_title, years_of_experience, profile_ids, session_price_inr, total_sessions, average_rating, bank_details')
+          .select('id, professional_title, years_of_experience, profile_ids, session_price_inr, total_sessions, average_rating, experience_description, bank_details')
           .eq('id', profile.id) 
           .maybeSingle();
         
@@ -73,6 +75,7 @@ export default function MentorProfileScreen() {
           setSelectedProfiles(m.profile_ids ?? []);
           setTotalSessions(m.total_sessions ?? 0);
           setAverageRating(m.average_rating ?? 0);
+          setExperienceDescription(m.experience_description ?? '');
           
           // Load bank details
           if (m.bank_details) {
@@ -134,8 +137,8 @@ export default function MentorProfileScreen() {
         showNotification('Price must be a valid number.', 'error');
         return;
       }
-      if (price < 500 || price > 2500) {
-        showNotification('Price must be between ₹500 and ₹2500.', 'error');
+      if (price < 1500 || price > 5000) {
+        showNotification('Price must be between ₹1500 and ₹5000.', 'error');
         return;
       }
     } else {
@@ -163,6 +166,7 @@ export default function MentorProfileScreen() {
         years_of_experience: yrs,
         profile_ids: selectedProfiles,
         session_price_inr: price,
+        experience_description: experienceDescription.trim() || null,
         updated_at: new Date(),
       };
 
@@ -250,7 +254,7 @@ export default function MentorProfileScreen() {
             </View>
             
             <AppText style={styles.cardDescription}>
-              Set your fee for a complete mock interview session. Range: ₹500 - ₹2500.
+              Set your fee for a complete mock interview session. Range: ₹1500 - ₹5000.
             </AppText>
 
             <View style={styles.inputGroup}>
@@ -261,7 +265,7 @@ export default function MentorProfileScreen() {
                   value={sessionPrice}
                   onChangeText={setSessionPrice}
                   keyboardType="number-pad"
-                  placeholder="e.g. 1000"
+                  placeholder="e.g. 2000"
                   style={styles.currencyInput}
                 />
               </View>
@@ -269,16 +273,60 @@ export default function MentorProfileScreen() {
           </Card>
         </Section>
 
-        {/* SECTION 2: BANK DETAILS */}
+        {/* SECTION 2: INTERVIEW TYPES */}
         <Section>
           <Card style={[styles.card, shadows.card as any]}>
             <View style={styles.cardHeader}>
-              <Ionicons name="card-outline" size={20} color={colors.primary} />
-              <Heading level={2} style={styles.cardTitle}>Bank Details</Heading>
+              <Ionicons name="briefcase-outline" size={20} color={colors.primary} />
+              <Heading level={2} style={styles.cardTitle}>Interview Types</Heading>
             </View>
-            
             <AppText style={styles.cardDescription}>
-              Add your bank account details to receive payouts.
+              Select all interview profiles you can conduct.
+            </AppText>
+
+            <View style={styles.profilesGrid}>
+              {availableProfiles.length === 0 ? (
+                <AppText style={styles.emptyText}>No active profiles available</AppText>
+              ) : (
+                availableProfiles.map((profile) => {
+                  const isSelected = selectedProfiles.includes(profile.id);
+                  return (
+                    <TouchableOpacity
+                      key={profile.id}
+                      style={[styles.profileCard, isSelected && styles.profileCardSelected]}
+                      onPress={() => toggleProfile(profile.id)}
+                    >
+                      <View style={styles.profileCardContent}>
+                        <Ionicons
+                          name={isSelected ? "checkmark-circle" : "ellipse-outline"}
+                          size={16}
+                          color={isSelected ? "white" : colors.textTertiary}
+                          style={[
+                            styles.profileCheckbox,
+                            isSelected && styles.profileCheckboxSelected
+                          ]}
+                        />
+                        <AppText style={[styles.profileName, isSelected && styles.profileNameSelected]}>
+                          {profile.name}
+                        </AppText>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })
+              )}
+            </View>
+          </Card>
+        </Section>
+
+        {/* SECTION 3: BANK DETAILS */}
+        <Section>
+          <Card style={[styles.card, shadows.card as any]}>
+            <View style={styles.cardHeader}>
+              <Ionicons name="wallet-outline" size={20} color={colors.primary} />
+              <Heading level={2} style={styles.cardTitle}>Payment Details</Heading>
+            </View>
+            <AppText style={styles.cardDescription}>
+              Add your bank account to receive session payments.
             </AppText>
 
             <View style={styles.inputGroup}>
@@ -286,7 +334,7 @@ export default function MentorProfileScreen() {
               <Input
                 value={accountHolderName}
                 onChangeText={setAccountHolderName}
-                placeholder="e.g., Rahul Verma"
+                placeholder="Full Name as per bank"
                 style={styles.input}
               />
             </View>
@@ -297,7 +345,7 @@ export default function MentorProfileScreen() {
                 value={accountNumber}
                 onChangeText={setAccountNumber}
                 keyboardType="number-pad"
-                placeholder="e.g., 12345678901234"
+                placeholder="e.g., 1234567890"
                 style={styles.input}
               />
             </View>
@@ -313,82 +361,34 @@ export default function MentorProfileScreen() {
               />
             </View>
 
-            {(accountHolderName || accountNumber || ifscCode) && (
-              <View style={styles.bankNotice}>
-                <Ionicons name="shield-checkmark" size={14} color={colors.success} />
-                <AppText style={styles.bankNoticeText}>
-                  Bank details are securely encrypted
-                </AppText>
-              </View>
-            )}
+            <View style={styles.bankNotice}>
+              <Ionicons name="information-circle" size={14} color={colors.success} />
+              <AppText style={styles.bankNoticeText}>
+                Required for receiving payouts directly to your account
+              </AppText>
+            </View>
           </Card>
         </Section>
 
-        {/* SECTION 3: INTERVIEW PROFILES */}
+        {/* SECTION 4: PRIVATE INFO */}
         <Section>
           <Card style={[styles.card, shadows.card as any]}>
             <View style={styles.cardHeader}>
-              <Ionicons name="briefcase-outline" size={20} color={colors.primary} />
-              <Heading level={2} style={styles.cardTitle}>Interview Profiles</Heading>
+              <Ionicons name="lock-closed" size={20} color={colors.textTertiary} />
+              <Heading level={2} style={styles.cardTitle}>Private Information</Heading>
             </View>
-            
             <AppText style={styles.cardDescription}>
-              Select the domains you can mentor in. Candidates will see you when searching for these profiles.
+              Your personal details. Candidates will NOT see this.
             </AppText>
 
-            {availableProfiles.length === 0 ? (
-              <AppText style={styles.emptyText}>No profiles available</AppText>
-            ) : (
-              <View style={styles.profilesGrid}>
-                {availableProfiles.map((p) => {
-                  const selected = selectedProfiles.includes(p.id);
-                  return (
-                    <TouchableOpacity
-                      key={p.id}
-                      onPress={() => toggleProfile(p.id)}
-                      style={[
-                        styles.profileCard,
-                        selected && styles.profileCardSelected
-                      ]}
-                    >
-                      <View style={styles.profileCardContent}>
-                        <View style={[
-                          styles.profileCheckbox,
-                          selected && styles.profileCheckboxSelected
-                        ]}>
-                          {selected && (
-                            <Ionicons name="checkmark" size={14} color="#FFFFFF" />
-                          )}
-                        </View>
-                        <AppText style={[
-                          styles.profileName,
-                          selected && styles.profileNameSelected
-                        ]}>
-                          {p.name}
-                        </AppText>
-                      </View>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            )}
-          </Card>
-        </Section>
-
-        {/* SECTION 4: PRIVATE DETAILS */}
-        <Section>
-          <Card style={[styles.card, shadows.card as any]}>
-            <View style={styles.cardHeader}>
-              <Ionicons name="lock-closed-outline" size={20} color={colors.textTertiary} />
-              <Heading level={2} style={styles.cardTitle}>Private Details</Heading>
-            </View>
-            
-            <View style={styles.infoRow}>
+            {profile?.display_name && (
+                <View style={styles.infoRow}>
                 <View style={styles.infoContent}>
-                <AppText style={styles.infoLabel}>Full Name</AppText>
-                <AppText style={styles.infoValue}>{profile?.full_name || 'Mentor'}</AppText>
+                    <AppText style={styles.infoLabel}>Name</AppText>
+                    <AppText style={styles.infoValue}>{profile.display_name}</AppText>
                 </View>
-            </View>
+                </View>
+            )}
 
             {profile?.email && (
                 <View style={styles.infoRow}>
@@ -438,6 +438,21 @@ export default function MentorProfileScreen() {
                 placeholder="e.g., 8"
                 style={[styles.input, { maxWidth: 100 }]}
               />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Label style={styles.inputLabel}>About You</Label>
+              <Input
+                value={experienceDescription}
+                onChangeText={setExperienceDescription}
+                placeholder="Brief description of your background, expertise, and what candidates can expect from your mentorship..."
+                multiline
+                numberOfLines={4}
+                style={[styles.input, styles.textArea]}
+              />
+              <AppText style={styles.charCount}>
+                {experienceDescription.length} characters
+              </AppText>
             </View>
           </Card>
         </Section>
@@ -545,6 +560,17 @@ const styles = StyleSheet.create({
   },
   input: {
     marginTop: 0,
+  },
+  textArea: {
+    minHeight: 100,
+    textAlignVertical: 'top',
+    paddingTop: spacing.sm,
+  },
+  charCount: {
+    fontSize: typography.size.xs,
+    color: colors.textTertiary,
+    marginTop: spacing.xs,
+    textAlign: 'right',
   },
   
   // Currency

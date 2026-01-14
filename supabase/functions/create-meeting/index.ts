@@ -1,51 +1,99 @@
-﻿import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+﻿// supabase/functions/create-meeting/index.ts
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+const HMS_API_ENDPOINT = "https://api.100ms.live/v2";
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
-  }
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   try {
-    const supabaseClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-      { global: { headers: { Authorization: req.headers.get("Authorization")! } } }
-    );
+    const HMS_MANAGEMENT_TOKEN = Deno.env.get('HMS_MANAGEMENT_TOKEN');
+    const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
+    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
-    if (userError || !user) throw new Error("Unauthorized");
+    if (!HMS_MANAGEMENT_TOKEN || !SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+      throw new Error('Missing required environment variables');
+    }
 
-    const { pkgId } = await req.json();
+    const { sessionId } = await req.json();
+    if (!sessionId) throw new Error('sessionId is required');
 
-    // 🎯 CONFIG: Use a reliable open Jitsi instance
-    const domain = "meet.guifi.net";
-    const uniqueRoomId = `CrackJobs-${pkgId}`;
+    // 1. Create Room in 100ms
+    const roomPayload = {
+      name: `Interview-${sessionId}`,
+      description: "CrackJobs Mock Interview Session",
+      template_id: "6964f1c5a090b0544dfd9c7d", // Your specific Template ID
+      region: "in",
+    };
 
-    // 🎯 FIX: Add config params to the URL hash
-    // 1. prejoinPageEnabled=false -> Skips the "I am the host" / Lobby screen
-    // 2. startWithVideoMuted=true -> Camera starts OFF (Privacy)
-    // 3. startWithAudioMuted=true -> Mic starts OFF (Privacy)
-    const configHash = "config.prejoinPageEnabled=false&config.startWithVideoMuted=true&config.startWithAudioMuted=true";
+    const roomResponse = await fetch(`${HMS_API_ENDPOINT}/rooms`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${HMS_MANAGEMENT_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(roomPayload),
+    });
+
+    if (!roomResponse.ok) throw new Error(`100ms Room Error: ${await roomResponse.text()}`);
+    const roomData = await roomResponse.json();
+    const roomId = roomData.id;
+
+    // 2. Generate Room Codes
+    // This creates codes like 'abc-def-ghi' for every role in your template
+    const codesResponse = await fetch(`${HMS_API_ENDPOINT}/room-codes/room/${roomId}`, {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${HMS_MANAGEMENT_TOKEN}` },
+    });
+
+    if (!codesResponse.ok) throw new Error(`100ms Code Gen Error: ${await codesResponse.text()}`);
+    const codesData = await codesResponse.json();
     
-    const meetingLink = `https://${domain}/${uniqueRoomId}#${configHash}`;
+    // Attempt to find the correct role codes. 
+    // We check for 'host' OR 'mentor' to be safe.
+    const hostCodeObj = codesData.data.find((c: any) => c.role === 'host' || c.role === 'mentor');
+    
+    // Fallback: If no host/mentor role found, grab the first available code (risky but better than crashing)
+    const hostCode = hostCodeObj ? hostCodeObj.code : codesData.data[0]?.code;
 
-    console.log(`✅ Generated Jitsi Link: ${meetingLink}`);
+    if (!hostCode) {
+      console.error("CRITICAL: No room codes generated", codesData);
+    }
 
-    return new Response(
-      JSON.stringify({ meetingLink }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    // 3. Save to Supabase
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-  } catch (error: any) {
-    console.error("❌ Function Error:", error.message);
-    return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    const { data: insertedMeeting, error: dbError } = await supabase
+      .from('session_meetings')
+      .insert({
+        session_id: sessionId,
+        hms_room_id: roomId,
+        hms_room_code: hostCode, // Saving the HOST code
+        recording_status: 'pending',
+      })
+      .select()
+      .single();
+
+    if (dbError) throw dbError;
+
+    return new Response(JSON.stringify({ 
+      success: true, 
+      roomId, 
+      hostCode 
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 200,
+    });
+
+  } catch (error) {
+    return new Response(JSON.stringify({ success: false, error: error.message }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 400,
     });
   }
