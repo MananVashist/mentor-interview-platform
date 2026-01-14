@@ -82,7 +82,7 @@ export const paymentService = {
         if (mentorError || !mentorData) throw new Error("Unable to retrieve mentor pricing details.");
 
         const basePrice = mentorData.session_price_inr || 0; 
-        const totalPrice = Math.round(basePrice * 1.2); 
+        const totalPrice = Math.round(basePrice * 2.0); 
         const amountToSend = totalPrice * 100; // in paise
         const mentorPayout = basePrice;
         const platformFee = totalPrice - mentorPayout;
@@ -145,37 +145,54 @@ export const paymentService = {
         console.log("✅ Package Created:", pkg.id);
         const packageId = pkg.id;
 
-        // 🔥 NEW: Create interview_session IMMEDIATELY to block the slot
+        // 🔥 Create interview_session IMMEDIATELY to block the slot (no meeting_link)
         console.log("📅 Creating interview session to block slot...");
-        const meetingLink = `https://meet.jit.si/interview-${packageId}-${Date.now()}`;
         
-        const { error: sessionError } = await supabase.from('interview_sessions').insert({
+        const { data: newSession, error: sessionError } = await supabase.from('interview_sessions').insert({
           package_id: packageId,
           candidate_id: candidateId,
           mentor_id: mentorId,
           skill_id: skillId,
           scheduled_at: selectedSlot,
           status: 'pending', // Will remain pending until payment confirmed
-          meeting_link: meetingLink
-        });
+        }).select('id').single();
 
-        if (sessionError) {
+        if (sessionError || !newSession) {
           console.error("Session Creation Error:", sessionError);
           
           // If session creation fails (e.g., duplicate booking), clean up the package
           await supabase.from('interview_packages').delete().eq('id', packageId);
           
-          if (sessionError.code === '23505') { // Unique constraint violation
+          if (sessionError?.code === '23505') { // Unique constraint violation
             throw new Error('This slot was just booked by someone else. Please select another time.');
           }
           throw new Error('Unable to reserve slot. Please try again.');
         }
 
-        console.log("✅ Session Created - Slot is now blocked!");
+        console.log("✅ Session Created:", newSession.id);
+
+        // 🎥 Create 100ms room and store in session_meetings
+        console.log("🎥 Creating 100ms video room...");
+        try {
+          const { data: roomData, error: roomError } = await supabase.functions.invoke(
+            "create-meeting",
+            { body: { sessionId: newSession.id, scheduledAt: selectedSlot } }
+          );
+
+          if (roomError || !roomData?.success) {
+            console.error("100ms Room Creation Error:", roomError);
+            console.warn("⚠️ Proceeding without video room - can be created on-demand");
+          } else {
+            console.log("✅ 100ms Room Created:", roomData.roomCode);
+          }
+        } catch (roomErr) {
+          console.error("100ms Room Exception:", roomErr);
+          console.warn("⚠️ Video room creation failed but continuing with booking");
+        }
 
         // Send emails only if payment is disabled (test mode)
         if (!ENABLE_RAZORPAY) {
-          this.triggerBookingConfirmationEmails(packageId, meetingLink);
+          this.triggerBookingConfirmationEmails(packageId);
         }
 
         return { package: pkg, orderId: razorpayOrderId, keyId: razorpayKeyId, amount: amountToSend, error: null };
@@ -246,30 +263,27 @@ export const paymentService = {
       console.log("[Payment Service] 🔍 Checking for booking conflicts...");
       await this.checkBookingConflict(pkgData.mentor_id, [scheduled_at]);
 
-      // 🔥 CHANGED: Session already exists from createPackage, just fetch its meeting link
-      // Keep status as 'pending' for mentor approval workflow
+      // 🔥 Session already exists from createPackage, just verify it exists
       console.log("[Payment Service] 📝 Payment verified - session remains 'pending' for mentor approval...");
       
       const { data: sessionData, error: sessionFetchError } = await supabase
         .from("interview_sessions")
-        .select('meeting_link')
+        .select('id')
         .eq('package_id', pkgId)
         .single();
 
-      if (sessionFetchError) {
+      if (sessionFetchError || !sessionData) {
         console.error("[Payment Service] ❌ Session fetch failed:", sessionFetchError);
-        throw sessionFetchError;
+        throw new Error("Session not found after payment verification");
       }
 
       console.log("[Payment Service] ✅ Session found - awaiting mentor approval!");
 
-      const meetingLink = sessionData?.meeting_link || `https://meet.jit.si/interview-${pkgId}`;
-
-      // ✅ Send confirmation emails
+      // ✅ Send confirmation emails (no meeting link needed)
       console.log("[Payment Service] 📧 Triggering confirmation emails...");
-      this.triggerBookingConfirmationEmails(pkgId, meetingLink);
+      this.triggerBookingConfirmationEmails(pkgId);
       
-      return { success: true, meetingLink };
+      return { success: true };
 
     } catch (err: any) {
       console.error("[Payment Service] 💥 Fatal error in verifyPayment:", err);
@@ -277,7 +291,7 @@ export const paymentService = {
     }
   },
 
-  async triggerBookingConfirmationEmails(pkgId: string, link: string) {
+  async triggerBookingConfirmationEmails(pkgId: string) {
     try {
         console.log("[Email] 📧 Sending booking confirmation emails for package:", pkgId);
 
@@ -351,7 +365,7 @@ export const paymentService = {
               profileName: profile?.name,
               skillName: session?.skill?.name,
               dateTime: dateTime,
-              meetingLink: link,
+              baseUrl: BASE_URL
             }
           );
         }
@@ -373,7 +387,7 @@ export const paymentService = {
             profileName: profile?.name || 'N/A',
             skillName: session?.skill?.name || 'N/A',
             dateTime: dateTime,
-            meetingLink: link,
+            baseUrl: BASE_URL
           }
         );
 
