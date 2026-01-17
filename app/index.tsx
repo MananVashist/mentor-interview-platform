@@ -85,10 +85,10 @@ const HowItWorks = memo(() => {
   return (
     <View style={styles.sectionContainer} accessibilityRole="region" aria-label="How it works">
       <Text style={styles.sectionKicker} accessibilityRole="header" aria-level={2}>HOW IT WORKS</Text>
-      <Text style={styles.sectionTitle} accessibilityRole="header" aria-level={3}>
+      <Text style={styles.sectionTitle} accessibilityRole="header" aria-level={3} nativeID="section-title">
         Three simple steps to better interviews
       </Text>
-      <View style={styles.stepsGrid}>
+      <View style={styles.stepsGrid} nativeID="steps-grid">
         {STEPS.map((step, i) => (
           <View key={i} style={styles.stepCard}>
             <Text style={styles.stepEmoji}>{step.emoji}</Text>
@@ -186,7 +186,7 @@ export default function LandingPage() {
             "item": {
               "@type": "Course",
               "name": "Product Management Interview Prep",
-              "description": "Product sense, execution, strategy,technical design and leadership",
+              "description": "Product sense, execution, strategy, technical design and leadership",
               "url": "https://crackjobs.com/interviews/product-management",
               "provider": {
                 "@type": "Organization",
@@ -200,7 +200,7 @@ export default function LandingPage() {
             "item": {
               "@type": "Course",
               "name": "Data Analytics Interview Prep",
-              "description": "Case studies, Product experimentation, Excel, Behavioral and SQL",
+              "description": "SQL, data visualization, statistical analysis, and business insights",
               "url": "https://crackjobs.com/interviews/data-analytics",
               "provider": {
                 "@type": "Organization",
@@ -214,7 +214,7 @@ export default function LandingPage() {
             "item": {
               "@type": "Course",
               "name": "Data Science Interview Prep",
-              "description": "ML Theory, Practical, Coding, Statistics and System design",
+              "description": "Machine learning, statistics, Python, and model deployment",
               "url": "https://crackjobs.com/interviews/data-science",
               "provider": {
                 "@type": "Organization",
@@ -228,7 +228,7 @@ export default function LandingPage() {
             "item": {
               "@type": "Course",
               "name": "HR Interview Prep",
-              "description": "Talent Acquisition, HR Generalist, HR Operations, HRBP and COE",
+              "description": "Behavioral questions, situational responses, and cultural fit",
               "url": "https://crackjobs.com/interviews/hr",
               "provider": {
                 "@type": "Organization",
@@ -243,42 +243,18 @@ export default function LandingPage() {
         "mainEntity": [
           {
             "@type": "Question",
-            "name": "How does CrackJobs work?",
+            "name": "What is CrackJobs?",
             "acceptedAnswer": { 
               "@type": "Answer", 
-              "text": "CrackJobs is a three-step process: 1) Choose your interview track (Product Management, Data Analytics, Data Science, or HR), 2) Book a session with a verified expert mentor from top companies, 3) Attend your anonymous 1:1 mock interview and receive detailed structured feedback." 
+              "text": "CrackJobs is an anonymous mock interview platform that connects job seekers with expert mentors from top companies like Google, Amazon, and Meta across Product Management, Data Analytics, Data Science, and HR domains." 
             }
           },
           {
             "@type": "Question",
-            "name": "Who are the mentors on CrackJobs?",
+            "name": "How does anonymity work?",
             "acceptedAnswer": { 
               "@type": "Answer", 
-              "text": "All mentors are verified professionals currently working at or having experience from top tech companies like Google, Amazon, Meta, Microsoft, Adobe, and Capgemini. They are experts in their respective fields with real interview experience." 
-            }
-          },
-          {
-            "@type": "Question",
-            "name": "What does anonymous interviewing mean?",
-            "acceptedAnswer": { 
-              "@type": "Answer", 
-              "text": "Anonymous interviewing means your personal details are not shared with mentors. Only professional information relevant to the interview is visible. This creates a safe, judgment-free environment to practice and get honest feedback." 
-            }
-          },
-          {
-            "@type": "Question",
-            "name": "How much do mock interviews cost?",
-            "acceptedAnswer": { 
-              "@type": "Answer", 
-              "text": "Mock interview sessions range from ₹3,000 to ₹15,000 depending on the mentor's tier level and experience. All sessions are 55 minutes long and include structured feedback and session recordings." 
-            }
-          },
-          {
-            "@type": "Question",
-            "name": "What interview types are available?",
-            "acceptedAnswer": { 
-              "@type": "Answer", 
-              "text": "CrackJobs offers interview preparation for Product Management (Product sense, product execution, product strategy,Technical and leadership) , Data Analytics (Case studies, Product metrics and experimentation, Excel, Behavioral, SQL), Data Science (ML theory, Practical ML, Coding (Python, Pandas, Algo), Statistics and experimentation and ML system design) and HR (TA, HR Generalist, HR Operations, HR Business Partner, COE- HR Functions)." 
+              "text": "Both mentors and candidates interact using only professional titles (e.g., 'Senior PM at Meta' or 'Candidate'). No personal information, names, or contact details are shared during sessions." 
             }
           },
           {
@@ -320,9 +296,47 @@ export default function LandingPage() {
         <meta name="twitter:card" content="summary_large_image" />
         
         <style>{`
-          body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; background-color: #f8f5f0; opacity: 1 !important; visibility: visible !important; }
-          * { box-sizing: border-box; }
-        `}</style>
+  body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; background-color: #f8f5f0; }
+  
+  /* ⚡️ RESPONSIVE BRAND HEADER STYLES */
+  /* Desktop: Show eyes, full size text */
+  #brand-eyes { display: flex !important; }
+  #brand-text-container { font-size: 32px; }
+  
+  /* Mobile (≤768px): Hide eyes, smaller text */
+  @media (max-width: 768px) {
+    #brand-eyes { display: none !important; }
+    #brand-header { margin-bottom: 8px !important; }
+    #brand-text-container { transform: scale(0.7); transform-origin: left center; }
+  }
+  
+  /* ⚡️ RESPONSIVE SECTION STYLES */
+  @media (max-width: 768px) {
+    /* Section titles */
+    #section-title { font-size: 28px !important; }
+    
+    /* Header - reduce vertical padding */
+    #main-header { padding-top: 12px !important; padding-bottom: 12px !important; }
+    
+    /* Header inner */
+    #header-inner { padding-left: 16px !important; padding-right: 16px !important; }
+    
+    /* Nav right */
+    #nav-right { gap: 12px !important; }
+    
+    /* Hero section container - reduce top padding */
+    #section-container-hero { padding-top: 24px !important; padding-bottom: 40px !important; }
+    
+    /* Hero section - reduce internal padding */
+    #hero-centered { padding-top: 0px !important; padding-bottom: 20px !important; }
+    #hero-title { font-size: 36px !important; line-height: 44px !important; }
+    #hero-subtitle { font-size: 16px !important; line-height: 24px !important; }
+    #hero-buttons { flex-direction: column !important; width: 100% !important; padding-left: 20px !important; padding-right: 20px !important; }
+    
+    /* Steps grid */
+    #steps-grid { flex-direction: column !important; }
+  }
+`}</style>
 
         <script
           type="application/ld+json"
@@ -337,10 +351,10 @@ export default function LandingPage() {
       >
         
         {/* --- HEADER --- */}
-        <View style={styles.header} accessibilityRole="navigation">
-          <View style={[styles.headerInner]}>
+        <View style={styles.header} nativeID="main-header" accessibilityRole="navigation">
+          <View style={styles.headerInner} nativeID="header-inner">
             <BrandHeader style={{ marginBottom: 0 }} small={false} />
-            <View style={[styles.navRight]}>
+            <View style={styles.navRight} nativeID="nav-right">
               <TouchableOpacity onPress={() => router.push('/auth/sign-in')} accessibilityRole="link">
                 <Text style={styles.navLinkText}>Log in</Text>
               </TouchableOpacity>
@@ -356,18 +370,18 @@ export default function LandingPage() {
         </View>
 
         {/* --- HERO SECTION --- */}
-        <View style={styles.sectionContainer} accessibilityRole="banner">
-          <View style={[styles.heroCentered]}>
+        <View style={styles.sectionContainer} nativeID="section-container-hero" accessibilityRole="banner">
+          <View style={styles.heroCentered} nativeID="hero-centered">
             <View style={styles.badgeContainer}>
               <Text style={styles.badgeText}>🚀 NEW: PM Technical Track</Text>
             </View>
-            <Text style={[styles.heroTitle]} accessibilityRole="header" aria-level={1}>
+            <Text style={styles.heroTitle} nativeID="hero-title" accessibilityRole="header" aria-level={1}>
               Mock interviews with{'\n'}<Text style={{ color: CTA_TEAL }}>real expert mentors</Text>
             </Text>
-            <Text style={[styles.heroSubtitle]}>
+            <Text style={styles.heroSubtitle} nativeID="hero-subtitle">
               Anonymous 1:1 mock interviews. Practice with vetted mentors from top companies.
             </Text>
-            <View style={[styles.heroButtons]}>
+            <View style={styles.heroButtons} nativeID="hero-buttons">
               <Button 
                 title="Start Practicing" 
                 variant="primary" 
@@ -419,11 +433,9 @@ const styles = StyleSheet.create({
   // Header
   header: { backgroundColor: BG_CREAM, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: 'rgba(0,0,0,0.05)' },
   headerInner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', maxWidth: 1200, width: '100%', alignSelf: 'center', paddingHorizontal: 24 },
-  headerInnerMobile: { paddingHorizontal: 16 },
   
   // Nav
   navRight: { flexDirection: 'row', gap: 24, alignItems: 'center' },
-  navRightMobile: { gap: 12 },
   navLinkText: { fontFamily: SYSTEM_FONT, fontWeight: '600', color: TEXT_DARK },
   btnSmall: { backgroundColor: CTA_TEAL, paddingVertical: 10, paddingHorizontal: 20, borderRadius: 100 },
   btnSmallText: { fontFamily: SYSTEM_FONT, fontSize: 13, fontWeight: '700', color: '#fff' },
@@ -432,15 +444,11 @@ const styles = StyleSheet.create({
   sectionContainer: { maxWidth: 1200, width: '100%', alignSelf: 'center', paddingHorizontal: 24, paddingVertical: 60 },
   sectionKicker: { fontFamily: SYSTEM_FONT, fontWeight: '700', fontSize: 13, textTransform: 'uppercase', letterSpacing: 1.5, color: CTA_TEAL, marginBottom: 12, textAlign: 'center' },
   sectionTitle: { fontFamily: SYSTEM_FONT, fontWeight: '800', fontSize: 36, color: TEXT_DARK, marginBottom: 48, textAlign: 'center' },
-  sectionTitleMobile: { fontSize: 28},
   
   // Hero
   heroCentered: { alignItems: 'center', paddingVertical: 40, maxWidth: 800, alignSelf: 'center' },
-  heroCenteredMobile: { paddingVertical: 20 },
   heroTitle: { fontFamily: SYSTEM_FONT, fontWeight: '800', fontSize: 52, color: BRAND_ORANGE, lineHeight: 60, marginBottom: 24, textAlign: 'center' },
-  heroTitleMobile: { fontSize: 36, lineHeight: 44 },
   heroSubtitle: { fontFamily: SYSTEM_FONT, fontSize: 20, color: TEXT_GRAY, lineHeight: 30, marginBottom: 40, textAlign: 'center', maxWidth: 600 },
-  heroSubtitleMobile: { fontSize: 16, textAlign: 'center', lineHeight: 24 },
   
   // Badge
   badgeContainer: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#e0f5f5', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 100, marginBottom: 24 },
@@ -448,7 +456,6 @@ const styles = StyleSheet.create({
   
   // Buttons
   heroButtons: { flexDirection: 'row', gap: 16 },
-  heroButtonsMobile: { flexDirection: 'column', width: '100%', paddingHorizontal: 20 },
   btnBig: { minWidth: 160 },
   buttonBase: { borderRadius: 100, alignItems: 'center', justifyContent: 'center', paddingVertical: 16, paddingHorizontal: 32 },
   buttonPrimary: { backgroundColor: CTA_TEAL },
@@ -457,7 +464,6 @@ const styles = StyleSheet.create({
 
   // Steps
   stepsGrid: { flexDirection: 'row', gap: 32, justifyContent: 'center', alignItems: 'center' },
-  stepsGridMobile: { flexDirection: 'column' },
   stepCard: { flex: 1, maxWidth: 320, backgroundColor: '#fff', padding: 32, borderRadius: 16, alignItems: 'center', borderWidth: 1, borderColor: '#f0f0f0' },
   stepEmoji: { fontSize: 48, marginBottom: 16 },
   stepTitle: { fontFamily: SYSTEM_FONT, fontWeight: '700', fontSize: 20, color: TEXT_DARK, marginBottom: 8, textAlign: 'center' },

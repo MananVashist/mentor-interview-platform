@@ -135,7 +135,78 @@ export default function HRInterviews() {
         ]
       };
 
-      const cleanup = injectMultipleSchemas([breadcrumbSchema, faqSchema]);
+      // HowTo Schema for Rich Results
+      const howtoSchema = {
+        "@context": "https://schema.org",
+        "@type": "HowTo",
+        "name": "How to Prepare for HR Interviews",
+        "description": "Step-by-step guide to mastering HR and HRBP interviews",
+        "totalTime": "PT30H",
+        "step": [
+          {
+            "@type": "HowToStep",
+            "name": "Master STAR Method",
+            "text": "Practice structured behavioral responses with Situation, Task, Action, Result"
+          },
+          {
+            "@type": "HowToStep",
+            "name": "Learn Conflict Resolution",
+            "text": "Master mediation techniques and difficult conversations"
+          },
+          {
+            "@type": "HowToStep",
+            "name": "Practice HRBP Scenarios",
+            "text": "Handle performance management and organizational change"
+          },
+          {
+            "@type": "HowToStep",
+            "name": "Mock HR Interviews",
+            "text": "Practice with senior HR leaders from top companies"
+          }
+        ]
+      };
+
+      // Course Schema for Rich Results
+      const courseSchema = {
+        "@context": "https://schema.org",
+        "@type": "Course",
+        "name": "HR Interview Preparation",
+        "description": "Master HRBP scenarios, conflict resolution, and behavioral interviews",
+        "provider": {
+          "@type": "Organization",
+          "name": "CrackJobs",
+          "url": "https://crackjobs.com"
+        },
+        "offers": {
+          "@type": "AggregateOffer",
+          "priceCurrency": "INR",
+          "lowPrice": "3000",
+          "highPrice": "15000",
+          "offerCount": "3",
+          "offers": [
+            {
+              "@type": "Offer",
+              "name": "Bronze Mentor",
+              "price": "3000-6000",
+              "priceCurrency": "INR"
+            },
+            {
+              "@type": "Offer",
+              "name": "Silver Mentor",
+              "price": "6000-9000",
+              "priceCurrency": "INR"
+            },
+            {
+              "@type": "Offer",
+              "name": "Gold Mentor",
+              "price": "9000-15000",
+              "priceCurrency": "INR"
+            }
+          ]
+        }
+      };
+
+      const cleanup = injectMultipleSchemas([breadcrumbSchema, faqSchema, howtoSchema, courseSchema]);
       return () => cleanup && cleanup();
     }
   }, []);
@@ -554,6 +625,29 @@ export default function HRInterviews() {
         <meta name="description" content="Ace HR interviews at Amazon, Google, Flipkart with expert HR leaders. Master HRBP scenarios, conflict resolution, STAR method, compensation strategy, and DEI initiatives. Practice real HR interview questions." />
         <meta name="keywords" content="HR interview, HRBP interview, human resources interview, behavioral interview, STAR method, conflict resolution, compensation strategy, DEI, employee relations, HR business partner, talent acquisition" />
         <link rel="canonical" href="https://crackjobs.com/interviews/hr" />
+      
+        
+        <style>{`
+  body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; background-color: #f8f5f0; }
+  
+  /* ⚡️ RESPONSIVE BRAND HEADER */
+  @media (max-width: 768px) {
+    #brand-eyes { display: none !important; }
+    #brand-header { margin-bottom: 16px !important; }
+  }
+  
+  /* ⚡️ RESPONSIVE SECTIONS */
+  @media (max-width: 768px) {
+    .section-title { font-size: 32px !important; }
+    #question-types-grid,
+    #stories-grid,
+    #tools-grid,
+    #articles-grid,
+    #steps-grid { 
+      flex-direction: column !important; 
+    }
+  }
+`}</style>
       </Head>
 
       <View style={styles.container}>
@@ -577,7 +671,7 @@ export default function HRInterviews() {
           {/* Hero */}
           <View style={[styles.hero]}>
             <View style={styles.badge}><Text style={styles.badgeText}>👥 HR & BEHAVIORAL INTERVIEWS</Text></View>
-            <Text style={[styles.heroTitle]}>
+            <Text style={[styles.heroTitle]} accessibilityRole="header" accessibilityLevel={1}>
               Navigate Complex People Issues With Confidence
             </Text>
             <Text style={[styles.heroSubtitle]}>
@@ -597,7 +691,7 @@ export default function HRInterviews() {
           {/* Core Skills */}
           <View style={[styles.section, { backgroundColor: 'white' }]}>
             <Text style={styles.sectionLabel}>2 CORE FOCUS AREAS</Text>
-            <Text style={[styles.sectionTitle]}>What Companies Test in HR Interviews</Text>
+            <Text style={[styles.sectionTitle]} nativeID="section-title">What Companies Test in HR Interviews</Text>
             <Text style={styles.sectionDesc}>HR interviews test your ability to handle complex people scenarios and design scalable systems.</Text>
             {coreSkills.map((skill, i) => (
               <View key={i} style={styles.skillCard}>
@@ -631,7 +725,7 @@ export default function HRInterviews() {
           {/* Real HR Scenarios */}
           <View style={[styles.section, { backgroundColor: BG_CREAM }]}>
             <Text style={styles.sectionLabel}>REAL HR SCENARIOS</Text>
-            <Text style={[styles.sectionTitle]}>How to Handle the Toughest People Problems</Text>
+            <Text style={[styles.sectionTitle]} nativeID="section-title">How to Handle the Toughest People Problems</Text>
             <Text style={styles.sectionDesc}>These scenarios test your judgment, values, and ability to balance competing priorities.</Text>
             {realHRScenarios.map((item, i) => (
               <View key={i} style={styles.scenarioCard}>
@@ -672,7 +766,7 @@ export default function HRInterviews() {
           {/* STAR Method */}
           <View style={[styles.section, { backgroundColor: 'white' }]}>
             <Text style={styles.sectionLabel}>STAR METHOD MASTERY</Text>
-            <Text style={[styles.sectionTitle]}>Structure Every Behavioral Answer Perfectly</Text>
+            <Text style={[styles.sectionTitle]} nativeID="section-title">Structure Every Behavioral Answer Perfectly</Text>
             <Text style={styles.sectionDesc}>STAR method is non-negotiable for HR interviews. Master it to stand out from 90% of candidates.</Text>
             {starMethod.map((item, i) => (
               <View key={i} style={styles.starCard}>
@@ -702,7 +796,7 @@ export default function HRInterviews() {
           {/* HR Metrics */}
           <View style={[styles.section, { backgroundColor: '#f0f8ff' }]}>
             <Text style={styles.sectionLabel}>HR METRICS DASHBOARD</Text>
-            <Text style={[styles.sectionTitle]}>What Every HR Professional Should Track</Text>
+            <Text style={[styles.sectionTitle]} nativeID="section-title">What Every HR Professional Should Track</Text>
             <Text style={styles.sectionDesc}>Modern HR is data-driven. Know these metrics and their benchmarks cold.</Text>
             {hrMetrics.map((category, i) => (
               <View key={i} style={styles.metricsCategory}>
@@ -728,7 +822,7 @@ export default function HRInterviews() {
           {/* Conflict Resolution */}
           <View style={[styles.section, { backgroundColor: BG_CREAM }]}>
             <Text style={styles.sectionLabel}>CONFLICT RESOLUTION PLAYBOOK</Text>
-            <Text style={[styles.sectionTitle]}>5-Step Framework for Resolving Workplace Conflict</Text>
+            <Text style={[styles.sectionTitle]} nativeID="section-title">5-Step Framework for Resolving Workplace Conflict</Text>
             <Text style={styles.sectionDesc}>Master this systematic approach to mediate conflicts at any level of the organization.</Text>
             <View style={styles.conflictPlaybook}>
               {conflictResolution.map((step, i) => (
@@ -756,7 +850,7 @@ export default function HRInterviews() {
           {/* Prep Timeline */}
           <View style={[styles.section, { backgroundColor: 'white' }]}>
             <Text style={styles.sectionLabel}>8-WEEK PREP ROADMAP</Text>
-            <Text style={[styles.sectionTitle]}>Complete HR Interview Preparation Plan</Text>
+            <Text style={[styles.sectionTitle]} nativeID="section-title">Complete HR Interview Preparation Plan</Text>
             <Text style={styles.sectionDesc}>Structured timeline to master behavioral storytelling, HR scenarios, and analytics.</Text>
             <View style={styles.timeline}>
               {prepTimeline.map((phase, i) => (
@@ -790,9 +884,9 @@ export default function HRInterviews() {
           {/* HR Tech Stack */}
           <View style={[styles.section, { backgroundColor: '#f0f8ff' }]}>
             <Text style={styles.sectionLabel}>HR TECH STACK</Text>
-            <Text style={[styles.sectionTitle]}>Essential HR Systems & Tools</Text>
+            <Text style={[styles.sectionTitle]} nativeID="section-title">Essential HR Systems & Tools</Text>
             <Text style={styles.sectionDesc}>Familiarity with HR tech demonstrates you understand modern HR operations.</Text>
-            <View style={[styles.toolsGrid]}>
+            <View style={[styles.toolsGrid]} nativeID="tools-grid">
               {hrTechStack.map((category, i) => (
                 <View key={i} style={styles.toolCategory}>
                   <Text style={styles.toolCategoryName}>{category.category}</Text>
@@ -811,9 +905,9 @@ export default function HRInterviews() {
           {/* Success Stories */}
           <View style={[styles.section, { backgroundColor: 'white' }]}>
             <Text style={styles.sectionLabel}>SUCCESS STORIES</Text>
-            <Text style={[styles.sectionTitle]}>From Practice to HR Leadership Offers</Text>
+            <Text style={[styles.sectionTitle]} nativeID="section-title">From Practice to HR Leadership Offers</Text>
             <Text style={styles.sectionDesc}>These HR professionals mastered behavioral interviews and landed roles at top companies.</Text>
-            <View style={[styles.storiesGrid]}>
+            <View style={[styles.storiesGrid]} nativeID="stories-grid">
               {successStories.map((story, i) => (
                 <View key={i} style={styles.storyCard}>
                   <View style={styles.storyHeader}>
@@ -841,7 +935,7 @@ export default function HRInterviews() {
           {/* Common Mistakes */}
           <View style={[styles.section, { backgroundColor: '#fff8f0' }]}>
             <Text style={styles.sectionLabel}>AVOID THESE MISTAKES</Text>
-            <Text style={[styles.sectionTitle]}>5 HR Interview Mistakes That Fail Candidates</Text>
+            <Text style={[styles.sectionTitle]} nativeID="section-title">5 HR Interview Mistakes That Fail Candidates</Text>
             <Text style={styles.sectionDesc}>Based on 600+ HR interview evaluations. These mistakes appear in 80% of failed interviews.</Text>
             {commonMistakes.map((mistake, i) => (
               <View key={i} style={styles.mistakeCard}>
@@ -865,8 +959,8 @@ export default function HRInterviews() {
           {/* Related Articles */}
           <View style={[styles.section, { backgroundColor: 'white' }]}>
             <Text style={styles.sectionLabel}>DEEP DIVE GUIDES</Text>
-            <Text style={[styles.sectionTitle]}>Master Specific HR Topics</Text>
-            <View style={[styles.articlesGrid]}>
+            <Text style={[styles.sectionTitle]} nativeID="section-title">Master Specific HR Topics</Text>
+            <View style={[styles.articlesGrid]} nativeID="articles-grid">
               <TouchableOpacity style={styles.articleCard} onPress={() => router.push('/blog/hr-interview-mistakes')}>
                 <BookIcon size={32} color={CTA_TEAL} />
                 <Text style={styles.articleTitle}>Common HR Interview Mistakes to Avoid</Text>
@@ -879,8 +973,8 @@ export default function HRInterviews() {
           {/* How It Works */}
           <View style={[styles.section, { backgroundColor: BG_CREAM }]}>
             <Text style={styles.sectionLabel}>HOW IT WORKS</Text>
-            <Text style={[styles.sectionTitle]}>Practice HR Interviews in 3 Steps</Text>
-            <View style={[styles.stepsGrid]}>
+            <Text style={[styles.sectionTitle]} nativeID="section-title">Practice HR Interviews in 3 Steps</Text>
+            <View style={[styles.stepsGrid]} nativeID="steps-grid">
               <View style={styles.stepCard}>
                 <View style={styles.stepNum}><Text style={styles.stepNumText}>1</Text></View>
                 <Text style={styles.stepTitle}>Choose HR Focus</Text>
@@ -901,8 +995,8 @@ export default function HRInterviews() {
 
           {/* Final CTA */}
           <View style={styles.finalCta}>
-            <Text style={[styles.finalCtaTitle, isSmall && { fontSize: 34 }]}>Ready to Master HR Interviews?</Text>
-            <Text style={[styles.finalCtaSubtitle, isSmall && { fontSize: 17 }]}>Join 300+ HR professionals who mastered behavioral interviews, conflict resolution, and people analytics. Start practicing today.</Text>
+            <Text style={styles.finalCtaTitle}>Ready to Master HR Interviews?</Text>
+            <Text style={styles.finalCtaSubtitle}>Join 300+ HR professionals who mastered behavioral interviews, conflict resolution, and people analytics. Start practicing today.</Text>
             <TouchableOpacity style={styles.finalCtaBtn} onPress={() => router.push('/auth/sign-up')}>
               <Text style={styles.finalCtaBtnText}>Start HR Practice Today →</Text>
             </TouchableOpacity>

@@ -128,7 +128,78 @@ export default function DataScienceInterviews() {
         ]
       };
 
-      const cleanup = injectMultipleSchemas([breadcrumbSchema, faqSchema]);
+      // HowTo Schema for Rich Results
+      const howtoSchema = {
+        "@context": "https://schema.org",
+        "@type": "HowTo",
+        "name": "How to Prepare for Data Science Interviews",
+        "description": "Step-by-step guide to mastering ML interviews",
+        "totalTime": "PT60H",
+        "step": [
+          {
+            "@type": "HowToStep",
+            "name": "Master ML Algorithms",
+            "text": "Learn supervised/unsupervised learning, neural networks, ensemble methods"
+          },
+          {
+            "@type": "HowToStep",
+            "name": "Practice Model Debugging",
+            "text": "Diagnose overfitting, underfitting, data leakage, performance issues"
+          },
+          {
+            "@type": "HowToStep",
+            "name": "Python Coding Proficiency",
+            "text": "Master pandas, numpy, scikit-learn for data manipulation"
+          },
+          {
+            "@type": "HowToStep",
+            "name": "Mock ML Interviews",
+            "text": "Practice with senior ML engineers from top companies"
+          }
+        ]
+      };
+
+      // Course Schema for Rich Results
+      const courseSchema = {
+        "@context": "https://schema.org",
+        "@type": "Course",
+        "name": "Data Science Interview Preparation",
+        "description": "Master ML algorithms, model debugging, and Python coding",
+        "provider": {
+          "@type": "Organization",
+          "name": "CrackJobs",
+          "url": "https://crackjobs.com"
+        },
+        "offers": {
+          "@type": "AggregateOffer",
+          "priceCurrency": "INR",
+          "lowPrice": "3000",
+          "highPrice": "15000",
+          "offerCount": "3",
+          "offers": [
+            {
+              "@type": "Offer",
+              "name": "Bronze Mentor",
+              "price": "3000-6000",
+              "priceCurrency": "INR"
+            },
+            {
+              "@type": "Offer",
+              "name": "Silver Mentor",
+              "price": "6000-9000",
+              "priceCurrency": "INR"
+            },
+            {
+              "@type": "Offer",
+              "name": "Gold Mentor",
+              "price": "9000-15000",
+              "priceCurrency": "INR"
+            }
+          ]
+        }
+      };
+
+      const cleanup = injectMultipleSchemas([breadcrumbSchema, faqSchema, howtoSchema, courseSchema]);
       return () => cleanup && cleanup();
     }
   }, []);
@@ -457,6 +528,29 @@ model = RandomForestClassifier(class_weight='balanced')`,
         <meta name="description" content="Ace Data Science interviews at Google, Amazon, Meta with expert ML engineers. Master machine learning algorithms, model debugging, feature engineering, and Python coding. Practice real DS interview questions." />
         <meta name="keywords" content="data science interview, machine learning interview, ML algorithms, model debugging, feature engineering, Python pandas, scikit-learn, XGBoost, neural networks, overfitting, data science preparation" />
         <link rel="canonical" href="https://crackjobs.com/interviews/data-science" />
+      
+        
+        <style>{`
+  body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; background-color: #f8f5f0; }
+  
+  /* ⚡️ RESPONSIVE BRAND HEADER */
+  @media (max-width: 768px) {
+    #brand-eyes { display: none !important; }
+    #brand-header { margin-bottom: 16px !important; }
+  }
+  
+  /* ⚡️ RESPONSIVE SECTIONS */
+  @media (max-width: 768px) {
+    .section-title { font-size: 32px !important; }
+    #question-types-grid,
+    #stories-grid,
+    #tools-grid,
+    #articles-grid,
+    #steps-grid { 
+      flex-direction: column !important; 
+    }
+  }
+`}</style>
       </Head>
 
       <View style={styles.container}>
@@ -480,7 +574,7 @@ model = RandomForestClassifier(class_weight='balanced')`,
           {/* Hero */}
           <View style={[styles.hero]}>
             <View style={styles.badge}><Text style={styles.badgeText}>🤖 DATA SCIENCE INTERVIEWS</Text></View>
-            <Text style={[styles.heroTitle]}>
+            <Text style={[styles.heroTitle]} accessibilityRole="header" accessibilityLevel={1}>
               Build, Debug, Deploy ML Models That Scale
             </Text>
             <Text style={[styles.heroSubtitle]}>
@@ -500,7 +594,7 @@ model = RandomForestClassifier(class_weight='balanced')`,
           {/* Core Skills */}
           <View style={[styles.section, { backgroundColor: 'white' }]}>
             <Text style={styles.sectionLabel}>3 CORE SKILL AREAS</Text>
-            <Text style={[styles.sectionTitle]}>What Companies Test in Data Science Interviews</Text>
+            <Text style={[styles.sectionTitle]} nativeID="section-title">What Companies Test in Data Science Interviews</Text>
             <Text style={styles.sectionDesc}>Based on 600+ ML interviews at FAANG. These 3 areas cover every DS interview question.</Text>
             {coreSkills.map((skill, i) => (
               <View key={i} style={styles.skillCard}>
@@ -527,7 +621,7 @@ model = RandomForestClassifier(class_weight='balanced')`,
           {/* Algorithm Guide */}
           <View style={[styles.section, { backgroundColor: BG_CREAM }]}>
             <Text style={styles.sectionLabel}>ALGORITHM SELECTION GUIDE</Text>
-            <Text style={[styles.sectionTitle]}>Choose the Right ML Algorithm</Text>
+            <Text style={[styles.sectionTitle]} nativeID="section-title">Choose the Right ML Algorithm</Text>
             <Text style={styles.sectionDesc}>Interviewers test if you can select appropriate algorithms. Here's your decision framework.</Text>
             {algorithmGuide.map((guide, i) => (
               <View key={i} style={styles.algoCard}>
@@ -553,7 +647,7 @@ model = RandomForestClassifier(class_weight='balanced')`,
           {/* Debug Scenarios */}
           <View style={[styles.section, { backgroundColor: 'white' }]}>
             <Text style={styles.sectionLabel}>MODEL DEBUGGING SCENARIOS</Text>
-            <Text style={[styles.sectionTitle]}>Real Production ML Problems</Text>
+            <Text style={[styles.sectionTitle]} nativeID="section-title">Real Production ML Problems</Text>
             <Text style={styles.sectionDesc}>70% of ML interviews test debugging. Master these patterns to ace the practical round.</Text>
             {debugScenarios.map((scenario, i) => (
               <View key={i} style={styles.debugCard}>
@@ -578,7 +672,7 @@ model = RandomForestClassifier(class_weight='balanced')`,
           {/* Code Examples */}
           <View style={[styles.section, { backgroundColor: '#f0f8ff' }]}>
             <Text style={styles.sectionLabel}>PYTHON ML CODE LIBRARY</Text>
-            <Text style={[styles.sectionTitle]}>Common ML Coding Patterns</Text>
+            <Text style={[styles.sectionTitle]} nativeID="section-title">Common ML Coding Patterns</Text>
             <Text style={styles.sectionDesc}>These patterns appear in 80% of ML coding rounds. Master them for technical interviews.</Text>
             {codeExamples.map((example, i) => (
               <View key={i} style={styles.codeCard}>
@@ -597,7 +691,7 @@ model = RandomForestClassifier(class_weight='balanced')`,
           {/* Metrics */}
           <View style={[styles.section, { backgroundColor: BG_CREAM }]}>
             <Text style={styles.sectionLabel}>MODEL EVALUATION DEEP DIVE</Text>
-            <Text style={[styles.sectionTitle]}>Beyond Accuracy: Choose the Right Metric</Text>
+            <Text style={[styles.sectionTitle]} nativeID="section-title">Beyond Accuracy: Choose the Right Metric</Text>
             <Text style={styles.sectionDesc}>Accuracy is often meaningless. Understand which metric matches your business problem.</Text>
             <View style={styles.metricsGrid}>
               {evaluationMetrics.map((metric, i) => (
@@ -616,7 +710,7 @@ model = RandomForestClassifier(class_weight='balanced')`,
           {/* Timeline */}
           <View style={[styles.section, { backgroundColor: 'white' }]}>
             <Text style={styles.sectionLabel}>12-WEEK PREP ROADMAP</Text>
-            <Text style={[styles.sectionTitle]}>Complete Data Science Interview Prep Plan</Text>
+            <Text style={[styles.sectionTitle]} nativeID="section-title">Complete Data Science Interview Prep Plan</Text>
             <Text style={styles.sectionDesc}>Structured timeline to master ML theory, debugging, coding, and system design.</Text>
             <View style={styles.timeline}>
               {prepTimeline.map((phase, i) => (
@@ -650,9 +744,9 @@ model = RandomForestClassifier(class_weight='balanced')`,
           {/* Tools */}
           <View style={[styles.section, { backgroundColor: '#f0f8ff' }]}>
             <Text style={styles.sectionLabel}>ML TOOLS ECOSYSTEM</Text>
-            <Text style={[styles.sectionTitle]}>Technologies Data Scientists Must Know</Text>
+            <Text style={[styles.sectionTitle]} nativeID="section-title">Technologies Data Scientists Must Know</Text>
             <Text style={styles.sectionDesc}>Core stack for production ML. Focus depth on 2-3 tools per category.</Text>
-            <View style={[styles.toolsGrid]}>
+            <View style={[styles.toolsGrid]} nativeID="tools-grid">
               {mlTools.map((category, i) => (
                 <View key={i} style={styles.toolCategory}>
                   <Text style={styles.toolCategoryName}>{category.category}</Text>
@@ -671,9 +765,9 @@ model = RandomForestClassifier(class_weight='balanced')`,
           {/* Success Stories */}
           <View style={[styles.section, { backgroundColor: 'white' }]}>
             <Text style={styles.sectionLabel}>SUCCESS STORIES</Text>
-            <Text style={[styles.sectionTitle]}>From Practice to FAANG ML Offers</Text>
+            <Text style={[styles.sectionTitle]} nativeID="section-title">From Practice to FAANG ML Offers</Text>
             <Text style={styles.sectionDesc}>These data scientists mastered ML interviews with CrackJobs and landed dream roles.</Text>
-            <View style={[styles.storiesGrid]}>
+            <View style={[styles.storiesGrid]} nativeID="stories-grid">
               {successStories.map((story, i) => (
                 <View key={i} style={styles.storyCard}>
                   <View style={styles.storyHeader}>
@@ -701,7 +795,7 @@ model = RandomForestClassifier(class_weight='balanced')`,
           {/* Mistakes */}
           <View style={[styles.section, { backgroundColor: '#fff8f0' }]}>
             <Text style={styles.sectionLabel}>AVOID THESE MISTAKES</Text>
-            <Text style={[styles.sectionTitle]}>5 ML Interview Mistakes That Fail Candidates</Text>
+            <Text style={[styles.sectionTitle]} nativeID="section-title">5 ML Interview Mistakes That Fail Candidates</Text>
             <Text style={styles.sectionDesc}>Based on 700+ ML interview evaluations. Fix these to dramatically improve your performance.</Text>
             {commonMistakes.map((mistake, i) => (
               <View key={i} style={styles.mistakeCard}>
@@ -725,8 +819,8 @@ model = RandomForestClassifier(class_weight='balanced')`,
           {/* Articles */}
           <View style={[styles.section, { backgroundColor: 'white' }]}>
             <Text style={styles.sectionLabel}>DEEP DIVE GUIDES</Text>
-            <Text style={[styles.sectionTitle]}>Master Specific ML Topics</Text>
-            <View style={[styles.articlesGrid]}>
+            <Text style={[styles.sectionTitle]} nativeID="section-title">Master Specific ML Topics</Text>
+            <View style={[styles.articlesGrid]} nativeID="articles-grid">
               <TouchableOpacity style={styles.articleCard} onPress={() => router.push('/blog/ml-interview-mistakes')}>
                 <BookIcon size={32} color={CTA_TEAL} />
                 <Text style={styles.articleTitle}>Common ML Interview Mistakes to Avoid</Text>
@@ -739,8 +833,8 @@ model = RandomForestClassifier(class_weight='balanced')`,
           {/* How It Works */}
           <View style={[styles.section, { backgroundColor: BG_CREAM }]}>
             <Text style={styles.sectionLabel}>HOW IT WORKS</Text>
-            <Text style={[styles.sectionTitle]}>Practice ML Interviews in 3 Steps</Text>
-            <View style={[styles.stepsGrid]}>
+            <Text style={[styles.sectionTitle]} nativeID="section-title">Practice ML Interviews in 3 Steps</Text>
+            <View style={[styles.stepsGrid]} nativeID="steps-grid">
               <View style={styles.stepCard}>
                 <View style={styles.stepNum}><Text style={styles.stepNumText}>1</Text></View>
                 <Text style={styles.stepTitle}>Choose ML Focus</Text>
@@ -761,8 +855,8 @@ model = RandomForestClassifier(class_weight='balanced')`,
 
           {/* Final CTA */}
           <View style={styles.finalCta}>
-            <Text style={[styles.finalCtaTitle, isSmall && { fontSize: 34 }]}>Ready to Master ML Interviews?</Text>
-            <Text style={[styles.finalCtaSubtitle, isSmall && { fontSize: 17 }]}>Join 350+ data scientists who mastered ML algorithms, model debugging, and Python coding. Start practicing today.</Text>
+            <Text style={styles.finalCtaTitle}>Ready to Master ML Interviews?</Text>
+            <Text style={styles.finalCtaSubtitle}>Join 350+ data scientists who mastered ML algorithms, model debugging, and Python coding. Start practicing today.</Text>
             <TouchableOpacity style={styles.finalCtaBtn} onPress={() => router.push('/auth/sign-up')}>
               <Text style={styles.finalCtaBtnText}>Start ML Practice Today →</Text>
             </TouchableOpacity>

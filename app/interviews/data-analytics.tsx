@@ -137,7 +137,78 @@ export default function DataAnalyticsInterviews() {
         ]
       };
 
-      const cleanup = injectMultipleSchemas([breadcrumbSchema, faqSchema]);
+      // HowTo Schema for Rich Results
+      const howtoSchema = {
+        "@context": "https://schema.org",
+        "@type": "HowTo",
+        "name": "How to Prepare for Data Analyst Interviews",
+        "description": "Step-by-step guide to mastering data analyst interviews",
+        "totalTime": "PT40H",
+        "step": [
+          {
+            "@type": "HowToStep",
+            "name": "Master SQL Fundamentals",
+            "text": "Practice complex JOINs, window functions, CTEs, and query optimization"
+          },
+          {
+            "@type": "HowToStep",
+            "name": "Learn Business Analysis",
+            "text": "Master A/B testing, funnel analysis, cohort analysis"
+          },
+          {
+            "@type": "HowToStep",
+            "name": "Practice Dashboard Design",
+            "text": "Create visualizations in Tableau, Power BI, Looker"
+          },
+          {
+            "@type": "HowToStep",
+            "name": "Mock Interview Practice",
+            "text": "Practice with expert data analysts from top companies"
+          }
+        ]
+      };
+
+      // Course Schema for Rich Results
+      const courseSchema = {
+        "@context": "https://schema.org",
+        "@type": "Course",
+        "name": "Data Analyst Interview Preparation",
+        "description": "Master SQL, business analytics, and dashboard design",
+        "provider": {
+          "@type": "Organization",
+          "name": "CrackJobs",
+          "url": "https://crackjobs.com"
+        },
+        "offers": {
+          "@type": "AggregateOffer",
+          "priceCurrency": "INR",
+          "lowPrice": "3000",
+          "highPrice": "15000",
+          "offerCount": "3",
+          "offers": [
+            {
+              "@type": "Offer",
+              "name": "Bronze Mentor",
+              "price": "3000-6000",
+              "priceCurrency": "INR"
+            },
+            {
+              "@type": "Offer",
+              "name": "Silver Mentor",
+              "price": "6000-9000",
+              "priceCurrency": "INR"
+            },
+            {
+              "@type": "Offer",
+              "name": "Gold Mentor",
+              "price": "9000-15000",
+              "priceCurrency": "INR"
+            }
+          ]
+        }
+      };
+
+      const cleanup = injectMultipleSchemas([breadcrumbSchema, faqSchema, howtoSchema, courseSchema]);
       return () => cleanup && cleanup();
     }
   }, []);
@@ -435,6 +506,29 @@ JOIN monthly_purchases b
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="Data Analyst Interview Preparation | CrackJobs" />
         <meta name="twitter:description" content="Master SQL, business analytics, and dashboard design." />
+      
+        
+        <style>{`
+  body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; background-color: #f8f5f0; }
+  
+  /* ⚡️ RESPONSIVE BRAND HEADER */
+  @media (max-width: 768px) {
+    #brand-eyes { display: none !important; }
+    #brand-header { margin-bottom: 16px !important; }
+  }
+  
+  /* ⚡️ RESPONSIVE SECTIONS */
+  @media (max-width: 768px) {
+    .section-title { font-size: 32px !important; }
+    #question-types-grid,
+    #stories-grid,
+    #tools-grid,
+    #articles-grid,
+    #steps-grid { 
+      flex-direction: column !important; 
+    }
+  }
+`}</style>
       </Head>
 
       <View style={styles.container}>
@@ -478,7 +572,7 @@ JOIN monthly_purchases b
           {/* Core Skills */}
           <View style={[styles.section, { backgroundColor: 'white' }]} accessibilityRole="region">
             <Text style={styles.sectionLabel} accessibilityRole="header" accessibilityLevel={2}>4 CORE SKILL AREAS</Text>
-            <Text style={[styles.sectionTitle]}>What Companies Test in Data Analyst Interviews</Text>
+            <Text style={[styles.sectionTitle]} nativeID="section-title">What Companies Test in Data Analyst Interviews</Text>
             <Text style={styles.sectionDesc}>Based on 500+ analyst interview evaluations. Master these 4 areas to pass any DA interview.</Text>
             {coreSkills.map((skill, i) => (
               <View key={i} style={styles.skillCard}>
@@ -505,7 +599,7 @@ JOIN monthly_purchases b
           {/* SQL Challenges */}
           <View style={[styles.section, { backgroundColor: BG_CREAM }]} accessibilityRole="region">
             <Text style={styles.sectionLabel}>SQL CHALLENGE LIBRARY</Text>
-            <Text style={[styles.sectionTitle]}>Common SQL Patterns in Analyst Interviews</Text>
+            <Text style={[styles.sectionTitle]} nativeID="section-title">Common SQL Patterns in Analyst Interviews</Text>
             <Text style={styles.sectionDesc}>These SQL patterns appear in 80% of analyst interviews. Master them to ace the technical round.</Text>
             {sqlChallenges.map((challenge, i) => (
               <View key={i} style={styles.sqlCard}>
@@ -536,9 +630,9 @@ JOIN monthly_purchases b
           {/* Question Types */}
           <View style={[styles.section, { backgroundColor: 'white' }]} accessibilityRole="region">
             <Text style={styles.sectionLabel}>INTERVIEW BREAKDOWN</Text>
-            <Text style={[styles.sectionTitle]}>4 Types of Questions You'll Face</Text>
+            <Text style={[styles.sectionTitle]} nativeID="section-title">4 Types of Questions You'll Face</Text>
             <Text style={styles.sectionDesc}>Understanding the question mix helps you prepare strategically. Each type requires different skills.</Text>
-            <View style={[styles.questionTypesGrid]}>
+            <View style={[styles.questionTypesGrid]} nativeID="question-types-grid">
               {questionTypes.map((type, i) => (
                 <View key={i} style={styles.questionTypeCard}>
                   {type.icon}
@@ -557,7 +651,7 @@ JOIN monthly_purchases b
           {/* Timeline */}
           <View style={[styles.section, { backgroundColor: '#f0f8ff' }]} accessibilityRole="region">
             <Text style={styles.sectionLabel}>8-WEEK PREP ROADMAP</Text>
-            <Text style={[styles.sectionTitle]}>Your Complete Data Analyst Interview Prep Plan</Text>
+            <Text style={[styles.sectionTitle]} nativeID="section-title">Your Complete Data Analyst Interview Prep Plan</Text>
             <Text style={styles.sectionDesc}>A structured, week-by-week plan to master SQL, business analysis, and communication.</Text>
             <View style={styles.timeline}>
               {prepTimeline.map((phase, i) => (
@@ -591,9 +685,9 @@ JOIN monthly_purchases b
           {/* Tools */}
           <View style={[styles.section, { backgroundColor: 'white' }]} accessibilityRole="region">
             <Text style={styles.sectionLabel}>TOOLS & TECH STACK</Text>
-            <Text style={[styles.sectionTitle]}>Technologies Data Analysts Must Know</Text>
+            <Text style={[styles.sectionTitle]} nativeID="section-title">Technologies Data Analysts Must Know</Text>
             <Text style={styles.sectionDesc}>Not every role requires all tools, but SQL proficiency is universal. Focus on tools relevant to your target company.</Text>
-            <View style={[styles.toolsGrid]}>
+            <View style={[styles.toolsGrid]} nativeID="tools-grid">
               {tools.map((tool, i) => (
                 <View key={i} style={styles.toolCategory}>
                   <Text style={styles.toolCategoryName}>{tool.category}</Text>
@@ -612,9 +706,9 @@ JOIN monthly_purchases b
           {/* Success Stories */}
           <View style={[styles.section, { backgroundColor: BG_CREAM }]} accessibilityRole="region">
             <Text style={styles.sectionLabel}>SUCCESS STORIES</Text>
-            <Text style={[styles.sectionTitle]}>From SQL Practice to Business Impact</Text>
+            <Text style={[styles.sectionTitle]} nativeID="section-title">From SQL Practice to Business Impact</Text>
             <Text style={styles.sectionDesc}>These analysts practiced with CrackJobs and landed roles at top companies with measurable impact.</Text>
-            <View style={[styles.storiesGrid]}>
+            <View style={[styles.storiesGrid]} nativeID="stories-grid">
               {successStories.map((story, i) => (
                 <View key={i} style={styles.storyCard}>
                   <View style={styles.storyHeader}>
@@ -642,7 +736,7 @@ JOIN monthly_purchases b
           {/* Mistakes */}
           <View style={[styles.section, { backgroundColor: 'white' }]} accessibilityRole="region">
             <Text style={styles.sectionLabel}>AVOID THESE MISTAKES</Text>
-            <Text style={[styles.sectionTitle]}>5 SQL & Analysis Mistakes That Fail Interviews</Text>
+            <Text style={[styles.sectionTitle]} nativeID="section-title">5 SQL & Analysis Mistakes That Fail Interviews</Text>
             <Text style={styles.sectionDesc}>Based on 800+ analyst interview evaluations. These mistakes appear in 75% of failed interviews.</Text>
             {commonMistakes.map((item, i) => (
               <View key={i} style={styles.mistakeCard}>
@@ -682,8 +776,8 @@ JOIN monthly_purchases b
           {/* Related Articles */}
           <View style={[styles.section, { backgroundColor: '#fff8f0' }]} accessibilityRole="region">
             <Text style={styles.sectionLabel}>DEEP DIVE GUIDES</Text>
-            <Text style={[styles.sectionTitle]}>Master Specific Analyst Topics</Text>
-            <View style={[styles.articlesGrid]}>
+            <Text style={[styles.sectionTitle]} nativeID="section-title">Master Specific Analyst Topics</Text>
+            <View style={[styles.articlesGrid]} nativeID="articles-grid">
               <TouchableOpacity style={styles.articleCard} onPress={() => router.push('/blog/sql-interview-mistakes-data-analysts')} accessibilityRole="link">
                 <BookOpenIcon size={32} color={CTA_TEAL} />
                 <Text style={styles.articleTitle}>Common SQL Interview Mistakes Data Analysts Make</Text>
@@ -696,8 +790,8 @@ JOIN monthly_purchases b
           {/* How It Works */}
           <View style={[styles.section, { backgroundColor: 'white' }]} accessibilityRole="region">
             <Text style={styles.sectionLabel}>HOW IT WORKS</Text>
-            <Text style={[styles.sectionTitle]}>Practice SQL & Analysis in 3 Steps</Text>
-            <View style={[styles.stepsGrid]}>
+            <Text style={[styles.sectionTitle]} nativeID="section-title">Practice SQL & Analysis in 3 Steps</Text>
+            <View style={[styles.stepsGrid]} nativeID="steps-grid">
               <View style={styles.stepCard}>
                 <View style={styles.stepNum}><Text style={styles.stepNumText}>1</Text></View>
                 <Text style={styles.stepTitle}>Pick Your Focus</Text>
@@ -718,8 +812,8 @@ JOIN monthly_purchases b
 
           {/* Final CTA */}
           <View style={styles.finalCta} accessibilityRole="region">
-            <Text style={[styles.finalCtaTitle, isSmall && { fontSize: 34 }]}>Ready to Master Data Analyst Interviews?</Text>
-            <Text style={[styles.finalCtaSubtitle, isSmall && { fontSize: 17 }]}>Join 400+ analysts who mastered SQL, business cases, and dashboard design with expert mentors. Start practicing today.</Text>
+            <Text style={styles.finalCtaTitle}>Ready to Master Data Analyst Interviews?</Text>
+            <Text style={styles.finalCtaSubtitle}>Join 400+ analysts who mastered SQL, business cases, and dashboard design with expert mentors. Start practicing today.</Text>
             <TouchableOpacity style={styles.finalCtaBtn} onPress={() => router.push('/auth/sign-up')} accessibilityRole="button">
               <Text style={styles.finalCtaBtnText}>Start SQL Practice Today →</Text>
             </TouchableOpacity>
