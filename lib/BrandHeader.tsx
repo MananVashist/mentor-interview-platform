@@ -1,5 +1,4 @@
 ﻿// lib/BrandHeader.tsx
-// ⚡ CRITICAL: Animated brand logo with eyes - used above-the-fold
 import React, { useEffect, useRef, useState } from "react";
 import {
   Text,
@@ -18,10 +17,10 @@ interface BrandHeaderProps {
   small?: boolean;
 }
 
-export const BrandHeader = ({ style, small = false }: BrandHeaderProps) => {
+export const BrandHeader = ({ style, small }: BrandHeaderProps) => {
   const router = useRouter();
   
-  // 🔥 FIX: Track if component is mounted (client-side only)
+  // Track mounting for animations only (prevents animation glitches during SSR)
   const [isMounted, setIsMounted] = useState(false);
   
   const leftEyeX = useRef(new Animated.Value(0)).current;
@@ -32,14 +31,13 @@ export const BrandHeader = ({ style, small = false }: BrandHeaderProps) => {
   const leftPos = useRef({ x: 0, y: 0 });
   const rightPos = useRef({ x: 0, y: 0 });
 
-  // 🔥 FIX: Set mounted state on client only
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
-  // 🔥 FIX: Only run animations after component is mounted (client-side)
+  // Eye Animation Loop
   useEffect(() => {
-    if (!isMounted) return; // ✅ Skip animations during SSR
+    if (!isMounted) return; 
     
     const randomRange = (min: number, max: number) => Math.random() * (max - min) + min;
     const SPEED = 0.04; 
@@ -59,24 +57,11 @@ export const BrandHeader = ({ style, small = false }: BrandHeaderProps) => {
       targetX = Math.max(-10, Math.min(10, targetX));
       targetY = Math.max(-10, Math.min(10, targetY));
       
-      const dx = targetX - currentPos.x;
-      const dy = targetY - currentPos.y;
-      const actualDistance = Math.sqrt(dx * dx + dy * dy);
-      const duration = Math.max(300, actualDistance / SPEED);
+      const duration = Math.max(300, Math.sqrt((targetX - currentPos.x) ** 2 + (targetY - currentPos.y) ** 2) / SPEED);
       
       Animated.parallel([
-        Animated.timing(animX, {
-          toValue: targetX,
-          duration: duration,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
-        }),
-        Animated.timing(animY, {
-          toValue: targetY,
-          duration: duration,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
-        }),
+        Animated.timing(animX, { toValue: targetX, duration, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+        Animated.timing(animY, { toValue: targetY, duration, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
       ]).start(() => {
         currentPos.x = targetX;
         currentPos.y = targetY;
@@ -86,7 +71,7 @@ export const BrandHeader = ({ style, small = false }: BrandHeaderProps) => {
     
     moveEye(leftEyeX, leftEyeY, leftPos.current);
     moveEye(rightEyeX, rightEyeY, rightPos.current);
-  }, [isMounted]); // ✅ Only re-run when isMounted changes
+  }, [isMounted]);
 
   return (
     <TouchableOpacity 
@@ -94,30 +79,21 @@ export const BrandHeader = ({ style, small = false }: BrandHeaderProps) => {
       activeOpacity={0.8}
       accessibilityRole="link"
       accessibilityLabel="CrackJobs home"
-      accessibilityHint="Navigate to homepage"
     >
-      <View style={[styles.brandContainer, style]}>
-      {!small && (  
-      <View style={styles.eyesWrapper}>
-          <View style={styles.eye}>
-            <Animated.View
-              style={[
-                styles.pupil,
-                { transform: [{ translateX: leftEyeX }, { translateY: leftEyeY }] },
-              ]}
-            />
-          </View>
-          <View style={styles.eye}>
-            <Animated.View
-              style={[
-                styles.pupil,
-                { transform: [{ translateX: rightEyeX }, { translateY: rightEyeY }] },
-              ]}
-            />
-          </View>
+      <View style={[styles.brandContainer, style]} nativeID="brand-header">
+        
+        {/* Eyes wrapper - hidden on mobile via CSS */}
+        <View style={styles.eyesWrapper} nativeID="brand-eyes">
+            <View style={styles.eye}>
+              <Animated.View style={[styles.pupil, { transform: [{ translateX: leftEyeX }, { translateY: leftEyeY }] }]} />
+            </View>
+            <View style={styles.eye}>
+              <Animated.View style={[styles.pupil, { transform: [{ translateX: rightEyeX }, { translateY: rightEyeY }] }]} />
+            </View>
         </View>
-      )}
-        <View>
+
+        {/* Text container - size adjusted on mobile via CSS */}
+        <View nativeID="brand-text-container">
           <Text style={[styles.logoMain, small && styles.logoMainSmall]}>
             <Text style={styles.logoMainCrack}>Crack</Text>
             <Text style={styles.logoMainJobs}>Jobs</Text>
@@ -132,62 +108,66 @@ export const BrandHeader = ({ style, small = false }: BrandHeaderProps) => {
 };
 
 const SYSTEM_FONT = Platform.select({
- web: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif",
+  web: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif",
   ios: "System",
   android: "Roboto",
   default: "System"
 }) as string;
 
 const styles = StyleSheet.create({
-  // Brand Container
-  brandContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 32,
+  brandContainer: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'flex-start',
+    alignSelf: 'flex-start',
+    marginBottom: 32 
   },
   eyesWrapper: { 
     flexDirection: 'row', 
     gap: 6, 
     marginRight: 12 
   },
-  eye: {
-    width: 32,
-    height: 32,
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    borderWidth: 2.5,
-    borderColor: '#333',
-    justifyContent: 'center',
-    alignItems: 'center',
-    overflow: 'hidden',
+  eye: { 
+    width: 32, 
+    height: 32, 
+    backgroundColor: '#fff', 
+    borderRadius: 16, 
+    borderWidth: 2.5, 
+    borderColor: '#333', 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    overflow: 'hidden' 
   },
-  pupil: {
-    width: 12,
-    height: 12,
-    backgroundColor: '#333',
-    borderRadius: 6,
+  pupil: { 
+    width: 12, 
+    height: 12, 
+    backgroundColor: '#333', 
+    borderRadius: 6 
   },
-  logoMain: {
-    fontFamily: SYSTEM_FONT,
-    fontSize: 32,
-    fontWeight: '800',
-    lineHeight: 38,
+  logoMain: { 
+    fontFamily: SYSTEM_FONT, 
+    fontSize: 32, 
+    fontWeight: '800', 
+    lineHeight: 38 
   },
-  logoMainSmall: {
-    fontSize: 24,
-    lineHeight: 30,
+  logoMainSmall: { 
+    fontSize: 24, 
+    lineHeight: 30 
   },
-  logoMainCrack: { color: '#333' },
-  logoMainJobs: { color: '#18a7a7' },
-  logoTagline: {
-    fontFamily: SYSTEM_FONT,
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#18a7a7',
-    marginTop: -4,
+  logoMainCrack: { 
+    color: '#333' 
   },
-  logoTaglineSmall: {
-    fontSize: 12,
+  logoMainJobs: { 
+    color: '#18a7a7' 
+  },
+  logoTagline: { 
+    fontFamily: SYSTEM_FONT, 
+    fontSize: 14, 
+    fontWeight: '700', 
+    color: '#18a7a7', 
+    marginTop: -4 
+  },
+  logoTaglineSmall: { 
+    fontSize: 12 
   },
 });

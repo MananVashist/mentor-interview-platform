@@ -279,8 +279,7 @@ export default function ProductManagementInterviews() {
       goals: [
         "Learn CIRCLES, AARM, RICE frameworks inside out",
         "Practice 10+ product design questions",
-        "Develop structured thinking muscle memory",
-        "Record yourself explaining frameworks clearly"
+        "Develop structured thinking muscle memory"
       ]
     },
     {
@@ -321,7 +320,7 @@ export default function ProductManagementInterviews() {
   // Success Stories
   const successStories = [
     {
-      name: "Arjun M.",
+      name: "S. M.",
       company: "Google",
       role: "Product Manager",
       outcome: "₹42L Package",
@@ -331,8 +330,8 @@ export default function ProductManagementInterviews() {
       sessions: 6
     },
     {
-      name: "Priya K.",
-      company: "Meta",
+      name: "S. D.",
+      company: "",
       role: "Product Manager",
       outcome: "3x Salary Jump",
       detail: "From ₹15L to ₹45L",
@@ -455,6 +454,29 @@ export default function ProductManagementInterviews() {
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="Product Manager Interview Preparation | CrackJobs" />
         <meta name="twitter:description" content="Master PM interviews with expert mentors from Google, Amazon, Meta." />
+      
+        
+        <style>{`
+  body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; background-color: #f8f5f0; }
+  
+  /* ⚡️ RESPONSIVE BRAND HEADER */
+  @media (max-width: 768px) {
+    #brand-eyes { display: none !important; }
+    #brand-header { margin-bottom: 16px !important; }
+  }
+  
+  /* ⚡️ RESPONSIVE SECTIONS */
+  @media (max-width: 768px) {
+    .section-title { font-size: 32px !important; }
+    #question-types-grid,
+    #stories-grid,
+    #tools-grid,
+    #articles-grid,
+    #steps-grid { 
+      flex-direction: column !important; 
+    }
+  }
+`}</style>
       </Head>
 
       <View style={styles.container}>
@@ -499,7 +521,7 @@ export default function ProductManagementInterviews() {
               Master PM Frameworks That Win FAANG Offers
             </Text>
             <Text style={[styles.heroSubtitle]}>
-              Practice Product Sense, Execution, Technical Design, and Strategy with experienced PMs. Get structured feedback on every answer.
+              Practice Product Sense, Execution, Technical Design, and Strategy with experienced PMs. Get structured feedback on every answer and a recording of the session
             </Text>
             <View style={styles.heroStats}>
               <View style={styles.stat}>
@@ -529,7 +551,7 @@ export default function ProductManagementInterviews() {
           {/* 4 Core Skills - Detailed */}
           <View style={[styles.section, { backgroundColor: 'white' }]} accessibilityRole="region" accessibilityLabel="Core PM skills">
             <Text style={styles.sectionLabel} accessibilityRole="header" accessibilityLevel={2}>4 CORE EVALUATION AREAS</Text>
-            <Text style={[styles.sectionTitle]}>
+            <Text style={[styles.sectionTitle]} nativeID="section-title">
               What FAANG Companies Test in PM Interviews
             </Text>
             <Text style={styles.sectionDesc}>
@@ -571,7 +593,7 @@ export default function ProductManagementInterviews() {
           {/* PM Frameworks - Deep Dive */}
           <View style={[styles.section, { backgroundColor: BG_CREAM }]} accessibilityRole="region" accessibilityLabel="PM Frameworks">
             <Text style={styles.sectionLabel} accessibilityRole="header" accessibilityLevel={2}>ESSENTIAL PM FRAMEWORKS</Text>
-            <Text style={[styles.sectionTitle]}>
+            <Text style={[styles.sectionTitle]} nativeID="section-title">
               3 Frameworks Every PM Must Master
             </Text>
             <Text style={styles.sectionDesc}>
@@ -615,7 +637,7 @@ export default function ProductManagementInterviews() {
           {/* Interview Timeline */}
           <View style={[styles.section, { backgroundColor: 'white' }]} accessibilityRole="region" accessibilityLabel="Interview preparation timeline">
             <Text style={styles.sectionLabel} accessibilityRole="header" accessibilityLevel={2}>8-WEEK PREPARATION ROADMAP</Text>
-            <Text style={[styles.sectionTitle]}>
+            <Text style={[styles.sectionTitle]} nativeID="section-title">
               Your Complete PM Interview Prep Plan
             </Text>
             <Text style={styles.sectionDesc}>
@@ -654,7 +676,7 @@ export default function ProductManagementInterviews() {
           {/* Case Study Walkthrough */}
           <View style={[styles.section, { backgroundColor: '#f0f8ff' }]} accessibilityRole="region" accessibilityLabel="Case study walkthrough">
             <Text style={styles.sectionLabel} accessibilityRole="header" accessibilityLevel={2}>CASE STUDY WALKTHROUGH</Text>
-            <Text style={[styles.sectionTitle]}>
+            <Text style={[styles.sectionTitle]} nativeID="section-title">
               How to Structure a 45-Minute PM Case
             </Text>
             <Text style={styles.sectionDesc}>
@@ -686,14 +708,14 @@ export default function ProductManagementInterviews() {
           {/* Success Stories */}
           <View style={[styles.section, { backgroundColor: 'white' }]} accessibilityRole="region" accessibilityLabel="Success stories">
             <Text style={styles.sectionLabel} accessibilityRole="header" accessibilityLevel={2}>SUCCESS STORIES</Text>
-            <Text style={[styles.sectionTitle]}>
-              Real PM Offers from Real Practice
+            <Text style={[styles.sectionTitle]} nativeID="section-title">
+              Our Success stories
             </Text>
             <Text style={styles.sectionDesc}>
-              These candidates used CrackJobs to practice frameworks, get feedback, and land FAANG PM roles.
+              These candidates used CrackJobs to practice frameworks, get feedback, and land PM roles!
             </Text>
 
-            <View style={[styles.storiesGrid]}>
+            <View style={[styles.storiesGrid]} nativeID="stories-grid">
               {successStories.map((story, i) => (
                 <View 
                   key={i} 
@@ -713,10 +735,7 @@ export default function ProductManagementInterviews() {
                     </View>
                   </View>
 
-                  <View style={styles.storyOutcomeBox}>
-                    <Text style={styles.storyOutcome}>{story.outcome}</Text>
-                    <Text style={styles.storyDetail}>{story.detail}</Text>
-                  </View>
+                  
 
                   <Text style={styles.storyQuote}>"{story.quote}"</Text>
 
@@ -731,7 +750,7 @@ export default function ProductManagementInterviews() {
           {/* Common Mistakes - Comprehensive */}
           <View style={[styles.section, { backgroundColor: '#fff8f0' }]} accessibilityRole="region" accessibilityLabel="Common mistakes">
             <Text style={styles.sectionLabel} accessibilityRole="header" accessibilityLevel={2}>AVOID THESE MISTAKES</Text>
-            <Text style={[styles.sectionTitle]}>
+            <Text style={[styles.sectionTitle]} nativeID="section-title">
               5 Mistakes That Cost PM Offers
             </Text>
             <Text style={styles.sectionDesc}>
@@ -767,11 +786,11 @@ export default function ProductManagementInterviews() {
           {/* Related Articles */}
           <View style={[styles.section, { backgroundColor: 'white' }]} accessibilityRole="region" accessibilityLabel="Related reading">
             <Text style={styles.sectionLabel} accessibilityRole="header" accessibilityLevel={2}>DEEP DIVE GUIDES</Text>
-            <Text style={[styles.sectionTitle]}>
+            <Text style={[styles.sectionTitle]} nativeID="section-title">
               Master Specific PM Interview Topics
             </Text>
 
-            <View style={[styles.articlesGrid]}>
+            <View style={[styles.articlesGrid]} nativeID="articles-grid">
               <TouchableOpacity 
                 style={styles.articleCard} 
                 onPress={() => router.push('/blog/product-manager-interview-execution-mistakes')} 
@@ -805,18 +824,18 @@ export default function ProductManagementInterviews() {
           {/* How It Works */}
           <View style={[styles.section, { backgroundColor: BG_CREAM }]} accessibilityRole="region" accessibilityLabel="How it works">
             <Text style={styles.sectionLabel} accessibilityRole="header" accessibilityLevel={2}>HOW IT WORKS</Text>
-            <Text style={[styles.sectionTitle]}>
+            <Text style={[styles.sectionTitle]} nativeID="section-title">
               Practice with Real PMs in 3 Steps
             </Text>
 
-            <View style={[styles.stepsGrid]}>
+            <View style={[styles.stepsGrid]} nativeID="steps-grid">
               <View style={styles.stepCard} accessibilityRole="article">
                 <View style={styles.stepNum}>
                   <Text style={styles.stepNumText}>1</Text>
                 </View>
                 <Text style={styles.stepTitle}>Choose Your Focus Area</Text>
                 <Text style={styles.stepDesc}>
-                  Select Product Sense, Execution, Technical, or Strategy. Browse PMs from Google, Amazon, Meta, and 50+ top companies.
+                  Select Product Sense, Execution, Technical, or Strategy. Browse PMs from top companies.
                 </Text>
               </View>
 
