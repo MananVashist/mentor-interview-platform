@@ -9,6 +9,8 @@ import { colors, spacing, borderRadius, typography, shadows } from '@/lib/theme'
 import { Heading, AppText, Section, Card, Button, Input, ScreenBackground, Label } from '@/lib/ui';
 import { useNotification } from '@/lib/ui/NotificationBanner';
 
+type TierType = 'bronze' | 'silver' | 'gold';
+
 type MentorRow = {
   id: string; 
   professional_title: string | null;
@@ -18,6 +20,7 @@ type MentorRow = {
   total_sessions: number | null;
   average_rating: number | null;
   experience_description: string | null;
+  tier: TierType | null;
   bank_details: {
     holder_name?: string;
     account_number?: string;
@@ -31,6 +34,40 @@ type InterviewProfile = {
   is_active: boolean;
 };
 
+// Tier configuration
+const TIER_CONFIG = {
+  bronze: {
+    minPrice: 1500,
+    maxPrice: 3000,
+    defaultPrice: 2000,
+    multiplier: 2.0,
+    commission: '100%',
+    displayName: 'Bronze',
+    color: '#CD7F32',
+    bgColor: '#FEF2F2',
+  },
+  silver: {
+    minPrice: 3000,
+    maxPrice: 5000,
+    defaultPrice: 4200,
+    multiplier: 1.75,
+    commission: '75%',
+    displayName: 'Silver',
+    color: '#9CA3AF',
+    bgColor: '#F8F9FA',
+  },
+  gold: {
+    minPrice: 6000,
+    maxPrice: 10000,
+    defaultPrice: 8000,
+    multiplier: 1.5,
+    commission: '50%',
+    displayName: 'Gold',
+    color: '#F59E0B',
+    bgColor: '#FFFBEB',
+  },
+};
+
 export default function MentorProfileScreen() {
   const { profile } = useAuthStore();
   const { showNotification } = useNotification();
@@ -38,7 +75,8 @@ export default function MentorProfileScreen() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   
-  const [sessionPrice, setSessionPrice] = useState('1000');
+  const [tier, setTier] = useState<TierType>('bronze');
+  const [sessionPrice, setSessionPrice] = useState('');
   const [availableProfiles, setAvailableProfiles] = useState<InterviewProfile[]>([]);
   const [selectedProfiles, setSelectedProfiles] = useState<number[]>([]);
   const [professionalTitle, setProfessionalTitle] = useState('');
@@ -64,12 +102,15 @@ export default function MentorProfileScreen() {
 
         const { data: mentor } = await supabase
           .from('mentors')
-          .select('id, professional_title, years_of_experience, profile_ids, session_price_inr, total_sessions, average_rating, experience_description, bank_details')
+          .select('id, professional_title, years_of_experience, profile_ids, session_price_inr, total_sessions, average_rating, experience_description, tier, bank_details')
           .eq('id', profile.id) 
           .maybeSingle();
         
         if (mentor && mounted) {
           const m = mentor as MentorRow;
+          const mentorTier = (m.tier || 'bronze') as TierType;
+          setTier(mentorTier);
+          
           setProfessionalTitle(m.professional_title ?? '');
           setYearsOfExperience(m.years_of_experience != null ? String(m.years_of_experience) : '');
           setSelectedProfiles(m.profile_ids ?? []);
@@ -84,10 +125,11 @@ export default function MentorProfileScreen() {
             setIfscCode(m.bank_details.ifsc_code ?? '');
           }
           
+          // Set price - use existing or tier default
           if (m.session_price_inr != null) {
             setSessionPrice(String(m.session_price_inr));
           } else {
-            setSessionPrice('1000');
+            setSessionPrice(String(TIER_CONFIG[mentorTier].defaultPrice));
           }
         }
 
@@ -132,13 +174,18 @@ export default function MentorProfileScreen() {
       return;
     }
     
+    const tierConfig = TIER_CONFIG[tier];
+    
     if (price !== null) {
       if (isNaN(price)) {
         showNotification('Price must be a valid number.', 'error');
         return;
       }
-      if (price < 1500 || price > 5000) {
-        showNotification('Price must be between ₹1500 and ₹5000.', 'error');
+      if (price < tierConfig.minPrice || price > tierConfig.maxPrice) {
+        showNotification(
+          `Price must be between ₹${tierConfig.minPrice.toLocaleString()} and ₹${tierConfig.maxPrice.toLocaleString()} for ${tierConfig.displayName} tier.`,
+          'error'
+        );
         return;
       }
     } else {
@@ -202,6 +249,11 @@ export default function MentorProfileScreen() {
     );
   }
 
+  const tierConfig = TIER_CONFIG[tier];
+  const basePrice = sessionPrice ? Number(sessionPrice) : tierConfig.defaultPrice;
+  const candidatePrice = Math.round(basePrice * tierConfig.multiplier);
+  const platformFee = candidatePrice - basePrice;
+
   return (
     <ScreenBackground>
       <ScrollView contentContainerStyle={{ paddingBottom: spacing.xl }}>
@@ -210,6 +262,23 @@ export default function MentorProfileScreen() {
             <Ionicons name="settings-outline" size={32} color={colors.primary} />
           </View>
           <Heading level={1}>My profile</Heading>
+        </Section>
+
+        {/* TIER BADGE */}
+        <Section>
+          <Card style={[styles.tierCard, { backgroundColor: tierConfig.bgColor }]}>
+            <View style={styles.tierContent}>
+              <View style={[styles.tierBadge, { borderColor: tierConfig.color }]}>
+                <Ionicons name="ribbon" size={20} color={tierConfig.color} />
+                <AppText style={[styles.tierText, { color: tierConfig.color }]}>
+                  {tierConfig.displayName} Tier
+                </AppText>
+              </View>
+              <AppText style={styles.tierDescription}>
+                Price Range: ₹{tierConfig.minPrice.toLocaleString()} - ₹{tierConfig.maxPrice.toLocaleString()}
+              </AppText>
+            </View>
+          </Card>
         </Section>
 
         {/* STATS CARD */}
@@ -254,60 +323,65 @@ export default function MentorProfileScreen() {
             </View>
             
             <AppText style={styles.cardDescription}>
-              Set your fee for a complete mock interview session. Range: ₹1500 - ₹5000.
+              Set your base fee for a mock interview session. Your tier is {tierConfig.displayName}.
             </AppText>
 
             <View style={styles.inputGroup}>
-              <Label style={styles.inputLabel}>Price per Session (INR)</Label>
+              <Label style={styles.inputLabel}>Your Base Price (INR)</Label>
               <View style={styles.currencyInputContainer}>
                 <AppText style={styles.currencySymbol}>₹</AppText>
                 <Input
                   value={sessionPrice}
                   onChangeText={setSessionPrice}
                   keyboardType="number-pad"
-                  placeholder="e.g. 2000"
+                  placeholder={String(tierConfig.defaultPrice)}
                   style={styles.currencyInput}
                 />
               </View>
+              <AppText style={styles.priceHint}>
+                Range: ₹{tierConfig.minPrice.toLocaleString()} - ₹{tierConfig.maxPrice.toLocaleString()}
+              </AppText>
             </View>
           </Card>
         </Section>
 
-        {/* SECTION 2: INTERVIEW TYPES */}
+        {/* SECTION 2: PROFILES */}
         <Section>
           <Card style={[styles.card, shadows.card as any]}>
             <View style={styles.cardHeader}>
               <Ionicons name="briefcase-outline" size={20} color={colors.primary} />
-              <Heading level={2} style={styles.cardTitle}>Interview Types</Heading>
+              <Heading level={2} style={styles.cardTitle}>Interview Profiles</Heading>
             </View>
+
             <AppText style={styles.cardDescription}>
-              Select all interview profiles you can conduct.
+              Select the types of interviews you can conduct.
             </AppText>
 
             <View style={styles.profilesGrid}>
               {availableProfiles.length === 0 ? (
-                <AppText style={styles.emptyText}>No active profiles available</AppText>
+                <AppText style={styles.emptyText}>No profiles available.</AppText>
               ) : (
-                availableProfiles.map((profile) => {
-                  const isSelected = selectedProfiles.includes(profile.id);
+                availableProfiles.map((p) => {
+                  const isSelected = selectedProfiles.includes(p.id);
                   return (
                     <TouchableOpacity
-                      key={profile.id}
+                      key={p.id}
                       style={[styles.profileCard, isSelected && styles.profileCardSelected]}
-                      onPress={() => toggleProfile(profile.id)}
+                      onPress={() => toggleProfile(p.id)}
+                      activeOpacity={0.7}
                     >
                       <View style={styles.profileCardContent}>
                         <Ionicons
-                          name={isSelected ? "checkmark-circle" : "ellipse-outline"}
+                          name={isSelected ? 'checkmark-circle' : 'ellipse-outline'}
                           size={16}
-                          color={isSelected ? "white" : colors.textTertiary}
+                          color={isSelected ? 'white' : colors.textSecondary}
                           style={[
                             styles.profileCheckbox,
-                            isSelected && styles.profileCheckboxSelected
+                            isSelected && styles.profileCheckboxSelected,
                           ]}
                         />
                         <AppText style={[styles.profileName, isSelected && styles.profileNameSelected]}>
-                          {profile.name}
+                          {p.name}
                         </AppText>
                       </View>
                     </TouchableOpacity>
@@ -322,11 +396,12 @@ export default function MentorProfileScreen() {
         <Section>
           <Card style={[styles.card, shadows.card as any]}>
             <View style={styles.cardHeader}>
-              <Ionicons name="wallet-outline" size={20} color={colors.primary} />
-              <Heading level={2} style={styles.cardTitle}>Payment Details</Heading>
+              <Ionicons name="card-outline" size={20} color={colors.primary} />
+              <Heading level={2} style={styles.cardTitle}>Bank Details</Heading>
             </View>
+
             <AppText style={styles.cardDescription}>
-              Add your bank account to receive session payments.
+              For receiving payments. This information is kept private.
             </AppText>
 
             <View style={styles.inputGroup}>
@@ -334,7 +409,7 @@ export default function MentorProfileScreen() {
               <Input
                 value={accountHolderName}
                 onChangeText={setAccountHolderName}
-                placeholder="Full Name as per bank"
+                placeholder="Full name as per bank account"
                 style={styles.input}
               />
             </View>
@@ -344,8 +419,8 @@ export default function MentorProfileScreen() {
               <Input
                 value={accountNumber}
                 onChangeText={setAccountNumber}
+                placeholder="Your bank account number"
                 keyboardType="number-pad"
-                placeholder="e.g., 1234567890"
                 style={styles.input}
               />
             </View>
@@ -362,61 +437,24 @@ export default function MentorProfileScreen() {
             </View>
 
             <View style={styles.bankNotice}>
-              <Ionicons name="information-circle" size={14} color={colors.success} />
+              <Ionicons name="shield-checkmark" size={16} color={colors.success} />
               <AppText style={styles.bankNoticeText}>
-                Required for receiving payouts directly to your account
+                Your banking details are stored securely and never shared with candidates.
               </AppText>
             </View>
           </Card>
         </Section>
 
-        {/* SECTION 4: PRIVATE INFO */}
+        {/* SECTION 4: PROFESSIONAL INFO */}
         <Section>
           <Card style={[styles.card, shadows.card as any]}>
             <View style={styles.cardHeader}>
-              <Ionicons name="lock-closed" size={20} color={colors.textTertiary} />
-              <Heading level={2} style={styles.cardTitle}>Private Information</Heading>
+              <Ionicons name="person-outline" size={20} color={colors.primary} />
+              <Heading level={2} style={styles.cardTitle}>Professional Information</Heading>
             </View>
+
             <AppText style={styles.cardDescription}>
-              Your personal details. Candidates will NOT see this.
-            </AppText>
-
-            {profile?.display_name && (
-                <View style={styles.infoRow}>
-                <View style={styles.infoContent}>
-                    <AppText style={styles.infoLabel}>Name</AppText>
-                    <AppText style={styles.infoValue}>{profile.display_name}</AppText>
-                </View>
-                </View>
-            )}
-
-            {profile?.email && (
-                <View style={styles.infoRow}>
-                <View style={styles.infoContent}>
-                    <AppText style={styles.infoLabel}>Email</AppText>
-                    <AppText style={styles.infoValue}>{profile.email}</AppText>
-                </View>
-                </View>
-            )}
-
-            <View style={styles.privacyNotice}>
-               <Ionicons name="shield-checkmark" size={14} color={colors.success} />
-               <AppText style={styles.privacyText}>
-                 Not visible to candidates
-               </AppText>
-            </View>
-          </Card>
-        </Section>
-
-        {/* SECTION 5: PUBLIC PROFILE */}
-        <Section>
-          <Card style={[styles.card, shadows.card as any]}>
-            <View style={styles.cardHeader}>
-              <Ionicons name="id-card-outline" size={20} color={colors.textTertiary} />
-              <Heading level={2} style={styles.cardTitle}>Public Profile</Heading>
-            </View>
-            <AppText style={styles.cardDescription}>
-               Basic information shown on your mentor card.
+              Help candidates understand your background. No personal details required.
             </AppText>
 
             <View style={styles.inputGroup}>
@@ -485,6 +523,37 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center'
   },
   
+  // Tier Card
+  tierCard: {
+    padding: spacing.lg,
+    borderRadius: borderRadius.lg,
+    borderWidth: 2,
+  },
+  tierContent: {
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  tierBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.full,
+    borderWidth: 2,
+    backgroundColor: 'white',
+  },
+  tierText: {
+    fontSize: typography.size.md,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  tierDescription: {
+    fontSize: typography.size.sm,
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
+
   // Stats Card
   statsCard: {
     padding: spacing.lg,
@@ -572,6 +641,11 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
     textAlign: 'right',
   },
+  priceHint: {
+    fontSize: typography.size.xs,
+    color: colors.textTertiary,
+    marginTop: spacing.xs,
+  },
   
   // Currency
   currencyInputContainer: {
@@ -589,6 +663,45 @@ const styles = StyleSheet.create({
     marginTop: 0,
   },
 
+  // Price Breakdown
+  priceBreakdown: {
+    backgroundColor: '#F9FAFB',
+    padding: spacing.md,
+    borderRadius: borderRadius.md,
+    gap: spacing.xs,
+    marginTop: spacing.sm,
+  },
+  breakdownRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  breakdownLabel: {
+    fontSize: typography.size.sm,
+    color: colors.textSecondary,
+  },
+  breakdownValue: {
+    fontSize: typography.size.sm,
+    fontWeight: '600',
+    color: colors.textPrimary,
+  },
+  breakdownTotal: {
+    paddingTop: spacing.sm,
+    marginTop: spacing.xs,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  breakdownTotalLabel: {
+    fontSize: typography.size.md,
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
+  breakdownTotalValue: {
+    fontSize: typography.size.lg,
+    fontWeight: '800',
+    color: colors.primary,
+  },
+
   // Bank Notice
   bankNotice: {
     flexDirection: 'row',
@@ -603,42 +716,6 @@ const styles = StyleSheet.create({
     fontSize: typography.size.xs,
     color: colors.success,
     flex: 1,
-  },
-
-  // Info Rows (Private)
-  infoRow: {
-    paddingVertical: spacing.xs,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    marginBottom: spacing.sm,
-  },
-  infoContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  infoLabel: {
-    fontSize: typography.size.sm,
-    color: colors.textTertiary,
-  },
-  infoValue: {
-    fontSize: typography.size.md,
-    fontWeight: '500',
-    color: colors.textPrimary,
-  },
-  privacyNotice: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    marginTop: spacing.sm,
-    backgroundColor: '#f0fdf4',
-    padding: spacing.xs,
-    borderRadius: borderRadius.sm,
-    alignSelf: 'flex-start'
-  },
-  privacyText: {
-    fontSize: typography.size.xs,
-    color: colors.success,
   },
 
   // Profiles Grid

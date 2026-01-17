@@ -1,11 +1,12 @@
 ﻿// app/interviews/hr.tsx
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Platform, useWindowDimensions, ScrollView } from 'react-native';
+import React, { useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Platform, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import Head from 'expo-router/head';
 import Svg, { Path, Circle } from 'react-native-svg';
 import { BrandHeader } from '@/lib/BrandHeader';
 import { Footer } from '@/components/Footer';
+import { createBreadcrumbSchema, injectMultipleSchemas } from '@/lib/structured-data';
 
 const BRAND_ORANGE = '#f58742';
 const CTA_TEAL = '#18a7a7';
@@ -93,8 +94,51 @@ const TargetIcon = ({ size = 32, color = CTA_TEAL }) => (
 
 export default function HRInterviews() {
   const router = useRouter();
-  const { width } = useWindowDimensions();
-  const isSmall = width < 900;
+
+  // 🔥 Structured Data for SEO
+  useEffect(() => {
+    if (Platform.OS === 'web') {
+      const breadcrumbSchema = createBreadcrumbSchema([
+        { name: 'Home', url: 'https://crackjobs.com' },
+        { name: 'Interview Tracks', url: 'https://crackjobs.com/#interview-tracks' },
+        { name: 'HR & Behavioral', url: 'https://crackjobs.com/interviews/hr' }
+      ]);
+
+      const faqSchema = {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "What is the STAR method for HR interviews?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "STAR stands for Situation, Task, Action, Result. Structure behavioral answers by describing the context, your responsibilities, specific actions you took, and quantifiable outcomes. Every answer should include metrics and impact."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "How do I answer conflict resolution questions?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Use real examples showing active listening, empathy, data-driven decision-making, and courage to address issues directly. Avoid vague answers. Quantify impact: 'Resolved conflict that improved team productivity by 15%' is better than 'Helped team get along better'."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "How do I prepare for HRBP interviews at Google or Amazon?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Practice STAR stories covering conflict, data-driven decisions, change management, and leadership. Study HR systems (Workday, Greenhouse, Lattice), compensation frameworks, DEI strategies, and org design principles. Expect scenario-based questions."
+            }
+          }
+        ]
+      };
+
+      const cleanup = injectMultipleSchemas([breadcrumbSchema, faqSchema]);
+      return () => cleanup && cleanup();
+    }
+  }, []);
 
   const coreSkills = [
     {
@@ -517,9 +561,9 @@ export default function HRInterviews() {
           
           {/* Header */}
           <View style={styles.header}>
-            <View style={[styles.headerInner, isSmall && styles.headerInnerMobile]}>
-              <BrandHeader style={{ marginBottom: 0 }} small={isSmall} />
-              <View style={[styles.navRight, isSmall && styles.navRightMobile]}>
+            <View style={[styles.headerInner]}>
+              <BrandHeader style={{ marginBottom: 0 }} small={false} />
+              <View style={[styles.navRight]}>
                 <TouchableOpacity onPress={() => router.push('/auth/sign-in')}>
                   <Text style={styles.navLinkText}>Log in</Text>
                 </TouchableOpacity>
@@ -531,12 +575,12 @@ export default function HRInterviews() {
           </View>
 
           {/* Hero */}
-          <View style={[styles.hero, isSmall && styles.heroMobile]}>
+          <View style={[styles.hero]}>
             <View style={styles.badge}><Text style={styles.badgeText}>👥 HR & BEHAVIORAL INTERVIEWS</Text></View>
-            <Text style={[styles.heroTitle, isSmall && styles.heroTitleMobile]}>
+            <Text style={[styles.heroTitle]}>
               Navigate Complex People Issues With Confidence
             </Text>
-            <Text style={[styles.heroSubtitle, isSmall && styles.heroSubtitleMobile]}>
+            <Text style={[styles.heroSubtitle]}>
               Master HRBP scenarios, conflict resolution, STAR method storytelling, and people analytics with HR leaders from Amazon, Google, Flipkart. Practice real behavioral questions with expert feedback.
             </Text>
             <View style={styles.heroStats}>
@@ -553,7 +597,7 @@ export default function HRInterviews() {
           {/* Core Skills */}
           <View style={[styles.section, { backgroundColor: 'white' }]}>
             <Text style={styles.sectionLabel}>2 CORE FOCUS AREAS</Text>
-            <Text style={[styles.sectionTitle, isSmall && styles.sectionTitleMobile]}>What Companies Test in HR Interviews</Text>
+            <Text style={[styles.sectionTitle]}>What Companies Test in HR Interviews</Text>
             <Text style={styles.sectionDesc}>HR interviews test your ability to handle complex people scenarios and design scalable systems.</Text>
             {coreSkills.map((skill, i) => (
               <View key={i} style={styles.skillCard}>
@@ -587,7 +631,7 @@ export default function HRInterviews() {
           {/* Real HR Scenarios */}
           <View style={[styles.section, { backgroundColor: BG_CREAM }]}>
             <Text style={styles.sectionLabel}>REAL HR SCENARIOS</Text>
-            <Text style={[styles.sectionTitle, isSmall && styles.sectionTitleMobile]}>How to Handle the Toughest People Problems</Text>
+            <Text style={[styles.sectionTitle]}>How to Handle the Toughest People Problems</Text>
             <Text style={styles.sectionDesc}>These scenarios test your judgment, values, and ability to balance competing priorities.</Text>
             {realHRScenarios.map((item, i) => (
               <View key={i} style={styles.scenarioCard}>
@@ -628,7 +672,7 @@ export default function HRInterviews() {
           {/* STAR Method */}
           <View style={[styles.section, { backgroundColor: 'white' }]}>
             <Text style={styles.sectionLabel}>STAR METHOD MASTERY</Text>
-            <Text style={[styles.sectionTitle, isSmall && styles.sectionTitleMobile]}>Structure Every Behavioral Answer Perfectly</Text>
+            <Text style={[styles.sectionTitle]}>Structure Every Behavioral Answer Perfectly</Text>
             <Text style={styles.sectionDesc}>STAR method is non-negotiable for HR interviews. Master it to stand out from 90% of candidates.</Text>
             {starMethod.map((item, i) => (
               <View key={i} style={styles.starCard}>
@@ -658,7 +702,7 @@ export default function HRInterviews() {
           {/* HR Metrics */}
           <View style={[styles.section, { backgroundColor: '#f0f8ff' }]}>
             <Text style={styles.sectionLabel}>HR METRICS DASHBOARD</Text>
-            <Text style={[styles.sectionTitle, isSmall && styles.sectionTitleMobile]}>What Every HR Professional Should Track</Text>
+            <Text style={[styles.sectionTitle]}>What Every HR Professional Should Track</Text>
             <Text style={styles.sectionDesc}>Modern HR is data-driven. Know these metrics and their benchmarks cold.</Text>
             {hrMetrics.map((category, i) => (
               <View key={i} style={styles.metricsCategory}>
@@ -684,7 +728,7 @@ export default function HRInterviews() {
           {/* Conflict Resolution */}
           <View style={[styles.section, { backgroundColor: BG_CREAM }]}>
             <Text style={styles.sectionLabel}>CONFLICT RESOLUTION PLAYBOOK</Text>
-            <Text style={[styles.sectionTitle, isSmall && styles.sectionTitleMobile]}>5-Step Framework for Resolving Workplace Conflict</Text>
+            <Text style={[styles.sectionTitle]}>5-Step Framework for Resolving Workplace Conflict</Text>
             <Text style={styles.sectionDesc}>Master this systematic approach to mediate conflicts at any level of the organization.</Text>
             <View style={styles.conflictPlaybook}>
               {conflictResolution.map((step, i) => (
@@ -712,7 +756,7 @@ export default function HRInterviews() {
           {/* Prep Timeline */}
           <View style={[styles.section, { backgroundColor: 'white' }]}>
             <Text style={styles.sectionLabel}>8-WEEK PREP ROADMAP</Text>
-            <Text style={[styles.sectionTitle, isSmall && styles.sectionTitleMobile]}>Complete HR Interview Preparation Plan</Text>
+            <Text style={[styles.sectionTitle]}>Complete HR Interview Preparation Plan</Text>
             <Text style={styles.sectionDesc}>Structured timeline to master behavioral storytelling, HR scenarios, and analytics.</Text>
             <View style={styles.timeline}>
               {prepTimeline.map((phase, i) => (
@@ -746,9 +790,9 @@ export default function HRInterviews() {
           {/* HR Tech Stack */}
           <View style={[styles.section, { backgroundColor: '#f0f8ff' }]}>
             <Text style={styles.sectionLabel}>HR TECH STACK</Text>
-            <Text style={[styles.sectionTitle, isSmall && styles.sectionTitleMobile]}>Essential HR Systems & Tools</Text>
+            <Text style={[styles.sectionTitle]}>Essential HR Systems & Tools</Text>
             <Text style={styles.sectionDesc}>Familiarity with HR tech demonstrates you understand modern HR operations.</Text>
-            <View style={[styles.toolsGrid, isSmall && styles.toolsGridMobile]}>
+            <View style={[styles.toolsGrid]}>
               {hrTechStack.map((category, i) => (
                 <View key={i} style={styles.toolCategory}>
                   <Text style={styles.toolCategoryName}>{category.category}</Text>
@@ -767,9 +811,9 @@ export default function HRInterviews() {
           {/* Success Stories */}
           <View style={[styles.section, { backgroundColor: 'white' }]}>
             <Text style={styles.sectionLabel}>SUCCESS STORIES</Text>
-            <Text style={[styles.sectionTitle, isSmall && styles.sectionTitleMobile]}>From Practice to HR Leadership Offers</Text>
+            <Text style={[styles.sectionTitle]}>From Practice to HR Leadership Offers</Text>
             <Text style={styles.sectionDesc}>These HR professionals mastered behavioral interviews and landed roles at top companies.</Text>
-            <View style={[styles.storiesGrid, isSmall && styles.storiesGridMobile]}>
+            <View style={[styles.storiesGrid]}>
               {successStories.map((story, i) => (
                 <View key={i} style={styles.storyCard}>
                   <View style={styles.storyHeader}>
@@ -797,7 +841,7 @@ export default function HRInterviews() {
           {/* Common Mistakes */}
           <View style={[styles.section, { backgroundColor: '#fff8f0' }]}>
             <Text style={styles.sectionLabel}>AVOID THESE MISTAKES</Text>
-            <Text style={[styles.sectionTitle, isSmall && styles.sectionTitleMobile]}>5 HR Interview Mistakes That Fail Candidates</Text>
+            <Text style={[styles.sectionTitle]}>5 HR Interview Mistakes That Fail Candidates</Text>
             <Text style={styles.sectionDesc}>Based on 600+ HR interview evaluations. These mistakes appear in 80% of failed interviews.</Text>
             {commonMistakes.map((mistake, i) => (
               <View key={i} style={styles.mistakeCard}>
@@ -821,8 +865,8 @@ export default function HRInterviews() {
           {/* Related Articles */}
           <View style={[styles.section, { backgroundColor: 'white' }]}>
             <Text style={styles.sectionLabel}>DEEP DIVE GUIDES</Text>
-            <Text style={[styles.sectionTitle, isSmall && styles.sectionTitleMobile]}>Master Specific HR Topics</Text>
-            <View style={[styles.articlesGrid, isSmall && styles.articlesGridMobile]}>
+            <Text style={[styles.sectionTitle]}>Master Specific HR Topics</Text>
+            <View style={[styles.articlesGrid]}>
               <TouchableOpacity style={styles.articleCard} onPress={() => router.push('/blog/hr-interview-mistakes')}>
                 <BookIcon size={32} color={CTA_TEAL} />
                 <Text style={styles.articleTitle}>Common HR Interview Mistakes to Avoid</Text>
@@ -835,8 +879,8 @@ export default function HRInterviews() {
           {/* How It Works */}
           <View style={[styles.section, { backgroundColor: BG_CREAM }]}>
             <Text style={styles.sectionLabel}>HOW IT WORKS</Text>
-            <Text style={[styles.sectionTitle, isSmall && styles.sectionTitleMobile]}>Practice HR Interviews in 3 Steps</Text>
-            <View style={[styles.stepsGrid, isSmall && styles.stepsGridMobile]}>
+            <Text style={[styles.sectionTitle]}>Practice HR Interviews in 3 Steps</Text>
+            <View style={[styles.stepsGrid]}>
               <View style={styles.stepCard}>
                 <View style={styles.stepNum}><Text style={styles.stepNumText}>1</Text></View>
                 <Text style={styles.stepTitle}>Choose HR Focus</Text>

@@ -5,7 +5,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   Platform,
-  useWindowDimensions,
   ScrollView,
   ActivityIndicator,
 } from 'react-native';
@@ -37,7 +36,7 @@ const SYSTEM_FONT = Platform.select({
   default: "System"
 }) as string;
 
-const SITE_TITLE = 'CrackJobs | Anonymous mock interviews with real experts'; 
+const SITE_TITLE = 'CrackJobs | Mock interviews with real experts'; 
 const SITE_DESCRIPTION = 'Practice interview topics anonymously with fully vetted expert mentors.';
 
 // ---------------------------------------------------------------------------
@@ -77,22 +76,19 @@ const Button = ({ title, onPress, variant = "primary", style, textStyle }: {
 // 🧩 COMPONENT: HOW IT WORKS
 // ---------------------------------------------------------------------------
 const HowItWorks = memo(() => {
-  const { width } = useWindowDimensions();
-  const isSmall = width < 900;
-
   const STEPS = [
-    { emoji: '📝', title: 'Pick Your Track', desc: 'Choose interview type and specific topic you want to practice' },
+    { emoji: '📝', title: 'Pick Your Track', desc: 'Choose your domain and the specific interview topic you want to practice' },
     { emoji: '👨‍💼', title: 'Book a Mentor', desc: 'Select from verified experts at top companies' },
-    { emoji: '🎯', title: 'Practice & Get Feedback', desc: 'Realistic 55-min session with structured evaluation' },
+    { emoji: '🎯', title: 'Practice & Get Feedback', desc: 'Realistic 55-min session with structured evaluation and recording' },
   ];
 
   return (
     <View style={styles.sectionContainer} accessibilityRole="region" aria-label="How it works">
       <Text style={styles.sectionKicker} accessibilityRole="header" aria-level={2}>HOW IT WORKS</Text>
-      <Text style={[styles.sectionTitle, isSmall && styles.sectionTitleMobile]} accessibilityRole="header" aria-level={3}>
+      <Text style={styles.sectionTitle} accessibilityRole="header" aria-level={3}>
         Three simple steps to better interviews
       </Text>
-      <View style={[styles.stepsGrid, isSmall && styles.stepsGridMobile]}>
+      <View style={styles.stepsGrid}>
         {STEPS.map((step, i) => (
           <View key={i} style={styles.stepCard}>
             <Text style={styles.stepEmoji}>{step.emoji}</Text>
@@ -110,8 +106,6 @@ const HowItWorks = memo(() => {
 // ---------------------------------------------------------------------------
 export default function LandingPage() {
   const router = useRouter();
-  const { width } = useWindowDimensions();
-  const isSmall = width < 900;
 
   // 🟢 STATE: Control client-side rendering
   const [isReady, setIsReady] = useState(false);
@@ -124,34 +118,125 @@ export default function LandingPage() {
   // Android Redirect
   if (Platform.OS === 'android') return <Redirect href="/auth/sign-in" />;
 
+  // 🔥 COMPREHENSIVE STRUCTURED DATA
   const websiteSchema = {
     "@context": "https://schema.org",
     "@graph": [
       {
         "@type": "WebSite",
         "name": "CrackJobs",
-        "url": "https://crackjobs.com/"
+        "url": "https://crackjobs.com/",
+        "description": "Anonymous mock interviews with expert mentors from top companies",
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": "https://crackjobs.com/search?q={search_term_string}",
+          "query-input": "required name=search_term_string"
+        }
       },
       {
         "@type": "Organization",
         "name": "CrackJobs",
         "url": "https://crackjobs.com",
         "logo": "https://crackjobs.com/favicon.png",
-        "sameAs": ["https://www.linkedin.com/company/crackjobs", "https://twitter.com/crackjobs"]
+        "description": "Anonymous mock interview platform connecting job seekers with expert mentors",
+        "foundingDate": "2024",
+        "sameAs": [
+          "https://www.linkedin.com/company/crackjobs",
+          "https://twitter.com/crackjobs"
+        ],
+        "contactPoint": {
+          "@type": "ContactPoint",
+          "contactType": "Customer Support",
+          "url": "https://crackjobs.com/contact"
+        }
       },
       {
         "@type": "Product",
         "name": "Mock Interview Session",
-        "description": "Anonymous 1:1 mock interviews with vetted experts.",
-        "brand": { "@type": "Brand", "name": "CrackJobs" },
-        "aggregateRating": { "@type": "AggregateRating", "ratingValue": "4.9", "reviewCount": "500" },
+        "description": "Professional 1:1 mock interview with industry experts including detailed feedback and session recording",
+        "brand": { 
+          "@type": "Brand", 
+          "name": "CrackJobs" 
+        },
+        "aggregateRating": { 
+          "@type": "AggregateRating", 
+          "ratingValue": "4.8", 
+          "reviewCount": "500",
+          "bestRating": "5",
+          "worstRating": "1"
+        },
         "offers": {
-          "@type": "Offer",
-          "priceCurrency": "USD",
-          "price": "30.00",
+          "@type": "AggregateOffer",
+          "priceCurrency": "INR",
+          "lowPrice": "1500",
+          "highPrice": "3000",
+          "offerCount": "100",
           "availability": "https://schema.org/InStock",
           "url": "https://crackjobs.com/auth/sign-up"
         }
+      },
+      {
+        "@type": "ItemList",
+        "name": "Interview Practice Tracks",
+        "description": "Available interview preparation tracks",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "item": {
+              "@type": "Course",
+              "name": "Product Management Interview Prep",
+              "description": "Product sense, execution, strategy,technical design and leadership",
+              "url": "https://crackjobs.com/interviews/product-management",
+              "provider": {
+                "@type": "Organization",
+                "name": "CrackJobs"
+              }
+            }
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "item": {
+              "@type": "Course",
+              "name": "Data Analytics Interview Prep",
+              "description": "Case studies, Product experimentation, Excel, Behavioral and SQL",
+              "url": "https://crackjobs.com/interviews/data-analytics",
+              "provider": {
+                "@type": "Organization",
+                "name": "CrackJobs"
+              }
+            }
+          },
+          {
+            "@type": "ListItem",
+            "position": 3,
+            "item": {
+              "@type": "Course",
+              "name": "Data Science Interview Prep",
+              "description": "ML Theory, Practical, Coding, Statistics and System design",
+              "url": "https://crackjobs.com/interviews/data-science",
+              "provider": {
+                "@type": "Organization",
+                "name": "CrackJobs"
+              }
+            }
+          },
+          {
+            "@type": "ListItem",
+            "position": 4,
+            "item": {
+              "@type": "Course",
+              "name": "HR Interview Prep",
+              "description": "Talent Acquisition, HR Generalist, HR Operations, HRBP and COE",
+              "url": "https://crackjobs.com/interviews/hr",
+              "provider": {
+                "@type": "Organization",
+                "name": "CrackJobs"
+              }
+            }
+          }
+        ]
       },
       {
         "@type": "FAQPage",
@@ -159,12 +244,61 @@ export default function LandingPage() {
           {
             "@type": "Question",
             "name": "How does CrackJobs work?",
-            "acceptedAnswer": { "@type": "Answer", "text": "Choose your interview track, book a session with a verified expert, attend your anonymous 1:1 mock interview, and receive feedback." }
+            "acceptedAnswer": { 
+              "@type": "Answer", 
+              "text": "CrackJobs is a three-step process: 1) Choose your interview track (Product Management, Data Analytics, Data Science, or HR), 2) Book a session with a verified expert mentor from top companies, 3) Attend your anonymous 1:1 mock interview and receive detailed structured feedback." 
+            }
           },
           {
             "@type": "Question",
-            "name": "Who are the mentors?",
-            "acceptedAnswer": { "@type": "Answer", "text": "All mentors are verified professionals from top tech companies like Google, Amazon, Meta, and Microsoft." }
+            "name": "Who are the mentors on CrackJobs?",
+            "acceptedAnswer": { 
+              "@type": "Answer", 
+              "text": "All mentors are verified professionals currently working at or having experience from top tech companies like Google, Amazon, Meta, Microsoft, Adobe, and Capgemini. They are experts in their respective fields with real interview experience." 
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "What does anonymous interviewing mean?",
+            "acceptedAnswer": { 
+              "@type": "Answer", 
+              "text": "Anonymous interviewing means your personal details are not shared with mentors. Only professional information relevant to the interview is visible. This creates a safe, judgment-free environment to practice and get honest feedback." 
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "How much do mock interviews cost?",
+            "acceptedAnswer": { 
+              "@type": "Answer", 
+              "text": "Mock interview sessions range from ₹3,000 to ₹15,000 depending on the mentor's tier level and experience. All sessions are 55 minutes long and include structured feedback and session recordings." 
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "What interview types are available?",
+            "acceptedAnswer": { 
+              "@type": "Answer", 
+              "text": "CrackJobs offers interview preparation for Product Management (Product sense, product execution, product strategy,Technical and leadership) , Data Analytics (Case studies, Product metrics and experimentation, Excel, Behavioral, SQL), Data Science (ML theory, Practical ML, Coding (Python, Pandas, Algo), Statistics and experimentation and ML system design) and HR (TA, HR Generalist, HR Operations, HR Business Partner, COE- HR Functions)." 
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Do I get feedback after the interview?",
+            "acceptedAnswer": { 
+              "@type": "Answer", 
+              "text": "Yes! Every session includes structured evaluation with detailed feedback on your performance, specific improvement areas, strengths, and actionable recommendations. You also receive a recording of your session for review." 
+            }
+          }
+        ]
+      },
+      {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Home",
+            "item": "https://crackjobs.com"
           }
         ]
       }
@@ -204,9 +338,9 @@ export default function LandingPage() {
         
         {/* --- HEADER --- */}
         <View style={styles.header} accessibilityRole="navigation">
-          <View style={[styles.headerInner, isSmall && styles.headerInnerMobile]}>
-            <BrandHeader style={{ marginBottom: 0 }} small={isSmall} />
-            <View style={[styles.navRight, isSmall && styles.navRightMobile]}>
+          <View style={[styles.headerInner]}>
+            <BrandHeader style={{ marginBottom: 0 }} small={false} />
+            <View style={[styles.navRight]}>
               <TouchableOpacity onPress={() => router.push('/auth/sign-in')} accessibilityRole="link">
                 <Text style={styles.navLinkText}>Log in</Text>
               </TouchableOpacity>
@@ -223,29 +357,29 @@ export default function LandingPage() {
 
         {/* --- HERO SECTION --- */}
         <View style={styles.sectionContainer} accessibilityRole="banner">
-          <View style={[styles.heroCentered, isSmall && styles.heroCenteredMobile]}>
+          <View style={[styles.heroCentered]}>
             <View style={styles.badgeContainer}>
-              <Text style={styles.badgeText}>🚀 NEW: ML System Design Track</Text>
+              <Text style={styles.badgeText}>🚀 NEW: PM Technical Track</Text>
             </View>
-            <Text style={[styles.heroTitle, isSmall && styles.heroTitleMobile]} accessibilityRole="header" aria-level={1}>
-              Practice interviews with{'\n'}<Text style={{ color: CTA_TEAL }}>Real expert mentors</Text>
+            <Text style={[styles.heroTitle]} accessibilityRole="header" aria-level={1}>
+              Mock interviews with{'\n'}<Text style={{ color: CTA_TEAL }}>real expert mentors</Text>
             </Text>
-            <Text style={[styles.heroSubtitle, isSmall && styles.heroSubtitleMobile]}>
+            <Text style={[styles.heroSubtitle]}>
               Anonymous 1:1 mock interviews. Practice with vetted mentors from top companies.
             </Text>
-            <View style={[styles.heroButtons, isSmall && styles.heroButtonsMobile]}>
+            <View style={[styles.heroButtons]}>
               <Button 
                 title="Start Practicing" 
                 variant="primary" 
                 onPress={() => router.push('/auth/sign-up')}
-                style={[styles.btnBig, isSmall && { width: '100%' }]}
+                style={[styles.btnBig, { width: 'auto' }]}
                 textStyle={{ fontSize: 16 }}
               />
               <Button 
                 title="Browse Mentors" 
                 variant="outline" 
                 onPress={() => router.push('/auth/sign-in')}
-                style={[styles.btnBig, isSmall && { width: '100%' }]}
+                style={[styles.btnBig, { width: 'auto' }]}
                 textStyle={{ fontSize: 16 }}
               />
             </View>

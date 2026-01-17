@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import {
   View,
   ScrollView,
@@ -11,7 +11,6 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Svg, Path, Circle } from "react-native-svg";
-import { DateTime, Interval } from 'luxon';
 import {
   Heading,
   AppText,
@@ -19,47 +18,46 @@ import {
   ScreenBackground,
 } from "@/lib/ui";
 import { theme } from "@/lib/theme";
+import { availabilityService } from "@/services/availability.service";
 
 const SUPABASE_URL = "https://rcbaaiiawrglvyzmawvr.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJjYmFhaWlhd3JnbHZ5em1hd3ZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjExNTA1NjAsImV4cCI6MjA3NjcyNjU2MH0.V3qRHGXBMlspRS7XFJlXdo4qIcCms60Nepp7dYMEjLA";
 
-// Constants
-const SLOT_DURATION_MINUTES = 60;
-const BOOKING_WINDOW_DAYS = 30;
-const IST_ZONE = 'Asia/Kolkata';
+// Tier multipliers
+const TIER_MULTIPLIERS: Record<string, number> = {
+  bronze: 2.0,   // 100% commission
+  silver: 1.75,  // 75% commission
+  gold: 1.5,     // 50% commission
+};
+
+// Tier Rank for Sorting (Bronze first = 1)
+const TIER_RANK: Record<string, number> = {
+  bronze: 1,
+  silver: 2,
+  gold: 3,
+};
+
+type SortOption = 'tier' | 'price_low' | 'price_high' | 'sessions' | 'rating' | 'experience';
 
 type AdminProfile = { 
   id: number; 
   name: string; 
   description: string | null; 
   is_active: boolean; 
-  mentorCount?: number; // Added for local use
+  mentorCount?: number;
 };
 
 type Mentor = { 
   id: string; 
   professional_title?: string | null; 
   experience_description?: string | null; 
-  profile_ids?: number[]; // CHANGED: Replaced expertise_profiles with profile_ids
+  profile_ids?: number[];
   session_price_inr?: number | null; 
   session_price?: number | null;
   total_sessions?: number;
   years_of_experience?: number | null;
   average_rating?: number | null;
-  tier?: string | null; // ADDED: tier field from database
-};
-
-type AvailabilityRule = {
-  start: string;
-  end: string;
-  isActive?: boolean | string | 't';
-  slot_duration?: number;
-  slot_duration_minutes?: number;
-};
-
-type Unavailability = {
-  start_at: string;
-  end_at: string;
+  tier?: string | null;
 };
 
 // ============================================
@@ -69,109 +67,56 @@ type Unavailability = {
 const CheckmarkCircleIcon = ({ size = 16, color = "#3B82F6" }: { size?: number; color?: string }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
     <Circle cx="12" cy="12" r="10" stroke={color} strokeWidth="2" fill="none" />
-    <Path
-      d="M8 12.5L10.5 15L16 9.5"
-      stroke={color}
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
+    <Path d="M8 12.5L10.5 15L16 9.5" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
   </Svg>
 );
 
 const BriefcaseIcon = ({ size = 12, color = "#111827" }: { size?: number; color?: string }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <Path
-      d="M20 7H4C2.89543 7 2 7.89543 2 9V19C2 20.1046 2.89543 21 4 21H20C21.1046 21 22 20.1046 22 19V9C22 7.89543 21.1046 7 20 7Z"
-      stroke={color}
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <Path
-      d="M16 7V5C16 3.89543 15.1046 3 14 3H10C8.89543 3 8 3.89543 8 5V7"
-      stroke={color}
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
+    <Path d="M20 7H4C2.89543 7 2 7.89543 2 9V19C2 20.1046 2.89543 21 4 21H20C21.1046 21 22 20.1046 22 19V9C22 7.89543 21.1046 7 20 7Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    <Path d="M16 7V5C16 3.89543 15.1046 3 14 3H10C8.89543 3 8 3.89543 8 5V7" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
   </Svg>
 );
 
 const SparklesIcon = ({ size = 14, color = "#1E40AF" }: { size?: number; color?: string }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <Path
-      d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z"
-      stroke={color}
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <Path
-      d="M6 3L6.5 5.5L9 6L6.5 6.5L6 9L5.5 6.5L3 6L5.5 5.5L6 3Z"
-      stroke={color}
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
+    <Path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    <Path d="M6 3L6.5 5.5L9 6L6.5 6.5L6 9L5.5 6.5L3 6L5.5 5.5L6 3Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
   </Svg>
 );
 
 const CheckmarkDoneIcon = ({ size = 14, color = "#6B7280" }: { size?: number; color?: string }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <Path
-      d="M5 12L10 17L20 7"
-      stroke={color}
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <Path
-      d="M2 12L7 17"
-      stroke={color}
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
+    <Path d="M5 12L10 17L20 7" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    <Path d="M2 12L7 17" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
   </Svg>
 );
 
 const CheckmarkIcon = ({ size = 16, color = "#FFF" }: { size?: number; color?: string }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <Path
-      d="M5 13L9 17L19 7"
-      stroke={color}
-      strokeWidth="2.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
+    <Path d="M5 13L9 17L19 7" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
   </Svg>
 );
 
 const SearchIcon = ({ size = 48, color = "#9CA3AF" }: { size?: number; color?: string }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
     <Circle cx="11" cy="11" r="8" stroke={color} strokeWidth="2" />
-    <Path
-      d="M21 21L16.65 16.65"
-      stroke={color}
-      strokeWidth="2"
-      strokeLinecap="round"
-    />
+    <Path d="M21 21L16.65 16.65" stroke={color} strokeWidth="2" strokeLinecap="round" />
   </Svg>
 );
 
-// Medal/Badge Icon for tiers
 const MedalIcon = ({ size = 14, color = "#CD7F32" }: { size?: number; color?: string }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
     <Circle cx="12" cy="15" r="6" fill={color} stroke={color} strokeWidth="1.5" />
-    <Path
-      d="M9 9L7 3L12 6L17 3L15 9"
-      stroke={color}
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      fill="none"
-    />
+    <Path d="M9 9L7 3L12 6L17 3L15 9" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+  </Svg>
+);
+
+const SortIcon = ({ size = 14, color = "#4B5563" }: { size?: number; color?: string }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M3 6H21" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <Path d="M7 12H17" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <Path d="M10 18H14" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
   </Svg>
 );
 
@@ -208,7 +153,7 @@ const StarRating = ({ rating }: { rating: number }) => {
 };
 
 // ============================================
-// TIER BADGE COMPONENT - UPDATED TO USE DB TIER
+// TIER BADGE COMPONENT
 // ============================================
 
 const TierBadge = ({ tier }: { tier?: string | null }) => {
@@ -218,179 +163,41 @@ const TierBadge = ({ tier }: { tier?: string | null }) => {
   let borderColor = '';
   let medalColor = '';
 
-  // CHANGED: Use tier from database instead of calculating from total_sessions
   const normalizedTier = tier?.toLowerCase();
   
   if (normalizedTier === 'gold') {
     tierName = 'Gold';
-    tierColor = '#B8860B';
-    bgColor = '#FFF9E6';
-    borderColor = '#FFE999';
-    medalColor = '#FFD700';
+    tierColor = '#B8860B';        
+    bgColor = '#FFFEF5';          
+    borderColor = '#FFD700';      
+    medalColor = '#FFD700';       
   } else if (normalizedTier === 'silver') {
     tierName = 'Silver';
-    tierColor = '#6B7280';
-    bgColor = '#F3F4F6';
-    borderColor = '#D1D5DB';
-    medalColor = '#9CA3AF';
+    tierColor = '#505050';        
+    bgColor = '#F8F9FA';          
+    borderColor = '#A8A8A8';      
+    medalColor = '#C0C0C0';       
   } else if (normalizedTier === 'bronze') {
     tierName = 'Bronze';
-    tierColor = '#92400E';
-    bgColor = '#FEF3C7';
-    borderColor = '#FDE68A';
+    tierColor = '#8B4513';        
+    bgColor = '#FFF8F0';          
+    borderColor = '#CD7F32';      
+    medalColor = '#CD7F32';       
+  } else {
+    // Fallback if tier is null or unknown
+    tierName = 'Bronze';
+    tierColor = '#8B4513';        
+    bgColor = '#FFF8F0';          
+    borderColor = '#CD7F32';      
     medalColor = '#CD7F32';
   }
-
-  if (!tierName) return null;
 
   return (
     <View style={[styles.tierBadge, { backgroundColor: bgColor, borderColor: borderColor }]}>
       <MedalIcon size={14} color={medalColor} />
-      <AppText style={[styles.tierText, { color: tierColor }]}>{tierName}</AppText>
+      <AppText style={[styles.tierText, { color: tierColor }]}>{tierName} Mentor</AppText>
     </View>
   );
-};
-
-// ============================================
-// AVAILABILITY CALCULATION
-// ============================================
-
-const DAY_KEY_MAP = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-
-const findNextAvailableSlot = async (mentorId: string): Promise<string> => {
-  try {
-    const now = DateTime.now().setZone(IST_ZONE);
-    const startDate = now.plus({ days: 1 }).startOf('day');
-    const endDate = startDate.plus({ days: BOOKING_WINDOW_DAYS }).endOf('day');
-
-    // Fetch availability rules
-    const rulesRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/mentor_availability_rules?mentor_id=eq.${mentorId}&select=weekdays,weekends`,
-      { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
-    );
-    const rulesData = await rulesRes.json();
-    
-    // Default rules matching schedule.tsx - NEW FORMAT with individual days
-    const finalRulesData = (rulesData && rulesData[0]) || {
-      weekdays: {
-        monday: { start: '20:00', end: '22:00', isActive: true },
-        tuesday: { start: '20:00', end: '22:00', isActive: true },
-        wednesday: { start: '20:00', end: '22:00', isActive: true },
-        thursday: { start: '20:00', end: '22:00', isActive: true },
-        friday: { start: '20:00', end: '22:00', isActive: true }
-      },
-      weekends: {
-        saturday: { start: '12:00', end: '17:00', isActive: true },
-        sunday: { start: '12:00', end: '17:00', isActive: true }
-      }
-    };
-
-    // Fetch unavailability - Simplified query
-    const unavailRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/mentor_unavailability?mentor_id=eq.${mentorId}&select=start_at,end_at`,
-      { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
-    );
-    const unavailData = await unavailRes.json();
-    
-    // Filter unavailability to only include periods that overlap with our booking window
-    const unavailabilityIntervals = (Array.isArray(unavailData) ? unavailData : [])
-      .filter((row: Unavailability) => {
-        const s = DateTime.fromISO(row.start_at, { zone: IST_ZONE });
-        const e = DateTime.fromISO(row.end_at, { zone: IST_ZONE });
-        // Only include if it overlaps with our search period
-        return e >= startDate && s <= endDate;
-      })
-      .map((row: Unavailability) => {
-        const s = DateTime.fromISO(row.start_at, { zone: IST_ZONE });
-        const e = DateTime.fromISO(row.end_at, { zone: IST_ZONE });
-        return Interval.fromDateTimes(s, e);
-      });
-
-    // Fetch existing bookings - Fixed query
-    const bookingsRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/interview_sessions?mentor_id=eq.${mentorId}&scheduled_at=gte.${startDate.toISO()}&scheduled_at=lte.${endDate.toISO()}&status=in.(pending,confirmed)&select=scheduled_at`,
-      { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
-    );
-    const bookingsData = await bookingsRes.json();
-
-    const bookedTimesSet = new Set(
-      (Array.isArray(bookingsData) ? bookingsData : []).map((b: any) => 
-        DateTime.fromISO(b.scheduled_at, { zone: IST_ZONE }).toFormat('yyyy-MM-dd HH:mm')
-      )
-    );
-
-    let slotsChecked = 0;
-
-    // Generate slots day by day until we find an available one
-    for (let i = 0; i < BOOKING_WINDOW_DAYS; i++) {
-      const currentDay = startDate.plus({ days: i });
-      const dateStr = currentDay.toISODate();
-      
-      // Check if full day off
-      const dayInterval = Interval.fromDateTimes(currentDay.startOf('day'), currentDay.endOf('day'));
-      const isFullDayOff = unavailabilityIntervals.some(u => 
-        u.engulfs(dayInterval) || (u.contains(currentDay.startOf('day')) && u.contains(currentDay.endOf('day')))
-      );
-
-      if (isFullDayOff) continue;
-
-      // Get rules for this specific day
-      const dayOfWeek = currentDay.weekday % 7; // 0=Sunday, 1=Monday, ..., 6=Saturday
-      const dayKey = DAY_KEY_MAP[dayOfWeek];
-      const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-      
-      const source = isWeekend ? finalRulesData?.weekends : finalRulesData?.weekdays;
-      const dayRule = source?.[dayKey];
-      
-      let dayRules: AvailabilityRule[] = [];
-      if (dayRule && typeof dayRule === 'object') {
-        dayRules = [dayRule as AvailabilityRule];
-      }
-
-      // Generate slots for this day
-      for (const rule of dayRules) {
-        const isActive = rule.isActive === true || rule.isActive === 'true' || rule.isActive === 't' || rule.isActive === undefined;
-        
-        if (!isActive) continue;
-
-        const startStr = String(rule.start);
-        const endStr = String(rule.end);
-        const ruleStartDT = DateTime.fromFormat(`${dateStr} ${startStr}`, "yyyy-MM-dd HH:mm", { zone: IST_ZONE });
-        const ruleEndDT = DateTime.fromFormat(`${dateStr} ${endStr}`, "yyyy-MM-dd HH:mm", { zone: IST_ZONE });
-        const duration = rule.slot_duration || rule.slot_duration_minutes || SLOT_DURATION_MINUTES;
-
-        if (!ruleStartDT.isValid || !ruleEndDT.isValid) continue;
-
-        let cursor = ruleStartDT;
-        while (cursor < ruleEndDT) {
-          const slotStart = cursor;
-          const slotEnd = cursor.plus({ minutes: duration });
-          if (slotEnd > ruleEndDT) break;
-
-          slotsChecked++;
-          const slotKey = slotStart.toFormat('yyyy-MM-dd HH:mm');
-          
-          const isBooked = bookedTimesSet.has(slotKey);
-          const slotInterval = Interval.fromDateTimes(slotStart, slotEnd);
-          const isTimeOffSlot = unavailabilityIntervals.some(u => u.overlaps(slotInterval));
-
-          // Found an available slot!
-          if (!isBooked && !isTimeOffSlot) {
-            const month = slotStart.toFormat('MMM');
-            const day = slotStart.toFormat('d');
-            return `${month} ${day}`;
-          }
-
-          cursor = slotEnd;
-        }
-      }
-    }
-
-    return "No slots available";
-  } catch (err) {
-    console.log("Error calculating availability:", err);
-    return "No slots available";
-  }
 };
 
 // ============================================
@@ -406,25 +213,27 @@ export default function CandidateDashboard() {
 
   const [adminProfiles, setAdminProfiles] = useState<AdminProfile[]>([]);
   const [profilesLoading, setProfilesLoading] = useState(true);
-  // CHANGED: Tracking ID instead of name
   const [selectedProfileId, setSelectedProfileId] = useState<number | null>(null);
+  
   const [mentors, setMentors] = useState<Mentor[]>([]);
   const [mentorsLoading, setMentorsLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [mentorAvailability, setMentorAvailability] = useState<Record<string, string>>({});
+  
+  // Sorting State
+  const [sortBy, setSortBy] = useState<SortOption>('tier');
 
+  // --- 1. Fetch Profiles ---
   useEffect(() => {
     (async () => {
       setProfilesLoading(true);
       try {
-        // Fetch profiles
         const profilesRes = await fetch(
           `${SUPABASE_URL}/rest/v1/interview_profiles_admin?select=*`, 
           { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
         );
         const profilesData = await profilesRes.json();
         
-        // Fetch all mentors to count per profile - ADDED tier to select
         const mentorsRes = await fetch(
           `${SUPABASE_URL}/rest/v1/mentors?select=*,tier&status=eq.approved`, 
           { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
@@ -434,7 +243,6 @@ export default function CandidateDashboard() {
         if (profilesRes.ok && mentorsRes.ok) {
           const actives = (profilesData || []).filter((p: AdminProfile) => p.is_active !== false);
           
-          // Count mentors per profile using ID
           const profileMentorCounts = actives.map((profile: AdminProfile) => {
             const mentorCount = (allMentors || []).filter((m: Mentor) => 
               Array.isArray(m.profile_ids) && m.profile_ids.includes(profile.id)
@@ -442,11 +250,9 @@ export default function CandidateDashboard() {
             return { ...profile, mentorCount };
           });
           
-          // Sort profiles by mentor count (descending - most mentors first)
           const sortedProfiles = profileMentorCounts.sort((a, b) => b.mentorCount - a.mentorCount);
           
           setAdminProfiles(sortedProfiles);
-          // CHANGED: Select first profile ID
           if (sortedProfiles.length > 0) setSelectedProfileId(sortedProfiles[0].id);
         }
       } catch (err) { 
@@ -457,11 +263,11 @@ export default function CandidateDashboard() {
     })();
   }, []);
 
+  // --- 2. Fetch Mentors for Selected Profile ---
   const fetchMentorsForProfile = useCallback(async (profileId: number | null) => {
     if (!profileId) return;
     setMentorsLoading(true);
     try {
-      // Fetch mentors - ADDED tier to select
       const res = await fetch(
         `${SUPABASE_URL}/rest/v1/mentors?select=*,tier&status=eq.approved`, 
         { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
@@ -469,23 +275,15 @@ export default function CandidateDashboard() {
       const data = await res.json();
       
       if (res.ok) {
-        // CHANGED: Filter by profile_ids array
         const filtered = (data || []).filter((m: Mentor) => 
           Array.isArray(m.profile_ids) ? m.profile_ids.includes(profileId) : false
         );
         
-        // Sort mentors by total_sessions (number of bookings) in descending order
-        const sortedMentors = filtered.sort((a: Mentor, b: Mentor) => {
-          const aBookings = a.total_sessions ?? 0;
-          const bBookings = b.total_sessions ?? 0;
-          return bBookings - aBookings;
-        });
-        
-        setMentors(sortedMentors);
+        setMentors(filtered);
 
-        // Fetch availability for each mentor
-        const availabilityPromises = sortedMentors.map(async (m: Mentor) => {
-          const slot = await findNextAvailableSlot(m.id);
+        // Fetch Availability
+        const availabilityPromises = filtered.map(async (m: Mentor) => {
+          const slot = await availabilityService.findNextAvailableSlot(m.id);
           return { id: m.id, slot };
         });
 
@@ -507,6 +305,57 @@ export default function CandidateDashboard() {
     if (selectedProfileId) fetchMentorsForProfile(selectedProfileId); 
   }, [selectedProfileId, fetchMentorsForProfile]);
 
+  // --- 3. Sorting Logic (Memoized) ---
+  const sortedMentors = useMemo(() => {
+    let sorted = [...mentors];
+
+    switch (sortBy) {
+      case 'tier':
+        // Default: Tier (Bronze -> Silver -> Gold), then Sessions Descending
+        sorted.sort((a, b) => {
+          const rankA = TIER_RANK[a.tier?.toLowerCase() || 'bronze'] || 1;
+          const rankB = TIER_RANK[b.tier?.toLowerCase() || 'bronze'] || 1;
+          
+          // 1. Sort by Rank Ascending (1, 2, 3)
+          if (rankA !== rankB) return rankA - rankB; 
+          
+          // 2. Tie-break: Total Sessions Descending
+          return (b.total_sessions || 0) - (a.total_sessions || 0);
+        });
+        break;
+
+      case 'price_low':
+        sorted.sort((a, b) => {
+          const priceA = (a.session_price_inr ?? a.session_price ?? 0) * (TIER_MULTIPLIERS[a.tier?.toLowerCase() || 'bronze'] || 2);
+          const priceB = (b.session_price_inr ?? b.session_price ?? 0) * (TIER_MULTIPLIERS[b.tier?.toLowerCase() || 'bronze'] || 2);
+          return priceA - priceB;
+        });
+        break;
+
+      case 'price_high':
+        sorted.sort((a, b) => {
+          const priceA = (a.session_price_inr ?? a.session_price ?? 0) * (TIER_MULTIPLIERS[a.tier?.toLowerCase() || 'bronze'] || 2);
+          const priceB = (b.session_price_inr ?? b.session_price ?? 0) * (TIER_MULTIPLIERS[b.tier?.toLowerCase() || 'bronze'] || 2);
+          return priceB - priceA;
+        });
+        break;
+
+      case 'sessions':
+        sorted.sort((a, b) => (b.total_sessions || 0) - (a.total_sessions || 0));
+        break;
+      
+      case 'rating':
+        sorted.sort((a, b) => (b.average_rating || 0) - (a.average_rating || 0));
+        break;
+
+      case 'experience':
+        sorted.sort((a, b) => (b.years_of_experience || 0) - (a.years_of_experience || 0));
+        break;
+    }
+    return sorted;
+  }, [mentors, sortBy]);
+
+
   const onRefresh = async () => {
     setRefreshing(true);
     await fetchMentorsForProfile(selectedProfileId);
@@ -516,6 +365,15 @@ export default function CandidateDashboard() {
   const handleViewMentor = (id: string) => {
     router.push({ pathname: "/candidate/[id]", params: { id } });
   };
+
+  const SortButton = ({ label, active, onPress }: { label: string, active: boolean, onPress: () => void }) => (
+    <TouchableOpacity 
+      style={[styles.sortBtn, active && styles.sortBtnActive]} 
+      onPress={onPress}
+    >
+      <AppText style={[styles.sortBtnText, active && styles.sortBtnTextActive]}>{label}</AppText>
+    </TouchableOpacity>
+  );
 
   return (
     <ScreenBackground style={styles.container}>
@@ -530,49 +388,40 @@ export default function CandidateDashboard() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* --- HEADER SECTION --- */}
+        {/* --- HEADER --- */}
         <View style={[styles.headerContainer, isMobile && styles.headerContainerMobile]}>
           <View style={styles.headerLeft}>
             <Heading level={1} style={styles.headerTitle}>Find Your Mentor</Heading>
             <AppText style={styles.headerSubtitle}>
-              Select a profile below and connect with experienced professionals
+              Select from a range of gold, silver and bronze professionals
             </AppText>
           </View>
         </View>
 
         <View style={styles.headerDivider} />
 
-        {/* --- FILTERS SECTION --- */}
+        {/* --- PROFILE PILLS --- */}
         <View style={[styles.filtersContainer, isMobile && { paddingHorizontal: 20 }]}>
           <AppText style={styles.filterLabel}>Select Interview Profile</AppText>
           <ScrollView 
             horizontal 
             showsHorizontalScrollIndicator={false} 
             contentContainerStyle={styles.pillsScroll}
+            style={{ marginBottom: 16 }}
           >
             {profilesLoading ? (
               <ActivityIndicator color={theme.colors.primary} />
             ) : (
               adminProfiles.map((p) => {
-                // CHANGED: Compare IDs for active state
                 const isActive = selectedProfileId === p.id;
                 return (
                   <TouchableOpacity
                     key={p.id}
-                    onPress={() => setSelectedProfileId(p.id)} // CHANGED: Set ID
+                    onPress={() => setSelectedProfileId(p.id)}
                     style={[styles.pill, isActive ? styles.pillActive : styles.pillInactive]}
                   >
-                    {isActive && (
-                      <View style={{ marginRight: 6 }}>
-                        <CheckmarkIcon size={16} color="#FFF" />
-                      </View>
-                    )}
-                    <AppText 
-                      style={[
-                        styles.pillText, 
-                        isActive ? styles.pillTextActive : styles.pillTextInactive
-                      ]}
-                    >
+                    {isActive && <View style={{ marginRight: 6 }}><CheckmarkIcon size={16} color="#FFF" /></View>}
+                    <AppText style={[styles.pillText, isActive ? styles.pillTextActive : styles.pillTextInactive]}>
                       {p.name}
                     </AppText>
                   </TouchableOpacity>
@@ -580,8 +429,49 @@ export default function CandidateDashboard() {
               })
             )}
           </ScrollView>
+
+          {/* --- SORT CONTROLS --- */}
+          <View style={styles.sortContainer}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 8 }}>
+              <SortIcon size={16} color="#6B7280" />
+              <AppText style={styles.sortLabel}>Sort by:</AppText>
+            </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+              <SortButton 
+                label="Tier" 
+                active={sortBy === 'tier'} 
+                onPress={() => setSortBy('tier')} 
+              />
+              <SortButton 
+                label="Sessions" 
+                active={sortBy === 'sessions'} 
+                onPress={() => setSortBy('sessions')} 
+              />
+              <SortButton 
+                label="Price: Low to High" 
+                active={sortBy === 'price_low'} 
+                onPress={() => setSortBy('price_low')} 
+              />
+              <SortButton 
+                label="Price: High to Low" 
+                active={sortBy === 'price_high'} 
+                onPress={() => setSortBy('price_high')} 
+              />
+              <SortButton 
+                label="Rating" 
+                active={sortBy === 'rating'} 
+                onPress={() => setSortBy('rating')} 
+              />
+              <SortButton 
+                label="Experience" 
+                active={sortBy === 'experience'} 
+                onPress={() => setSortBy('experience')} 
+              />
+            </ScrollView>
+          </View>
+
           <AppText style={styles.resultsCount}>
-            {mentors.length} {mentors.length === 1 ? "mentor" : "mentors"} available
+            {sortedMentors.length} {sortedMentors.length === 1 ? "mentor" : "mentors"} available
           </AppText>
         </View>
 
@@ -589,22 +479,21 @@ export default function CandidateDashboard() {
         <View style={[styles.listContainer, isMobile && { paddingHorizontal: 20 }]}>
           {mentorsLoading ? (
             <ActivityIndicator size="large" color={theme.colors.primary} />
-          ) : mentors.length === 0 ? (
+          ) : sortedMentors.length === 0 ? (
             <View style={styles.emptyState}>
               <SearchIcon size={48} color={theme.colors.text.light} />
               <AppText style={styles.emptyText}>No mentors found for this profile.</AppText>
             </View>
           ) : (
-            mentors.map((m) => {
-              const price = m.session_price_inr ?? m.session_price ?? 0;
-              const displayPrice = price ? Math.round(price * 2.0) : 0;
+            sortedMentors.map((m) => {
+              const basePrice = m.session_price_inr ?? m.session_price ?? 0;
+              const tier = m.tier || 'bronze';
+              const multiplier = TIER_MULTIPLIERS[tier.toLowerCase()] || 2.0;
+              const displayPrice = basePrice ? Math.round(basePrice * multiplier) : 0;
               
               const totalSessions = m.total_sessions ?? 0;
               const isNewMentor = totalSessions === 0;
-              
-              // Get rating from mentors.average_rating
               const averageRating = m.average_rating ?? 0;
-              // Show rating when mentor has completed at least 3 sessions
               const showRating = totalSessions >= 3 && averageRating > 0;
               
               const nextSlot = mentorAvailability[m.id] || "Loading...";
@@ -614,37 +503,27 @@ export default function CandidateDashboard() {
                 <Card key={m.id} style={styles.card}>
                   <View style={styles.cardContent}>
                     
-                    {/* 1. Professional Title, Verified Badge & Experience */}
                     <View style={styles.topRow}>
                       <View style={styles.identityGroup}>
                         <AppText style={styles.mentorName}>
                           {m.professional_title || "Senior Mentor"}
                         </AppText>
-                        
-                        {/* Verified Badge with Text */}
                         <View style={styles.verifiedBadge}>
                           <CheckmarkCircleIcon size={16} color="#3B82F6" />
                           <AppText style={styles.verifiedText}>Verified</AppText>
                         </View>
                       </View>
-                      
-                      {/* Years of Experience */}
                       {m.years_of_experience != null && (
                         <View style={styles.expBadge}>
                           <BriefcaseIcon size={12} color={theme.colors.text.main} />
-                          <AppText style={styles.expText}>
-                            {m.years_of_experience} yrs exp
-                          </AppText>
+                          <AppText style={styles.expText}>{m.years_of_experience} yrs exp</AppText>
                         </View>
                       )}
                     </View>
 
-                    {/* 2. Stats Row (Tier Badge + Sessions/New Badge + Rating + Availability) */}
                     <View style={styles.statsRow}>
-                      {/* Tier Badge (Bronze/Silver/Gold) - CHANGED: Use tier from DB */}
                       <TierBadge tier={m.tier} />
                       
-                      {/* Sessions or New Badge */}
                       {isNewMentor ? (
                         <View style={styles.statItem}>
                           <SparklesIcon size={14} color="#1E40AF" />
@@ -661,56 +540,36 @@ export default function CandidateDashboard() {
                         </View>
                       )}
                       
-                      {/* Rating (only if >= 3 sessions) */}
-                      {showRating && (
-                        <StarRating rating={averageRating} />
-                      )}
+                      {showRating && <StarRating rating={averageRating} />}
                       
-                      {/* Availability */}
-                      <View style={[
-                        styles.availabilityBadge,
-                        !hasSlots && styles.availabilityBadgeUnavailable
-                      ]}>
-                        <AppText style={styles.availabilityIcon}>
-                          {hasSlots ? '🟢' : '⏰'}
-                        </AppText>
-                        <AppText style={[
-                          styles.availabilityText,
-                          !hasSlots && styles.availabilityTextUnavailable
-                        ]}>
-                          {hasSlots ? `Next slot: ${nextSlot}` : nextSlot}
+                      <View style={[styles.availabilityBadge, !hasSlots && styles.availabilityBadgeUnavailable]}>
+                        <AppText style={styles.availabilityIcon}>{hasSlots ? '🟢' : '⏰'}</AppText>
+                        <AppText style={[styles.availabilityText, !hasSlots && styles.availabilityTextUnavailable]}>
+                          {hasSlots ? nextSlot : 'No slots'}
                         </AppText>
                       </View>
                     </View>
 
                     <View style={styles.dividerLine} />
 
-                    {/* 3. Price & Book Button */}
                     <View style={styles.detailsRow}>
                       <View>
-                        <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
-                          <AppText style={styles.priceText}>
-                            ₹{displayPrice.toLocaleString("en-IN")}
-                          </AppText>
-                          <AppText style={styles.perBookingText}> / booking</AppText>
-                        </View>
-                        
+                        <AppText style={styles.priceText}>₹{displayPrice.toLocaleString()}</AppText>
+                        <AppText style={styles.perBookingText}>per session</AppText>
                         <View style={styles.includesRow}>
                           <AppText style={styles.includesIcon}>✓</AppText>
-                          <AppText style={styles.includesText}>
-                            Includes 1 x 55 min session
-                          </AppText>
+                          <AppText style={styles.includesText}>1 focused mock interview</AppText>
                         </View>
                       </View>
-
+                      
                       <TouchableOpacity 
                         style={styles.bookBtn} 
                         onPress={() => handleViewMentor(m.id)}
+                        activeOpacity={0.8}
                       >
-                        <AppText style={styles.bookBtnText}>View and Book</AppText>
+                        <AppText style={styles.bookBtnText}>View Profile</AppText>
                       </TouchableOpacity>
                     </View>
-
                   </View>
                 </Card>
               );
@@ -723,326 +582,91 @@ export default function CandidateDashboard() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f8f5f0" },
+  container: { flex: 1 },
   scrollContent: { paddingBottom: 40 },
-  
-  // Header
-  headerContainer: {
-    paddingTop: 40, 
-    paddingBottom: 20, 
-    paddingHorizontal: 32, 
-    backgroundColor: "#f8f5f0",
-  },
-  headerContainerMobile: { 
-    paddingHorizontal: 20, 
-    paddingTop: 20 
-  },
-  headerLeft: { width: '100%' },
-  headerTitle: { 
-    fontSize: 24, 
-    fontWeight: "bold", 
-    color: theme.colors.text.main, 
-    marginBottom: 4 
-  },
-  headerSubtitle: { 
-    fontSize: 15, 
-    color: theme.colors.text.light, 
-    maxWidth: 600 
-  },
-  headerDivider: { 
-    height: 1, 
-    backgroundColor: theme.colors.border, 
-    width: "100%" 
-  },
 
-  // Filters
-  filtersContainer: { 
-    paddingHorizontal: 32, 
-    paddingTop: 24, 
-    marginBottom: 24 
-  },
-  filterLabel: { 
-    fontSize: 16, 
-    fontFamily: theme.typography.fontFamily.bold, 
-    color: theme.colors.text.main, 
-    marginBottom: 16 
-  },
+  // Header
+  headerContainer: { paddingHorizontal: 32, paddingTop: 32, paddingBottom: 24, backgroundColor: "#f8f5f0" },
+  headerContainerMobile: { paddingHorizontal: 20 },
+  headerLeft: { maxWidth: 800 },
+  headerTitle: { fontSize: 32, fontFamily: theme.typography.fontFamily.bold, color: theme.colors.text.main, marginBottom: 8 },
+  headerSubtitle: { fontSize: 15, color: theme.colors.text.light, maxWidth: 600 },
+  headerDivider: { height: 1, backgroundColor: theme.colors.border, width: "100%" },
+
+  // Filters & Sort
+  filtersContainer: { paddingHorizontal: 32, paddingTop: 24, marginBottom: 24 },
+  filterLabel: { fontSize: 16, fontFamily: theme.typography.fontFamily.bold, color: theme.colors.text.main, marginBottom: 16 },
   pillsScroll: { gap: 12, paddingRight: 20 },
-  pill: { 
-    flexDirection: "row", 
-    alignItems: "center", 
-    paddingHorizontal: 20, 
-    paddingVertical: 10, 
-    borderRadius: 999, 
-    borderWidth: 1 
-  },
-  pillActive: { 
-    backgroundColor: theme.colors.primary, 
-    borderColor: theme.colors.primary 
-  },
-  pillInactive: { 
-    backgroundColor: "#FFF", 
-    borderColor: "#E5E7EB" 
-  },
+  
+  pill: { flexDirection: "row", alignItems: "center", paddingHorizontal: 20, paddingVertical: 10, borderRadius: 999, borderWidth: 1 },
+  pillActive: { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary },
+  pillInactive: { backgroundColor: "#FFF", borderColor: "#E5E7EB" },
   pillText: { fontSize: 14, fontWeight: "500" },
   pillTextActive: { color: "#FFF" },
   pillTextInactive: { color: "#4B5563" },
-  resultsCount: { 
-    marginTop: 16, 
-    fontSize: 14, 
-    color: theme.colors.text.light 
-  },
+  
+  // Sorting Styles
+  sortContainer: { marginTop: 16, flexDirection: 'row', alignItems: 'center' },
+  sortLabel: { fontSize: 13, color: '#6B7280', fontWeight: '500', marginLeft: 6 },
+  sortBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, backgroundColor: '#F3F4F6', borderWidth: 1, borderColor: '#E5E7EB' },
+  sortBtnActive: { backgroundColor: '#EEF2FF', borderColor: theme.colors.primary },
+  sortBtnText: { fontSize: 12, color: '#4B5563', fontWeight: '500' },
+  sortBtnTextActive: { color: theme.colors.primary, fontWeight: '600' },
+
+  resultsCount: { marginTop: 16, fontSize: 14, color: theme.colors.text.light },
 
   // List
-  listContainer: { 
-    paddingHorizontal: 32, 
-    gap: 16, 
-    paddingBottom: 24 
-  },
+  listContainer: { paddingHorizontal: 32, gap: 16, paddingBottom: 24 },
   
-  // Card Styles
-  card: { 
-    backgroundColor: theme.white, 
-    borderRadius: 12, 
-    padding: 20, 
-    borderWidth: 0.5,
-    borderColor: "#F3F4F6",
-    ...Platform.select({
-      ios: { 
-        shadowColor: '#000', 
-        shadowOffset: { width: 0, height: 2 }, 
-        shadowOpacity: 0.05, 
-        shadowRadius: 4 
-      },
-      android: { elevation: 2, backgroundColor: '#FFF' }
-    })
-  },
+  // Card
+  card: { backgroundColor: theme.white, borderRadius: 12, padding: 20, borderWidth: 0.5, borderColor: "#F3F4F6", ...Platform.select({ ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4 }, android: { elevation: 2, backgroundColor: '#FFF' } }) },
   cardContent: { gap: 12 },
   
-  topRow: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'flex-start', 
-    flexWrap: 'wrap', 
-    gap: 8 
-  },
-  
-  identityGroup: { 
-    flex: 1, 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    gap: 6,
-    flexWrap: 'wrap'
-  },
-  mentorName: { 
-    fontSize: 18, 
-    fontWeight: "bold", 
-    color: theme.colors.text.main, 
-    flexShrink: 1 
-  },
-  
-  verifiedBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  verifiedText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#3B82F6',
-  },
-  
-  expBadge: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    backgroundColor: theme.colors.gray[100], 
-    paddingHorizontal: 8, 
-    paddingVertical: 4, 
-    borderRadius: 6,
-    gap: 4,
-  },
-  expText: { 
-    fontSize: 12, 
-    fontWeight: "600", 
-    color: theme.colors.text.body 
-  },
+  topRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 8 },
+  identityGroup: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
+  mentorName: { fontSize: 18, fontWeight: "bold", color: theme.colors.text.main, flexShrink: 1 },
+  verifiedBadge: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  verifiedText: { fontSize: 12, fontWeight: '600', color: '#3B82F6' },
+  expBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.colors.gray[100], paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, gap: 4 },
+  expText: { fontSize: 12, fontWeight: "600", color: theme.colors.text.body },
 
-  // Stats Row
-  statsRow: {
-    flexDirection: 'row',
-    gap: 16,
-    alignItems: 'center',
-    flexWrap: 'wrap',
-  },
-  
-  statItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  
-  statText: {
-    fontSize: 13,
-    color: '#4B5563',
-  },
-  
-  statValue: {
-    fontWeight: '600',
-    color: '#111827',
-  },
-  
-  newBadge: {
-    backgroundColor: '#DBEAFE',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  
-  newBadgeText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#1E40AF',
-  },
+  statsRow: { flexDirection: 'row', gap: 16, alignItems: 'center', flexWrap: 'wrap' },
+  statItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  statText: { fontSize: 13, color: '#4B5563' },
+  statValue: { fontWeight: '600', color: '#111827' },
+  newBadge: { backgroundColor: '#DBEAFE', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 },
+  newBadgeText: { fontSize: 12, fontWeight: '600', color: '#1E40AF' },
 
   // Tier Badge
-  tierBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 6,
-    borderWidth: 1,
-  },
+  tierBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, borderWidth: 1 },
+  tierText: { fontSize: 12, fontWeight: '600' },
   
-  tierText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
+  // Rating
+  ratingSection: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  starsContainer: { flexDirection: 'row', gap: 2 },
+  starFilled: { fontSize: 14, color: '#FBBF24' },
+  starEmpty: { fontSize: 14, color: '#D1D5DB' },
+  ratingText: { fontSize: 13, fontWeight: '600', color: '#111827' },
   
-  // Rating Section
-  ratingSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  
-  starsContainer: {
-    flexDirection: 'row',
-    gap: 2,
-  },
-  
-  starFilled: {
-    fontSize: 14,
-    color: '#FBBF24',
-  },
-  
-  starEmpty: {
-    fontSize: 14,
-    color: '#D1D5DB',
-  },
-  
-  starHalf: {
-    fontSize: 14,
-    color: '#FBBF24',
-  },
-  
-  ratingText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#111827',
-  },
-  
-  // Availability Badge
-  availabilityBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#ECFDF5',
-    borderWidth: 1,
-    borderColor: '#D1FAE5',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  
-  availabilityBadgeUnavailable: {
-    backgroundColor: '#F3F4F6',
-    borderColor: '#E5E7EB',
-  },
-  
-  availabilityIcon: {
-    fontSize: 12,
-  },
-  
-  availabilityText: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: '#047857',
-  },
-  
-  availabilityTextUnavailable: {
-    color: '#6B7280',
-  },
+  // Availability
+  availabilityBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#ECFDF5', borderWidth: 1, borderColor: '#D1FAE5', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 },
+  availabilityBadgeUnavailable: { backgroundColor: '#F3F4F6', borderColor: '#E5E7EB' },
+  availabilityIcon: { fontSize: 12 },
+  availabilityText: { fontSize: 12, fontWeight: '500', color: '#047857' },
+  availabilityTextUnavailable: { color: '#6B7280' },
 
-  dividerLine: { 
-    height: 1, 
-    backgroundColor: '#F3F4F6', 
-    width: '100%' 
-  },
+  dividerLine: { height: 1, backgroundColor: '#F3F4F6', width: '100%' },
 
-  detailsRow: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'center', 
-    flexWrap: 'wrap', 
-    gap: 16 
-  },
-  
-  priceText: { 
-    fontSize: 20, 
-    fontWeight: "800", 
-    color: theme.colors.text.main 
-  },
-  perBookingText: { 
-    fontSize: 12, 
-    color: "#9CA3AF" 
-  },
-  
-  includesRow: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    marginTop: 4,
-    gap: 4,
-  },
-  includesIcon: {
-    fontSize: 14,
-    color: theme.colors.primary,
-  },
-  includesText: { 
-    fontSize: 12, 
-    color: theme.colors.text.light, 
-    fontWeight: '500' 
-  },
+  detailsRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 },
+  priceText: { fontSize: 20, fontWeight: "800", color: theme.colors.text.main },
+  perBookingText: { fontSize: 12, color: "#9CA3AF" },
+  includesRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4, gap: 4 },
+  includesIcon: { fontSize: 14, color: theme.colors.primary },
+  includesText: { fontSize: 12, color: theme.colors.text.light, fontWeight: '500' },
 
-  bookBtn: { 
-    backgroundColor: theme.colors.primary, 
-    paddingVertical: 10, 
-    paddingHorizontal: 24, 
-    borderRadius: 8 
-  },
-  bookBtnText: { 
-    color: '#FFF', 
-    fontWeight: '600', 
-    fontSize: 14 
-  },
+  bookBtn: { backgroundColor: theme.colors.primary, paddingVertical: 10, paddingHorizontal: 24, borderRadius: 8 },
+  bookBtnText: { color: '#FFF', fontWeight: '600', fontSize: 14 },
 
-  emptyState: { 
-    alignItems: 'center', 
-    padding: 40 
-  },
-  emptyText: { 
-    marginTop: 10, 
-    color: theme.colors.text.light 
-  },
+  emptyState: { alignItems: 'center', padding: 40 },
+  emptyText: { marginTop: 10, color: theme.colors.text.light },
 });

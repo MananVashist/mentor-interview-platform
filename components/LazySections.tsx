@@ -1,5 +1,4 @@
-﻿    // components/LazySections.tsx
-import React, { memo } from 'react';
+﻿import React, { memo } from 'react';
 import {
   View,
   Text,
@@ -12,7 +11,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Asset } from 'expo-asset';
-import Svg, { Circle, Path, Rect } from 'react-native-svg';
+import Svg, { Circle, Path, Rect, Polygon } from 'react-native-svg';
 import { Footer } from './Footer'; 
 
 // 🟢 MOVED IMAGES HERE (Lazy Loaded)
@@ -53,44 +52,40 @@ const STATS = [
 ];
 
 const INTERVIEW_TRACKS = [
-  { id: 'pm', emoji: '📊', title: 'Product Management', desc: 'Product sense, strategy, execution', path: '/interviews/product-management' },
-  { id: 'data-analytics', emoji: '📈', title: 'Data Analytics', desc: 'SQL, Python, business intelligence', path: '/interviews/data-analytics' },
+  { id: 'pm', emoji: '📊', title: 'Product Management', desc: 'Product sense, strategy, execution, technical,leadership', path: '/interviews/product-management' },
+  { id: 'data-analytics', emoji: '📈', title: 'Data Analytics', desc: 'SQL, Case studies, Excel, business intelligence', path: '/interviews/data-analytics' },
   { id: 'data-science', emoji: '🤖', title: 'Data Science', desc: 'ML, statistics, modeling', path: '/interviews/data-science' },
-  { id: 'hr', emoji: '👥', title: 'HR Interviews', desc: 'Behavioral, situational questions', path: '/interviews/hr' },
+  { id: 'hr', emoji: '👥', title: 'HR Interviews', desc: 'Talent acquisition, HR generalist, HRBP', path: '/interviews/hr' },
 ];
 
 const REVIEWS = [
-  { id: 1, name: 'P.K.', role: 'Product Manager at Loco', company: 'Funded Startup', text: 'The anonymous format helped me practice without fear. Got honest feedback that directly improved my answers.', rating: 5 },
-  { id: 2, name: 'A.M.', role: 'Data Analyst at MuSigma', company: 'Analytics Firm', text: 'My mentor was from Google. The SQL round practice was exactly like my real interview. Landed the offer!', rating: 5 },
-  { id: 3, name: 'S.K.', role: 'ML Engineer at Happay   ', company: 'AI Startup', text: 'Worth every rupee. The structured evaluation showed exactly where I was weak. Fixed those gaps and aced my next interview.', rating: 5 },
+  { id: 1, name: 'P.K.', role: 'Product Manager', company: 'Funded Startup', text: 'The anonymous format helped me practice without fear. Got honest feedback that directly improved my answers.', rating: 5 },
+  { id: 2, name: 'A.M.', role: 'Data Analyst', company: 'Analytics Firm', text: 'The SQL round practice was exactly like my real interview. Landed the offer!', rating: 5 },
+  { id: 3, name: 'S.K.', role: 'ML Engineer', company: 'AI Startup', text: 'Worth every rupee. The structured evaluation showed exactly where I was weak. Fixed those gaps and aced my next interview.', rating: 5 },
 ];
 
 const FAQ = [
-  { q: 'How does anonymous interviewing work?', a: 'Your name, photo, and personal details are hidden. You are identified only by your professional title (e.g., "Data Scientist at Uber"). Mentors see your role and resume (if you choose to upload it), nothing more. When you join the meeting, you can join with a fake name and keep your video off' },
+  { q: 'How does anonymous interviewing work?', a: 'Your name, photo, and personal details are hidden. You are identified only by your professional title (e.g., "Data Scientist at Uber"). Mentors see your role and resume (if you choose to upload it), nothing more. When you join the meeting, you can join and keep your video off' },
   { q: 'Are your mentors verified?', a: 'Yes. Every mentor is vetted manually. We verify employment history, LinkedIn profiles, and conduct background checks to ensure they work at top companies.' },
   { q: 'What happens in a session?', a: 'Book a 55-minute slot. Your mentor conducts a realistic mock interview focused on your chosen topic. After the session, you receive structured evaluation feedback covering strengths, gaps, and specific improvement areas.' },
   { q: 'Can I practice specific rounds?', a: 'Absolutely. Choose your interview profile (PM, Data, HR, etc.) and then select the specific topic you want to practice - like "Product Thinking", "SQL", or "Behavioral Questions".' },
-  { q: 'Do you offer refunds?', a: 'Yes. If the mentor does not show up for the session, we provide a full refund. Just make sure you have a recording of the first 15 mins of the session  .' },
+  { q: 'Do you offer refunds?', a: 'Yes. If the mentor does not show up for the session, we provide a full refund. We record the session so its no problem' },
 ];
 
-// 🟢 SVG ICONS FOR MENTOR SECTION
-const EarningsIcon = () => (
+// 🟢 SVG ICONS
+const FeedbackIcon = () => (
   <Svg width={48} height={48} viewBox="0 0 48 48" fill="none">
     <Circle cx={24} cy={24} r={20} fill="#10b981" opacity={0.1} />
-    <Path d="M24 8C15.163 8 8 15.163 8 24s7.163 16 16 16 16-7.163 16-16S32.837 8 24 8zm0 28c-6.627 0-12-5.373-12-12S17.373 12 24 12s12 5.373 12 12-5.373 12-12 12z" fill="#10b981" />
-    <Path d="M26 18h-4v4h-3l5 6 5-6h-3v-4zm-2 14c-1.1 0-2-.9-2-2h4c0 1.1-.9 2-2 2z" fill="#10b981" />
+    <Path d="M14 24l6 6 14-14" stroke="#10b981" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+    <Rect x={12} y={32} width={24} height={4} rx={2} fill="#10b981" opacity={0.5} />
   </Svg>
 );
 
-const CalendarIcon = () => (
+const VideoIcon = () => (
   <Svg width={48} height={48} viewBox="0 0 48 48" fill="none">
-    <Rect x={8} y={10} width={32} height={28} rx={3} fill="#18a7a7" opacity={0.1} />
-    <Rect x={8} y={10} width={32} height={6} rx={3} fill="#18a7a7" />
-    <Rect x={12} y={20} width={6} height={6} rx={1} fill="#18a7a7" opacity={0.3} />
-    <Rect x={21} y={20} width={6} height={6} rx={1} fill="#18a7a7" opacity={0.3} />
-    <Rect x={30} y={20} width={6} height={6} rx={1} fill="#18a7a7" />
-    <Rect x={12} y={29} width={6} height={6} rx={1} fill="#18a7a7" opacity={0.3} />
-    <Rect x={21} y={29} width={6} height={6} rx={1} fill="#18a7a7" opacity={0.3} />
+    <Circle cx={24} cy={24} r={20} fill="#18a7a7" opacity={0.1} />
+    <Path d="M34 24l-14-9v18l14-9z" fill="#18a7a7" />
+    <Rect x={14} y={12} width={4} height={24} rx={1} fill="#18a7a7" opacity={0.3} />
   </Svg>
 );
 
@@ -204,7 +199,7 @@ const InterviewTracks = memo(() => {
             activeOpacity={0.8}
             accessibilityRole="button"
             accessibilityLabel={`${track.title}: ${track.desc}`}
-            accessibilityHint={`Navigate to ${track.title} interview track`}
+            accessibilityHint={`Maps to ${track.title} interview track`}
           >
             <Text 
               style={styles.trackEmoji}
@@ -343,58 +338,71 @@ const Reviews = memo(() => {
   );
 });
 
-// 🟢 NEW: BECOME A MENTOR SECTION
-const BecomeMentor = memo(() => {
+// 🟢 REPLACED: "Become a Mentor" -> "WHY CHOOSE US"
+// Focused on Recording, Feedback, and Quality
+const WhyChooseUs = memo(() => {
   const router = useRouter();
   const { width } = useWindowDimensions();
-  const isSmall = width < 900;
+  const isSmall = width <900;
 
-  const BENEFITS = [
-    { Icon: EarningsIcon, title: 'Earn ₹500-2500/session', desc: 'You keep 80%. Set your own rates and schedule.' },
-    { Icon: CalendarIcon, title: 'Work on your schedule', desc: 'Fully remote. Choose when and how often you mentor.' },
-    { Icon: StarIcon, title: 'Sharpen your skills', desc: 'Stay sharp on frameworks. Valuable for your next interview.' },
+  const FEATURES = [
+    { 
+      Icon: VideoIcon, 
+      title: 'Session Recordings', 
+      desc: 'Don’t worry about taking notes. Get a full HD recording of your interview to review your performance later.' 
+    },
+    { 
+      Icon: FeedbackIcon, 
+      title: 'Actionable Feedback', 
+      desc: 'Receive a detailed scorecard highlighting your strong points and specific areas to improve.' 
+    },
+    { 
+      Icon: StarIcon, 
+      title: 'Top 1% Mentors', 
+      desc: 'Practice with vetted experts from FAANG and top startups who know exactly what hiring managers want.' 
+    },
   ];
 
   return (
     <View 
       style={styles.sectionContainer}
       accessibilityRole="region"
-      accessibilityLabel="Become a mentor section"
+      accessibilityLabel="Why choose CrackJobs"
     >
       <Text 
         style={styles.sectionKicker}
         accessibilityRole="header"
         accessibilityLevel={2}
       >
-        BECOME A MENTOR
+        WHY CRACKJOBS?
       </Text>
       <Text 
         style={[styles.sectionTitle, isSmall && styles.sectionTitleMobile]}
         accessibilityRole="header"
         accessibilityLevel={3}
       >
-        Share your expertise, earn on your terms
+        Everything you need to improve
       </Text>
       
       <View style={[styles.benefitsGrid, isSmall && styles.benefitsGridMobile]}>
-        {BENEFITS.map((benefit, i) => (
+        {FEATURES.map((feature, i) => (
           <View 
             key={i} 
             style={styles.benefitCard}
             accessibilityRole="summary"
-            accessibilityLabel={`${benefit.title}. ${benefit.desc}`}
+            accessibilityLabel={`${feature.title}. ${feature.desc}`}
           >
             <View style={styles.benefitIconContainer}>
-              <benefit.Icon />
+              <feature.Icon />
             </View>
             <Text 
               style={styles.benefitTitle}
               accessibilityRole="header"
               accessibilityLevel={4}
             >
-              {benefit.title}
+              {feature.title}
             </Text>
-            <Text style={styles.benefitDesc}>{benefit.desc}</Text>
+            <Text style={styles.benefitDesc}>{feature.desc}</Text>
           </View>
         ))}
       </View>
@@ -405,27 +413,27 @@ const BecomeMentor = memo(() => {
           onPress={() => router.push('/auth/sign-up')}
           activeOpacity={0.9}
           accessibilityRole="button"
-          accessibilityLabel="Start Mentoring"
-          accessibilityHint="Navigate to sign up page to become a mentor"
+          accessibilityLabel="Start Practicing"
         >
-          <Text style={styles.mentorCtaButtonText}>Start Mentoring</Text>
+          <Text style={styles.mentorCtaButtonText}>Start Practicing Now</Text>
         </TouchableOpacity>
       </View>
     </View>
   );
 });
 
-// 🟢 NEW: MENTOR TIERS SECTION
-const MentorTiers = memo(() => {
+// 🟢 REPLACED: "Level Up" -> "CANDIDATE TIERS" (Using Bronze/Silver/Gold Ranges)
+const CandidateTiers = memo(() => {
   const { width } = useWindowDimensions();
   const isSmall = width < 900;
 
+  // 🟢 RANGES: Adapted from Mentor Tiers to Candidate Prep Volume
   const TIERS = [
     {
       Badge: BronzeBadge,
-      title: 'Bronze Mentor',
-      sessions: '1-10 sessions',
-      benefits: ['Bronze Badge next to your profile'],
+      title: 'Bronze mentors',
+      sessions: 'Rs 3000-6000', // Range 1
+      benefits: ['Quality Mid level professionals', 'Good for starting out'],
       bgGradient: { background: 'linear-gradient(135deg, #fef3e7 0%, #fde8d0 100%)' },
       borderColor: '#f0bb84',
       titleColor: '#8b4513',
@@ -434,9 +442,9 @@ const MentorTiers = memo(() => {
     },
     {
       Badge: SilverBadge,
-      title: 'Silver Mentor',
-      sessions: '11-30 sessions',
-      benefits: ['Silver Badge next to your profile', 'LinkedIn silver mentor certificate', 'LinkedIn appreciation post'],
+      title: 'Silver mentors',
+      sessions: 'Rs 6000-9000', // Range 2
+      benefits: ['Senior Management at reputable organisations', 'Good for mid level professionals'],
       bgGradient: { background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)' },
       borderColor: '#9ca3af',
       titleColor: '#4b5563',
@@ -445,9 +453,9 @@ const MentorTiers = memo(() => {
     },
     {
       Badge: GoldBadge,
-      title: 'Gold Mentor',
-      sessions: '31+ sessions',
-      benefits: ['Gold Badge next to your profile', 'LinkedIn gold mentor certificate', 'LinkedIn appreciation post', 'Exclusive gold mentor community'],
+      title: 'Gold mentors',
+      sessions: 'Rs 9000-15000', // Range 3
+      benefits: ['Masters in their fields', 'Good for practicing CXO and founder rounds for senior management'],
       bgGradient: { background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)' },
       borderColor: '#d97706',
       titleColor: '#b45309',
@@ -460,21 +468,21 @@ const MentorTiers = memo(() => {
     <View 
       style={styles.sectionContainer}
       accessibilityRole="region"
-      accessibilityLabel="Mentor tiers section"
+      accessibilityLabel="Candidate preparation tiers"
     >
       <Text 
         style={styles.sectionKicker}
         accessibilityRole="header"
         accessibilityLevel={2}
       >
-        LEVEL UP
+        PREP JOURNEY
       </Text>
       <Text 
         style={[styles.sectionTitle, isSmall && styles.sectionTitleMobile]}
         accessibilityRole="header"
         accessibilityLevel={3}
       >
-        Unlock perks as you grow
+        Choose your level of preparation
       </Text>
       
       <View style={[styles.tiersGrid, isSmall && styles.tiersGridMobile]}>
@@ -617,8 +625,8 @@ export default function LazySections() {
       <InterviewTracks />
       <SocialProof />
       <Reviews />
-      <BecomeMentor />
-      <MentorTiers />
+      <WhyChooseUs />
+      <CandidateTiers />
       <FAQSection />
       <BottomCTA />
       <Footer />
@@ -714,20 +722,20 @@ const styles = StyleSheet.create({
   trackArrow: { alignSelf: 'flex-start', backgroundColor: CTA_TEAL, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
   trackArrowText: { color: '#fff', fontWeight: '700' },
 
-  // Reviews - ✅ FIXED OVERFLOW ISSUE
+  // Reviews
   reviewsSection: { backgroundColor: '#fff', paddingVertical: 80 },
   reviewsGrid: { flexDirection: 'row', gap: 24, justifyContent: 'center', flexWrap: 'wrap' },
   reviewsGridMobile: { flexDirection: 'column',alignItems: 'center' },
   reviewCard: { flex: 1, minWidth: 280, maxWidth: 360, backgroundColor: BG_CREAM, padding: 24, borderRadius: 16, borderWidth: 1, borderColor: '#f0f0f0' },
   reviewHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12, gap: 12 },
-  reviewHeaderLeft: { flex: 1, flexShrink: 1, minWidth: 0 }, // ✅ ADDED: Allows text to wrap, prevents overflow
-  reviewStarsContainer: { flexShrink: 0, paddingLeft: 8 }, // ✅ ADDED: Prevents stars from shrinking or overflowing
+  reviewHeaderLeft: { flex: 1, flexShrink: 1, minWidth: 0 },
+  reviewStarsContainer: { flexShrink: 0, paddingLeft: 8 },
   reviewName: { fontFamily: SYSTEM_FONT, fontWeight: '700', fontSize: 16, color: TEXT_DARK },
   reviewRole: { fontFamily: SYSTEM_FONT, fontSize: 13, color: TEXT_GRAY, marginTop: 2 },
   reviewStars: { fontSize: 16 },
   reviewText: { fontFamily: SYSTEM_FONT, fontSize: 15, color: TEXT_DARK, lineHeight: 22, fontStyle: 'italic' },
 
-  // 🟢 NEW: Mentor Benefits Styles
+  // 🟢 NEW: Benefits/Why Choose Us Styles
   benefitsGrid: { flexDirection: 'row', gap: 32, justifyContent: 'center', alignItems: 'flex-start', maxWidth: 1200, alignSelf: 'center', marginBottom: 48 },
   benefitsGridMobile: { flexDirection: 'column', maxWidth: 600, gap: 16 },
   benefitCard: { flex: 1, maxWidth: 320, backgroundColor: '#fff', padding: 24, borderRadius: 16, alignItems: 'center', borderWidth: 1, borderColor: '#f0f0f0' },
@@ -738,7 +746,7 @@ const styles = StyleSheet.create({
   mentorCtaButton: { backgroundColor: CTA_TEAL, paddingVertical: 16, paddingHorizontal: 32, borderRadius: 100, minWidth: 200 },
   mentorCtaButtonText: { fontFamily: SYSTEM_FONT, fontSize: 16, fontWeight: '700', color: '#fff', textAlign: 'center' },
   
-  // 🟢 NEW: Mentor Tiers Styles
+  // 🟢 NEW: Tiers Styles
   tiersGrid: { flexDirection: 'row', gap: 24, justifyContent: 'center', alignItems: 'stretch', maxWidth: 1200, alignSelf: 'center' },
   tiersGridMobile: { flexDirection: 'column', maxWidth: 800, gap: 20 },
   tierCard: { flex: 1, maxWidth: 360, padding: 28, borderRadius: 16, alignItems: 'center', borderWidth: 2 },
@@ -766,4 +774,4 @@ const styles = StyleSheet.create({
   ctaSubtitleMobile: { fontSize: 16 },
   ctaButton: { backgroundColor: '#fff', paddingHorizontal: 40, paddingVertical: 16, borderRadius: 100 },
   ctaButtonText: { fontFamily: SYSTEM_FONT, fontWeight: '700', fontSize: 16, color: BRAND_ORANGE },
-});
+});                 

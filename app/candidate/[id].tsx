@@ -16,6 +16,13 @@ import { AppText } from "@/lib/ui";
 import { supabase } from "@/lib/supabase/client";
 import { theme } from "@/lib/theme";
 
+// Tier multipliers
+const TIER_MULTIPLIERS: Record<string, number> = {
+  bronze: 2.0,   // 100% commission
+  silver: 1.75,  // 75% commission
+  gold: 1.5,     // 50% commission
+};
+
 export default function MentorDetailsScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
@@ -24,14 +31,12 @@ export default function MentorDetailsScreen() {
   const [loading, setLoading] = useState(true);
   
   // State for Selection
-  const [selectedProfile, setSelectedProfile] = useState<string | null>(null);
+  const [profiles, setProfiles] = useState<any[]>([]);
+  const [selectedProfileId, setSelectedProfileId] = useState<number | null>(null);
   const [skills, setSkills] = useState<any[]>([]);
   const [selectedSkill, setSelectedSkill] = useState<any>(null);
 
-  // 🔧 NEW: Store a proper mapping of profile names to IDs
-  const [profileNameToIdMap, setProfileNameToIdMap] = useState<Record<string, number>>({});
-
-  // 1. Fetch Mentor Details
+  // 1. Fetch Mentor Details & Profiles
   useEffect(() => {
     async function fetchMentorDetails() {
       if (!id || id === 'schedule') return; 
@@ -39,7 +44,7 @@ export default function MentorDetailsScreen() {
       try {
         const { data, error } = await supabase
           .from('mentors')
-          .select('session_price_inr, professional_title, experience_description, expertise_profiles, profile_ids, years_of_experience, average_rating, total_sessions, status, profile:profiles(*)')
+          .select('session_price_inr, tier, professional_title, experience_description, profile_ids, years_of_experience, average_rating, total_sessions, status, profile:profiles(*)')
           .eq('id', id)
           .single();
           
@@ -47,74 +52,43 @@ export default function MentorDetailsScreen() {
           
         if (data) {
             const basePrice = data.session_price_inr || 1000;
-            const totalPrice = Math.round(basePrice * 2.0);
+            const tier = data.tier || 'bronze';
+            const multiplier = TIER_MULTIPLIERS[tier] || 2.0;
+            const totalPrice = Math.round(basePrice * multiplier);
             
-            // Calculate tier based on session count
-            const sessionCount = data.total_sessions || 0;
-            let tier = 'Bronze';
-            if (sessionCount > 30) tier = 'Gold';
-            else if (sessionCount > 10) tier = 'Silver';
+            console.log('💰 Pricing Details:', { tier, basePrice, multiplier, totalPrice });
             
-            const profilesList = data.expertise_profiles?.join(", ") || "Tech";
-            const aboutText = data.experience_description 
-              ? data.experience_description 
-              : `Specializes in ${profilesList} interviews.`;
-
-            const expertiseProfiles = data.expertise_profiles || [];
             const profileIds = data.profile_ids || [];
-            
-            console.log('📊 Mentor Data:');
-            console.log('  Expertise Profiles:', expertiseProfiles);
-            console.log('  Profile IDs:', profileIds);
+            console.log('📊 Mentor Profile IDs:', profileIds);
 
-            // 🔧 BUILD PROPER MAPPING: Fetch actual profile names from DB
+            // Fetch profile details from interview_profiles_admin
             if (profileIds.length > 0) {
               const { data: profilesData, error: profilesError } = await supabase
                 .from('interview_profiles_admin')
-                .select('id, name')
-                .in('id', profileIds);
+                .select('id, name, description')
+                .in('id', profileIds)
+                .order('name');
 
               if (!profilesError && profilesData) {
-                // Create a mapping: profile name -> profile ID
-                const mapping: Record<string, number> = {};
-                profilesData.forEach(profile => {
-                  mapping[profile.name] = profile.id;
-                });
-                
-                console.log('✅ Built Profile Name -> ID Mapping:', mapping);
-                setProfileNameToIdMap(mapping);
-
-                // 🔍 VALIDATION: Check if mentor's expertise_profiles match the actual names
-                const actualProfileNames = profilesData.map(p => p.name).sort();
-                const mentorProfileNames = [...expertiseProfiles].sort();
-                
-                console.log('🔍 Validation:');
-                console.log('  Mentor lists:', mentorProfileNames);
-                console.log('  Actual names:', actualProfileNames);
-                
-                // Check for mismatches
-                const mismatches = expertiseProfiles.filter(
-                  expertiseName => !profilesData.some(p => p.name === expertiseName)
-                );
-                
-                if (mismatches.length > 0) {
-                  console.warn('⚠️ WARNING: Mentor expertise names do not match database:', mismatches);
-                  console.warn('  This could cause skills to not load properly.');
-                }
+                console.log('✅ Fetched profiles:', profilesData);
+                setProfiles(profilesData);
+              } else {
+                console.error('❌ Error fetching profiles:', profilesError);
+                setProfiles([]);
               }
             }
+
+            const aboutText = data.experience_description || "Experienced interview mentor.";
 
             setMentor({
                 id: id, 
                 title: data.professional_title || "Senior Interviewer",
                 exp: data.years_of_experience, 
                 about: aboutText,
-                expertise: expertiseProfiles,
-                profileIds: profileIds, // Still store original for fallback
                 totalPrice: totalPrice,
                 avatarChar: data.profile?.full_name?.charAt(0) || 'M',
                 rating: data.average_rating || 0,
-                sessionCount: sessionCount,
+                sessionCount: data.total_sessions || 0,
                 tier: tier,
                 isVerified: data.status === 'approved'
             });
@@ -129,98 +103,56 @@ export default function MentorDetailsScreen() {
     fetchMentorDetails();
   }, [id]);
 
-  // 2. Fetch Skills when Profile Changes - ROBUST VERSION
+  // 2. Fetch Skills when Profile is Selected
   useEffect(() => {
     async function fetchSkills() {
-        if (!selectedProfile || !mentor) {
-          console.log('⏭️ Skipping skill fetch - no profile selected or no mentor data');
+        if (!selectedProfileId) {
+          console.log('⏭️ No profile selected');
+          setSkills([]);
           return;
         }
 
-        console.log('🔍 Fetching skills for profile:', selectedProfile);
-
-        // 🔧 METHOD 1: Use the name-to-ID mapping (ROBUST)
-        let profileId = profileNameToIdMap[selectedProfile];
-
-        if (profileId) {
-          console.log(`✅ Found profile ID via mapping: ${selectedProfile} → ${profileId}`);
-        } else {
-          // 🔧 METHOD 2: Fallback to index-based lookup (for backward compatibility)
-          console.warn('⚠️ Mapping not found, falling back to index-based lookup');
-          const index = mentor.expertise.indexOf(selectedProfile);
-          
-          if (index === -1) {
-            console.error('❌ Profile not found in expertise array:', selectedProfile);
-            setSkills([]);
-            return;
-          }
-
-          profileId = mentor.profileIds[index];
-          console.log(`⚠️ Using fallback: index ${index} → profile ID ${profileId}`);
-        }
-
-        if (!profileId) {
-            console.error('❌ No profile ID found for:', selectedProfile);
-            setSkills([]);
-            return;
-        }
-
-        console.log('📡 Querying skills for profile_id:', profileId);
+        console.log('🔍 Fetching skills for profile_id:', selectedProfileId);
 
         const { data, error } = await supabase
             .from('interview_skills_admin')
-            .select('*')
-            .eq('interview_profile_id', profileId);
+            .select('id, name, description')
+            .eq('interview_profile_id', selectedProfileId)
+            .order('name');
 
         if (error) {
-          console.error('❌ Error fetching skills:', error);
-          setSkills([]);
-          return;
-        }
-
-        if (data) {
-            console.log(`✅ Fetched ${data.length} skills:`, data.map(s => s.name));
-            setSkills(data);
-            setSelectedSkill(null);
+            console.error('❌ Error fetching skills:', error);
+            setSkills([]);
         } else {
-          console.warn('⚠️ No skills returned for profile_id:', profileId);
-          setSkills([]);
+            console.log(`✅ Fetched ${data?.length || 0} skills`);
+            setSkills(data || []);
         }
     }
+
     fetchSkills();
-  }, [selectedProfile, mentor, profileNameToIdMap]);
+  }, [selectedProfileId]);
 
   const handleSchedule = () => {
-    if (!selectedProfile || !selectedSkill) {
-      Alert.alert("Selection Required", "Please select both a profile and a specific skill.");
+    if (!selectedProfileId || !selectedSkill) {
+      Alert.alert("Selection Required", "Please select both a profile and a skill.");
       return;
     }
 
-    // 🔧 Use mapping for robust profile ID lookup
-    const selectedProfileId = profileNameToIdMap[selectedProfile] || 
-                              mentor.profileIds[mentor.expertise.indexOf(selectedProfile)];
-
-    if (!selectedProfileId) {
-      Alert.alert("Error", "Could not determine profile ID. Please contact support.");
-      return;
-    }
-
-    console.log('🚀 Scheduling with:');
-    console.log('  Profile:', selectedProfile);
-    console.log('  Profile ID:', selectedProfileId);
-    console.log('  Skill:', selectedSkill.name);
-    console.log('  Skill ID:', selectedSkill.id);
-
+    console.log('🎯 Navigating to schedule with:', {
+      mentorId: id,
+      profileId: selectedProfileId,
+      skillId: selectedSkill.id,
+      totalPrice: mentor.totalPrice
+    });
+    
     router.push({
-        pathname: '/candidate/schedule',
-        params: { 
-            mentorId: id,
-            profileName: selectedProfile, 
-            profileId: selectedProfileId,
-            price: mentor.totalPrice,
-            skillId: selectedSkill.id,
-            skillName: selectedSkill.name
-        } 
+      pathname: "/candidate/schedule",
+      params: { 
+        mentorId: id, 
+        profileId: selectedProfileId,
+        skillId: selectedSkill.id,
+        totalPrice: mentor.totalPrice 
+      }
     });
   };
 
@@ -232,122 +164,120 @@ export default function MentorDetailsScreen() {
     );
   }
 
-  if (!mentor) return null;
+  if (!mentor) {
+    return (
+      <View style={styles.loadingContainer}>
+        <AppText>Mentor not found</AppText>
+      </View>
+    );
+  }
+
+  // Tier display configuration
+  const getTierStyle = (tier: string) => {
+    switch (tier) {
+      case 'gold':
+        return { badge: styles.tierGold, text: styles.tierTextGold };
+      case 'silver':
+        return { badge: styles.tierSilver, text: styles.tierTextSilver };
+      case 'bronze':
+      default:
+        return { badge: styles.tierBronze, text: styles.tierTextBronze };
+    }
+  };
+
+  const tierStyle = getTierStyle(mentor.tier);
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={theme.colors.background} />
+      <StatusBar barStyle="dark-content" />
       
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        
-        {/* BIO SECTION */}
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        {/* BIO CARD */}
         <View style={styles.card}>
           <View style={styles.bioHeader}>
             <View style={styles.avatarPlaceholder}>
-                <AppText style={styles.avatarText}>{mentor.avatarChar}</AppText>
+              <AppText style={styles.avatarText}>{mentor.avatarChar}</AppText>
             </View>
             <View style={{ flex: 1 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                  <AppText style={styles.headerTitle}>{mentor.title}</AppText>
-                  {mentor.isVerified && (
-                    <Ionicons name="checkmark-circle" size={18} color="#0E9384" />
-                  )}
+              <AppText style={styles.headerTitle}>{mentor.title}</AppText>
+              {mentor.isVerified && (
+                <View style={styles.badge}>
+                  <Ionicons name="shield-checkmark" size={12} color={theme.colors.primary} style={{ marginRight: 4 }} />
+                  <AppText style={styles.badgeText}>VERIFIED</AppText>
                 </View>
-                {mentor.exp != null && (
-                  <View style={styles.badge}>
-                      <Ionicons name="briefcase" size={10} color={theme.colors.text.body} style={{ marginRight: 4 }} />
-                      <AppText style={styles.badgeText}>{mentor.exp} Years Exp</AppText>
-                  </View>
-                )}
+              )}
             </View>
           </View>
 
           {/* Stats Row */}
           <View style={styles.statsRow}>
             {/* Tier Badge */}
-            <View style={[
-              styles.tierBadge,
-              mentor.tier === 'Gold' ? styles.tierGold : 
-              mentor.tier === 'Silver' ? styles.tierSilver : 
-              styles.tierBronze
-            ]}>
-              <Ionicons 
-                name="medal" 
-                size={14} 
-                color={
-                  mentor.tier === 'Gold' ? '#D97706' : 
-                  mentor.tier === 'Silver' ? '#6B7280' : 
-                  '#CD7F32'
-                } 
-                style={{ marginRight: 6 }} 
-              />
-              <AppText style={[
-                styles.tierText,
-                mentor.tier === 'Gold' ? styles.tierTextGold : 
-                mentor.tier === 'Silver' ? styles.tierTextSilver : 
-                styles.tierTextBronze
-              ]}>
-                {mentor.tier}
-              </AppText>
+            <View style={[styles.tierBadge, tierStyle.badge]}>
+              <Ionicons name="ribbon" size={14} color={tierStyle.text.color} />
+              <AppText style={[styles.tierText, tierStyle.text]}>{mentor.tier.toUpperCase()}</AppText>
             </View>
-
-            {/* Rating */}
+            
+            {mentor.rating > 0 && (
+              <View style={styles.statItem}>
+                <Ionicons name="star" size={14} color="#F59E0B" style={{ marginRight: 4 }} />
+                <AppText style={styles.statText}>{mentor.rating.toFixed(1)}</AppText>
+              </View>
+            )}
             <View style={styles.statItem}>
-              <Ionicons name="star" size={14} color="#F59E0B" style={{ marginRight: 4 }} />
-              <AppText style={styles.statText}>
-                {mentor.rating > 0 ? mentor.rating.toFixed(1) : 'New'}
-              </AppText>
+              <Ionicons name="briefcase" size={14} color={theme.colors.primary} style={{ marginRight: 4 }} />
+              <AppText style={styles.statText}>{mentor.exp} yrs</AppText>
             </View>
-
-            {/* Sessions */}
             <View style={styles.statItem}>
-              <Ionicons name="people" size={14} color="#6B7280" style={{ marginRight: 4 }} />
-              <AppText style={styles.statText}>
-                {mentor.sessionCount} {mentor.sessionCount === 1 ? 'session' : 'sessions'}
-              </AppText>
+              <Ionicons name="people" size={14} color={theme.colors.primary} style={{ marginRight: 4 }} />
+              <AppText style={styles.statText}>{mentor.sessionCount} sessions</AppText>
             </View>
           </View>
 
           <View style={styles.divider} />
+
           <View style={styles.sectionHeader}>
-             <Ionicons name="information-circle-outline" size={20} color={theme.colors.text.light} style={{ marginRight: 8 }} />
-             <AppText style={styles.sectionTitle}>About</AppText>
+            <Ionicons name="information-circle-outline" size={20} color={theme.colors.text.light} style={{ marginRight: 8 }} />
+            <AppText style={styles.sectionTitle}>About</AppText>
           </View>
           <AppText style={styles.sectionBody}>{mentor.about}</AppText>
         </View>
 
-        {/* PROFILE & SKILL SELECTION */}
+        {/* SELECTION CARD */}
         <View style={styles.card}>
           <View style={styles.sectionHeader}>
-             <Ionicons name="checkmark-circle-outline" size={20} color={theme.colors.text.light} style={{ marginRight: 8 }} />
-             <AppText style={styles.sectionTitle}>Select Focus Area</AppText>
+            <Ionicons name="create-outline" size={20} color={theme.colors.text.light} style={{ marginRight: 8 }} />
+            <AppText style={styles.sectionTitle}>What would you like to practice?</AppText>
           </View>
           
-          {/* 1. Profile Tags */}
+          {/* 1. Profile Pills */}
           <AppText style={styles.subLabel}>Role Profile:</AppText>
           <View style={styles.tagsContainer}>
-            {mentor.expertise.map((tag: string, index: number) => {
-              const isSelected = selectedProfile === tag;
-              return (
-                <TouchableOpacity 
-                    key={index} 
-                    style={[styles.tag, isSelected && styles.tagActive]}
-                    onPress={() => {
-                      console.log('🎯 Selected profile:', tag);
-                      setSelectedProfile(tag);
-                      setSelectedSkill(null);
-                    }}
-                    activeOpacity={0.7}
-                >
-                  {isSelected && <Ionicons name="checkmark" size={14} color="#FFF" style={{marginRight: 6}} />}
-                  <AppText style={[styles.tagText, isSelected && styles.tagTextActive]}>{tag}</AppText>
-                </TouchableOpacity>
-              );
-            })}
+            {profiles.length === 0 ? (
+              <AppText style={styles.emptyText}>No profiles available</AppText>
+            ) : (
+              profiles.map((profile) => {
+                const isSelected = selectedProfileId === profile.id;
+                return (
+                  <TouchableOpacity 
+                      key={profile.id} 
+                      style={[styles.tag, isSelected && styles.tagActive]}
+                      onPress={() => {
+                        console.log('🎯 Selected profile:', profile.name, 'ID:', profile.id);
+                        setSelectedProfileId(profile.id);
+                        setSelectedSkill(null); // Reset skill selection
+                      }}
+                      activeOpacity={0.7}
+                  >
+                    {isSelected && <Ionicons name="checkmark" size={14} color="#FFF" style={{marginRight: 6}} />}
+                    <AppText style={[styles.tagText, isSelected && styles.tagTextActive]}>{profile.name}</AppText>
+                  </TouchableOpacity>
+                );
+              })
+            )}
           </View>
 
-          {/* 2. Skill Tags (Dynamic based on Profile) */}
-          {selectedProfile && skills.length > 0 && (
+          {/* 2. Skill Pills (Dynamic based on Profile) */}
+          {selectedProfileId && skills.length > 0 && (
              <View style={{ marginTop: 20, paddingTop: 20, borderTopWidth: 1, borderTopColor: '#f0f0f0' }}>
                 <AppText style={styles.subLabel}>Specific Skill to Evaluate:</AppText>
                 <View style={styles.tagsContainer}>
@@ -358,7 +288,7 @@ export default function MentorDetailsScreen() {
                             key={skill.id} 
                             style={[styles.tag, isSelected && styles.skillTagActive]}
                             onPress={() => {
-                              console.log('🎯 Selected skill:', skill.name, 'with ID:', skill.id);
+                              console.log('🎯 Selected skill:', skill.name, 'ID:', skill.id);
                               setSelectedSkill(skill);
                             }}
                         >
@@ -376,7 +306,7 @@ export default function MentorDetailsScreen() {
           )}
 
           {/* Show message if profile selected but no skills available */}
-          {selectedProfile && skills.length === 0 && (
+          {selectedProfileId && skills.length === 0 && (
             <View style={{ marginTop: 20, paddingTop: 20, borderTopWidth: 1, borderTopColor: '#f0f0f0' }}>
               <AppText style={styles.subLabel}>Specific Skill to Evaluate:</AppText>
               <View style={{ padding: 16, backgroundColor: '#FEF2F2', borderRadius: 8, marginTop: 8 }}>
@@ -416,15 +346,15 @@ export default function MentorDetailsScreen() {
           <TouchableOpacity 
             style={[
               styles.scheduleButton,
-              (!selectedProfile || !selectedSkill) && styles.scheduleButtonDisabled
+              (!selectedProfileId || !selectedSkill) && styles.scheduleButtonDisabled
             ]}
             activeOpacity={0.9}
             onPress={handleSchedule}
-            disabled={!selectedProfile || !selectedSkill}
+            disabled={!selectedProfileId || !selectedSkill}
           >
             <AppText style={[
               styles.scheduleButtonText,
-              (!selectedProfile || !selectedSkill) && styles.scheduleButtonTextDisabled
+              (!selectedProfileId || !selectedSkill) && styles.scheduleButtonTextDisabled
             ]}>
               Select Time Slot
             </AppText>
@@ -458,7 +388,7 @@ const styles = StyleSheet.create({
   tierGold: { backgroundColor: '#FFFBEB', borderColor: '#F59E0B' },
   tierSilver: { backgroundColor: '#F3F4F6', borderColor: '#9CA3AF' },
   tierBronze: { backgroundColor: '#FEF2F2', borderColor: '#CD7F32' },
-  tierText: { fontSize: 12, fontWeight: "700", letterSpacing: 0.3 },
+  tierText: { fontSize: 12, fontWeight: "700", letterSpacing: 0.3, marginLeft: 4 },
   tierTextGold: { color: '#D97706' },
   tierTextSilver: { color: '#6B7280' },
   tierTextBronze: { color: '#CD7F32' },
@@ -476,6 +406,7 @@ const styles = StyleSheet.create({
   tagText: { fontSize: 14, color: theme.colors.text.body, fontWeight: "500" },
   tagTextActive: { color: "#FFF", fontWeight: "600" },
   skillDesc: { fontSize: 12, color: '#666', marginTop: 8, fontStyle: 'italic' },
+  emptyText: { fontSize: 14, color: theme.colors.text.light, fontStyle: 'italic' },
   priceContainer: { marginTop: 4 },
   priceRow: { flexDirection: "row", alignItems: "center" },
   priceMain: { fontSize: 32, fontWeight: "800", color: theme.colors.text.main, marginBottom: 8 },

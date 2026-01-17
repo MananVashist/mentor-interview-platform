@@ -20,6 +20,17 @@ const CTA_TEAL = "#18a7a7";
 const BG_CREAM = "#f8f5f0";
 const TEXT_DARK = "#222";
 const TEXT_GRAY = "#555";
+const BORDER_LIGHT = "rgba(0,0,0,0.05)";
+
+// Metal Colors
+const COLOR_BRONZE = "#A67C52"; 
+const BG_BRONZE = "#FCF8F5";
+
+const COLOR_SILVER = "#71797E";
+const BG_SILVER = "#F4F6F8";
+
+const COLOR_GOLD = "#D4AF37";
+const BG_GOLD = "#FFFEF5";
 
 const SYSTEM_FONT = Platform.select({
   web: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif",
@@ -28,21 +39,44 @@ const SYSTEM_FONT = Platform.select({
   default: "System",
 }) as string;
 
-// --- Static Data ---
+// --- Dynamic Content ---
+const ROLE_CONTENT = {
+  default: { 
+    title: "Mock Interviews", 
+    sub: "Get realistic feedback from industry experts. Anonymous & Unbiased." 
+  },
+  pm: { 
+    title: "Product Management", 
+    sub: "System Design, Product Sense & Execution. Practice with veteran PMs." 
+  },
+  hr: { 
+    title: "HR", 
+    sub: "From Talent Acquisition to HRBP, nail your HR technical and generalist rounds." 
+  },
+  ds: { 
+    title: "Data Science", 
+    sub: "ML Theory and Practical, Coding (Python, algo), stats and System design. Get interviewed by experts." 
+  },
+  da: { 
+    title: "Data Analyst", 
+    sub: "Case studies, SQL, Excel, Product metrics and behavioral. Vetted mentors from top tech companies." 
+  },
+};
+
 const STEPS = [
-  { emoji: "📝", title: "1. Pick a role", desc: "Select your target role and practice topic." },
-  { emoji: "👨‍💼", title: "2. Book Expert", desc: "Schedule a time with a verified mentor." },
-  { emoji: "🎯", title: "3. Get Feedback", desc: "Realistic mock interview + scorecard." },
+  { emoji: "📝", title: "1. Pick a Role", desc: "PM, Data Science, Analyst or HR." },
+  { emoji: "🎥", title: "2. The Session", desc: "1:1 Video Call. We provide the full recording." },
+  { emoji: "📊", title: "3. The Feedback", desc: "Detailed written scorecard & actionable tips." },
 ];
 
 const FAQS = [
   {
-    q: "What does “anonymous” mean here?",
-    a: "Your personal details are not shown to mentors. You control what you share.",
+    q: "Do I get a recording?",
+    a: "Yes. Every session is recorded so you can re-watch your performance and catch mistakes.",
   },
   {
-    q: "What if the mentor doesn’t show up?",
-    a: "We keep it safe: you get a full refund instantly.",
+    q: "What is the detailed feedback?",
+    a: "You don't just get a 'pass/fail'. You get a structured scorecard breaking down your weak spots.",
   },
 ];
 
@@ -52,20 +86,24 @@ const Button = ({
   title,
   onPress,
   variant = "primary",
+  color = CTA_TEAL,
   style,
   textStyle,
 }: {
   title: string;
   onPress: () => void;
   variant?: "primary" | "outline";
+  color?: string;
   style?: any;
   textStyle?: any;
 }) => (
   <TouchableOpacity
     style={[
       styles.buttonBase,
-      variant === "primary" && styles.buttonPrimary,
+      variant === "primary" && { backgroundColor: color, shadowColor: color },
+      variant === "primary" && styles.buttonShadow,
       variant === "outline" && styles.buttonOutline,
+      variant === "outline" && { borderColor: color },
       style,
     ]}
     onPress={onPress}
@@ -87,9 +125,76 @@ const Button = ({
 
 const TrustFooter = memo(({ isSmall }: { isSmall: boolean }) => (
   <View style={[styles.trustRow, isSmall && { flexDirection: "column", gap: 8 }]}>
-    <Text style={styles.trustItem}>✅ Verified Mentors</Text>
-    <Text style={styles.trustItem}>🕵️ 100% Anonymous</Text>
-    <Text style={styles.trustItem}>🛡️ Money-back Guarantee</Text>
+    <Text style={styles.trustItem}>✅ Verified Experts</Text>
+    <Text style={styles.trustItem}>📹 Session Recording</Text>
+    <Text style={styles.trustItem}>📝 Detailed Scorecard</Text>
+  </View>
+));
+
+// --- Pricing Component (Bronze / Silver / Gold) ---
+const PricingCards = memo(({ isSmall, onBook }: { isSmall: boolean, onBook: (tier: string) => void }) => (
+  <View style={styles.section}>
+    <Text style={styles.kicker}>MARKETPLACE RATES</Text>
+    <Text style={[styles.h2, { marginBottom: 8 }]}>Find Your Range</Text>
+    <Text style={[styles.sub, { marginBottom: 32, fontSize: 15, maxWidth: 500 }]}>
+      Mentors set their own prices based on experience.
+    </Text>
+    
+    <View style={[styles.pricingGrid, isSmall && styles.pricingGridMobile]}>
+      {/* BRONZE */}
+      <View style={[styles.priceCard, { backgroundColor: BG_BRONZE, borderColor: COLOR_BRONZE }]}>
+        <Text style={[styles.priceTier, { color: COLOR_BRONZE }]}>BRONZE</Text>
+        <Text style={styles.priceAmount}>₹3k - ₹6k</Text>
+        <Text style={styles.perSession}>per session</Text>
+        <View style={[styles.divider, { backgroundColor: COLOR_BRONZE, opacity: 0.2 }]} />
+        <Text style={styles.priceDesc}>• Mid-Level Managers</Text>
+        <Text style={styles.priceDesc}>• less than 10 yrs experienced</Text>
+        <Text style={styles.priceDesc}>• Best for: Entry level experience</Text>
+        <Button 
+          title="Browse Bronze" 
+          onPress={() => onBook('bronze')} 
+          variant="outline" 
+          color={COLOR_BRONZE}
+          style={{ marginTop: 24, width: '100%' }} 
+        />
+      </View>
+
+      {/* SILVER */}
+      <View style={[styles.priceCard, { backgroundColor: BG_SILVER, borderColor: COLOR_SILVER }]}>
+        <Text style={[styles.priceTier, { color: COLOR_SILVER }]}>SILVER</Text>
+        <Text style={styles.priceAmount}>₹6k - 9k</Text>
+        <Text style={styles.perSession}>per session</Text>
+        <View style={[styles.divider, { backgroundColor: COLOR_SILVER, opacity: 0.2 }]} />
+        <Text style={styles.priceDesc}>• Senior Management</Text>
+        <Text style={styles.priceDesc}>• 10-15 yrs experience</Text>
+        <Text style={styles.priceDesc}>• Best for: Mid level experience </Text>
+        <Button 
+          title="Browse Silver" 
+          onPress={() => onBook('silver')} 
+          variant="outline"
+          color={COLOR_SILVER} 
+          style={{ marginTop: 24, width: '100%' }} 
+        />
+      </View>
+
+      {/* GOLD */}
+      <View style={[styles.priceCard, { backgroundColor: BG_GOLD, borderColor: COLOR_GOLD }]}>
+        <Text style={[styles.priceTier, { color: COLOR_GOLD }]}>GOLD</Text>
+        <Text style={styles.priceAmount}>₹9k - ₹15k</Text>
+        <Text style={styles.perSession}>per session</Text>
+        <View style={[styles.divider, { backgroundColor: COLOR_GOLD, opacity: 0.2 }]} />
+        <Text style={styles.priceDesc}>• Leadership / Directors</Text>
+        <Text style={styles.priceDesc}>• Hiring Managers</Text>
+        <Text style={styles.priceDesc}>• Best for: Senior level experience</Text>
+        <Button 
+          title="Browse Gold" 
+          onPress={() => onBook('gold')} 
+          variant="outline" 
+          color={COLOR_GOLD}
+          style={{ marginTop: 24, width: '100%' }} 
+        />
+      </View>
+    </View>
   </View>
 ));
 
@@ -146,32 +251,22 @@ export default function CampaignLanding() {
 
   const [selectedRole, setSelectedRole] = useState<"pm" | "da" | "hr" | "ds" | null>(null);
 
-  const onPrimaryCta = () => {
-    // 1. CAPTURE ANALYTICS (Internal Tracking)
-    // ----------------------------------------------------
-    // This logs what the user clicked before they leave the page.
-    // Connect this to Mixpanel/GA/PostHog.
-    const eventData = {
-      event: "click_book_interview",
-      role_intent: selectedRole || "not_selected",
-      utm_source: utm.source,
-    };
-    console.log("[Analytics] CTA Clicked:", eventData);
-    
-    // 2. ROUTING (Clean URL)
-    // ----------------------------------------------------
-    const qs = new URLSearchParams();
-    // Only pass UTM tags for attribution, NOT the role.
-    if (utm.source) qs.set("utm_source", utm.source);
-    if (utm.campaign) qs.set("utm_campaign", utm.campaign);
-    if (utm.content) qs.set("utm_content", utm.content);
+  // Dynamic Content Logic
+  const content = selectedRole ? ROLE_CONTENT[selectedRole] : ROLE_CONTENT.default;
 
-    const query = qs.toString();
-    router.push(query ? `/auth/sign-up?${query}` : "/auth/sign-up");
+  const handleBookClick = (tier: string = "general") => {
+    // 1. TRACK EVENT (Validation Metric)
+    console.log("[Analytics] Interest Captured:", {
+      role: selectedRole || "general",
+      tier_intent: tier,
+      source: utm.source
+    });
+
+    // 2. ROUTE
+    router.push("/auth/sign-up");
   };
 
-  // Helper for rendering chips
-  const renderChip = (id: "pm" | "da" | "hr" | "ds", label: string) => (
+  const renderChip = (id: "pm" | "hr" | "ds" | "da", label: string) => (
     <TouchableOpacity
       onPress={() => setSelectedRole(id)}
       style={[styles.chip, selectedRole === id && styles.chipActive]}
@@ -189,7 +284,6 @@ export default function CampaignLanding() {
         <title>CrackJobs | Anonymous Mock Interviews</title>
         <meta name="description" content="Anonymous mock interviews with vetted mentors." />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <meta property="og:image" content="https://crackjobs.com/images/og-linkedin-preview.png" />
         <style>{`body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; background-color: ${BG_CREAM}; } * { box-sizing: border-box; }`}</style>
       </Head>
 
@@ -204,28 +298,28 @@ export default function CampaignLanding() {
           </View>
         </View>
 
-        {/* HERO SECTION - CLEANED UP */}
+        {/* HERO SECTION */}
         <View style={styles.heroSection}>
           <View style={[styles.heroInner, isSmall && styles.heroInnerMobile]}>
             
             <View style={styles.badge}>
-              <Text style={styles.badgeText}>FROM LINKEDIN → QUICK MOCK</Text>
+              <Text style={styles.badgeText}>PRACTICE → PERFECT</Text>
             </View>
 
             <Text style={[styles.h1, isSmall && styles.h1Mobile]}>
-              Practice Interviews{"\n"}
+              {content.title}{"\n"}
               <Text style={{ color: CTA_TEAL }}>Without the Fear</Text>
             </Text>
 
             <Text style={[styles.sub, isSmall && styles.subMobile]}>
-              Stop practicing with friends. Get realistic feedback from experts anonymously.
+              {content.sub}
             </Text>
 
-            {/* Chip Selector - Captures intent locally */}
+            {/* Chip Selector */}
             <View style={styles.chipContainer}>
               <Text style={styles.labelTiny}>I AM PRACTICING FOR:</Text>
               <View style={styles.chipRow}>
-                {renderChip("pm", "Product Manager")}
+                {renderChip("pm", "Product Management")}
                 {renderChip("da", "Data Analyst")}
                 {renderChip("ds", "Data Science")}
                 {renderChip("hr", "HR / Recruiter")}
@@ -235,30 +329,26 @@ export default function CampaignLanding() {
             {/* CTAs */}
             <View style={[styles.ctaRow, isSmall && { flexDirection: "column" }]}>
               <Button
-                title="Book Mock Interview"
-                onPress={onPrimaryCta}
+                title="View Mentor Rates"
+                onPress={() => handleBookClick("hero_cta")}
                 style={[styles.ctaBig, isSmall && { width: "100%" }]}
                 textStyle={{ fontSize: 16 }}
               />
               <Button
-                title="Browse Mentors"
+                title="How it Works"
                 variant="outline"
-                // Secondary CTA also captures the analytics event if you wish, 
-                // or just links directly. Currently set to sign-in.
-                onPress={() => {
-                   console.log("[Analytics] Browse Mentors Clicked", { role_intent: selectedRole });
-                   router.push("/auth/sign-in");
-                }}
+                onPress={() => {}}
                 style={[styles.ctaBig, isSmall && { width: "100%" }]}
                 textStyle={{ fontSize: 16 }}
               />
             </View>
 
-            {/* Trust signals */}
             <TrustFooter isSmall={isSmall} />
-            
           </View>
         </View>
+
+        {/* PRICING (The Category Test) */}
+        <PricingCards isSmall={isSmall} onBook={handleBookClick} />
 
         <HowItWorks isSmall={isSmall} />
         <FAQ isSmall={isSmall} />
@@ -277,14 +367,14 @@ const styles = StyleSheet.create({
 
   // --- Buttons ---
   buttonBase: {
-    borderRadius: 100,
+    borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 14,
     paddingHorizontal: 28,
   },
-  buttonPrimary: { backgroundColor: CTA_TEAL, shadowColor: CTA_TEAL, shadowOpacity: 0.2, shadowRadius: 8, shadowOffset: { width: 0, height: 4 } },
-  buttonOutline: { backgroundColor: "transparent", borderWidth: 2, borderColor: "rgba(0,0,0,0.1)" },
+  buttonShadow: { shadowOpacity: 0.2, shadowRadius: 8, shadowOffset: { width: 0, height: 4 } },
+  buttonOutline: { backgroundColor: "transparent", borderWidth: 2 },
   buttonText: { fontFamily: SYSTEM_FONT, fontSize: 15, fontWeight: "700" },
 
   // --- Header ---
@@ -312,7 +402,7 @@ const styles = StyleSheet.create({
     shadowRadius: 20,
     shadowOffset: { width: 0, height: 10 },
     borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.03)",
+    borderColor: BORDER_LIGHT,
     alignItems: "center",
   },
   heroInnerMobile: { padding: 24, paddingBottom: 32 },
@@ -354,6 +444,26 @@ const styles = StyleSheet.create({
   ctaRow: { flexDirection: "row", gap: 12, width: "100%", justifyContent: "center", marginBottom: 24 },
   ctaBig: { minWidth: 160 },
 
+  // --- Pricing Grid ---
+  pricingGrid: { flexDirection: 'row', gap: 16, justifyContent: 'center', width: '100%' },
+  pricingGridMobile: { flexDirection: 'column' },
+  priceCard: { 
+    flex: 1, 
+    padding: 24, 
+    borderRadius: 16, 
+    borderWidth: 1, 
+    alignItems: 'center',
+    shadowColor: "#000",
+    shadowOpacity: 0.02,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 5 },
+  },
+  priceTier: { fontFamily: SYSTEM_FONT, fontSize: 12, fontWeight: '800', letterSpacing: 1, marginBottom: 8 },
+  priceAmount: { fontFamily: SYSTEM_FONT, fontSize: 24, fontWeight: '800', color: TEXT_DARK },
+  perSession: { fontSize: 13, color: '#999', fontWeight: '500', marginBottom: 16 },
+  divider: { height: 1, width: '100%', marginBottom: 16 },
+  priceDesc: { fontFamily: SYSTEM_FONT, fontSize: 14, color: TEXT_GRAY, marginVertical: 4, width: '100%' },
+
   // --- Trust Footer ---
   trustRow: { flexDirection: "row", gap: 24, opacity: 0.8 },
   trustItem: { fontFamily: SYSTEM_FONT, fontSize: 13, fontWeight: "500", color: TEXT_GRAY },
@@ -373,7 +483,7 @@ const styles = StyleSheet.create({
     padding: 20,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.04)",
+    borderColor: BORDER_LIGHT,
     gap: 16,
   },
   stepEmoji: { fontSize: 28 },
@@ -381,7 +491,7 @@ const styles = StyleSheet.create({
   stepDesc: { fontFamily: SYSTEM_FONT, fontWeight: "500", fontSize: 14, color: TEXT_GRAY },
 
   faqWrap: { gap: 12 },
-  faqItem: { backgroundColor: "#fff", padding: 20, borderRadius: 12, borderWidth: 1, borderColor: "rgba(0,0,0,0.04)" },
+  faqItem: { backgroundColor: "#fff", padding: 20, borderRadius: 12, borderWidth: 1, borderColor: BORDER_LIGHT },
   faqQ: { fontFamily: SYSTEM_FONT, fontWeight: "700", fontSize: 16, color: TEXT_DARK, marginBottom: 6 },
   faqA: { fontFamily: SYSTEM_FONT, fontWeight: "400", fontSize: 14, color: TEXT_GRAY, lineHeight: 22 },
 

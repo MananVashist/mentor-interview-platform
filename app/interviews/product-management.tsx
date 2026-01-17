@@ -1,11 +1,12 @@
 ﻿// app/interviews/product-management.tsx
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Platform, useWindowDimensions, ScrollView } from 'react-native';
+import React, { useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Platform, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import Head from 'expo-router/head';
 import Svg, { Path, Circle, Rect, Line } from 'react-native-svg';
 import { BrandHeader } from '@/lib/BrandHeader';
 import { Footer } from '@/components/Footer';
+import { createBreadcrumbSchema, injectMultipleSchemas } from '@/lib/structured-data';
 
 const BRAND_ORANGE = '#f58742';
 const CTA_TEAL = '#18a7a7';
@@ -106,8 +107,51 @@ const MapIcon = ({ size = 32, color = CTA_TEAL }) => (
 
 export default function ProductManagementInterviews() {
   const router = useRouter();
-  const { width } = useWindowDimensions();
-  const isSmall = width < 900;
+
+  // 🔥 Structured Data for SEO
+  useEffect(() => {
+    if (Platform.OS === 'web') {
+      const breadcrumbSchema = createBreadcrumbSchema([
+        { name: 'Home', url: 'https://crackjobs.com' },
+        { name: 'Interview Tracks', url: 'https://crackjobs.com/#interview-tracks' },
+        { name: 'Product Management', url: 'https://crackjobs.com/interviews/product-management' }
+      ]);
+
+      const faqSchema = {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "What is the CIRCLES framework for PM interviews?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "CIRCLES is a structured method for product design questions: Comprehend the situation, Identify the customer, Report customer needs, Cut through prioritization, List solutions, Evaluate tradeoffs, and Summarize recommendations."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "How long should I prepare for a FAANG PM interview?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Most candidates need 6-8 weeks of focused preparation covering product sense, execution, technical understanding, and strategy. Practice with mock interviews is essential."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "What frameworks do Google PMs use?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Google PMs commonly use CIRCLES for product design, AARM for metrics, RICE for prioritization, and structured approaches for execution and strategy questions."
+            }
+          }
+        ]
+      };
+
+      const cleanup = injectMultipleSchemas([breadcrumbSchema, faqSchema]);
+      return () => cleanup && cleanup();
+    }
+  }, []);
 
   // PM Skills from Evaluation Templates
   const coreSkills = [
@@ -418,9 +462,9 @@ export default function ProductManagementInterviews() {
           
           {/* Header - Same as Homepage */}
           <View style={styles.header} accessibilityRole="navigation" accessibilityLabel="Main navigation">
-            <View style={[styles.headerInner, isSmall && styles.headerInnerMobile]}>
-              <BrandHeader style={{ marginBottom: 0 }} small={isSmall} />
-              <View style={[styles.navRight, isSmall && styles.navRightMobile]}>
+            <View style={[styles.headerInner]}>
+              <BrandHeader style={{ marginBottom: 0 }} small={false} />
+              <View style={[styles.navRight]}>
                 <TouchableOpacity 
                   onPress={() => router.push('/auth/sign-in')} 
                   accessibilityRole="link" 
@@ -443,18 +487,18 @@ export default function ProductManagementInterviews() {
           </View>
 
           {/* Hero Section */}
-          <View style={[styles.hero, isSmall && styles.heroMobile]} accessibilityRole="region" accessibilityLabel="Hero section">
+          <View style={[styles.hero]} accessibilityRole="region" accessibilityLabel="Hero section">
             <View style={styles.badge} accessibilityRole="text">
               <Text style={styles.badgeText}>🎯 PRODUCT MANAGEMENT INTERVIEWS</Text>
             </View>
             <Text 
-              style={[styles.heroTitle, isSmall && styles.heroTitleMobile]} 
+              style={[styles.heroTitle]} 
               accessibilityRole="header" 
               accessibilityLevel={1}
             >
               Master PM Frameworks That Win FAANG Offers
             </Text>
-            <Text style={[styles.heroSubtitle, isSmall && styles.heroSubtitleMobile]}>
+            <Text style={[styles.heroSubtitle]}>
               Practice Product Sense, Execution, Technical Design, and Strategy with experienced PMs. Get structured feedback on every answer.
             </Text>
             <View style={styles.heroStats}>
@@ -485,7 +529,7 @@ export default function ProductManagementInterviews() {
           {/* 4 Core Skills - Detailed */}
           <View style={[styles.section, { backgroundColor: 'white' }]} accessibilityRole="region" accessibilityLabel="Core PM skills">
             <Text style={styles.sectionLabel} accessibilityRole="header" accessibilityLevel={2}>4 CORE EVALUATION AREAS</Text>
-            <Text style={[styles.sectionTitle, isSmall && styles.sectionTitleMobile]}>
+            <Text style={[styles.sectionTitle]}>
               What FAANG Companies Test in PM Interviews
             </Text>
             <Text style={styles.sectionDesc}>
@@ -527,7 +571,7 @@ export default function ProductManagementInterviews() {
           {/* PM Frameworks - Deep Dive */}
           <View style={[styles.section, { backgroundColor: BG_CREAM }]} accessibilityRole="region" accessibilityLabel="PM Frameworks">
             <Text style={styles.sectionLabel} accessibilityRole="header" accessibilityLevel={2}>ESSENTIAL PM FRAMEWORKS</Text>
-            <Text style={[styles.sectionTitle, isSmall && styles.sectionTitleMobile]}>
+            <Text style={[styles.sectionTitle]}>
               3 Frameworks Every PM Must Master
             </Text>
             <Text style={styles.sectionDesc}>
@@ -571,7 +615,7 @@ export default function ProductManagementInterviews() {
           {/* Interview Timeline */}
           <View style={[styles.section, { backgroundColor: 'white' }]} accessibilityRole="region" accessibilityLabel="Interview preparation timeline">
             <Text style={styles.sectionLabel} accessibilityRole="header" accessibilityLevel={2}>8-WEEK PREPARATION ROADMAP</Text>
-            <Text style={[styles.sectionTitle, isSmall && styles.sectionTitleMobile]}>
+            <Text style={[styles.sectionTitle]}>
               Your Complete PM Interview Prep Plan
             </Text>
             <Text style={styles.sectionDesc}>
@@ -610,7 +654,7 @@ export default function ProductManagementInterviews() {
           {/* Case Study Walkthrough */}
           <View style={[styles.section, { backgroundColor: '#f0f8ff' }]} accessibilityRole="region" accessibilityLabel="Case study walkthrough">
             <Text style={styles.sectionLabel} accessibilityRole="header" accessibilityLevel={2}>CASE STUDY WALKTHROUGH</Text>
-            <Text style={[styles.sectionTitle, isSmall && styles.sectionTitleMobile]}>
+            <Text style={[styles.sectionTitle]}>
               How to Structure a 45-Minute PM Case
             </Text>
             <Text style={styles.sectionDesc}>
@@ -642,14 +686,14 @@ export default function ProductManagementInterviews() {
           {/* Success Stories */}
           <View style={[styles.section, { backgroundColor: 'white' }]} accessibilityRole="region" accessibilityLabel="Success stories">
             <Text style={styles.sectionLabel} accessibilityRole="header" accessibilityLevel={2}>SUCCESS STORIES</Text>
-            <Text style={[styles.sectionTitle, isSmall && styles.sectionTitleMobile]}>
+            <Text style={[styles.sectionTitle]}>
               Real PM Offers from Real Practice
             </Text>
             <Text style={styles.sectionDesc}>
               These candidates used CrackJobs to practice frameworks, get feedback, and land FAANG PM roles.
             </Text>
 
-            <View style={[styles.storiesGrid, isSmall && styles.storiesGridMobile]}>
+            <View style={[styles.storiesGrid]}>
               {successStories.map((story, i) => (
                 <View 
                   key={i} 
@@ -687,7 +731,7 @@ export default function ProductManagementInterviews() {
           {/* Common Mistakes - Comprehensive */}
           <View style={[styles.section, { backgroundColor: '#fff8f0' }]} accessibilityRole="region" accessibilityLabel="Common mistakes">
             <Text style={styles.sectionLabel} accessibilityRole="header" accessibilityLevel={2}>AVOID THESE MISTAKES</Text>
-            <Text style={[styles.sectionTitle, isSmall && styles.sectionTitleMobile]}>
+            <Text style={[styles.sectionTitle]}>
               5 Mistakes That Cost PM Offers
             </Text>
             <Text style={styles.sectionDesc}>
@@ -723,11 +767,11 @@ export default function ProductManagementInterviews() {
           {/* Related Articles */}
           <View style={[styles.section, { backgroundColor: 'white' }]} accessibilityRole="region" accessibilityLabel="Related reading">
             <Text style={styles.sectionLabel} accessibilityRole="header" accessibilityLevel={2}>DEEP DIVE GUIDES</Text>
-            <Text style={[styles.sectionTitle, isSmall && styles.sectionTitleMobile]}>
+            <Text style={[styles.sectionTitle]}>
               Master Specific PM Interview Topics
             </Text>
 
-            <View style={[styles.articlesGrid, isSmall && styles.articlesGridMobile]}>
+            <View style={[styles.articlesGrid]}>
               <TouchableOpacity 
                 style={styles.articleCard} 
                 onPress={() => router.push('/blog/product-manager-interview-execution-mistakes')} 
@@ -761,11 +805,11 @@ export default function ProductManagementInterviews() {
           {/* How It Works */}
           <View style={[styles.section, { backgroundColor: BG_CREAM }]} accessibilityRole="region" accessibilityLabel="How it works">
             <Text style={styles.sectionLabel} accessibilityRole="header" accessibilityLevel={2}>HOW IT WORKS</Text>
-            <Text style={[styles.sectionTitle, isSmall && styles.sectionTitleMobile]}>
+            <Text style={[styles.sectionTitle]}>
               Practice with Real PMs in 3 Steps
             </Text>
 
-            <View style={[styles.stepsGrid, isSmall && styles.stepsGridMobile]}>
+            <View style={[styles.stepsGrid]}>
               <View style={styles.stepCard} accessibilityRole="article">
                 <View style={styles.stepNum}>
                   <Text style={styles.stepNumText}>1</Text>
