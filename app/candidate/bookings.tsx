@@ -12,7 +12,7 @@ import { supabase } from '@/lib/supabase/client';
 import { useAuthStore } from '@/lib/store';
 import { theme } from '@/lib/theme';
 import { Heading, AppText, Card, ScreenBackground } from '@/lib/ui';
-import { DateTime, Interval } from 'luxon';
+import { DateTime } from 'luxon';
 
 // Components
 import RatingModal from '@/components/RatingModal';
@@ -23,12 +23,10 @@ import { getBookingState, getBookingDetails, BookingUIState } from '@/lib/bookin
 // Master Templates for Evaluation Display
 import { MASTER_TEMPLATES } from '@/lib/evaluation-templates';
 
+// ✅ OPTIMIZED: Shared Availability Service
+import { availabilityService, type DayAvailability } from '@/services/availability.service';
+
 // ✅ DayCard Component for Reschedule Modal
-type DayAvailability = { dateStr: string; weekdayName: string; monthDay: string; slots: any[]; isFullDayOff: boolean };
-
-// Day mapping: Luxon weekday (1=Mon, 7=Sun) to day keys
-const DAY_KEY_MAP = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-
 const DayCard = ({ day, isSelected, onPress }: { day: DayAvailability, isSelected: boolean, onPress: () => void }) => {
   const availableCount = day.slots.filter((s: any) => s.isAvailable).length;
   const isTimeOff = day.isFullDayOff;
@@ -100,48 +98,40 @@ const BookingCard = ({
     try {
       const url = session.recording_url;
       if (!url) {
-        Alert.alert('No Recording', 'Recording is not available yet.');
+        Alert.alert('Error', 'Recording not available yet');
         return;
       }
-      const canOpen = await Linking.canOpenURL(url);
-      if (!canOpen) {
-        Alert.alert('Invalid Link', 'Could not open recording link.');
-        return;
+      const supported = await Linking.canOpenURL(url);
+      if (supported) {
+        await Linking.openURL(url);
+      } else {
+        Alert.alert('Error', 'Unable to open recording URL');
       }
-      Linking.openURL(url);
-    } catch (e) {
-      Alert.alert('Error', 'Could not open recording link.');
+    } catch (err) {
+      console.error('[Recording] Error opening:', err);
+      Alert.alert('Error', 'Could not open recording');
     }
   };
 
   return (
     <Card style={styles.sessionCard}>
       <View style={styles.splitContainer}>
-        {/* LEFT SIDE: Info */}
         <View style={styles.leftSection}>
-          <Heading level={4} style={styles.cardTitle}>
-            {profileName} interview with {mentorTitle}
-          </Heading>
-
+          <AppText style={styles.cardTitle}>{profileName} Interview with {mentorTitle}</AppText>
           <View style={styles.infoRow}>
-            <Ionicons name="bulb-outline" size={14} color="#6B7280" />
+            <Ionicons name="person-outline" size={14} color="#6B7280" />
             <AppText style={styles.infoText}>{skillName}</AppText>
           </View>
-
+          
           <View style={styles.infoRow}>
             <Ionicons name="calendar-outline" size={14} color="#6B7280" />
-            <AppText style={styles.infoText}>
-              {details.dateLabel} , {details.timeLabel}
-            </AppText>
+            <AppText style={styles.infoText}>{details.dateLabel} at {details.timeLabel}</AppText>
           </View>
-
           <View style={styles.infoRow}>
             <Ionicons name="time-outline" size={14} color="#6B7280" />
-            <AppText style={styles.infoText}>55 mins (45 min interview + 10 min feedback)</AppText>
+            <AppText style={styles.infoText}>55 mins</AppText>
           </View>
         </View>
-
-        {/* RIGHT SIDE: Badge */}
         <View style={styles.rightSection}>
           <Badge state={uiState} />
         </View>
@@ -149,52 +139,51 @@ const BookingCard = ({
 
       <View style={styles.cardDivider} />
 
-      {/* --- DYNAMIC ACTIONS --- */}
-
-      {/* 1. PENDING APPROVAL */}
+      {/* 1. APPROVAL NEEDED */}
       {uiState === 'APPROVAL' && (
-        <View style={styles.actionRowFull}>
-          <View style={[styles.btnFull, styles.btnDisabled]}>
-            <Ionicons name="hourglass-outline" size={16} color="#6B7280" style={{ marginRight: 6 }} />
-            <AppText style={styles.textGray}>Pending Mentor Approval</AppText>
+        <View style={{ backgroundColor: '#FFFBEB', padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#FEF3C7' }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+            <Ionicons name="hourglass-outline" size={18} color="#B45309" />
+            <AppText style={{ fontSize: 14, fontWeight: '700', color: '#B45309' }}>Pending Payment</AppText>
           </View>
+          <AppText style={{ fontSize: 13, color: '#92400E', lineHeight: 20 }}>
+            Your booking will be confirmed once payment is completed.
+          </AppText>
         </View>
       )}
 
-      {/* 2. RESCHEDULE PENDING (The Loop) */}
+      {/* 2. RESCHEDULE PENDING */}
       {uiState === 'RESCHEDULE_PENDING' && (
         <>
           {isMyTurn ? (
-            <>
-              <View style={styles.bannerAction}>
-                <View style={styles.bannerHeader}>
-                  <Ionicons name="time-outline" size={18} color="#B45309" />
-                  <AppText style={styles.bannerTitleAction}>
-                    Mentor Proposed New Time
-                  </AppText>
-                </View>
-                <AppText style={styles.bannerTextAction}>
-                  {details.dateLabel} at {details.timeLabel}
-                </AppText>
-                <AppText style={styles.bannerSubTextAction}>
-                  Accept this time or propose a different one
+            <View style={styles.bannerAction}>
+              <View style={styles.bannerHeader}>
+                <Ionicons name="alert-circle-outline" size={18} color="#B45309" />
+                <AppText style={styles.bannerTitleAction}>
+                  Action Required
                 </AppText>
               </View>
+              <AppText style={styles.bannerTextAction}>
+                Mentor proposed: {details.dateLabel} at {details.timeLabel}
+              </AppText>
+              <AppText style={styles.bannerSubTextAction}>
+                Please accept or propose a different time.
+              </AppText>
               <View style={styles.actionRowFull}>
                 <TouchableOpacity
                   style={[styles.btnFull, styles.btnOutline]}
                   onPress={() => onReschedule(session)}
                 >
-                  <AppText style={styles.textPrimary}>Reschedule</AppText>
+                  <AppText style={styles.textPrimary}>Propose Different Time</AppText>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.btnFull, styles.btnPrimary]}
                   onPress={() => onAcceptReschedule(session.id)}
                 >
-                  <AppText style={styles.textWhite}>Accept Time</AppText>
+                  <AppText style={styles.textWhite}>Accept New Time</AppText>
                 </TouchableOpacity>
               </View>
-            </>
+            </View>
           ) : (
             <View style={styles.bannerWaiting}>
               <View style={styles.bannerHeader}>
@@ -360,10 +349,7 @@ export default function CandidateBookingsScreen() {
     templates: [] as Array<{ title: string; examples: string[]; questions: any[] }>
   });
 
-  // ✅ Reschedule modal states (matching mentor side)
-  type Slot = { time: string; isAvailable: boolean; dateTime: any };
-  type DayAvailability = { dateStr: string; weekdayName: string; monthDay: string; slots: Slot[]; isFullDayOff: boolean };
-
+  // ✅ Reschedule modal states
   const [rescheduleModalVisible, setRescheduleModalVisible] = useState(false);
   const [availabilityData, setAvailabilityData] = useState<DayAvailability[]>([]);
   const [selectedDay, setSelectedDay] = useState<DayAvailability | null>(null);
@@ -402,101 +388,61 @@ export default function CandidateBookingsScreen() {
         return;
       }
 
-      // Filter out sessions where payment is still pending (exclude unpaid bookings)
-      const paidSessions = sessionsData.filter((s: any) =>
-        s.package?.payment_status && s.package.payment_status !== 'pending'
-      );
+      const packageIds = [...new Set(sessionsData.map(s => s.package_id).filter(Boolean))];
+      const skillIds = [...new Set(sessionsData.map(s => s.skill_id).filter(Boolean))];
+      const mentorIds = [...new Set(sessionsData.map(s => s.mentor_id).filter(Boolean))];
 
-      // 2. Fetch Reviews for these packages
-      const packageIds = paidSessions.map((s: any) => s.package_id).filter(Boolean);
-      let reviewsMap: any = {};
+      const profilesPromise = packageIds.length > 0
+        ? supabase.from('interview_profiles_admin').select('id, name').in('id', packageIds.map(id => sessionsData.find(s => s.package_id === id)?.package?.interview_profile_id).filter(Boolean))
+        : Promise.resolve({ data: [], error: null });
 
-      if (packageIds.length > 0) {
-        const { data: reviewsData } = await supabase
-          .from('candidate_reviews')
-          .select('package_id, rating')
-          .in('package_id', packageIds);
+      const skillsPromise = skillIds.length > 0
+        ? supabase.from('interview_skills_admin').select('id, name, description').in('id', skillIds)
+        : Promise.resolve({ data: [], error: null });
 
-        if (reviewsData) {
-          reviewsMap = reviewsData.reduce((acc: any, curr: any) => {
-            acc[curr.package_id] = curr.rating;
-            return acc;
-          }, {});
-        }
-      }
+      const mentorsPromise = mentorIds.length > 0
+        ? supabase.from('mentors').select('id, professional_title').in('id', mentorIds)
+        : Promise.resolve({ data: [], error: null });
 
-      // 3. Fetch Mentors
-      const mentorIds = [...new Set(paidSessions.map((s: any) => s.mentor_id))];
-      const { data: mentorData, error: mentorError } = await supabase
-        .from('mentors')
-        .select('id, professional_title, average_rating, total_sessions')
-        .in('id', mentorIds);
+      const reviewsPromise = packageIds.length > 0
+        ? supabase.from('candidate_reviews').select('package_id, rating').in('package_id', packageIds)
+        : Promise.resolve({ data: [], error: null });
 
-      if (mentorError) {
-        console.error('[Bookings] Error fetching mentors:', mentorError);
-      }
+      const [profilesRes, skillsRes, mentorsRes, reviewsRes] = await Promise.all([profilesPromise, skillsPromise, mentorsPromise, reviewsPromise]);
 
-      const mentorMap = (mentorData || []).reduce((acc: any, curr: any) => {
-        acc[curr.id] = curr;
-        return acc;
-      }, {});
+      const profilesMap: Record<number, string> = {};
+      (profilesRes.data || []).forEach((p: any) => {
+        profilesMap[p.id] = p.name;
+      });
 
-      // 4. Fetch Interview Profiles
-      const profileIds = Array.from(new Set(paidSessions.map((s: any) => s.package?.interview_profile_id).filter((id) => id != null)));
-      let profileMap: any = {};
+      const skillsMap: Record<string, { name: string; description?: string }> = {};
+      (skillsRes.data || []).forEach((sk: any) => {
+        skillsMap[sk.id] = { name: sk.name, description: sk.description };
+      });
 
-      if (profileIds.length > 0) {
-        const { data: profiles } = await supabase
-          .from('interview_profiles_admin')
-          .select('id, name, description')
-          .in('id', profileIds);
+      const mentorsMap: Record<string, string> = {};
+      (mentorsRes.data || []).forEach((m: any) => {
+        mentorsMap[m.id] = m.professional_title || 'Mentor';
+      });
 
-        if (profiles) {
-          profileMap = Object.fromEntries(profiles.map((p: any) => [String(p.id), { name: p.name, description: p.description ?? null }]));
-        }
-      }
+      const reviewsMap: Record<string, number> = {};
+      (reviewsRes.data || []).forEach((r: any) => {
+        reviewsMap[r.package_id] = r.rating;
+      });
 
-      // 5. Fetch Skills
-      const skillIds = [...new Set(paidSessions.map((s: any) => s.skill_id).filter(Boolean))];
-      let skillMap: any = {};
-
-      if (skillIds.length > 0) {
-        const { data: skillsData } = await supabase
-          .from('interview_skills_admin')
-          .select('id, name, description')
-          .in('id', skillIds);
-
-        if (skillsData) {
-          skillMap = skillsData.reduce((acc: any, curr: any) => {
-            acc[curr.id] = curr;
-            return acc;
-          }, {});
-        }
-      }
-
-      // 6. Merge Data + ✅ normalize recording_url from meetings
-      const enrichedSessions = paidSessions.map((s: any) => {
-        const mentor = mentorMap[s.mentor_id];
+      const enrichedSessions = sessionsData.map((s: any) => {
         const profileId = s.package?.interview_profile_id;
-        const profileMeta = profileId != null ? profileMap[String(profileId)] ?? null : null;
-        const skillMeta = s.skill_id ? skillMap[s.skill_id] : null;
-
-        const recordingUrl =
-          Array.isArray(s.meetings) ? (s.meetings?.[0]?.recording_url ?? null) : (s.meetings?.recording_url ?? null);
+        const profileName = profileId ? profilesMap[profileId] || 'Interview' : 'Interview';
+        const skillData = skillsMap[s.skill_id] || { name: 'Interview Session' };
+        const recording_url = s.meetings && s.meetings.length > 0 ? s.meetings[0].recording_url : null;
 
         return {
           ...s,
-          recording_url: recordingUrl,
-          mentor_professional_title: mentor?.professional_title || 'Mentor',
-          mentor_rating: mentor?.average_rating || 0,
-          mentor_session_count: mentor?.total_sessions || 0,
-          skill_name: skillMeta?.name || 'Mock Interview',
-          skill_description: skillMeta?.description || '',
-          package: {
-            ...s.package,
-            interview_profile_name: profileMeta?.name || 'Interview',
-            interview_profile_description: profileMeta?.description || '',
-          },
+          package: { ...s.package, interview_profile_name: profileName },
+          skill_name: skillData.name,
+          skill_description: skillData.description,
+          mentor_professional_title: mentorsMap[s.mentor_id] || 'Mentor',
+          recording_url,
           review_rating: reviewsMap[s.package_id] || null,
         };
       });
@@ -576,7 +522,36 @@ export default function CandidateBookingsScreen() {
     setSelectedSession(session);
     setRatingModalVisible(true);
   };
+  // ✅ FIX: The actual function to save the rating to Supabase
+  const handleRatingSubmit = async (rating: number, review: string) => {
+    if (!selectedSession) return;
 
+    try {
+      // 1. Insert the review into 'candidate_reviews'
+      const { error } = await supabase
+        .from('candidate_reviews')
+        .insert({
+          package_id: selectedSession.id,
+          mentor_id: selectedSession.mentor_id,
+          package_id: selectedSession.package_id,
+          candidate_id: user?.id || selectedSession.candidate_id,
+          rating: rating,
+          review_text: review,
+        });
+
+      if (error) throw error;
+
+      // 2. Refresh the list to show the stars immediately
+      Alert.alert('Success', 'Thank you for your feedback!');
+      setRatingModalVisible(false);
+      setSelectedSession(null);
+      fetchBookings(); // Reloads to show the new stars on the card
+
+    } catch (err: any) {
+      console.error('[Rating] Error:', err);
+      Alert.alert('Error', 'Failed to submit review.');
+    }
+  };
   // ✅ Accept Reschedule
   const handleAcceptReschedule = async (sessionId: string) => {
     try {
@@ -613,119 +588,11 @@ export default function CandidateBookingsScreen() {
     }
   };
 
+  // ✅ OPTIMIZED: Use shared availability service
   const generateAvailability = async (mentorId: string, excludeSessionId?: string) => {
     setLoadingReschedule(true);
     try {
-      const IST_ZONE = 'Asia/Kolkata';
-      const BOOKING_WINDOW_DAYS = 30;
-
-      const now = DateTime.now().setZone(IST_ZONE);
-      const startDate = now.plus({ days: 1 }).startOf('day');
-      const endDate = startDate.plus({ days: BOOKING_WINDOW_DAYS }).endOf('day');
-
-      // 1. Get availability rules
-      const { data: rulesData, error: rulesError } = await supabase
-        .from('mentor_availability_rules')
-        .select('weekdays, weekends')
-        .eq('mentor_id', mentorId)
-        .maybeSingle();
-
-      if (rulesError && rulesError.code !== 'PGRST116') throw rulesError;
-
-      const finalRulesData = rulesData || {
-        weekdays: {
-          monday: { start: '20:00', end: '22:00', isActive: true },
-          tuesday: { start: '20:00', end: '22:00', isActive: true },
-          wednesday: { start: '20:00', end: '22:00', isActive: true },
-          thursday: { start: '20:00', end: '22:00', isActive: true },
-          friday: { start: '20:00', end: '22:00', isActive: true }
-        },
-        weekends: {
-          saturday: { start: '12:00', end: '17:00', isActive: true },
-          sunday: { start: '12:00', end: '17:00', isActive: true }
-        }
-      };
-
-      // 2. Get unavailability
-      const { data: unavailData } = await supabase
-        .from('mentor_unavailability')
-        .select('start_at, end_at')
-        .eq('mentor_id', mentorId)
-        .or(`start_at.lte.${endDate.toISO()},end_at.gte.${startDate.toISO()}`);
-
-      const unavailabilityIntervals = (unavailData || []).map(row => {
-        const s = DateTime.fromISO(row.start_at, { zone: IST_ZONE });
-        const e = DateTime.fromISO(row.end_at, { zone: IST_ZONE });
-        return Interval.fromDateTimes(s, e);
-      });
-
-      // 3. Get existing bookings
-      const { data: bookingsData, error: bookingsError } = await supabase
-        .from('interview_sessions')
-        .select('scheduled_at, id')
-        .eq('mentor_id', mentorId)
-        .gte('scheduled_at', startDate.toISO())
-        .lte('scheduled_at', endDate.toISO())
-        .in('status', ['pending', 'confirmed', 'scheduled']);
-
-      if (bookingsError) {
-        console.error('[Reschedule] Error fetching bookings:', bookingsError);
-      }
-
-      const filteredBookings = (bookingsData || []).filter(b => b.id !== excludeSessionId);
-      const bookedSlots = new Set(
-        filteredBookings.map(b => DateTime.fromISO(b.scheduled_at, { zone: IST_ZONE }).toISO())
-      );
-
-      // 4. Generate days
-      const days: DayAvailability[] = [];
-      let currentDate = startDate;
-
-      while (currentDate <= endDate) {
-        const dayOfWeek = currentDate.weekday % 7; // 0=Sunday, 1=Monday, ..., 6=Saturday
-        const dayKey = DAY_KEY_MAP[dayOfWeek];
-        const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-        const source = isWeekend ? finalRulesData.weekends : finalRulesData.weekdays;
-        const rules = source?.[dayKey] || { start: '09:00', end: '17:00', isActive: false };
-
-        const dayInterval = Interval.fromDateTimes(currentDate.startOf('day'), currentDate.endOf('day'));
-        const isFullDayOff = unavailabilityIntervals.some(uInterval =>
-          uInterval.engulfs(dayInterval) || !rules.isActive
-        );
-
-        const slots: any[] = [];
-
-        if (!isFullDayOff && rules.isActive) {
-          const [startHour] = rules.start.split(':').map(Number);
-          const [endHour] = rules.end.split(':').map(Number);
-
-          for (let hour = startHour; hour < endHour; hour++) {
-            const slotDateTime = currentDate.set({ hour, minute: 0, second: 0 });
-            const slotISO = slotDateTime.toISO();
-
-            const isBooked = bookedSlots.has(slotISO);
-            const isBlocked = unavailabilityIntervals.some(interval => interval.contains(slotDateTime));
-            const isAvailable = !isBooked && !isBlocked;
-
-            slots.push({
-              time: slotDateTime.toFormat('HH:mm'),
-              isAvailable,
-              dateTime: slotDateTime
-            });
-          }
-        }
-
-        days.push({
-          dateStr: currentDate.toFormat('yyyy-MM-dd'),
-          weekdayName: currentDate.toFormat('EEE'),
-          monthDay: currentDate.toFormat('MMM d'),
-          slots,
-          isFullDayOff
-        });
-
-        currentDate = currentDate.plus({ days: 1 });
-      }
-
+      const days = await availabilityService.generateAvailability(mentorId, excludeSessionId);
       setAvailabilityData(days);
     } catch (err) {
       console.error('[Reschedule] Error generating availability:', err);
@@ -901,19 +768,16 @@ export default function CandidateBookingsScreen() {
       </Modal>
 
       {/* Rating Modal */}
+      {/* Rating Modal - ✅ FIXED PROPS */}
       {selectedSession && (
         <RatingModal
           visible={ratingModalVisible}
+          mentorName={selectedSession.mentor_professional_title || 'Mentor'} // Pass string, not object
           onClose={() => {
             setRatingModalVisible(false);
             setSelectedSession(null);
           }}
-          session={selectedSession}
-          onRatingSubmitted={() => {
-            setRatingModalVisible(false);
-            setSelectedSession(null);
-            fetchBookings();
-          }}
+          onSubmit={handleRatingSubmit} // Pass the function we just created
         />
       )}
 
@@ -1127,34 +991,34 @@ const styles = StyleSheet.create({
   },
   modalTitle: { fontSize: 20, fontWeight: '700', color: '#111', marginBottom: 16 },
   modalCloseBtn: { backgroundColor: theme.colors.primary, padding: 12, borderRadius: 8, alignItems: 'center', marginTop: 16 },
-
+  
   // Reschedule modal styles
   actionRow: { flexDirection: 'row', gap: 12, justifyContent: 'space-between' },
   btn: { paddingVertical: 12, paddingHorizontal: 16, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
-  rescheduleSlot: {
-    width: '30%',
-    paddingVertical: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: theme.colors.primary,
-    backgroundColor: '#FFF',
-    alignItems: 'center'
+  rescheduleSlot: { 
+    width: '30%', 
+    paddingVertical: 12, 
+    borderRadius: 8, 
+    borderWidth: 1, 
+    borderColor: theme.colors.primary, 
+    backgroundColor: '#FFF', 
+    alignItems: 'center' 
   },
-  rescheduleSlotDisabled: {
-    borderColor: '#EEE',
-    backgroundColor: '#F9FAFB'
+  rescheduleSlotDisabled: { 
+    borderColor: '#EEE', 
+    backgroundColor: '#F9FAFB' 
   },
-  rescheduleSlotSelected: {
-    backgroundColor: theme.colors.primary,
-    borderColor: theme.colors.primary
+  rescheduleSlotSelected: { 
+    backgroundColor: theme.colors.primary, 
+    borderColor: theme.colors.primary 
   },
-  rescheduleSlotText: {
-    color: theme.colors.primary,
-    fontWeight: '600'
+  rescheduleSlotText: { 
+    color: theme.colors.primary, 
+    fontWeight: '600' 
   },
-  rescheduleSlotTextDisabled: {
-    color: '#CCC',
-    textDecorationLine: 'line-through'
+  rescheduleSlotTextDisabled: { 
+    color: '#CCC', 
+    textDecorationLine: 'line-through' 
   },
 
   // Banner Styles

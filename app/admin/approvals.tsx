@@ -4,9 +4,13 @@ import { supabase } from '@/lib/supabase/client';
 import { Ionicons } from '@expo/vector-icons';
 import { paymentService } from '@/services/payment.service';
 
+// Tier type for dropdown
+type TierType = 'bronze' | 'silver' | 'gold';
+
 export default function ApprovalsScreen() {
   const [mentors, setMentors] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedTiers, setSelectedTiers] = useState<Record<string, TierType>>({});
 
   useEffect(() => {
     fetchPendingMentors();
@@ -33,34 +37,86 @@ export default function ApprovalsScreen() {
       }));
       
       setMentors(formattedData || []);
+      
+      // Initialize selected tiers to 'bronze' by default
+      const initialTiers: Record<string, TierType> = {};
+      formattedData?.forEach((mentor: any) => {
+        initialTiers[mentor.id] = 'bronze';
+      });
+      setSelectedTiers(initialTiers);
     }
     
     setLoading(false);
   };
 
   const updateStatus = async (mentorId: string, newStatus: 'approved' | 'rejected') => {
-    const { error } = await supabase
-      .from('mentors')
-      .update({ status: newStatus })
-      .eq('id', mentorId);
+    if (newStatus === 'approved') {
+      const selectedTier = selectedTiers[mentorId];
+      if (!selectedTier) {
+        Alert.alert("Error", "Please select a tier before approving");
+        return;
+      }
 
-    if (error) {
-      Alert.alert("Error", "Failed to update status");
-    } else {
+      // Update status AND tier
+      const { error } = await supabase
+        .from('mentors')
+        .update({ 
+          status: newStatus,
+          tier: selectedTier
+        })
+        .eq('id', mentorId);
+
+      if (error) {
+        Alert.alert("Error", "Failed to update status");
+        return;
+      }
+
       // Send welcome email when mentor is approved
-      if (newStatus === 'approved') {
-        try {
-          await paymentService.sendMentorWelcomeEmail(mentorId);
-          console.log('✅ Welcome email sent to mentor:', mentorId);
-        } catch (emailError) {
-          console.warn('⚠️ Failed to send welcome email:', emailError);
-          // Don't block the approval if email fails
-        }
+      try {
+        await paymentService.sendMentorWelcomeEmail(mentorId);
+        console.log('✅ Welcome email sent to mentor:', mentorId);
+      } catch (emailError) {
+        console.warn('⚠️ Failed to send welcome email:', emailError);
+        // Don't block the approval if email fails
       }
       
-      Alert.alert("Success", `Mentor ${newStatus}!`);
-      fetchPendingMentors(); 
+      Alert.alert("Success", `Mentor approved as ${selectedTier.toUpperCase()}!`);
+      fetchPendingMentors();
+    } else {
+      // Just reject without tier
+      const { error } = await supabase
+        .from('mentors')
+        .update({ status: newStatus })
+        .eq('id', mentorId);
+
+      if (error) {
+        Alert.alert("Error", "Failed to update status");
+      } else {
+        Alert.alert("Success", `Mentor ${newStatus}!`);
+        fetchPendingMentors(); 
+      }
     }
+  };
+
+  const renderTierButton = (mentorId: string, tier: TierType, label: string, color: string) => {
+    const isSelected = selectedTiers[mentorId] === tier;
+    return (
+      <TouchableOpacity
+        style={[
+          styles.tierButton,
+          { borderColor: color },
+          isSelected && { backgroundColor: color }
+        ]}
+        onPress={() => setSelectedTiers(prev => ({ ...prev, [mentorId]: tier }))}
+      >
+        <Text style={[
+          styles.tierButtonText,
+          { color: isSelected ? '#fff' : color }
+        ]}>
+          {label}
+        </Text>
+      </TouchableOpacity>
+    );
   };
 
   const renderMentor = ({ item }: { item: any }) => (
@@ -77,6 +133,21 @@ export default function ApprovalsScreen() {
         <Text style={styles.detail}>📱 {item.profile?.phone || 'No Phone'}</Text>
         <Text style={styles.detail}>💼 {item.professional_title || 'No Title'}</Text>
         <Text style={styles.detail}>⭐ {item.years_of_experience || 0} Years Exp</Text>
+      </View>
+
+      {/* Tier Selection */}
+      <View style={styles.tierSection}>
+        <Text style={styles.tierLabel}>Select Tier:</Text>
+        <View style={styles.tierButtons}>
+          {renderTierButton(item.id, 'bronze', 'Bronze', '#CD7F32')}
+          {renderTierButton(item.id, 'silver', 'Silver', '#9CA3AF')}
+          {renderTierButton(item.id, 'gold', 'Gold', '#F59E0B')}
+        </View>
+        <Text style={styles.tierInfo}>
+          {selectedTiers[item.id] === 'bronze' && '₹1.5k-3k (100% commission)'}
+          {selectedTiers[item.id] === 'silver' && '₹2.5k-5k (75% commission)'}
+          {selectedTiers[item.id] === 'gold' && '₹6k-10k (50% commission)'}
+        </Text>
       </View>
 
       <View style={styles.actionRow}>
@@ -135,6 +206,12 @@ const styles = StyleSheet.create({
   statusText: { fontSize: 12, fontWeight: '800', color: '#D97706' },
   infoBox: { gap: 6, marginBottom: 16 },
   detail: { fontSize: 15, color: '#4B5563' },
+  tierSection: { marginBottom: 16, paddingTop: 16, borderTopWidth: 1, borderTopColor: '#E5E7EB' },
+  tierLabel: { fontSize: 14, fontWeight: '600', color: '#374151', marginBottom: 8 },
+  tierButtons: { flexDirection: 'row', gap: 8, marginBottom: 8 },
+  tierButton: { flex: 1, paddingVertical: 10, paddingHorizontal: 12, borderRadius: 8, borderWidth: 2, alignItems: 'center' },
+  tierButtonText: { fontSize: 13, fontWeight: '700' },
+  tierInfo: { fontSize: 12, color: '#6B7280', textAlign: 'center', fontStyle: 'italic' },
   actionRow: { flexDirection: 'row', gap: 12 },
   btn: { flex: 1, padding: 14, borderRadius: 12, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8 },
   approveBtn: { backgroundColor: '#059669' },

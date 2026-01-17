@@ -6,7 +6,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  Alert,
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
@@ -16,11 +15,13 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/lib/supabase/client';
 import { MASTER_TEMPLATES } from '@/lib/evaluation-templates';
+import { useNotification } from '@/lib/ui/NotificationBanner'; // Make sure path matches your project structure
 
 export default function MentorEvaluationScreen() {
   const params = useLocalSearchParams();
   const { id } = params;
   const router = useRouter();
+  const { showNotification } = useNotification();
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -28,7 +29,7 @@ export default function MentorEvaluationScreen() {
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [isViewMode, setIsViewMode] = useState(false);
   
-  // Metadata for the session (Display Only)
+  // Metadata for the session
   const [sessionInfo, setSessionInfo] = useState({
     profile: '',
     skill: '',
@@ -40,7 +41,7 @@ export default function MentorEvaluationScreen() {
     if (id && id !== 'undefined') {
       loadSessionAndTemplate();
     } else {
-      Alert.alert('Error', 'Invalid session ID');
+      showNotification('Invalid session ID', 'error');
       router.back();
     }
   }, [id]);
@@ -49,9 +50,7 @@ export default function MentorEvaluationScreen() {
     try {
       if (!id) throw new Error('Invalid ID');
 
-      // ============================================================================
-      // 1. FETCH SESSION DATA (including existing evaluation answers if present)
-      // ============================================================================
+      // 1. FETCH SESSION DATA
       const { data: session, error } = await supabase
         .from('interview_sessions')
         .select(`
@@ -66,9 +65,7 @@ export default function MentorEvaluationScreen() {
       if (error) throw error;
       if (!session) throw new Error('Session not found');
 
-      // ============================================================================
-      // 2. FETCH CANDIDATE PROFESSIONAL TITLE (for anonymity)
-      // ============================================================================
+      // 2. FETCH CANDIDATE PROFESSIONAL TITLE
       let candidateName = 'Candidate';
       if (session.candidate_id) {
         const { data: candidateData } = await supabase
@@ -82,9 +79,7 @@ export default function MentorEvaluationScreen() {
         }
       }
 
-      // ============================================================================
-      // 3. CHECK IF EVALUATION EXISTS (determines view vs edit mode)
-      // ============================================================================
+      // 3. CHECK IF EVALUATION EXISTS
       const evaluationRow = Array.isArray(session.evaluation) 
         ? session.evaluation[0] 
         : session.evaluation;
@@ -96,25 +91,19 @@ export default function MentorEvaluationScreen() {
       setAnswers(existingAnswers);
       setIsViewMode(isCompleted && existingTemplate !== null);
 
-      // ============================================================================
-      // 4. FETCH CURRENT PROFILE & SKILL NAMES FROM DATABASE
-      // ============================================================================
+      // 4. FETCH PROFILE & SKILL NAMES
       let displayProfile = 'Interview Evaluation';
       let displaySkill = 'General Skill';
 
-      // Get Profile Name
       if (session.package?.interview_profile_id) {
         const { data: profileData } = await supabase
           .from('interview_profiles_admin')
           .select('name')
           .eq('id', session.package.interview_profile_id)
           .single();
-        if (profileData?.name) {
-          displayProfile = profileData.name;
-        }
+        if (profileData?.name) displayProfile = profileData.name;
       }
 
-      // Get Skill Name
       if (session.skill?.name) {
         displaySkill = session.skill.name;
       } else if (session.skill_id) {
@@ -123,55 +112,35 @@ export default function MentorEvaluationScreen() {
           .select('name')
           .eq('id', session.skill_id)
           .single();
-        if (skillData?.name) {
-          displaySkill = skillData.name;
-        }
+        if (skillData?.name) displaySkill = skillData.name;
       }
 
-      // ============================================================================
-      // 5. 🟢 LOAD TEMPLATE - DIFFERENT LOGIC FOR VIEW VS EDIT
-      //    EDIT MODE: Load current template with examples from file
-      //    VIEW MODE: Load stored questions only (no examples)
-      // ============================================================================
+      // 5. LOAD TEMPLATE
       let selectedTemplate: any[] = [];
 
       if (isCompleted && existingTemplate) {
-        // 🔵 VIEW MODE: Use stored questions (no examples saved)
-        console.log('📖 [Evaluation] VIEW MODE: Using stored questions from submission');
+        // VIEW MODE: Use stored questions
         selectedTemplate = existingTemplate;
       } else {
-        // 🟢 EDIT MODE: Use current template from file (with examples)
-        console.log('✏️ [Evaluation] EDIT MODE: Using current template from file');
-        
+        // EDIT MODE: Use current template from file
         const profileId = session.package?.interview_profile_id;
         const skillId = session.skill_id;
 
         if (profileId && MASTER_TEMPLATES[profileId]) {
           const profileEntry = MASTER_TEMPLATES[profileId];
-          
-          // Try exact skill match
           if (skillId && profileEntry.skills[skillId]) {
             selectedTemplate = profileEntry.skills[skillId].templates;
-            console.log(`✅ Found current template with ${selectedTemplate.length} sections`);
-          } 
-          // Fallback: Use first available skill if exact ID fails
-          else {
+          } else {
             const firstSkillKey = Object.keys(profileEntry.skills)[0];
             if (firstSkillKey) {
               selectedTemplate = profileEntry.skills[firstSkillKey].templates;
-              console.log(`⚠️ Using fallback skill template`);
             }
           }
-        } else {
-          console.error(`❌ No template found for Profile ID: ${profileId}`);
         }
       }
 
       setTemplate(selectedTemplate || []);
 
-      // ============================================================================
-      // 6. SET DISPLAY INFO
-      // ============================================================================
       setSessionInfo({
         profile: displayProfile,
         skill: displaySkill,
@@ -181,7 +150,7 @@ export default function MentorEvaluationScreen() {
 
     } catch (err: any) {
       console.error('[Evaluation] Error loading session:', err);
-      Alert.alert('Error', 'Failed to load session.');
+      showNotification('Failed to load session details', 'error');
       router.back();
     } finally {
       setLoading(false);
@@ -192,18 +161,46 @@ export default function MentorEvaluationScreen() {
     setAnswers((prev) => ({ ...prev, [qId]: value }));
   };
 
-  const handleSubmit = async () => {
+  // 🔍 VALIDATION FUNCTION
+  const validateEvaluation = () => {
+    let missingCount = 0;
+    template.forEach(section => {
+      section.questions.forEach((q: any) => {
+        const val = answers[q.id];
+        // Check for empty text, null rating, or undefined boolean
+        if (
+          val === undefined || 
+          val === null || 
+          (typeof val === 'string' && val.trim() === '')
+        ) {
+          missingCount++;
+        }
+      });
+    });
+    return missingCount;
+  };
+
+  // 💾 SAVE / SUBMIT LOGIC
+  const saveToDatabase = async (isFinalSubmission: boolean) => {
+    // 1. Validate only if submitting
+    if (isFinalSubmission) {
+      const missingCount = validateEvaluation();
+      if (missingCount > 0) {
+        showNotification(
+          `Please complete ${missingCount} missing question${missingCount > 1 ? 's' : ''} before submitting.`, 
+          'error'
+        );
+        return;
+      }
+    }
+
     try {
       setSubmitting(true);
       
-      // ============================================================================
-      // 🟢 PREPARE TEMPLATE FOR STORAGE (Questions only, no examples)
-      // This ensures we can always display the exact questions that were answered,
-      // even if the template file changes later
-      // ============================================================================
+      // 2. Prepare Template Structure (Questions Only)
       const templateForStorage = template.map(section => ({
         title: section.title,
-        questions: section.questions // Only store questions, not examples
+        questions: section.questions
       }));
 
       const payload = {
@@ -212,13 +209,14 @@ export default function MentorEvaluationScreen() {
           skill_used: sessionInfo.skill,
           submitted_at: new Date().toISOString(),
         },
-        template: templateForStorage, // 🔑 Store questions only
+        template: templateForStorage,
         answers: answers
       };
 
-      console.log('💾 [Evaluation] Saving evaluation with question structure');
+      // 3. Determine Status ('completed' vs 'in_progress')
+      const status = isFinalSubmission ? 'completed' : 'in_progress';
 
-      // Check if evaluation already exists
+      // 4. Upsert Evaluation Data
       const { data: existingEval, error: fetchError } = await supabase
         .from('session_evaluations')
         .select('id')
@@ -230,44 +228,44 @@ export default function MentorEvaluationScreen() {
       let error;
 
       if (existingEval) {
-        // Update existing evaluation
         const { error: updateErr } = await supabase
           .from('session_evaluations')
           .update({
             checklist_data: payload,
             updated_at: new Date().toISOString(),
-            status: 'completed'
+            status: status 
           })
           .eq('session_id', id);
         error = updateErr;
-
       } else {
-        // Create new evaluation
         const { error: insertErr } = await supabase
           .from('session_evaluations')
           .insert({
             session_id: id,
             checklist_data: payload,
-            status: 'completed'
+            status: status
           });
         error = insertErr;
       }
 
       if (error) throw error;
 
-      // Mark session as completed
-      await supabase
-        .from('interview_sessions')
-        .update({ status: 'completed' })
-        .eq('id', id);
+      // 5. Finalize Session (Only if Submitting)
+      if (isFinalSubmission) {
+        await supabase
+          .from('interview_sessions')
+          .update({ status: 'completed' })
+          .eq('id', id);
 
-      Alert.alert("Success", "Feedback submitted successfully!", [
-        { text: "OK", onPress: () => router.back() }
-      ]);
+        showNotification("Evaluation submitted successfully!", 'success');
+        setTimeout(() => router.back(), 1500);
+      } else {
+        showNotification("Draft saved successfully", 'success');
+      }
 
     } catch (err: any) {
-      console.error('[Evaluation] Submission error:', err);
-      Alert.alert("Submission Failed", err.message);
+      console.error('[Evaluation] Save error:', err);
+      showNotification(err.message || "Failed to save evaluation", 'error');
     } finally {
       setSubmitting(false);
     }
@@ -318,7 +316,6 @@ export default function MentorEvaluationScreen() {
             <View key={idx} style={styles.section}>
               <Text style={styles.sectionHeader}>{section.title}</Text>
               
-              {/* Display example scenarios (only in EDIT mode, not stored in VIEW mode) */}
               {!isViewMode && section.example && (
                 <View style={styles.exampleBox}>
                   {Array.isArray(section.example) ? (
@@ -396,21 +393,34 @@ export default function MentorEvaluationScreen() {
           ))
         )}
 
+        {/* ACTIONS ROW: SAVE DRAFT & SUBMIT */}
         {!isViewMode ? (
-          <TouchableOpacity 
-            style={[styles.submitBtn, submitting && styles.btnDisabled]} 
-            onPress={handleSubmit}
-            disabled={submitting}
-          >
-            {submitting ? (
-              <ActivityIndicator color="#FFF" />
-            ) : (
-              <Text style={styles.submitBtnText}>Submit Evaluation</Text>
-            )}
-          </TouchableOpacity>
+          <View style={styles.actionRow}>
+            {/* Save Draft Button */}
+            <TouchableOpacity 
+              style={[styles.draftBtn, submitting && styles.btnDisabled]} 
+              onPress={() => saveToDatabase(false)} // false = Draft
+              disabled={submitting}
+            >
+              <Text style={styles.draftBtnText}>Save Draft</Text>
+            </TouchableOpacity>
+
+            {/* Submit Button */}
+            <TouchableOpacity 
+              style={[styles.submitBtn, submitting && styles.btnDisabled]} 
+              onPress={() => saveToDatabase(true)} // true = Submit
+              disabled={submitting}
+            >
+              {submitting ? (
+                <ActivityIndicator color="#FFF" />
+              ) : (
+                <Text style={styles.submitBtnText}>Submit</Text>
+              )}
+            </TouchableOpacity>
+          </View>
         ) : (
-          <View style={[styles.submitBtn, styles.btnSubmitted]}>
-            <Ionicons name="checkmark-circle" size={20} color="#059669" style={{marginRight: 8}} />
+          <View style={[styles.completedBanner]}>
+            <Ionicons name="checkmark-circle" size={20} color="#059669" />
             <Text style={styles.submittedBtnText}>Evaluation Submitted</Text>
           </View>
         )}
@@ -492,12 +502,50 @@ const styles = StyleSheet.create({
   boolText: { fontSize: 14, fontWeight: '600', color: '#64748B' },
   boolTextSelected: { color: '#1E293B' },
 
+  // New & Updated Action Styles
+  actionRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 20,
+    marginBottom: 40,
+  },
+  draftBtn: {
+    flex: 1,
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFF',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+  },
+  draftBtnText: {
+    color: '#475569',
+    fontSize: 16,
+    fontWeight: '700',
+  },
   submitBtn: {
-    backgroundColor: '#0E9384', paddingVertical: 16, borderRadius: 12,
-    alignItems: 'center', marginTop: 20, flexDirection: 'row', justifyContent: 'center'
+    flex: 1,
+    backgroundColor: '#0E9384',
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   btnDisabled: { opacity: 0.7 },
-  btnSubmitted: { backgroundColor: '#ECFDF5', borderWidth: 2, borderColor: '#059669' },
   submitBtnText: { color: '#FFF', fontSize: 16, fontWeight: '700' },
+  
+  completedBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#ECFDF5', 
+    borderWidth: 1, 
+    borderColor: '#059669',
+    padding: 16,
+    borderRadius: 12,
+    marginTop: 20,
+    gap: 8
+  },
   submittedBtnText: { color: '#059669', fontSize: 16, fontWeight: '700' },
 });

@@ -4,6 +4,13 @@ import { EMAIL_TEMPLATES } from './email.templates';
 export const ENABLE_RAZORPAY = true; 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://crackjobs.com';
 
+// Tier multiplier mapping
+const TIER_MULTIPLIERS: Record<string, number> = {
+  bronze: 2.0,   // 100% commission
+  silver: 1.75,  // 75% commission
+  gold: 1.5,     // 50% commission
+};
+
 // ==========================================
 // 📧 EMAIL HELPER
 // ==========================================
@@ -73,16 +80,27 @@ export const paymentService = {
         console.log("🚀 Starting Booking Process...");
         await this.checkBookingConflict(mentorId, [selectedSlot]);
 
+        // Fetch mentor data including tier
         const { data: mentorData, error: mentorError } = await supabase
           .from('mentors')
-          .select('session_price_inr')
+          .select('session_price_inr, tier')
           .eq('id', mentorId)
           .single();
 
         if (mentorError || !mentorData) throw new Error("Unable to retrieve mentor pricing details.");
 
-        const basePrice = mentorData.session_price_inr || 0; 
-        const totalPrice = Math.round(basePrice * 2.0); 
+        const basePrice = mentorData.session_price_inr || 0;
+        const tier = mentorData.tier || 'bronze'; // Default to bronze if not set
+        const multiplier = TIER_MULTIPLIERS[tier] || 2.0; // Default to 2.0 if tier not found
+        
+        console.log(`💰 Pricing Calculation:`, {
+          tier,
+          basePrice,
+          multiplier,
+          totalPrice: Math.round(basePrice * multiplier)
+        });
+        
+        const totalPrice = Math.round(basePrice * multiplier); 
         const amountToSend = totalPrice * 100; // in paise
         const mentorPayout = basePrice;
         const platformFee = totalPrice - mentorPayout;

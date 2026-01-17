@@ -24,6 +24,9 @@ import { useNotification } from '@/lib/ui/NotificationBanner';
 // Bank Details Modal
 import { BankDetailsModal } from '@/components/mentor/BankDetailsModal';
 
+// ✅ OPTIMIZED: Shared Availability Service
+import { availabilityService } from '@/services/availability.service';
+
 // DayCard Component for Reschedule Modal
 type DayAvailability = { dateStr: string; weekdayName: string; monthDay: string; slots: any[]; isFullDayOff: boolean };
 
@@ -532,107 +535,11 @@ export default function MentorBookingsScreen() {
     }
   };
 
+  // ✅ OPTIMIZED: Use shared availability service
   const generateAvailability = async (mentorId: string, excludeSessionId?: string) => {
     setLoadingReschedule(true);
     try {
-      const IST_ZONE = 'Asia/Kolkata';
-      const BOOKING_WINDOW_DAYS = 30;
-
-      const now = DateTime.now().setZone(IST_ZONE);
-      const startDate = now.plus({ days: 1 }).startOf('day');
-      const endDate = startDate.plus({ days: BOOKING_WINDOW_DAYS }).endOf('day');
-
-      const { data: rulesData, error: rulesError } = await supabase
-        .from('mentor_availability_rules')
-        .select('weekdays, weekends')
-        .eq('mentor_id', mentorId)
-        .maybeSingle();
-
-      if (rulesError && rulesError.code !== 'PGRST116') throw rulesError;
-
-      const finalRulesData = rulesData || {
-        weekdays: {
-          monday: { start: '20:00', end: '22:00', isActive: true },
-          tuesday: { start: '20:00', end: '22:00', isActive: true },
-          wednesday: { start: '20:00', end: '22:00', isActive: true },
-          thursday: { start: '20:00', end: '22:00', isActive: true },
-          friday: { start: '20:00', end: '22:00', isActive: true }
-        },
-        weekends: {
-          saturday: { start: '12:00', end: '17:00', isActive: true },
-          sunday: { start: '12:00', end: '17:00', isActive: true }
-        }
-      };
-
-      const { data: unavailData } = await supabase
-        .from('mentor_unavailability')
-        .select('start_at, end_at')
-        .eq('mentor_id', mentorId)
-        .or(`start_at.lte.${endDate.toISO()},end_at.gte.${startDate.toISO()}`);
-
-      const unavailabilityIntervals = (unavailData || []).map(row => {
-        const s = DateTime.fromISO(row.start_at, { zone: IST_ZONE });
-        const e = DateTime.fromISO(row.end_at, { zone: IST_ZONE });
-        return Interval.fromDateTimes(s, e);
-      });
-
-      const { data: bookingsData } = await supabase
-        .from('interview_sessions')
-        .select('scheduled_at, id')
-        .eq('mentor_id', mentorId)
-        .gte('scheduled_at', startDate.toISO())
-        .lte('scheduled_at', endDate.toISO())
-        .in('status', ['pending', 'confirmed', 'scheduled']);
-
-      const filteredBookings = (bookingsData || []).filter(b => b.id !== excludeSessionId);
-      const bookedSlots = new Set(filteredBookings.map(b => DateTime.fromISO(b.scheduled_at, { zone: IST_ZONE }).toISO()));
-
-      const days: DayAvailability[] = [];
-      let currentDate = startDate;
-
-      while (currentDate <= endDate) {
-        const dayOfWeek = currentDate.weekday % 7; // 0=Sunday, 1=Monday, ..., 6=Saturday
-        const dayKey = DAY_KEY_MAP[dayOfWeek];
-        const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-        const source = isWeekend ? finalRulesData.weekends : finalRulesData.weekdays;
-        const rules = source?.[dayKey] || { start: '09:00', end: '17:00', isActive: false };
-
-        const dayInterval = Interval.fromDateTimes(currentDate.startOf('day'), currentDate.endOf('day'));
-        const isFullDayOff = unavailabilityIntervals.some(uInterval =>
-          uInterval.engulfs(dayInterval) || !rules.isActive
-        );
-
-        const slots: any[] = [];
-
-        if (!isFullDayOff && rules.isActive) {
-          const [startHour] = rules.start.split(':').map(Number);
-          const [endHour] = rules.end.split(':').map(Number);
-
-          for (let hour = startHour; hour < endHour; hour++) {
-            const slotDateTime = currentDate.set({ hour, minute: 0, second: 0 });
-            const slotISO = slotDateTime.toISO();
-            const isBooked = bookedSlots.has(slotISO);
-            const isBlocked = unavailabilityIntervals.some(interval => interval.contains(slotDateTime));
-            const isAvailable = !isBooked && !isBlocked;
-
-            slots.push({
-              time: slotDateTime.toFormat('HH:mm'),
-              isAvailable,
-              dateTime: slotDateTime
-            });
-          }
-        }
-
-        days.push({
-          dateStr: currentDate.toFormat('yyyy-MM-dd'),
-          weekdayName: currentDate.toFormat('EEE'),
-          monthDay: currentDate.toFormat('MMM d'),
-          slots,
-          isFullDayOff
-        });
-
-        currentDate = currentDate.plus({ days: 1 });
-      }
+      const days = await availabilityService.generateAvailability(mentorId, excludeSessionId);
       setAvailabilityData(days);
     } catch (err) {
       console.error('[Reschedule] Error generating availability:', err);
@@ -641,6 +548,8 @@ export default function MentorBookingsScreen() {
       setLoadingReschedule(false);
     }
   };
+
+
 
   const handleRescheduleConfirm = async () => {
     if (!selectedSession || !selectedDay || !selectedSlot) {

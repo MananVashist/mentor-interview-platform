@@ -1,7 +1,6 @@
-﻿
-// lib/BrandHeader.tsx
+﻿// lib/BrandHeader.tsx
 // ⚡ CRITICAL: Animated brand logo with eyes - used above-the-fold
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Text,
   View,
@@ -21,6 +20,10 @@ interface BrandHeaderProps {
 
 export const BrandHeader = ({ style, small = false }: BrandHeaderProps) => {
   const router = useRouter();
+  
+  // 🔥 FIX: Track if component is mounted (client-side only)
+  const [isMounted, setIsMounted] = useState(false);
+  
   const leftEyeX = useRef(new Animated.Value(0)).current;
   const leftEyeY = useRef(new Animated.Value(0)).current;
   const rightEyeX = useRef(new Animated.Value(0)).current;
@@ -29,7 +32,15 @@ export const BrandHeader = ({ style, small = false }: BrandHeaderProps) => {
   const leftPos = useRef({ x: 0, y: 0 });
   const rightPos = useRef({ x: 0, y: 0 });
 
+  // 🔥 FIX: Set mounted state on client only
   useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  // 🔥 FIX: Only run animations after component is mounted (client-side)
+  useEffect(() => {
+    if (!isMounted) return; // ✅ Skip animations during SSR
+    
     const randomRange = (min: number, max: number) => Math.random() * (max - min) + min;
     const SPEED = 0.04; 
     const MIN_DISTANCE = 8;
@@ -72,9 +83,10 @@ export const BrandHeader = ({ style, small = false }: BrandHeaderProps) => {
         moveEye(animX, animY, currentPos);
       });
     };
+    
     moveEye(leftEyeX, leftEyeY, leftPos.current);
     moveEye(rightEyeX, rightEyeY, rightPos.current);
-  }, []);
+  }, [isMounted]); // ✅ Only re-run when isMounted changes
 
   return (
     <TouchableOpacity 
