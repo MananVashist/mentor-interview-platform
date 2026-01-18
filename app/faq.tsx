@@ -1,13 +1,12 @@
 ﻿// app/faq.tsx
 import React from 'react';
 import { TouchableOpacity, Linking, View, Text, StyleSheet } from 'react-native';
+import Head from 'expo-router/head';
 import {
   StandardPageTemplate,
   StandardBold,
 } from '@/components/StandardPageTemplate';
 import { theme } from '@/lib/theme';
-import { SEO } from '@/components/SEO';
-import { SEO_CONFIG } from '@/config/seo';
 
 export default function FAQ() {
   const faqCategories = [
@@ -131,66 +130,91 @@ export default function FAQ() {
   };
 
   return (
-         <>   <SEO {...SEO_CONFIG.faq} />
+    <>
+      <Head>
+        <title>FAQ - Frequently Asked Questions | CrackJobs</title>
+        <meta name="description" content="Get answers to common questions about CrackJobs mock interviews, booking sessions, payments, refunds, and more." />
+        <meta name="keywords" content="faq, frequently asked questions, crackjobs help, interview prep questions, mentor questions, payment faq" />
+        <link rel="canonical" href="https://crackjobs.com/faq" />
 
-    <StandardPageTemplate
-      title="FAQ - Frequently Asked Questions | CrackJobs"
-      metaDescription="Get answers to common questions about CrackJobs mock interviews, booking sessions, payments, refunds, and more."
-      pageUrl="https://crackjobs.com/faq"
-      pageTitle="Frequently Asked Questions"
-      lastUpdated="November 25, 2024"
-      additionalSchema={faqSchema}
-      relatedPages={[
-        {
-          title: "How It Works",
-          description: "See our 5-step process",
-          icon: "📖",
-          route: "/how-it-works"
-        },
-        {
-          title: "Contact Support",
-          description: "Still have questions?",
-          icon: "📧",
-          route: "/contact"
-        },
-        {
-          title: "Pricing",
-          description: "View mentor rates",
-          icon: "💰",
-          route: "/auth/sign-up"
-        }
-      ]}
-    >
-      {faqCategories.map((category, idx) => (
-        <View key={idx} style={styles.categorySection}>
-          <Text style={styles.categoryTitle} accessibilityRole="header" aria-level={2}>
-            {category.category}
+        {/* Open Graph */}
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://crackjobs.com/faq" />
+        <meta property="og:title" content="FAQ - Frequently Asked Questions | CrackJobs" />
+        <meta property="og:description" content="Get answers to common questions about CrackJobs mock interviews, booking sessions, payments, refunds, and more." />
+        <meta property="og:image" content="https://crackjobs.com/og-image.png" />
+
+        {/* Twitter */}
+        <meta property="twitter:card" content="summary_large_image" />
+        <meta property="twitter:url" content="https://crackjobs.com/faq" />
+        <meta property="twitter:title" content="FAQ - Frequently Asked Questions | CrackJobs" />
+        <meta property="twitter:description" content="Get answers to common questions about CrackJobs mock interviews, booking sessions, payments, refunds, and more." />
+        <meta property="twitter:image" content="https://crackjobs.com/og-image.png" />
+
+        {/* JSON-LD Schema */}
+        <script type="application/ld+json">
+          {JSON.stringify(faqSchema)}
+        </script>
+      </Head>
+
+      <StandardPageTemplate
+        title="FAQ - Frequently Asked Questions | CrackJobs"
+        metaDescription="Get answers to common questions about CrackJobs mock interviews, booking sessions, payments, refunds, and more."
+        pageUrl="https://crackjobs.com/faq"
+        pageTitle="Frequently Asked Questions"
+        lastUpdated="November 25, 2024"
+        additionalSchema={faqSchema}
+        relatedPages={[
+          {
+            title: "How It Works",
+            description: "See our 5-step process",
+            icon: "📖",
+            route: "/how-it-works"
+          },
+          {
+            title: "Contact Support",
+            description: "Still have questions?",
+            icon: "📧",
+            route: "/contact"
+          },
+          {
+            title: "Pricing",
+            description: "View mentor rates",
+            icon: "💰",
+            route: "/auth/sign-up"
+          }
+        ]}
+      >
+        {faqCategories.map((category, idx) => (
+          <View key={idx} style={styles.categorySection}>
+            <Text style={styles.categoryTitle} accessibilityRole="header" aria-level={2}>
+              {category.category}
+            </Text>
+            {category.questions.map((item, qIdx) => (
+              <View key={qIdx} style={styles.faqCard}>
+                <Text style={styles.question} accessibilityRole="header" aria-level={3}>
+                  {item.q}
+                </Text>
+                <Text style={styles.answer}>{item.a}</Text>
+              </View>
+            ))}
+          </View>
+        ))}
+
+        {/* Contact Section */}
+        <View style={styles.contactSection}>
+          <Text style={styles.contactTitle}>Still have questions?</Text>
+          <Text style={styles.contactText}>
+            Our support team is here to help. Reach out and we'll respond within 24-48 hours.
           </Text>
-          {category.questions.map((item, qIdx) => (
-            <View key={qIdx} style={styles.faqCard}>
-              <Text style={styles.question} accessibilityRole="header" aria-level={3}>
-                {item.q}
-              </Text>
-              <Text style={styles.answer}>{item.a}</Text>
-            </View>
-          ))}
+          <TouchableOpacity 
+            style={styles.contactButton} 
+            onPress={() => Linking.openURL('mailto:crackjobshelpdesk@gmail.com')}
+          >
+            <Text style={styles.contactButtonText}>Contact Support</Text>
+          </TouchableOpacity>
         </View>
-      ))}
-
-      {/* Contact Section */}
-      <View style={styles.contactSection}>
-        <Text style={styles.contactTitle}>Still have questions?</Text>
-        <Text style={styles.contactText}>
-          Our support team is here to help. Reach out and we'll respond within 24-48 hours.
-        </Text>
-        <TouchableOpacity 
-          style={styles.contactButton} 
-          onPress={() => Linking.openURL('mailto:crackjobshelpdesk@gmail.com')}
-        >
-          <Text style={styles.contactButtonText}>Contact Support</Text>
-        </TouchableOpacity>
-      </View>
-    </StandardPageTemplate>
+      </StandardPageTemplate>
     </>
   );
 }

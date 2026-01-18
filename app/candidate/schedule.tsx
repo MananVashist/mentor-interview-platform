@@ -13,6 +13,7 @@ import { supabase } from '@/lib/supabase/client';
 import { paymentService } from '@/services/payment.service';
 import { useAuthStore } from '@/lib/store';
 import { availabilityService, type DayAvailability } from '@/services/availability.service';
+import { DateTime } from 'luxon';
 
 // 🟢 NEW TYPE: Single Selection
 type SelectedSession = {
@@ -169,6 +170,43 @@ export default function ScheduleScreen() {
     });
   };
 
+  // ✅ NEW: Verify slot availability before proceeding
+  const verifySlotAvailability = async (slotIso: string): Promise<boolean> => {
+    try {
+      console.log('[Schedule] 🔍 Verifying slot availability:', slotIso);
+      
+      // ✅ FIX: Convert to simple date string for database query
+      const slotDateTime = DateTime.fromISO(slotIso);
+      const slotQueryStr = slotDateTime.toFormat('yyyy-MM-dd HH:mm:ss');
+      
+      console.log('[Schedule] Query string:', slotQueryStr);
+      
+      const { data, error } = await supabase
+        .from('interview_sessions')
+        .select('id, status, scheduled_at')
+        .eq('mentor_id', mentorId)
+        .eq('scheduled_at', slotQueryStr)
+        .in('status', ['awaiting_payment', 'pending', 'confirmed']); // ✅ Include awaiting_payment
+
+      if (error) {
+        console.error('[Schedule] Slot verification error:', error);
+        return false;
+      }
+
+      // If any sessions exist for this slot, it's taken
+      if (data && data.length > 0) {
+        console.warn('[Schedule] ❌ Slot is already booked:', data);
+        return false;
+      }
+
+      console.log('[Schedule] ✅ Slot is available');
+      return true;
+    } catch (err) {
+      console.error('[Schedule] Slot verification exception:', err);
+      return false;
+    }
+  };
+
   const handleConfirm = async () => {
     if (!selectedSlot) {
       Alert.alert('No Selection', 'Please select a time slot');
@@ -185,16 +223,32 @@ export default function ScheduleScreen() {
     try {
       const finalUserId = currentUserId;
 
-      // 1. Verify mentor exists
+      // ✅ STEP 1: Verify slot is still available (prevent race conditions)
+      const isSlotAvailable = await verifySlotAvailability(selectedSlot.iso);
+      
+      if (!isSlotAvailable) {
+        Alert.alert(
+          'Slot Unavailable',
+          'This time slot was just booked by someone else. Please select a different time.',
+          [{ text: 'OK', onPress: () => fetchAvailability() }] // Refresh availability
+        );
+        setSelectedSlot(null); // Clear selection
+        setBookingInProgress(false);
+        return; // ❌ STOP HERE - DO NOT PROCEED
+      }
+
+      // 2. Verify mentor exists
       const { data: mentorExists } = await supabase
         .from('mentors')
         .select('id')
         .eq('id', mentorId)
         .maybeSingle();
 
-      if (!mentorExists) throw new Error('Mentor not found');
+      if (!mentorExists) {
+        throw new Error('Mentor not found');
+      }
 
-      // 2. Ensure candidate profile exists
+      // 3. Ensure candidate profile exists
       const { data: existingCandidate } = await supabase
         .from('candidates')
         .select('id')
@@ -217,7 +271,7 @@ export default function ScheduleScreen() {
         }
       }
 
-      // 3. Proceed with Booking
+      // 4. Proceed with Booking (payment service will do final conflict check)
       const { package: pkg, orderId, amount, keyId, error } = await paymentService.createPackage(
         finalUserId as string,
         mentorId as string,
@@ -226,7 +280,9 @@ export default function ScheduleScreen() {
         selectedSlot.iso 
       );
 
-      if (error || !pkg) throw new Error(error?.message || 'Booking creation failed');
+      if (error || !pkg) {
+        throw new Error(error?.message || 'Booking creation failed');
+      }
 
       if (pkg.payment_status === 'pending') {
         router.replace({
@@ -235,7 +291,12 @@ export default function ScheduleScreen() {
             packageId: pkg.id,
             amount: amount, 
             orderId: orderId, 
-            keyId: keyId 
+            keyId: keyId,
+            // ✅ Pass these for navigation back on cancellation
+            mentorId: mentorId,
+            profileId: profileIdParam,
+            skillId: skillIdParam,
+            skillName: skillNameParam
           }
         });
       } else {
@@ -307,6 +368,7 @@ export default function ScheduleScreen() {
             <View style={styles.grid}>
               {selectedDay.slots.map((slot) => {
                 const isSelected = selectedSlot?.time === slot.time && selectedSlot?.dateStr === selectedDay.dateStr;
+                
                 return (
                   <TouchableOpacity
                     key={`${selectedDay.dateStr}-${slot.time}`}
@@ -321,7 +383,7 @@ export default function ScheduleScreen() {
                     <AppText style={[
                         styles.slotText, 
                         !slot.isAvailable && styles.slotTextDisabled, 
-                        isSelected && { color: '#FFF', fontWeight: 'bold' }
+                        isSelected && styles.slotTextSelected
                     ]}>
                       {slot.time}
                     </AppText>
@@ -368,11 +430,21 @@ const styles = StyleSheet.create({
   selectionDate: { fontSize: 14, fontWeight: '500', color: '#666', marginTop: 4 },
   selectionPlaceholder: { fontSize: 16, color: '#CCC', fontStyle: 'italic' },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  slot: { width: '30%', paddingVertical: 12, borderRadius: 8, borderWidth: 1, borderColor: theme.colors.primary, backgroundColor: '#FFF', alignItems: 'center', marginBottom: 8 },
-  slotDisabled: { borderColor: '#EEE', backgroundColor: '#F9FAFB' },
+  slot: { 
+    width: '30%', 
+    paddingVertical: 12, 
+    borderRadius: 8, 
+    borderWidth: 1, 
+    borderColor: theme.colors.primary, 
+    backgroundColor: '#FFF', 
+    alignItems: 'center', 
+    marginBottom: 8
+  },
+  slotDisabled: { borderColor: '#E5E7EB', backgroundColor: '#F9FAFB', opacity: 0.5 },
   slotSelected: { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary },
-  slotText: { color: theme.colors.primary, fontWeight: '600' },
-  slotTextDisabled: { color: '#CCC', textDecorationLine: 'line-through' },
+  slotText: { color: theme.colors.primary, fontWeight: '600', fontSize: 14 },
+  slotTextDisabled: { color: '#CCC' },
+  slotTextSelected: { color: '#FFF', fontWeight: 'bold' },
   badgeErr: { backgroundColor: '#FEF2F2', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4 },
   badgeErrText: { color: '#EF4444', fontSize: 10, fontWeight: 'bold' },
   emptyState: { padding: 20, alignItems: 'center', borderWidth: 1, borderColor: '#EEE', borderRadius: 8, borderStyle: 'dashed' },

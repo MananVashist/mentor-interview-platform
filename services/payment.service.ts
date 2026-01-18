@@ -1,5 +1,6 @@
 ﻿import { supabase } from '@/lib/supabase/client';
 import { EMAIL_TEMPLATES } from './email.templates';
+import { DateTime } from 'luxon';
 
 export const ENABLE_RAZORPAY = true; 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://crackjobs.com';
@@ -56,17 +57,43 @@ async function sendEmail(
 // ==========================================
 
 export const paymentService = {
+  /**
+   * ✅ ENHANCED: Check if slots are already booked AND verify slot exists
+   * Checks for pending, confirmed, scheduled, AND completed sessions
+   */
   async checkBookingConflict(mentorId: string, selectedSlots: string[]) {
-    if (!selectedSlots || selectedSlots.length === 0) return;
+    if (!selectedSlots || selectedSlots.length === 0) {
+      throw new Error('No time slot selected');
+    }
+
+    console.log('[Payment] 🔍 Checking booking conflicts for:', selectedSlots);
+
+    // ✅ FIX: Convert to simple date strings for database query
+    const slotsQueryStr = selectedSlots.map(slot => {
+      const dt = DateTime.fromISO(slot);
+      return dt.toFormat('yyyy-MM-dd HH:mm:ss');
+    });
+
+    console.log('[Payment] Query strings:', slotsQueryStr);
+
     const { data, error } = await supabase
       .from('interview_sessions')
-      .select('scheduled_at')
+      .select('scheduled_at, status')
       .eq('mentor_id', mentorId)
-      .in('status', ['pending', 'confirmed', 'completed']) 
-      .in('scheduled_at', selectedSlots);
+      .in('status', ['pending', 'confirmed', 'completed']) // ✅ 'scheduled' is not a valid enum value
+      .in('scheduled_at', slotsQueryStr);
 
-    if (error) throw new Error('Unable to verify slot availability.');
-    if (data && data.length > 0) throw new Error('Slot already booked.');
+    if (error) {
+      console.error('[Payment] ❌ Slot verification error:', error);
+      throw new Error('Unable to verify slot availability.');
+    }
+
+    if (data && data.length > 0) {
+      console.error('[Payment] ❌ Slot conflict detected:', data);
+      throw new Error('This slot was just booked by someone else. Please select another time.');
+    }
+
+    console.log('[Payment] ✅ No conflicts found - slot is available');
   },
 
   async createPackage(
@@ -78,6 +105,10 @@ export const paymentService = {
   ) {
     try {
         console.log("🚀 Starting Booking Process...");
+        console.log("📋 Details:", { candidateId, mentorId, selectedSlot });
+
+        // ✅ STEP 1: Verify slot is available FIRST
+        console.log("[Payment] 🔒 STEP 1: Pre-flight slot check...");
         await this.checkBookingConflict(mentorId, [selectedSlot]);
 
         // Fetch mentor data including tier
@@ -87,7 +118,10 @@ export const paymentService = {
           .eq('id', mentorId)
           .single();
 
-        if (mentorError || !mentorData) throw new Error("Unable to retrieve mentor pricing details.");
+        if (mentorError || !mentorData) {
+          console.error('[Payment] ❌ Mentor fetch error:', mentorError);
+          throw new Error("Unable to retrieve mentor pricing details.");
+        }
 
         const basePrice = mentorData.session_price_inr || 0;
         const tier = mentorData.tier || 'bronze'; // Default to bronze if not set
@@ -105,33 +139,40 @@ export const paymentService = {
         const mentorPayout = basePrice;
         const platformFee = totalPrice - mentorPayout;
 
+        // ✅ STEP 2: Create Razorpay order
         let razorpayOrderId = null;
         let razorpayKeyId = null;
 
         if (ENABLE_RAZORPAY) {
-          console.log("💳 Creating Razorpay Order...");
+          console.log("[Payment] 💳 STEP 2: Creating Razorpay order...");
+
           const { data: orderData, error: orderError } = await supabase.functions.invoke(
             "create-razorpay-order",
             { 
               body: { 
                 amount: amountToSend, 
                 currency: "INR", 
-                receipt: `rcpt_${Date.now()}` // ✅ REQUIRED by Edge Function
+                receipt: `rcpt_${Date.now()}`,
+                notes: {
+                  candidate_id: candidateId,
+                  mentor_id: mentorId,
+                  skill_id: skillId
+                }
               } 
             }
           );
 
-          // ✅ Check for 'id' (Standard Razorpay response), NOT 'orderId'
           if (orderError || !orderData?.id) {
-            console.error("Razorpay Error:", orderError, orderData);
-            throw new Error("Payment order creation failed.");
+            console.error("[Payment] ❌ Razorpay Error:", orderError, orderData);
+            throw new Error("Payment order creation failed. Please try again.");
           }
           
           razorpayOrderId = orderData.id;      
           razorpayKeyId = orderData.key_id;     
         }
 
-        // ✅ Create package in database
+        // ✅ STEP 3: Create PACKAGE FIRST (this generates the package_id we need)
+        console.log("[Payment] 📦 STEP 3: Creating package record...");
         const pkgPayload = {
           candidate_id: candidateId,
           mentor_id: mentorId,
@@ -146,6 +187,7 @@ export const paymentService = {
           booking_metadata: {
             skill_id: skillId,
             scheduled_at: selectedSlot
+            // session_id will be added after session creation
           }
         };
 
@@ -156,84 +198,97 @@ export const paymentService = {
           .single();
 
         if (pkgError || !pkg) {
-           console.error("Database Insert Error:", pkgError);
-           throw new Error("Unable to create package in database.");
+           console.error("[Payment] ❌ Package creation failed:", pkgError);
+           throw new Error("Unable to create booking record. Please try again.");
         }
 
-        console.log("✅ Package Created:", pkg.id);
-        const packageId = pkg.id;
+        console.log("[Payment] ✅ Package created:", pkg.id);
 
-        // 🔥 Create interview_session IMMEDIATELY to block the slot (no meeting_link)
-        console.log("📅 Creating interview session to block slot...");
+        // ✅ STEP 4: Now create SESSION with the package_id
+        console.log("[Payment] 🔒 STEP 4: Creating session to block slot...");
         
-        const { data: newSession, error: sessionError } = await supabase.from('interview_sessions').insert({
-          package_id: packageId,
-          candidate_id: candidateId,
-          mentor_id: mentorId,
-          skill_id: skillId,
-          scheduled_at: selectedSlot,
-          status: 'pending', // Will remain pending until payment confirmed
-        }).select('id').single();
+        const { data: newSession, error: sessionError } = await supabase
+          .from('interview_sessions')
+          .insert({
+            package_id: pkg.id,  // ✅ NOW we have the package_id!
+            candidate_id: candidateId,
+            mentor_id: mentorId,
+            skill_id: skillId,
+            scheduled_at: selectedSlot,
+            status: 'pending',  // ✅ Set to 'pending' so cron can clean up if payment is abandoned
+          })
+          .select('id')
+          .single();
 
         if (sessionError || !newSession) {
-          console.error("Session Creation Error:", sessionError);
+          console.error("[Payment] ❌ Session creation failed:", sessionError);
           
-          // If session creation fails (e.g., duplicate booking), clean up the package
-          await supabase.from('interview_packages').delete().eq('id', packageId);
+          // Rollback: Delete the package since session creation failed
+          await supabase.from('interview_packages').delete().eq('id', pkg.id);
           
-          if (sessionError?.code === '23505') { // Unique constraint violation
+          if (sessionError?.code === '23505') {
             throw new Error('This slot was just booked by someone else. Please select another time.');
           }
           throw new Error('Unable to reserve slot. Please try again.');
         }
 
-        console.log("✅ Session Created:", newSession.id);
+        console.log("[Payment] ✅ Session created:", newSession.id, "- Slot now BLOCKED");
+        const sessionId = newSession.id;
 
-        // 🎥 Create 100ms room and store in session_meetings
-        console.log("🎥 Creating 100ms video room...");
-        try {
-          const { data: roomData, error: roomError } = await supabase.functions.invoke(
-            "create-meeting",
-            { body: { sessionId: newSession.id, scheduledAt: selectedSlot } }
-          );
+        // ✅ STEP 5: Update package metadata with session_id
+        console.log("[Payment] 📝 STEP 5: Linking session to package...");
+        const { error: updateError } = await supabase
+          .from('interview_packages')
+          .update({ 
+            booking_metadata: {
+              skill_id: skillId,
+              scheduled_at: selectedSlot,
+              session_id: sessionId
+            }
+          })
+          .eq('id', pkg.id);
 
-          if (roomError || !roomData?.success) {
-            console.error("100ms Room Creation Error:", roomError);
-            console.warn("⚠️ Proceeding without video room - can be created on-demand");
-          } else {
-            console.log("✅ 100ms Room Created:", roomData.roomCode);
-          }
-        } catch (roomErr) {
-          console.error("100ms Room Exception:", roomErr);
-          console.warn("⚠️ Video room creation failed but continuing with booking");
+        if (updateError) {
+          console.warn("[Payment] ⚠️ Failed to update package metadata:", updateError);
         }
 
-        // Send emails only if payment is disabled (test mode)
-        if (!ENABLE_RAZORPAY) {
-          this.triggerBookingConfirmationEmails(packageId);
-        }
+        // ✅ Return success (100ms room will be created after payment verification)
+        return {
+          package: pkg,
+          orderId: razorpayOrderId,
+          amount: amountToSend,
+          keyId: razorpayKeyId,
+          error: null
+        };
 
-        return { package: pkg, orderId: razorpayOrderId, keyId: razorpayKeyId, amount: amountToSend, error: null };
-
-    } catch (error: any) {
-      console.error("Payment Logic Exception:", error);
-      return { package: null, orderId: null, amount: 0, error };
+    } catch (err: any) {
+        console.error("Payment Logic Exception:", err);
+        return { 
+          package: null,
+          orderId: null,
+          amount: null,
+          keyId: null,
+          error: { message: err.message || 'Booking failed' } 
+        };
     }
   },
 
-  async verifyPayment(pkgId: string, orderId: string, payId: string, sig: string) {
-    console.log("[Payment Service] 🔐 Starting verification...", {
-      packageId: pkgId,
-      orderId,
-      paymentId: payId,
-      signature: sig ? "✓ Present" : "✗ Missing"
-    });
-
+  async verifyPayment(
+    pkgId: string, 
+    orderId: string, 
+    payId: string, 
+    sig: string
+  ) {
     try {
-      // ✅ Call Edge Function with ALL required data
-      // The Edge Function will:
-      // 1. Verify the signature
-      // 2. Update the database with razorpay_order_id, razorpay_payment_id, razorpay_signature
+      console.log("[Payment Service] 🔐 Verifying payment...", { 
+        pkgId, 
+        orderId, 
+        payId, 
+        signature: sig ? '✓ Present' : '✗ Missing' 
+      });
+
+      // 1. Call Edge Function to verify signature
+      // 2. Edge Function validates signature with Razorpay
       // 3. Return the updated package
       const { data, error } = await supabase.functions.invoke(
         "verify-razorpay-signature",
@@ -275,27 +330,69 @@ export const paymentService = {
         throw new Error("Package not found after verification.");
       }
 
-      const { skill_id, scheduled_at } = pkgData.booking_metadata || {};
+      const { skill_id, scheduled_at, session_id } = pkgData.booking_metadata || {};
       
-      // ✅ Double check for booking conflicts
-      console.log("[Payment Service] 🔍 Checking for booking conflicts...");
+      // ✅ Double check for booking conflicts (final validation)
+      console.log("[Payment Service] 🔍 Final conflict check...");
       await this.checkBookingConflict(pkgData.mentor_id, [scheduled_at]);
 
-      // 🔥 Session already exists from createPackage, just verify it exists
-      console.log("[Payment Service] 📝 Payment verified - session remains 'pending' for mentor approval...");
+      // ✅ Update session status from 'pending' to 'confirmed' (payment verified)
+      console.log("[Payment Service] 📝 Updating session status to 'confirmed'...");
       
-      const { data: sessionData, error: sessionFetchError } = await supabase
-        .from("interview_sessions")
-        .select('id')
-        .eq('package_id', pkgId)
-        .single();
-
-      if (sessionFetchError || !sessionData) {
-        console.error("[Payment Service] ❌ Session fetch failed:", sessionFetchError);
-        throw new Error("Session not found after payment verification");
+      if (!session_id) {
+        console.error("[Payment Service] ❌ No session_id in booking metadata!");
+        throw new Error("Session ID not found in package metadata");
       }
 
-      console.log("[Payment Service] ✅ Session found - awaiting mentor approval!");
+      const { error: sessionUpdateError } = await supabase
+        .from("interview_sessions")
+        .update({ status: 'confirmed' })  // ✅ Set to 'confirmed' - payment received, awaiting interview
+        .eq('id', session_id);
+
+      if (sessionUpdateError) {
+        console.error("[Payment Service] ❌ Failed to update session status:", sessionUpdateError);
+        throw new Error("Failed to update session status after payment");
+      }
+
+      console.log("[Payment Service] ✅ Session status updated to 'confirmed' - payment received!");
+
+      // ✅ Create 100ms room AFTER payment is verified
+      console.log("[Payment Service] 🎥 Creating 100ms video room...");
+      
+      try {
+        const { data: roomData, error: roomError } = await supabase.functions.invoke(
+          "create-100ms-room",
+          { 
+            body: { 
+              name: `Interview-${session_id}`,
+              description: `Mock interview session`,
+            } 
+          }
+        );
+
+        if (!roomError && roomData?.id) {
+          const roomCode = roomData.id;
+          console.log("[Payment Service] ✅ 100ms room created:", roomCode);
+
+          const { error: meetingError } = await supabase
+            .from("session_meetings")
+            .insert({
+              session_id: session_id,
+              room_code: roomCode,
+              status: "created",
+            });
+
+          if (meetingError) {
+            console.warn("[Payment Service] ⚠️ Failed to store meeting details:", meetingError);
+          }
+        } else {
+          console.warn("[Payment Service] ⚠️ 100ms room creation failed:", roomError);
+          // Don't throw error - booking is still valid without the room
+        }
+      } catch (roomErr) {
+        console.warn("[Payment Service] ⚠️ 100ms room creation exception:", roomErr);
+        // Don't throw error - booking is still valid
+      }
 
       // ✅ Send confirmation emails (no meeting link needed)
       console.log("[Payment Service] 📧 Triggering confirmation emails...");

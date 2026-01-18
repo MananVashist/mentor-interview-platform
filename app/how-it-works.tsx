@@ -81,6 +81,42 @@ export default function HowItWorks() {
   const { width } = useWindowDimensions();
   const isSmall = width < 900;
 
+  // Schema.org Structured Data
+  const howToSchema = {
+    "@context": "https://schema.org",
+    "@type": "HowTo",
+    "name": "How to Book a Mock Interview on CrackJobs",
+    "description": "Book a 1:1 mock interview with expert mentors from top tech companies in 4 simple steps.",
+    "step": [
+      {
+        "@type": "HowToStep",
+        "name": "Browse Expert Mentors",
+        "text": "Filter mentors by role (PM, Data, HR), company, and expertise.",
+        "url": "https://crackjobs.com/auth/sign-up",
+        "position": 1
+      },
+      {
+        "@type": "HowToStep",
+        "name": "Book Your Session",
+        "text": "Choose a convenient time slot and pay securely via Razorpay.",
+        "url": "https://crackjobs.com/auth/sign-up",
+        "position": 2
+      },
+      {
+        "@type": "HowToStep",
+        "name": "Practice Interview",
+        "text": "Join the 55-minute video call for a realistic interview simulation.",
+        "position": 3
+      },
+      {
+        "@type": "HowToStep",
+        "name": "Get Detailed Evaluation",
+        "text": "Receive comprehensive written feedback within 48 hours.",
+        "position": 4
+      }
+    ]
+  };
+
   return (
     <>
       <Head>
@@ -102,6 +138,11 @@ export default function HowItWorks() {
         <meta property="twitter:title" content="How It Works | Book Mock Interviews in 4 Simple Steps - CrackJobs" />
         <meta property="twitter:description" content="Browse mentors → Book session → Practice interview → Get feedback. Start preparing in 4 simple steps." />
         <meta property="twitter:image" content="https://crackjobs.com/og-image.png" />
+
+        {/* JSON-LD Schema */}
+        <script type="application/ld+json">
+          {JSON.stringify(howToSchema)}
+        </script>
       </Head>
 
       <View style={styles.container}>
@@ -514,4 +555,4 @@ const styles = StyleSheet.create({
   finalCtaBtnText: { fontFamily: SYSTEM_FONT, fontSize: 17, fontWeight: '700', color: 'white' },
   finalCtaFeatures: { flexDirection: 'row', gap: 28, flexWrap: 'wrap', justifyContent: 'center' },
   finalCtaFeature: { fontFamily: SYSTEM_FONT, fontSize: 14, color: 'rgba(255,255,255,0.75)' },
-}); 
+});

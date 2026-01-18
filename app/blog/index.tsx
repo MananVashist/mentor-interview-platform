@@ -7,15 +7,13 @@ import {
   Image,
   useWindowDimensions,
   Platform,
-  ScrollView, // Changed to ScrollView for better web scrolling behavior
+  ScrollView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import Head from 'expo-router/head';
 import { PageLayout } from '@/components/PageLayout';
 import { theme } from '@/lib/theme';
 import { getAllPosts } from '@/data/blog-posts';
-import { createBreadcrumbSchema, injectMultipleSchemas } from '@/lib/structured-data';
-import { SEO } from '@/components/SEO';
-import { SEO_CONFIG } from '@/config/seo';
 
 export default function BlogListing() {
   const router = useRouter();
@@ -24,23 +22,6 @@ export default function BlogListing() {
   const isMobile = width < 600;
 
   const posts = getAllPosts();
-
-  useEffect(() => {
-    if (Platform.OS === 'web') {
-      const blogSchema = {
-        "@context": "https://schema.org",
-        "@type": "Blog",
-        "name": "CrackJobs Blog",
-        "description": "Interview preparation tips, career advice, and industry insights"
-      };
-      const breadcrumb = createBreadcrumbSchema([
-        { name: 'Home', url: 'https://crackjobs.com' },
-        { name: 'Blog', url: 'https://crackjobs.com/blog' }
-      ]);
-      const cleanup = injectMultipleSchemas([blogSchema, breadcrumb]);
-      return () => cleanup && cleanup();
-    }
-  }, []);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -53,7 +34,165 @@ export default function BlogListing() {
 
   return (
     <PageLayout>
-      <SEO {...SEO_CONFIG.blog.index} />
+      {/* 🔥 COMPREHENSIVE SEO - HARDCODED FOR BLOG INDEX */}
+      <Head>
+        {/* Essential Meta Tags */}
+        <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+        <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
+        
+        {/* Primary SEO Tags */}
+        <title>Interview Preparation Blog | Tips & Insights - CrackJobs</title>
+        <meta name="description" content="Expert advice on interview preparation, mock interview tips, career guidance, and success stories from candidates who landed their dream jobs at Google, Amazon, Meta." />
+        <meta name="keywords" content="interview tips, career advice, interview preparation blog, mock interview insights, interview success stories, FAANG interview tips, product management tips, data analytics tips" />
+        
+        {/* Canonical URL */}
+        <link rel="canonical" href="https://crackjobs.com/blog" />
+        
+        {/* Open Graph / Facebook */}
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://crackjobs.com/blog" />
+        <meta property="og:site_name" content="CrackJobs" />
+        <meta property="og:title" content="Interview Preparation Blog | Tips & Insights - CrackJobs" />
+        <meta property="og:description" content="Expert advice on interview preparation, mock interview tips, and career guidance. Success stories from candidates who landed FAANG jobs." />
+        <meta property="og:image" content="https://crackjobs.com/og-images/blog.png" />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:image:alt" content="CrackJobs Interview Preparation Blog" />
+        <meta property="og:locale" content="en_US" />
+        
+        {/* Twitter Card */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:site" content="@crackjobs" />
+        <meta name="twitter:creator" content="@crackjobs" />
+        <meta name="twitter:title" content="Interview Preparation Blog - CrackJobs" />
+        <meta name="twitter:description" content="Expert interview tips, career advice, and success stories from FAANG candidates." />
+        <meta name="twitter:image" content="https://crackjobs.com/og-images/blog.png" />
+        <meta name="twitter:image:alt" content="CrackJobs Blog" />
+        
+        {/* Additional SEO Tags */}
+        <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+        <meta name="googlebot" content="index, follow" />
+        <meta name="bingbot" content="index, follow" />
+        <meta name="language" content="English" />
+        <meta name="revisit-after" content="3 days" />
+        <meta name="author" content="CrackJobs" />
+        
+        {/* Geo Tags */}
+        <meta name="geo.region" content="IN" />
+        <meta name="geo.placename" content="India" />
+        
+        {/* 🔥 COMPREHENSIVE STRUCTURED DATA */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@graph": [
+                {
+                  "@type": "Blog",
+                  "@id": "https://crackjobs.com/blog#blog",
+                  "url": "https://crackjobs.com/blog",
+                  "name": "CrackJobs Interview Preparation Blog",
+                  "description": "Interview preparation tips, career advice, and industry insights for aspiring professionals",
+                  "publisher": {
+                    "@id": "https://crackjobs.com/#organization"
+                  },
+                  "inLanguage": "en-US",
+                  "blogPost": posts.slice(0, 5).map((post, index) => ({
+                    "@type": "BlogPosting",
+                    "@id": `https://crackjobs.com/blog/${post.slug}#article`,
+                    "headline": post.title,
+                    "description": post.excerpt,
+                    "image": post.thumbnailUrl || "https://crackjobs.com/og-image.png",
+                    "datePublished": post.publishedAt,
+                    "dateModified": post.publishedAt,
+                    "author": {
+                      "@type": "Person",
+                      "name": post.author
+                    },
+                    "publisher": {
+                      "@id": "https://crackjobs.com/#organization"
+                    },
+                    "url": `https://crackjobs.com/blog/${post.slug}`,
+                    "mainEntityOfPage": {
+                      "@type": "WebPage",
+                      "@id": `https://crackjobs.com/blog/${post.slug}`
+                    }
+                  }))
+                },
+                {
+                  "@type": "WebPage",
+                  "@id": "https://crackjobs.com/blog#webpage",
+                  "url": "https://crackjobs.com/blog",
+                  "name": "Interview Preparation Blog | Tips & Insights - CrackJobs",
+                  "description": "Expert advice on interview preparation, mock interview tips, career guidance, and success stories",
+                  "isPartOf": {
+                    "@id": "https://crackjobs.com/#website"
+                  },
+                  "about": {
+                    "@id": "https://crackjobs.com/#organization"
+                  },
+                  "breadcrumb": {
+                    "@id": "https://crackjobs.com/blog#breadcrumb"
+                  },
+                  "inLanguage": "en-US",
+                  "potentialAction": [{
+                    "@type": "ReadAction",
+                    "target": ["https://crackjobs.com/blog"]
+                  }]
+                },
+                {
+                  "@type": "BreadcrumbList",
+                  "@id": "https://crackjobs.com/blog#breadcrumb",
+                  "itemListElement": [
+                    {
+                      "@type": "ListItem",
+                      "position": 1,
+                      "name": "Home",
+                      "item": "https://crackjobs.com"
+                    },
+                    {
+                      "@type": "ListItem",
+                      "position": 2,
+                      "name": "Blog",
+                      "item": "https://crackjobs.com/blog"
+                    }
+                  ]
+                },
+                {
+                  "@type": "Organization",
+                  "@id": "https://crackjobs.com/#organization",
+                  "name": "CrackJobs",
+                  "url": "https://crackjobs.com",
+                  "logo": {
+                    "@type": "ImageObject",
+                    "url": "https://crackjobs.com/logo.png",
+                    "contentUrl": "https://crackjobs.com/logo.png",
+                    "caption": "CrackJobs"
+                  },
+                  "description": "Anonymous mock interview platform connecting job seekers with expert mentors",
+                  "sameAs": [
+                    "https://www.linkedin.com/company/crackjobs",
+                    "https://twitter.com/crackjobs"
+                  ]
+                },
+                {
+                  "@type": "WebSite",
+                  "@id": "https://crackjobs.com/#website",
+                  "url": "https://crackjobs.com/",
+                  "name": "CrackJobs",
+                  "description": "Anonymous mock interviews with expert mentors from top companies",
+                  "publisher": {
+                    "@id": "https://crackjobs.com/#organization"
+                  },
+                  "inLanguage": "en-US"
+                }
+              ]
+            })
+          }}
+        />
+      </Head>
 
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={[styles.container, isSmall && styles.containerMobile]}>
@@ -149,10 +288,10 @@ const styles = StyleSheet.create({
   container: {
     maxWidth: 1200,
     width: '100%',
-    marginHorizontal: 'auto', // Centers container on web
+    marginHorizontal: 'auto',
     paddingHorizontal: 40,
     paddingVertical: 60,
-    alignSelf: 'center', // Helps center in RN views
+    alignSelf: 'center',
   } as any,
   containerMobile: {
     paddingHorizontal: 20,
@@ -195,14 +334,14 @@ const styles = StyleSheet.create({
 
   // Card
   card: {
-    width: '48%', // Approx 2 columns
+    width: '48%',
     backgroundColor: theme.colors.surface,
     borderRadius: 16,
     overflow: 'hidden',
     ...theme.shadows.card,
     borderWidth: 1,
     borderColor: theme.colors.border,
-    cursor: 'pointer', // Web pointer
+    cursor: 'pointer',
   } as any,
   cardMobile: {
     width: '100%',

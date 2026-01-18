@@ -1,5 +1,6 @@
 ﻿// app/cancellation-policy.tsx
 import React from 'react';
+import Head from 'expo-router/head';
 import {
   StandardPageTemplate,
   StandardSection,
@@ -7,19 +8,30 @@ import {
   StandardBulletList,
   StandardBold,
 } from '@/components/StandardPageTemplate';
-import { SEO } from '@/components/SEO';
-import { SEO_CONFIG } from '@/config/seo';
 
 export default function CancellationPolicy() {
   return (
     <>
-      {/* FIX: Added 'canonical' prop explicitly.
-        This tells Google this is the master copy of the page.
-      */}
-      <SEO 
-        {...SEO_CONFIG.cancellation} 
-        canonical="https://crackjobs.com/cancellation-policy" 
-      />
+      <Head>
+        <title>Cancellation & Refund Policy | CrackJobs</title>
+        <meta name="description" content="Understand our refund terms. Fair policies for candidates and mentors regarding cancellations, no-shows, and rescheduling." />
+        <meta name="keywords" content="cancellation policy, refund policy, crackjobs refunds, mentor cancellation, candidate cancellation, no-show policy" />
+        <link rel="canonical" href="https://crackjobs.com/cancellation-policy" />
+
+        {/* Open Graph */}
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://crackjobs.com/cancellation-policy" />
+        <meta property="og:title" content="Cancellation & Refund Policy | CrackJobs" />
+        <meta property="og:description" content="Understand our refund terms. Fair policies for candidates and mentors regarding cancellations, no-shows, and rescheduling." />
+        <meta property="og:image" content="https://crackjobs.com/og-image.png" />
+
+        {/* Twitter */}
+        <meta property="twitter:card" content="summary_large_image" />
+        <meta property="twitter:url" content="https://crackjobs.com/cancellation-policy" />
+        <meta property="twitter:title" content="Cancellation & Refund Policy | CrackJobs" />
+        <meta property="twitter:description" content="Understand our refund terms. Fair policies for candidates and mentors." />
+        <meta property="twitter:image" content="https://crackjobs.com/og-image.png" />
+      </Head>
 
       <StandardPageTemplate
         title="Cancellation & Refund Policy | CrackJobs"

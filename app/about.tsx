@@ -69,6 +69,32 @@ export default function About() {
   const { width } = useWindowDimensions();
   const isSmall = width < 900;
 
+  // Schema.org Structured Data
+  const aboutSchema = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "AboutPage",
+        "mainEntity": {
+          "@type": "Organization",
+          "name": "CrackJobs",
+          "description": "CrackJobs connects job seekers with expert mentors for anonymous mock interviews.",
+          "url": "https://crackjobs.com",
+          "logo": "https://crackjobs.com/logo.png",
+          "sameAs": [
+            "https://www.linkedin.com/company/crackjobs",
+            "https://twitter.com/crackjobs"
+          ],
+          "contactPoint": {
+            "@type": "ContactPoint",
+            "contactType": "Customer Support",
+            "email": "crackjobshelpdesk@gmail.com"
+          }
+        }
+      }
+    ]
+  };
+
   return (
     <>
       <Head>
@@ -90,6 +116,11 @@ export default function About() {
         <meta property="twitter:title" content="About CrackJobs | Mission to Democratize Interview Preparation" />
         <meta property="twitter:description" content="CrackJobs connects job seekers with expert mentors from Google, Amazon, Meta for anonymous mock interviews." />
         <meta property="twitter:image" content="https://crackjobs.com/og-image.png" />
+
+        {/* JSON-LD Schema */}
+        <script type="application/ld+json">
+          {JSON.stringify(aboutSchema)}
+        </script>
       </Head>
 
       <View style={styles.container}>

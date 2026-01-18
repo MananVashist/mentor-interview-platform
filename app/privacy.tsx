@@ -1,6 +1,7 @@
 ﻿// app/privacy.tsx
 import React from 'react';
 import { Linking } from 'react-native';
+import Head from 'expo-router/head';
 import {
   StandardPageTemplate,
   StandardSection,
@@ -8,121 +9,138 @@ import {
   StandardBulletList,
   StandardLink,
 } from '@/components/StandardPageTemplate';
-import { SEO } from '@/components/SEO';
-import { SEO_CONFIG } from '@/config/seo';
-
 
 export default function PrivacyPolicy() {
   return (
-        <>    <SEO {...SEO_CONFIG.privacy} />
+    <>
+      <Head>
+        <title>Privacy Policy | CrackJobs</title>
+        <meta name="description" content="We value your privacy. Learn how CrackJobs handles your data, resumes, and interview recordings." />
+        <meta name="keywords" content="privacy policy, data security, gdpr, data protection, crackjobs privacy, interview recording privacy" />
+        <link rel="canonical" href="https://crackjobs.com/privacy" />
 
-    <StandardPageTemplate
-      title="Privacy Policy | CrackJobs"
-      metaDescription="We value your privacy. Learn how CrackJobs handles your data, resumes, and interview recordings."
-      pageUrl="https://crackjobs.com/privacy"
-      pageTitle="Privacy Policy"
-      lastUpdated="November 25, 2024"
-      relatedPages={[
-        {
-          title: "Terms & Conditions",
-          description: "Read our user agreement and guidelines",
-          icon: "📋",
-          route: "/terms"
-        },
-        {
-          title: "Cancellation Policy",
-          description: "Learn about our refund and cancellation terms",
-          icon: "↩️",
-          route: "/cancellation-policy"
-        },
-        {
-          title: "Contact Us",
-          description: "Get in touch with our support team",
-          icon: "📧",
-          route: "/contact"
-        }
-      ]}
-    >
-      <StandardSection title="Introduction">
-        <StandardParagraph>
-          At CrackJobs, we take your privacy seriously. This Privacy Policy explains how we collect, use, and safeguard your information.
-        </StandardParagraph>
-      </StandardSection>
+        {/* Open Graph */}
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://crackjobs.com/privacy" />
+        <meta property="og:title" content="Privacy Policy | CrackJobs" />
+        <meta property="og:description" content="We value your privacy. Learn how CrackJobs handles your data, resumes, and interview recordings." />
+        <meta property="og:image" content="https://crackjobs.com/og-image.png" />
 
-      <StandardSection title="Information We Collect">
-        <StandardParagraph>
-          We collect information provided directly by you, including:
-        </StandardParagraph>
-        <StandardBulletList
-          items={[
-            "Personal Identifiers: Name, email, phone number.",
-            "Professional Info: Resume, job role, experience.",
-            "Session Content: Interview recordings and written feedback."
-          ]}
-        />
-      </StandardSection>
+        {/* Twitter */}
+        <meta property="twitter:card" content="summary_large_image" />
+        <meta property="twitter:url" content="https://crackjobs.com/privacy" />
+        <meta property="twitter:title" content="Privacy Policy | CrackJobs" />
+        <meta property="twitter:description" content="We value your privacy. Learn how CrackJobs handles your data." />
+        <meta property="twitter:image" content="https://crackjobs.com/og-image.png" />
+      </Head>
 
-      <StandardSection title="How We Use Your Information">
-        <StandardParagraph>
-          Your information is used to:
-        </StandardParagraph>
-        <StandardBulletList
-          items={[
-            "Match you with appropriate mentors.",
-            "Facilitate mock interview sessions.",
-            "Provide personalized feedback and reports.",
-            "Process payments and manage bookings.",
-            "Improve our platform and services."
-          ]}
-        />
-      </StandardSection>
+      <StandardPageTemplate
+        title="Privacy Policy | CrackJobs"
+        metaDescription="We value your privacy. Learn how CrackJobs handles your data, resumes, and interview recordings."
+        pageUrl="https://crackjobs.com/privacy"
+        pageTitle="Privacy Policy"
+        lastUpdated="November 25, 2024"
+        relatedPages={[
+          {
+            title: "Terms & Conditions",
+            description: "Read our user agreement and guidelines",
+            icon: "📋",
+            route: "/terms"
+          },
+          {
+            title: "Cancellation Policy",
+            description: "Learn about our refund and cancellation terms",
+            icon: "↩️",
+            route: "/cancellation-policy"
+          },
+          {
+            title: "Contact Us",
+            description: "Get in touch with our support team",
+            icon: "📧",
+            route: "/contact"
+          }
+        ]}
+      >
+        <StandardSection title="Introduction">
+          <StandardParagraph>
+            At CrackJobs, we take your privacy seriously. This Privacy Policy explains how we collect, use, and safeguard your information.
+          </StandardParagraph>
+        </StandardSection>
 
-      <StandardSection title="Data Security">
-        <StandardParagraph>
-          We utilize Supabase Row Level Security (RLS) and encrypted storage to protect your data. Payment data is handled securely via Razorpay and never stored on our servers.
-        </StandardParagraph>
-      </StandardSection>
+        <StandardSection title="Information We Collect">
+          <StandardParagraph>
+            We collect information provided directly by you, including:
+          </StandardParagraph>
+          <StandardBulletList
+            items={[
+              "Personal Identifiers: Name, email, phone number.",
+              "Professional Info: Resume, job role, experience.",
+              "Session Content: Interview recordings and written feedback."
+            ]}
+          />
+        </StandardSection>
 
-      <StandardSection title="Data Sharing">
-        <StandardParagraph>
-          We do not sell your personal data. Your information is shared only with:
-        </StandardParagraph>
-        <StandardBulletList
-          items={[
-            "Mentors (limited to professional details needed for sessions).",
-            "Payment processors (Razorpay) for transaction processing.",
-            "Service providers who assist in platform operations."
-          ]}
-        />
-      </StandardSection>
+        <StandardSection title="How We Use Your Information">
+          <StandardParagraph>
+            Your information is used to:
+          </StandardParagraph>
+          <StandardBulletList
+            items={[
+              "Match you with appropriate mentors.",
+              "Facilitate mock interview sessions.",
+              "Provide personalized feedback and reports.",
+              "Process payments and manage bookings.",
+              "Improve our platform and services."
+            ]}
+          />
+        </StandardSection>
 
-      <StandardSection title="Your Rights">
-        <StandardParagraph>
-          You have the right to access, modify, or delete your personal data at any time. You can also request a copy of all data we hold about you. Contact us to exercise these rights.
-        </StandardParagraph>
-      </StandardSection>
+        <StandardSection title="Data Security">
+          <StandardParagraph>
+            We utilize Supabase Row Level Security (RLS) and encrypted storage to protect your data. Payment data is handled securely via Razorpay and never stored on our servers.
+          </StandardParagraph>
+        </StandardSection>
 
-      <StandardSection title="Cookies & Tracking">
-        <StandardParagraph>
-          We use cookies and similar technologies to improve user experience, analyze platform usage, and personalize content. You can control cookie preferences through your browser settings.
-        </StandardParagraph>
-      </StandardSection>
+        <StandardSection title="Data Sharing">
+          <StandardParagraph>
+            We do not sell your personal data. Your information is shared only with:
+          </StandardParagraph>
+          <StandardBulletList
+            items={[
+              "Mentors (limited to professional details needed for sessions).",
+              "Payment processors (Razorpay) for transaction processing.",
+              "Service providers who assist in platform operations."
+            ]}
+          />
+        </StandardSection>
 
-      <StandardSection title="Changes to This Policy">
-        <StandardParagraph>
-          We may update this Privacy Policy from time to time. Significant changes will be communicated via email or platform notification.
-        </StandardParagraph>
-      </StandardSection>
+        <StandardSection title="Your Rights">
+          <StandardParagraph>
+            You have the right to access, modify, or delete your personal data at any time. You can also request a copy of all data we hold about you. Contact us to exercise these rights.
+          </StandardParagraph>
+        </StandardSection>
 
-      <StandardSection title="Contact">
-        <StandardParagraph>
-          For privacy-related questions or concerns, contact us at:
-        </StandardParagraph>
-        <StandardLink onPress={() => Linking.openURL('mailto:crackjobshelpdesk@gmail.com')}>
-          crackjobshelpdesk@gmail.com
-        </StandardLink>
-      </StandardSection>
-    </StandardPageTemplate>
+        <StandardSection title="Cookies & Tracking">
+          <StandardParagraph>
+            We use cookies and similar technologies to improve user experience, analyze platform usage, and personalize content. You can control cookie preferences through your browser settings.
+          </StandardParagraph>
+        </StandardSection>
+
+        <StandardSection title="Changes to This Policy">
+          <StandardParagraph>
+            We may update this Privacy Policy from time to time. Significant changes will be communicated via email or platform notification.
+          </StandardParagraph>
+        </StandardSection>
+
+        <StandardSection title="Contact">
+          <StandardParagraph>
+            For privacy-related questions or concerns, contact us at:
+          </StandardParagraph>
+          <StandardLink onPress={() => Linking.openURL('mailto:crackjobshelpdesk@gmail.com')}>
+            crackjobshelpdesk@gmail.com
+          </StandardLink>
+        </StandardSection>
+      </StandardPageTemplate>
     </>
   );
 }

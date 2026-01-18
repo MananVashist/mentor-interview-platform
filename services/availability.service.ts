@@ -8,6 +8,10 @@ const BOOKING_WINDOW_DAYS = 30;
 const IST_ZONE = 'Asia/Kolkata';
 const DAY_KEY_MAP = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 
+// ✅ Statuses that block a slot from being available
+// NOTE: 'scheduled' is NOT a valid enum value in the database
+const BLOCKING_STATUSES = ['awaiting_payment', 'pending', 'confirmed', 'completed'];
+
 // Default availability rules
 const DEFAULT_RULES = {
   weekdays: {
@@ -62,6 +66,13 @@ export const availabilityService = {
       const startDate = now.plus({ days: 1 }).startOf('day');
       const endDate = startDate.plus({ days: BOOKING_WINDOW_DAYS }).endOf('day');
 
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('[AvailabilityService] 🔍 DEBUGGING SLOT AVAILABILITY');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('[AvailabilityService] Mentor ID:', mentorId);
+      console.log('[AvailabilityService] Date Range:', startDate.toISODate(), 'to', endDate.toISODate());
+      console.log('[AvailabilityService] Exclude Session:', excludeSessionId || 'None');
+
       // 1. Fetch availability rules
       const { data: rulesData, error: rulesError } = await supabase
         .from('mentor_availability_rules')
@@ -86,23 +97,83 @@ export const availabilityService = {
         return Interval.fromDateTimes(s, e);
       });
 
-      // 3. Fetch existing bookings
-      const { data: bookingsData } = await supabase
+      console.log('[AvailabilityService] 📅 Unavailability periods:', unavailabilityIntervals.length);
+
+      // 3. Fetch existing bookings - ✅ Include ALL blocking statuses
+      console.log('[AvailabilityService] 🔍 Fetching bookings with statuses:', BLOCKING_STATUSES);
+      
+      // ✅ FIX: Use simple date strings without timezone to avoid URL encoding issues
+      // Supabase will interpret these as the database's timezone
+      const startDateStr = startDate.toFormat('yyyy-MM-dd HH:mm:ss');
+      const endDateStr = endDate.toFormat('yyyy-MM-dd HH:mm:ss');
+      
+      console.log('[AvailabilityService] Query range:', startDateStr, 'to', endDateStr);
+      
+      const { data: bookingsData, error: bookingsError } = await supabase
         .from('interview_sessions')
-        .select('scheduled_at, id')
+        .select('scheduled_at, id, status')
         .eq('mentor_id', mentorId)
-        .gte('scheduled_at', startDate.toISO())
-        .lte('scheduled_at', endDate.toISO())
-        .in('status', ['pending', 'confirmed', 'scheduled']);
+        .gte('scheduled_at', startDateStr)
+        .lte('scheduled_at', endDateStr)
+        .in('status', BLOCKING_STATUSES);
+
+      if (bookingsError) {
+        console.error('[AvailabilityService] ❌ Error fetching bookings:', bookingsError);
+        console.error('[AvailabilityService] ❌ Error details:', JSON.stringify(bookingsError, null, 2));
+      }
+
+      console.log('[AvailabilityService] 📊 RAW BOOKINGS FROM DB:', JSON.stringify(bookingsData, null, 2));
+      console.log('[AvailabilityService] 📊 Total bookings fetched:', bookingsData?.length || 0);
 
       // Filter out excluded session (for reschedule)
       const filteredBookings = (bookingsData || []).filter(
         b => !excludeSessionId || b.id !== excludeSessionId
       );
 
-      const bookedSlots = new Set(
-        filteredBookings.map(b => DateTime.fromISO(b.scheduled_at, { zone: IST_ZONE }).toISO())
-      );
+      console.log('[AvailabilityService] 📊 After filtering exclusions:', filteredBookings.length);
+
+      // Log each booking for debugging
+      filteredBookings.forEach((booking, index) => {
+        const dbValue = booking.scheduled_at;
+        
+        console.log(`[Booking ${index + 1}]`, {
+          id: booking.id,
+          status: booking.status,
+          dbValue: dbValue,
+          dbValueType: typeof dbValue
+        });
+      });
+
+      // ✅ FIX: Parse DB timestamps and normalize to IST for matching
+      const bookedSlots = new Set<string>();
+      filteredBookings.forEach(b => {
+        // Parse the timestamp from DB (may be in various formats)
+        const dbTimestamp = b.scheduled_at;
+        
+        // Try parsing as ISO string first
+        let dt = DateTime.fromISO(dbTimestamp);
+        
+        // If invalid, try SQL format
+        if (!dt.isValid) {
+          dt = DateTime.fromSQL(dbTimestamp, { zone: 'utc' });
+        }
+        
+        // Convert to IST for comparison
+        const istDT = dt.setZone(IST_ZONE);
+        const istISO = istDT.toISO();
+        
+        if (istISO) {
+          bookedSlots.add(istISO);
+          // Also add without milliseconds for compatibility
+          const withoutMs = istISO.split('.')[0] + '+05:30';
+          bookedSlots.add(withoutMs);
+          
+          console.log(`  → Parsed to IST:`, istDT.toFormat('MMM d, h:mm a'), '/', istISO);
+        }
+      });
+
+      console.log('[AvailabilityService] 🔒 Booked slots Set size:', bookedSlots.size);
+      console.log('[AvailabilityService] 🔒 Booked slots:', Array.from(bookedSlots));
 
       // 4. Generate day-by-day availability
       const daysArray: DayAvailability[] = [];
@@ -153,7 +224,13 @@ export const availabilityService = {
               // Check overlaps
               const slotInterval = Interval.fromDateTimes(slotTime, slotEnd);
               const isUnavailable = unavailabilityIntervals.some(ui => ui.overlaps(slotInterval));
-              const isBooked = bookedSlots.has(slotTime.toISO()!);
+              
+              // ✅ FIX: Simple ISO comparison (both are in IST now)
+              const slotISO = slotTime.toISO();
+              const slotISOWithoutMs = slotISO?.split('.')[0] + '+05:30';
+              
+              const isBooked = (slotISO && bookedSlots.has(slotISO)) || 
+                               (slotISOWithoutMs && bookedSlots.has(slotISOWithoutMs));
 
               slots.push({
                 time: slotTime.toFormat('h:mm a'),
@@ -178,9 +255,12 @@ export const availabilityService = {
         cursor = cursor.plus({ days: 1 });
       }
 
+      console.log('[AvailabilityService] ✅ Generated availability for', daysArray.length, 'days');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      
       return daysArray;
     } catch (err) {
-      console.error('[AvailabilityService] Error generating availability:', err);
+      console.error('[AvailabilityService] ❌ Error generating availability:', err);
       throw err;
     }
   },
@@ -226,17 +306,27 @@ export const availabilityService = {
           return Interval.fromDateTimes(s, e);
         });
 
-      // 3. Fetch bookings - ✅ FIXED: Include 'scheduled' status
+      // 3. Fetch bookings - ✅ Include ALL blocking statuses
+      // ✅ FIX: Use simple date strings for API query
+      const startDateStr = startDate.toFormat('yyyy-MM-dd HH:mm:ss');
+      const endDateStr = endDate.toFormat('yyyy-MM-dd HH:mm:ss');
+      
+      const statusQuery = BLOCKING_STATUSES.join(',');
       const bookingsRes = await fetch(
-        `${SUPABASE_URL}/rest/v1/interview_sessions?mentor_id=eq.${mentorId}&scheduled_at=gte.${startDate.toISO()}&scheduled_at=lte.${endDate.toISO()}&status=in.(pending,confirmed,scheduled)&select=scheduled_at`,
+        `${SUPABASE_URL}/rest/v1/interview_sessions?mentor_id=eq.${mentorId}&scheduled_at=gte.${encodeURIComponent(startDateStr)}&scheduled_at=lte.${encodeURIComponent(endDateStr)}&status=in.(${statusQuery})&select=scheduled_at`,
         { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
       );
       const bookingsData = await bookingsRes.json();
 
+      // ✅ Parse timestamps from DB and convert to IST for comparison
       const bookedTimesSet = new Set(
-        (Array.isArray(bookingsData) ? bookingsData : []).map((b: any) =>
-          DateTime.fromISO(b.scheduled_at, { zone: IST_ZONE }).toFormat('yyyy-MM-dd HH:mm')
-        )
+        (Array.isArray(bookingsData) ? bookingsData : []).map((b: any) => {
+          const dt = DateTime.fromISO(b.scheduled_at);
+          if (!dt.isValid) {
+            return DateTime.fromSQL(b.scheduled_at, { zone: 'utc' }).setZone(IST_ZONE).toFormat('yyyy-MM-dd HH:mm');
+          }
+          return dt.setZone(IST_ZONE).toFormat('yyyy-MM-dd HH:mm');
+        })
       );
 
       // 4. Search for first available slot
