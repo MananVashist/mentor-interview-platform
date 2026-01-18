@@ -15,11 +15,25 @@ export default function PGScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
 
-  const { orderId, packageId, keyId, amount } = params as {
+  const { 
+    orderId, 
+    packageId, 
+    keyId, 
+    amount,
+    // ✅ Schedule params for navigation back on cancellation
+    mentorId,
+    profileId,
+    skillId,
+    skillName
+  } = params as {
     orderId?: string;
     packageId?: string;
     keyId?: string;
     amount?: string;
+    mentorId?: string;
+    profileId?: string;
+    skillId?: string;
+    skillName?: string;
   };
 
   const [sdkReady, setSdkReady] = useState(false);
@@ -36,8 +50,21 @@ export default function PGScreen() {
 
     if (!packageId || !keyId || !amount) {
       console.error('[PGScreen] ❌ Missing required params');
-      Alert.alert('Error', 'Missing payment details.');
-      router.back();
+      
+      const navigateBack = () => {
+        if (mentorId && profileId && skillId && skillName) {
+          router.replace({
+            pathname: '/candidate/schedule',
+            params: { mentorId, profileId, skillId, skillName }
+          });
+        } else {
+          router.replace('/candidate/bookings');
+        }
+      };
+
+      Alert.alert('Error', 'Missing payment details.', [
+        { text: 'OK', onPress: navigateBack }
+      ]);
       return;
     }
 
@@ -74,7 +101,22 @@ export default function PGScreen() {
             ondismiss: () => {
                 console.log('[PGScreen] ⚠️ Checkout dismissed by user');
                 hasRun.current = false;
-                router.back();
+                
+                // ✅ FIX: Navigate back to schedule screen
+                if (mentorId && profileId && skillId && skillName) {
+                  router.replace({
+                    pathname: '/candidate/schedule',
+                    params: {
+                      mentorId,
+                      profileId,
+                      skillId,
+                      skillName
+                    }
+                  });
+                } else {
+                  // Fallback to bookings if params missing
+                  router.replace('/candidate/bookings');
+                }
             }
         },
         retry: { enabled: false }
@@ -90,10 +132,23 @@ export default function PGScreen() {
 
       rzp.on('payment.failed', (resp: any) => {
         console.error('[PGScreen][WEB] ❌ payment.failed:', resp);
+        
+        // ✅ FIX: Navigate back to schedule screen
+        const navigateBack = () => {
+          if (mentorId && profileId && skillId && skillName) {
+            router.replace({
+              pathname: '/candidate/schedule',
+              params: { mentorId, profileId, skillId, skillName }
+            });
+          } else {
+            router.replace('/candidate/bookings');
+          }
+        };
+
         Alert.alert(
           'Payment Failed', 
           resp.error?.description || 'Payment failed. Please try again.',
-          [{ text: 'OK', onPress: () => router.back() }]
+          [{ text: 'OK', onPress: navigateBack }]
         );
       });
 
@@ -125,14 +180,28 @@ export default function PGScreen() {
       .then(handleSuccess)
       .catch((err: any) => {
         console.log('[PGScreen][RN] ⚠️ Checkout Error:', err);
+        
+        const navigateBack = () => {
+          if (mentorId && profileId && skillId && skillName) {
+            router.replace({
+              pathname: '/candidate/schedule',
+              params: { mentorId, profileId, skillId, skillName }
+            });
+          } else {
+            router.replace('/candidate/bookings');
+          }
+        };
+
         if (err.code === 0 || err.code === 2) {
+            // User cancelled payment
             console.log('[PGScreen][RN] User cancelled payment');
-            router.back();
+            navigateBack();
         } else {
+          // Payment error
           Alert.alert(
             'Payment Error', 
             err.description || 'Something went wrong',
-            [{ text: 'OK', onPress: () => router.back() }]
+            [{ text: 'OK', onPress: navigateBack }]
           );
         }
       });

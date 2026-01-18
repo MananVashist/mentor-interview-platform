@@ -1,4 +1,5 @@
-﻿import React, { useEffect } from 'react';
+﻿// app/blog/[slug].tsx
+import React from 'react';
 import {
   View,
   Text,
@@ -10,13 +11,12 @@ import {
   Platform,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import Head from 'expo-router/head'; // Import Head
 import { PageLayout } from '@/components/PageLayout';
 import { BlogRenderer } from '@/components/BlogRenderer';
 import { theme } from '@/lib/theme';
 import { getPostBySlug, getAllPosts } from '@/data/blog-posts';
-import { createBreadcrumbSchema, createArticleSchema, injectMultipleSchemas } from '@/lib/structured-data';
 import { Ionicons } from '@expo/vector-icons';
-import { SEO } from '@/components/SEO';
 
 // 1. Static Paths Generation
 export async function generateStaticParams() {
@@ -36,28 +36,7 @@ export default function BlogPost() {
   const slugString = Array.isArray(slug) ? slug[0] : slug;
   const post = getPostBySlug(slugString as string);
 
-  useEffect(() => {
-    if (Platform.OS === 'web' && post) {
-      const articleSchema = createArticleSchema(
-        post.title,
-        post.excerpt,
-        post.publishedAt,
-        post.publishedAt,
-        post.thumbnailUrl || 'https://crackjobs.com/assets/default-blog.png',
-        post.author
-      );
-      const breadcrumb = createBreadcrumbSchema([
-        { name: 'Home', url: 'https://crackjobs.com' },
-        { name: 'Blog', url: 'https://crackjobs.com/blog' },
-        { name: post.title, url: `https://crackjobs.com/blog/${post.slug}` }
-      ]);
-      const cleanup = injectMultipleSchemas([articleSchema, breadcrumb]);
-      return () => cleanup && cleanup();
-    }
-  }, [post]);
-
   // Handle 404s - If post is missing, render a simple "Not Found" state
-  // This prevents build crashes if a slug is malformed
   if (!post) {
     return (
        <PageLayout>
@@ -71,14 +50,90 @@ export default function BlogPost() {
     );
   }
 
+  const pageUrl = `https://crackjobs.com/blog/${post.slug}`;
+  const imageUrl = post.thumbnailUrl || 'https://crackjobs.com/og-image.png';
+
+  // Structured Data (JSON-LD)
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Home",
+            "item": "https://crackjobs.com"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "Blog",
+            "item": "https://crackjobs.com/blog"
+          },
+          {
+            "@type": "ListItem",
+            "position": 3,
+            "name": post.title,
+            "item": pageUrl
+          }
+        ]
+      },
+      {
+        "@type": "BlogPosting",
+        "headline": post.title,
+        "description": post.excerpt,
+        "image": [imageUrl],
+        "datePublished": post.publishedAt,
+        "dateModified": post.publishedAt,
+        "author": {
+          "@type": "Person",
+          "name": post.author || "CrackJobs Team"
+        },
+        "publisher": {
+          "@type": "Organization",
+          "name": "CrackJobs",
+          "logo": {
+            "@type": "ImageObject",
+            "url": "https://crackjobs.com/logo.png"
+          }
+        },
+        "mainEntityOfPage": {
+          "@type": "WebPage",
+          "@id": pageUrl
+        }
+      }
+    ]
+  };
+
   return (
     <PageLayout>
-      <SEO
-        title={`${post.title} | CrackJobs Blog`}
-        description={post.excerpt}
-        canonical={`https://crackjobs.com/blog/${post.slug}`}
-        ogImage={post.thumbnailUrl || 'https://crackjobs.com/og-image.png'}
-      />
+      <Head>
+        <title>{`${post.title} | CrackJobs Blog`}</title>
+        <meta name="description" content={post.excerpt} />
+        <meta name="keywords" content={`interview preparation, mock interviews, ${post.tags?.join(', ') || 'career advice'}`} />
+        <link rel="canonical" href={pageUrl} />
+
+        {/* Open Graph */}
+        <meta property="og:type" content="article" />
+        <meta property="og:url" content={pageUrl} />
+        <meta property="og:title" content={post.title} />
+        <meta property="og:description" content={post.excerpt} />
+        <meta property="og:image" content={imageUrl} />
+        
+        {/* Twitter */}
+        <meta property="twitter:card" content="summary_large_image" />
+        <meta property="twitter:url" content={pageUrl} />
+        <meta property="twitter:title" content={post.title} />
+        <meta property="twitter:description" content={post.excerpt} />
+        <meta property="twitter:image" content={imageUrl} />
+
+        {/* Structured Data */}
+        <script type="application/ld+json">
+          {JSON.stringify(structuredData)}
+        </script>
+      </Head>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.articleContainer}>

@@ -379,6 +379,7 @@ export default function CandidateBookingsScreen() {
           package:interview_packages!package_id(id, payment_status, interview_profile_id)
         `)
         .eq('candidate_id', currentUser.id)
+        .neq('status', 'pending')  // ✅ Filter out unpaid sessions
         .order('scheduled_at', { ascending: true });
 
       if (error) throw error;
