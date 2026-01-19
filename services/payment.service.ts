@@ -59,7 +59,7 @@ async function sendEmail(
 export const paymentService = {
   /**
    * ✅ ENHANCED: Check if slots are already booked AND verify slot exists
-   * Checks for pending, confirmed, scheduled, AND completed sessions
+   * Checks for awaiting_payment, pending, confirmed, scheduled, AND completed sessions
    */
   async checkBookingConflict(mentorId: string, selectedSlots: string[]) {
     if (!selectedSlots || selectedSlots.length === 0) {
@@ -80,7 +80,8 @@ export const paymentService = {
       .from('interview_sessions')
       .select('scheduled_at, status')
       .eq('mentor_id', mentorId)
-      .in('status', ['pending', 'confirmed', 'completed']) // ✅ 'scheduled' is not a valid enum value
+      // ✅ FIXED: Include 'awaiting_payment' to prevent double bookings during payment window
+      .in('status', ['awaiting_payment', 'pending', 'confirmed', 'completed'])
       .in('scheduled_at', slotsQueryStr);
 
     if (error) {
@@ -215,7 +216,9 @@ export const paymentService = {
             mentor_id: mentorId,
             skill_id: skillId,
             scheduled_at: selectedSlot,
-            status: 'pending',  // ✅ Set to 'pending' so cron can clean up if payment is abandoned
+            // ✅ FIXED: Set to 'awaiting_payment' instead of 'pending'
+            // This way cron can clean up abandoned payments AND mentor approval flow works correctly
+            status: 'awaiting_payment',
           })
           .select('id')
           .single();
@@ -223,36 +226,31 @@ export const paymentService = {
         if (sessionError || !newSession) {
           console.error("[Payment] ❌ Session creation failed:", sessionError);
           
-          // Rollback: Delete the package since session creation failed
-          await supabase.from('interview_packages').delete().eq('id', pkg.id);
+          // Cleanup: Delete the package if session creation fails
+          await supabase.from("interview_packages").delete().eq("id", pkg.id);
           
-          if (sessionError?.code === '23505') {
-            throw new Error('This slot was just booked by someone else. Please select another time.');
-          }
-          throw new Error('Unable to reserve slot. Please try again.');
+          throw new Error("Unable to reserve slot. It may have just been booked.");
         }
 
-        console.log("[Payment] ✅ Session created:", newSession.id, "- Slot now BLOCKED");
-        const sessionId = newSession.id;
+        console.log("[Payment] ✅ Session created and slot blocked:", newSession.id);
 
-        // ✅ STEP 5: Update package metadata with session_id
-        console.log("[Payment] 📝 STEP 5: Linking session to package...");
+        // ✅ STEP 5: Update package with session_id in metadata
         const { error: updateError } = await supabase
-          .from('interview_packages')
-          .update({ 
+          .from("interview_packages")
+          .update({
             booking_metadata: {
-              skill_id: skillId,
-              scheduled_at: selectedSlot,
-              session_id: sessionId
+              ...pkg.booking_metadata,
+              session_id: newSession.id
             }
           })
-          .eq('id', pkg.id);
+          .eq("id", pkg.id);
 
         if (updateError) {
           console.warn("[Payment] ⚠️ Failed to update package metadata:", updateError);
         }
 
-        // ✅ Return success (100ms room will be created after payment verification)
+        console.log("[Payment] ✅ Booking flow complete!");
+
         return {
           package: pkg,
           orderId: razorpayOrderId,
@@ -262,141 +260,136 @@ export const paymentService = {
         };
 
     } catch (err: any) {
-        console.error("Payment Logic Exception:", err);
-        return { 
-          package: null,
-          orderId: null,
-          amount: null,
-          keyId: null,
-          error: { message: err.message || 'Booking failed' } 
-        };
+      console.error("[Payment] 💥 Fatal error in createPackage:", err);
+      return {
+        package: null,
+        orderId: null,
+        amount: 0,
+        keyId: null,
+        error: err
+      };
     }
   },
 
-  async verifyPayment(
-    pkgId: string, 
-    orderId: string, 
-    payId: string, 
-    sig: string
-  ) {
+  async verifyPayment(pkgId: string, razorpayPaymentId: string, razorpaySignature: string) {
     try {
-      console.log("[Payment Service] 🔐 Verifying payment...", { 
-        pkgId, 
-        orderId, 
-        payId, 
-        signature: sig ? '✓ Present' : '✗ Missing' 
-      });
+      console.log("[Payment Service] 🔍 Verifying payment for package:", pkgId);
 
-      // 1. Call Edge Function to verify signature
-      // 2. Edge Function validates signature with Razorpay
-      // 3. Return the updated package
-      const { data, error } = await supabase.functions.invoke(
-        "verify-razorpay-signature",
-        { 
-          body: { 
-            packageId: pkgId,
-            orderId, 
-            paymentId: payId, 
-            signature: sig 
-          } 
-        }
-      );
-
-      console.log("[Payment Service] Edge Function Response:", { data, error });
-
-      // ❌ Check for errors
-      if (error) {
-        console.error("[Payment Service] ❌ Edge Function error:", error);
-        throw new Error(`Verification failed: ${error.message || 'Unknown error'}`);
-      }
-
-      if (!data?.valid) {
-        console.error("[Payment Service] ❌ Invalid signature:", data);
-        throw new Error(data?.error || "Payment verification failed");
-      }
-
-      // ✅ Signature is valid and database is already updated by Edge Function
-      console.log("[Payment Service] ✅ Payment verified! Package updated:", data.package?.id);
-
-      // Fetch the updated package to get booking metadata
+      // ✅ STEP 1: Fetch package to get orderId
+      console.log("[Payment Service] 📦 Fetching package to get order ID...");
+      
       const { data: pkgData, error: pkgFetchError } = await supabase
         .from('interview_packages')
-        .select('*')
+        .select('razorpay_order_id, booking_metadata')
         .eq('id', pkgId)
         .single();
 
       if (pkgFetchError || !pkgData) {
         console.error("[Payment Service] ❌ Failed to fetch package:", pkgFetchError);
-        throw new Error("Package not found after verification.");
+        throw new Error("Package not found");
       }
 
-      const { skill_id, scheduled_at, session_id } = pkgData.booking_metadata || {};
-      
-      // ✅ Double check for booking conflicts (final validation)
-      console.log("[Payment Service] 🔍 Final conflict check...");
-      await this.checkBookingConflict(pkgData.mentor_id, [scheduled_at]);
+      const orderId = pkgData.razorpay_order_id;
 
-      // ✅ Update session status from 'pending' to 'confirmed' (payment verified)
-      console.log("[Payment Service] 📝 Updating session status to 'confirmed'...");
-      
-      if (!session_id) {
-        console.error("[Payment Service] ❌ No session_id in booking metadata!");
-        throw new Error("Session ID not found in package metadata");
+      if (!orderId) {
+        console.error("[Payment Service] ❌ No order ID in package");
+        throw new Error("Order ID not found in package");
       }
 
-      const { error: sessionUpdateError } = await supabase
-        .from("interview_sessions")
-        .update({ status: 'confirmed' })  // ✅ Set to 'confirmed' - payment received, awaiting interview
-        .eq('id', session_id);
+      console.log("[Payment Service] ✅ Order ID retrieved:", orderId);
 
-      if (sessionUpdateError) {
-        console.error("[Payment Service] ❌ Failed to update session status:", sessionUpdateError);
-        throw new Error("Failed to update session status after payment");
-      }
-
-      console.log("[Payment Service] ✅ Session status updated to 'confirmed' - payment received!");
-
-      // ✅ Create 100ms room AFTER payment is verified
-      console.log("[Payment Service] 🎥 Creating 100ms video room...");
+      // ✅ STEP 2: Verify with Razorpay edge function
+      // IMPORTANT: Edge function expects { packageId, orderId, paymentId, signature }
+      console.log("[Payment Service] 🔐 Calling edge function to verify signature...");
       
-      try {
-        const { data: roomData, error: roomError } = await supabase.functions.invoke(
-          "create-100ms-room",
-          { 
-            body: { 
-              name: `Interview-${session_id}`,
-              description: `Mock interview session`,
-            } 
+      const { data: verifyData, error: verifyError } = await supabase.functions.invoke(
+        "verify-razorpay-signature",
+        {
+          body: {
+            packageId: pkgId,
+            orderId: orderId,
+            paymentId: razorpayPaymentId,
+            signature: razorpaySignature
           }
-        );
-
-        if (!roomError && roomData?.id) {
-          const roomCode = roomData.id;
-          console.log("[Payment Service] ✅ 100ms room created:", roomCode);
-
-          const { error: meetingError } = await supabase
-            .from("session_meetings")
-            .insert({
-              session_id: session_id,
-              room_code: roomCode,
-              status: "created",
-            });
-
-          if (meetingError) {
-            console.warn("[Payment Service] ⚠️ Failed to store meeting details:", meetingError);
-          }
-        } else {
-          console.warn("[Payment Service] ⚠️ 100ms room creation failed:", roomError);
-          // Don't throw error - booking is still valid without the room
         }
-      } catch (roomErr) {
-        console.warn("[Payment Service] ⚠️ 100ms room creation exception:", roomErr);
-        // Don't throw error - booking is still valid
+      );
+
+      if (verifyError) {
+        console.error("[Payment Service] ❌ Edge function invocation error:", verifyError);
+        throw new Error(`Edge function error: ${verifyError.message}`);
       }
 
-      // ✅ Send confirmation emails (no meeting link needed)
-      console.log("[Payment Service] 📧 Triggering confirmation emails...");
-      this.triggerBookingConfirmationEmails(pkgId);
+      if (!verifyData?.valid) {
+        console.error("[Payment Service] ❌ Verification failed:", verifyData);
+        throw new Error(verifyData?.error || "Payment verification failed. Please contact support.");
+      }
+
+      console.log("[Payment Service] ✅ Payment verified by Razorpay!");
+      console.log("[Payment Service] 📊 Verification response:", {
+        valid: verifyData.valid,
+        message: verifyData.message,
+        debug: verifyData.debug
+      });
+
+      // ✅ STEP 3: Edge function has already updated both:
+      // - interview_packages (payment_status, razorpay_payment_id, razorpay_signature, razorpay_order_id)
+      // - interview_sessions (status: awaiting_payment → pending)
+      console.log("[Payment Service] ✅ Package and session updated by Edge Function");
+
+      // ✅ STEP 4: Verify the updates actually happened
+      console.log("[Payment Service] 🔍 Verifying database updates...");
+      
+      const { data: updatedPackage, error: verifyPackageError } = await supabase
+        .from('interview_packages')
+        .select('payment_status, razorpay_payment_id, razorpay_signature, razorpay_order_id, booking_metadata')
+        .eq('id', pkgId)
+        .single();
+
+      if (verifyPackageError || !updatedPackage) {
+        console.error("[Payment Service] ❌ Failed to verify package update:", verifyPackageError);
+        throw new Error("Failed to verify package update");
+      }
+
+      console.log("[Payment Service] 📊 Package verification:", {
+        payment_status: updatedPackage.payment_status,
+        has_payment_id: !!updatedPackage.razorpay_payment_id,
+        has_signature: !!updatedPackage.razorpay_signature,
+        has_order_id: !!updatedPackage.razorpay_order_id
+      });
+
+      // Check if payment details were actually saved
+      if (!updatedPackage.razorpay_payment_id || !updatedPackage.razorpay_signature) {
+        console.error("[Payment Service] ❌ Payment details not saved in package!");
+        console.error("[Payment Service] ❌ Current package state:", updatedPackage);
+        throw new Error("Payment verification succeeded but details were not saved. Please contact support.");
+      }
+
+      // Verify session update
+      const session_id = updatedPackage.booking_metadata?.session_id;
+      
+      if (session_id) {
+        const { data: sessionData, error: sessionVerifyError } = await supabase
+          .from('interview_sessions')
+          .select('status')
+          .eq('id', session_id)
+          .single();
+
+        if (sessionVerifyError) {
+          console.error("[Payment Service] ⚠️ Failed to verify session:", sessionVerifyError);
+        } else {
+          console.log("[Payment Service] 📊 Session status:", sessionData?.status);
+          
+          if (sessionData?.status !== 'pending') {
+            console.warn("[Payment Service] ⚠️ Session status not updated! Current:", sessionData?.status);
+          }
+        }
+      } else {
+        console.warn("[Payment Service] ⚠️ No session_id in booking metadata");
+      }
+
+      // ✅ STEP 5: Send notification emails to candidate and mentor
+      console.log("[Payment Service] 📧 Triggering booking notification emails...");
+      this.triggerBookingNotificationEmails(pkgId);
       
       return { success: true };
 
@@ -406,9 +399,116 @@ export const paymentService = {
     }
   },
 
+  async triggerBookingNotificationEmails(pkgId: string) {
+    try {
+        console.log("[Email] 📧 Sending booking notification emails for package:", pkgId);
+
+        const { data: pkg } = await supabase
+          .from('interview_packages')
+          .select('candidate_id, mentor_id, interview_profile_id')
+          .eq('id', pkgId)
+          .single();
+        
+        if (!pkg) {
+          console.error("[Email] ❌ Package not found:", pkgId);
+          return;
+        }
+
+        const { data: mentor } = await supabase
+          .from('mentors')
+          .select('professional_title, profile:profiles!id(email, full_name)')
+          .eq('id', pkg.mentor_id)
+          .single();
+        
+        const { data: candidate } = await supabase
+          .from('candidates')
+          .select('professional_title, profile:profiles!id(email, full_name)')
+          .eq('id', pkg.candidate_id)
+          .single();
+        
+        const { data: profile } = await supabase
+          .from('interview_profiles_admin')
+          .select('name')
+          .eq('id', pkg.interview_profile_id)
+          .single();
+        
+        const { data: session } = await supabase
+          .from('interview_sessions')
+          .select('scheduled_at, skill:interview_skills_admin!skill_id(name)')
+          .eq('package_id', pkgId)
+          .single();
+
+        const dateTime = session?.scheduled_at 
+          ? new Date(session.scheduled_at).toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }) 
+          : 'TBD';
+
+        // ✅ Send to Candidate - Payment received, awaiting mentor
+        if (candidate?.profile?.email) {
+          console.log("[Email] 📧 Sending to candidate:", candidate.profile.email);
+          await sendEmail(
+            candidate.profile.email,
+            `✅ Payment Received - Awaiting Mentor Confirmation`,
+            EMAIL_TEMPLATES.CANDIDATE_PAYMENT_RECEIVED,
+            {
+              name: candidate.profile.full_name,
+              mentorTitle: mentor?.professional_title,
+              profileName: profile?.name,
+              skillName: session?.skill?.name,
+              dateTime: dateTime,
+              baseUrl: BASE_URL
+            }
+          );
+        }
+
+        // ✅ Send to Mentor - New booking request, needs approval
+        if (mentor?.profile?.email) {
+          console.log("[Email] 📧 Sending to mentor:", mentor.profile.email);
+          await sendEmail(
+            mentor.profile.email,
+            `🎯 New Booking Request - Action Required`,
+            EMAIL_TEMPLATES.MENTOR_BOOKING_REQUEST,
+            {
+              name: mentor.profile.full_name,
+              candidateTitle: candidate?.professional_title,
+              profileName: profile?.name,
+              skillName: session?.skill?.name,
+              dateTime: dateTime,
+              baseUrl: BASE_URL
+            }
+          );
+        }
+
+        // Send to Helpdesk
+        console.log("[Email] 📧 Sending to helpdesk: crackjobshelpdesk@gmail.com");
+        await sendEmail(
+          'crackjobshelpdesk@gmail.com',
+          `🔔 New Booking Alert - Awaiting Mentor Approval`,
+          EMAIL_TEMPLATES.HELPDESK_BOOKING_NOTIFICATION,
+          {
+            packageId: pkgId,
+            candidateName: candidate?.profile?.full_name || 'N/A',
+            candidateTitle: candidate?.professional_title || 'N/A',
+            candidateEmail: candidate?.profile?.email || 'N/A',
+            mentorName: mentor?.profile?.full_name || 'N/A',
+            mentorTitle: mentor?.professional_title || 'N/A',
+            mentorEmail: mentor?.profile?.email || 'N/A',
+            profileName: profile?.name || 'N/A',
+            skillName: session?.skill?.name || 'N/A',
+            dateTime: dateTime,
+            baseUrl: BASE_URL
+          }
+        );
+
+        console.log("[Email] ✅ Booking notification emails sent successfully!");
+
+      } catch (err) { 
+        console.error("[Email] ❌ Booking notification emails failed:", err); 
+      }
+  },
+
   async triggerBookingConfirmationEmails(pkgId: string) {
     try {
-        console.log("[Email] 📧 Sending booking confirmation emails for package:", pkgId);
+        console.log("[Email] 📧 Sending booking CONFIRMATION emails for package:", pkgId);
 
         const { data: pkg } = await supabase
           .from('interview_packages')
@@ -451,7 +551,7 @@ export const paymentService = {
 
         // Send to Candidate
         if (candidate?.profile?.email) {
-          console.log("[Email] 📧 Sending to candidate:", candidate.profile.email);
+          console.log("[Email] 📧 Sending confirmation to candidate:", candidate.profile.email);
           await sendEmail(
             candidate.profile.email,
             `✅ Interview Confirmed - ${profile?.name}`,
@@ -469,10 +569,10 @@ export const paymentService = {
 
         // Send to Mentor
         if (mentor?.profile?.email) {
-          console.log("[Email] 📧 Sending to mentor:", mentor.profile.email);
+          console.log("[Email] 📧 Sending confirmation to mentor:", mentor.profile.email);
           await sendEmail(
             mentor.profile.email,
-            `🎯 New Booking Confirmed - ${profile?.name}`,
+            `🎯 Interview Confirmed - ${profile?.name}`,
             EMAIL_TEMPLATES.MENTOR_BOOKING_CONFIRMATION,
             {
               name: mentor.profile.full_name,
@@ -484,27 +584,6 @@ export const paymentService = {
             }
           );
         }
-
-        // Send to Helpdesk
-        console.log("[Email] 📧 Sending to helpdesk: crackjobshelpdesk@gmail.com");
-        await sendEmail(
-          'crackjobshelpdesk@gmail.com',
-          `🔔 New Booking Alert - ${profile?.name}`,
-          EMAIL_TEMPLATES.HELPDESK_BOOKING_NOTIFICATION,
-          {
-            packageId: pkgId,
-            candidateName: candidate?.profile?.full_name || 'N/A',
-            candidateTitle: candidate?.professional_title || 'N/A',
-            candidateEmail: candidate?.profile?.email || 'N/A',
-            mentorName: mentor?.profile?.full_name || 'N/A',
-            mentorTitle: mentor?.professional_title || 'N/A',
-            mentorEmail: mentor?.profile?.email || 'N/A',
-            profileName: profile?.name || 'N/A',
-            skillName: session?.skill?.name || 'N/A',
-            dateTime: dateTime,
-            baseUrl: BASE_URL
-          }
-        );
 
         console.log("[Email] ✅ Booking confirmation emails sent successfully!");
 

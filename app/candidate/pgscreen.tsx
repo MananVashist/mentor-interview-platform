@@ -1,5 +1,4 @@
-﻿// app/candidate/pgscreen.tsx
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -20,7 +19,7 @@ export default function PGScreen() {
     packageId, 
     keyId, 
     amount,
-    // ✅ Schedule params for navigation back on cancellation
+    // Params for navigation back on cancellation
     mentorId,
     profileId,
     skillId,
@@ -48,7 +47,7 @@ export default function PGScreen() {
       amount: amount ? `₹${Number(amount) / 100}` : 'missing'
     });
 
-    if (!packageId || !keyId || !amount) {
+    if (!packageId || !keyId || !amount || !orderId) {
       console.error('[PGScreen] ❌ Missing required params');
       
       const navigateBack = () => {
@@ -102,7 +101,7 @@ export default function PGScreen() {
                 console.log('[PGScreen] ⚠️ Checkout dismissed by user');
                 hasRun.current = false;
                 
-                // ✅ FIX: Navigate back to schedule screen
+                // Navigate back to schedule screen
                 if (mentorId && profileId && skillId && skillName) {
                   router.replace({
                     pathname: '/candidate/schedule',
@@ -114,7 +113,6 @@ export default function PGScreen() {
                     }
                   });
                 } else {
-                  // Fallback to bookings if params missing
                   router.replace('/candidate/bookings');
                 }
             }
@@ -133,7 +131,6 @@ export default function PGScreen() {
       rzp.on('payment.failed', (resp: any) => {
         console.error('[PGScreen][WEB] ❌ payment.failed:', resp);
         
-        // ✅ FIX: Navigate back to schedule screen
         const navigateBack = () => {
           if (mentorId && profileId && skillId && skillName) {
             router.replace({
@@ -197,7 +194,6 @@ export default function PGScreen() {
             console.log('[PGScreen][RN] User cancelled payment');
             navigateBack();
         } else {
-          // Payment error
           Alert.alert(
             'Payment Error', 
             err.description || 'Something went wrong',
@@ -219,11 +215,13 @@ export default function PGScreen() {
     try {
       console.log('[PGScreen] 🔐 Starting verification...');
       
+      // ✅ FIX: Pass orderId as the 4th argument
+      // The Edge Function "verify-razorpay-signature" REQUIRES: packageId, paymentId, signature, AND orderId
       const result = await paymentService.verifyPayment(
-        packageId as string,
-        data.razorpay_order_id,
-        data.razorpay_payment_id,
-        data.razorpay_signature
+        packageId as string,          
+        data.razorpay_payment_id,     
+        data.razorpay_signature,
+        orderId as string // <-- ADDED THIS
       );
 
       console.log('[PGScreen] ✅ Verification successful!', result);
@@ -231,7 +229,7 @@ export default function PGScreen() {
       // ✅ AUTO-REDIRECT: Navigate immediately after success
       setTimeout(() => {
         router.replace('/candidate/bookings');
-      }, 1500); // Small delay to show success message
+      }, 1500); 
 
     } catch (err: any) {
       console.error('[PGScreen] ❌ Verification failed:', {
@@ -242,7 +240,6 @@ export default function PGScreen() {
 
       setVerifying(false);
 
-      // Show detailed error to user
       const errorMessage = err?.message || 'Verification failed';
       const errorDetails = err?.details ? `\n\nDetails: ${err.details}` : '';
       
