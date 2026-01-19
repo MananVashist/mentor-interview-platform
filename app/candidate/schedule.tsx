@@ -2,11 +2,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
   View, StyleSheet, ScrollView, TouchableOpacity, 
-  ActivityIndicator, Alert, StatusBar, Platform 
+  ActivityIndicator, Alert, StatusBar
 } from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-
 import { theme } from '@/lib/theme';
 import { Heading, AppText } from '@/lib/ui';
 import { supabase } from '@/lib/supabase/client';
@@ -15,19 +14,16 @@ import { useAuthStore } from '@/lib/store';
 import { availabilityService, type DayAvailability } from '@/services/availability.service';
 import { DateTime } from 'luxon';
 
-// 🟢 NEW TYPE: Single Selection
 type SelectedSession = {
   dateStr: string;  
   time: string;     
   displayDate: string; 
-  iso: string; // Full ISO String required for DB
+  iso: string;
 };
 
-// HELPER COMPONENT (DayCard)
 function DayCard({ day, isSelected, onPress }: { day: DayAvailability, isSelected: boolean, onPress: () => void }) {
   const availableCount = day.slots.filter(s => s.isAvailable).length;
   const isTimeOff = day.isFullDayOff;
-
   return (
     <TouchableOpacity
       style={[
@@ -39,19 +35,12 @@ function DayCard({ day, isSelected, onPress }: { day: DayAvailability, isSelecte
       onPress={onPress}
       activeOpacity={0.7}
     >
-      <AppText style={[styles.dayCardWeekday, isSelected && styles.dayCardTextSelected]}>
-        {day.weekdayName}
-      </AppText>
-      <AppText style={[styles.dayCardDate, isSelected && styles.dayCardTextSelected]}>
-        {day.monthDay}
-      </AppText>
-      
+      <AppText style={[styles.dayCardWeekday, isSelected && styles.dayCardTextSelected]}>{day.weekdayName}</AppText>
+      <AppText style={[styles.dayCardDate, isSelected && styles.dayCardTextSelected]}>{day.monthDay}</AppText>
       <View style={[
         styles.statusDot, 
-        isTimeOff ? { backgroundColor: '#EF4444' } : 
-        availableCount > 0 ? { backgroundColor: '#10B981' } : { backgroundColor: '#9CA3AF' }
+        isTimeOff ? { backgroundColor: '#EF4444' } : availableCount > 0 ? { backgroundColor: '#10B981' } : { backgroundColor: '#9CA3AF' }
       ]} />
-      
       <AppText style={[styles.dayCardStatus, isSelected && styles.dayCardTextSelected]}>
         {isTimeOff ? 'Off' : availableCount > 0 ? `${availableCount} open` : 'Full'}
       </AppText>
@@ -65,8 +54,6 @@ export default function ScheduleScreen() {
   
   const mentorId = Array.isArray(params.mentorId) ? params.mentorId[0] : params.mentorId;
   const profileIdParam = Array.isArray(params.profileId) ? params.profileId[0] : params.profileId;
-  
-  // 🟢 NEW PARAMS FROM PROFILE SCREEN
   const skillIdParam = Array.isArray(params.skillId) ? params.skillId[0] : params.skillId;
   const skillNameParam = Array.isArray(params.skillName) ? params.skillName[0] : params.skillName;
 
@@ -76,92 +63,86 @@ export default function ScheduleScreen() {
 
   const [isLoading, setIsLoading] = useState(true);
   const [mentor, setMentor] = useState<any>(null);
-  
   const [availabilityData, setAvailabilityData] = useState<DayAvailability[]>([]);
   const [selectedDay, setSelectedDay] = useState<DayAvailability | null>(null);
-  
-  // 🟢 SINGLE SELECTION STATE
   const [selectedSlot, setSelectedSlot] = useState<SelectedSession | null>(null);
   const [bookingInProgress, setBookingInProgress] = useState(false);
 
-  // 1. AUTH CHECK
   useEffect(() => {
     async function init() {
       const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        setCurrentUserId(session.user.id);
-      }
+      if (session?.user) setCurrentUserId(session.user.id);
     }
     init();
   }, []);
 
-  // 2. FETCH MENTOR
   useEffect(() => {
     async function fetchMentor() {
       if (!mentorId) return;
       try {
-        const { data, error } = await supabase
+        const { data } = await supabase
           .from('mentors')
           .select('session_price_inr, professional_title, profile:profiles(full_name)')
           .eq('id', mentorId)
           .single();
-
-        if (error) throw error;
         
         setMentor({
           id: mentorId,
-          name: data.profile?.full_name || 'Mentor',
-          title: data.professional_title || 'Senior Interviewer',
-          price: data.session_price_inr || 1000,
+          name: data?.profile?.full_name || 'Mentor',
+          title: data?.professional_title || 'Senior Interviewer',
+          price: data?.session_price_inr || 1000,
         });
-      } catch (e) {
-        console.error('[Schedule] Error fetching mentor:', e);
-      }
+      } catch (e) { console.error(e); }
     }
     fetchMentor();
   }, [mentorId]);
 
-  // 3. FETCH AVAILABILITY - OPTIMIZED
   const fetchAvailability = useCallback(async () => {
     if (!mentorId) return;
     setIsLoading(true);
     try {
-      // 🧹 Lazy Cleanup
-      const { error: cleanupError } = await supabase.rpc('delete_expired_pending_packages');
-      if (cleanupError) console.warn('[Schedule] Cleanup failed:', cleanupError);
-
-      // Use shared availability service
       const daysArray = await availabilityService.generateAvailability(mentorId);
       setAvailabilityData(daysArray);
       
-      // Auto-select first available day
-      const firstAvailable = daysArray.find(d => !d.isFullDayOff && d.slots.some(s => s.isAvailable));
-      if (firstAvailable) setSelectedDay(firstAvailable);
-
+      if (selectedDay) {
+         const stillExists = daysArray.find(d => d.dateStr === selectedDay.dateStr);
+         if (stillExists) setSelectedDay(stillExists);
+      } else {
+        const firstAvailable = daysArray.find(d => !d.isFullDayOff && d.slots.some(s => s.isAvailable));
+        if (firstAvailable) setSelectedDay(firstAvailable);
+      }
     } catch (err) {
-      console.error('[Schedule] Error fetching availability:', err);
       Alert.alert('Error', 'Failed to load availability');
     } finally {
       setIsLoading(false);
     }
-  }, [mentorId]);
+  }, [mentorId, selectedDay]);
 
-  useEffect(() => {
-    fetchAvailability();
-  }, [fetchAvailability]);
+  // 🟢 FOCUS EFFECT: Clean DB -> Then Fetch Slots
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
+      const run = async () => {
+        // 1. Trigger the DB function
+        await availabilityService.cleanupExpiredSessions();
+        
+        // 2. Fetch fresh availability
+        if (isActive) await fetchAvailability();
+      };
+      run();
+      return () => { isActive = false; };
+    }, [mentorId]) 
+  );
 
-  // --- EVENT HANDLERS ---
   const handleDayPress = (day: DayAvailability) => {
     setSelectedDay(day);
-    setSelectedSlot(null); // Reset slot when day changes
+    setSelectedSlot(null);
   };
 
   const handleSlotPress = (time: string) => {
     if (!selectedDay) return;
-    
     const slot = selectedDay.slots.find(s => s.time === time);
     if (!slot || !slot.isAvailable) return;
-
     setSelectedSlot({
       dateStr: selectedDay.dateStr,
       time: time,
@@ -170,143 +151,74 @@ export default function ScheduleScreen() {
     });
   };
 
-  // ✅ NEW: Verify slot availability before proceeding
   const verifySlotAvailability = async (slotIso: string): Promise<boolean> => {
     try {
-      console.log('[Schedule] 🔍 Verifying slot availability:', slotIso);
-      
-      // ✅ FIX: Convert to simple date string for database query
       const slotDateTime = DateTime.fromISO(slotIso);
       const slotQueryStr = slotDateTime.toFormat('yyyy-MM-dd HH:mm:ss');
       
-      console.log('[Schedule] Query string:', slotQueryStr);
-      
       const { data, error } = await supabase
         .from('interview_sessions')
-        .select('id, status, scheduled_at')
+        .select('id, status, created_at')
         .eq('mentor_id', mentorId)
         .eq('scheduled_at', slotQueryStr)
-        .in('status', ['awaiting_payment', 'pending', 'confirmed']); // ✅ Include awaiting_payment
+        .in('status', ['awaiting_payment', 'pending', 'confirmed']);
 
-      if (error) {
-        console.error('[Schedule] Slot verification error:', error);
-        return false;
-      }
+      if (error) return false;
 
-      // If any sessions exist for this slot, it's taken
+      // 🛑 Conflict Logic
+      // If a blocking row exists, we check if it is "zombie"
       if (data && data.length > 0) {
-        console.warn('[Schedule] ❌ Slot is already booked:', data);
-        return false;
+         const conflict = data[0];
+         
+         // 🟢 Allow overwrite if it's expired "awaiting_payment"
+         if (conflict.status === 'awaiting_payment') {
+            const createdAt = DateTime.fromISO(conflict.created_at || '').toUTC();
+            const age = DateTime.now().toUTC().diff(createdAt, 'minutes').minutes;
+            if (age > 15) return true; // Treat as free!
+         }
+         return false; // Valid booking exists
       }
-
-      console.log('[Schedule] ✅ Slot is available');
-      return true;
-    } catch (err) {
-      console.error('[Schedule] Slot verification exception:', err);
-      return false;
-    }
+      return true; // No conflict
+    } catch (err) { return false; }
   };
 
   const handleConfirm = async () => {
-    if (!selectedSlot) {
-      Alert.alert('No Selection', 'Please select a time slot');
+    if (!selectedSlot || !currentUserId) {
+      Alert.alert('Details Missing', 'Please log in and select a slot.');
       return;
     }
-
-    if (!currentUserId) {
-      Alert.alert('Authentication Required', 'Please log in to book a session');
-      return;
-    }
-
     setBookingInProgress(true);
-
     try {
-      const finalUserId = currentUserId;
-
-      // ✅ STEP 1: Verify slot is still available (prevent race conditions)
-      const isSlotAvailable = await verifySlotAvailability(selectedSlot.iso);
-      
-      if (!isSlotAvailable) {
-        Alert.alert(
-          'Slot Unavailable',
-          'This time slot was just booked by someone else. Please select a different time.',
-          [{ text: 'OK', onPress: () => fetchAvailability() }] // Refresh availability
-        );
-        setSelectedSlot(null); // Clear selection
-        setBookingInProgress(false);
-        return; // ❌ STOP HERE - DO NOT PROCEED
+      // Check for conflicts (ignores expired ones)
+      const isAvailable = await verifySlotAvailability(selectedSlot.iso);
+      if (!isAvailable) {
+        Alert.alert('Slot Unavailable', 'This slot is taken.', [{ text: 'Refresh', onPress: fetchAvailability }]);
+        setSelectedSlot(null);
+        return;
       }
 
-      // 2. Verify mentor exists
-      const { data: mentorExists } = await supabase
-        .from('mentors')
-        .select('id')
-        .eq('id', mentorId)
-        .maybeSingle();
+      const { data: candidate } = await supabase.from('candidates').select('id').eq('id', currentUserId).maybeSingle();
+      if (!candidate) await supabase.from('candidates').insert([{ id: currentUserId }]);
 
-      if (!mentorExists) {
-        throw new Error('Mentor not found');
-      }
-
-      // 3. Ensure candidate profile exists
-      const { data: existingCandidate } = await supabase
-        .from('candidates')
-        .select('id')
-        .eq('id', finalUserId)
-        .maybeSingle();
-
-      if (!existingCandidate) {
-        console.log('[Schedule] Candidate profile missing. Creating now...');
-        
-        const { error: createError } = await supabase
-          .from('candidates')
-          .insert([{ 
-            id: finalUserId, 
-            created_at: new Date().toISOString() 
-          }]);
-
-        if (createError) {
-          console.error('[Schedule] Profile creation failed:', createError);
-          throw new Error("Could not verify user profile. Please try logging out and back in.");
-        }
-      }
-
-      // 4. Proceed with Booking (payment service will do final conflict check)
-      const { package: pkg, orderId, amount, keyId, error } = await paymentService.createPackage(
-        finalUserId as string,
+      const { package: pkg, amount, orderId, keyId, error } = await paymentService.createPackage(
+        currentUserId,
         mentorId as string,
         Number(profileIdParam),
         skillIdParam as string,
         selectedSlot.iso 
       );
 
-      if (error || !pkg) {
-        throw new Error(error?.message || 'Booking creation failed');
-      }
+      if (error || !pkg) throw new Error(error?.message || 'Booking failed');
 
       if (pkg.payment_status === 'pending') {
         router.replace({
           pathname: '/candidate/pgscreen',
-          params: {
-            packageId: pkg.id,
-            amount: amount, 
-            orderId: orderId, 
-            keyId: keyId,
-            // ✅ Pass these for navigation back on cancellation
-            mentorId: mentorId,
-            profileId: profileIdParam,
-            skillId: skillIdParam,
-            skillName: skillNameParam
-          }
+          params: { packageId: pkg.id, amount, orderId, keyId, mentorId, profileId: profileIdParam, skillId: skillIdParam, skillName: skillNameParam }
         });
       } else {
-        Alert.alert('Success', 'Booking confirmed!', [
-          { text: 'OK', onPress: () => router.replace('/candidate/bookings') }
-        ]);
+        Alert.alert('Success', 'Booking confirmed!', [{ text: 'OK', onPress: () => router.replace('/candidate/bookings') }]);
       }
-
     } catch (err: any) {
-      console.error('[Schedule] Booking Exception:', err);
       Alert.alert('Booking Failed', err.message);
     } finally {
       setBookingInProgress(false);
@@ -320,26 +232,22 @@ export default function ScheduleScreen() {
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        
         <View style={styles.header}>
           <Heading level={2}>Select Date & Time</Heading>
-          {/* 🟢 Skill Name in SubHeader */}
           <AppText style={styles.subHeader}>
              {skillNameParam ? `${skillNameParam} interview` : 'Interview'} with {mentor.title}
           </AppText>
         </View>
 
-        {/* Date Picker */}
         <View style={styles.section}>
-          <AppText style={styles.sectionTitle}><Ionicons name="calendar-outline" size={16} /> Available Days (Next 30)</AppText>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingHorizontal: 4 }}>
+          <AppText style={styles.sectionTitle}><Ionicons name="calendar-outline" size={16} /> Available Days</AppText>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
             {availabilityData.map((day) => (
               <DayCard key={day.dateStr} day={day} isSelected={selectedDay?.dateStr === day.dateStr} onPress={() => handleDayPress(day)}/>
             ))}
           </ScrollView>
         </View>
 
-        {/* 🟢 NEW: Single Slot Selection Display */}
         <View style={styles.selectionDisplay}>
             <View style={[styles.selectionBox, selectedSlot ? styles.selectionBoxActive : {}]}>
                 <AppText style={styles.selectionLabel}>SELECTED SLOT</AppText>
@@ -348,43 +256,28 @@ export default function ScheduleScreen() {
                         <AppText style={styles.selectionValue}>{selectedSlot.time}</AppText>
                         <AppText style={styles.selectionDate}>{selectedSlot.displayDate}</AppText>
                     </View>
-                ) : (
-                    <AppText style={styles.selectionPlaceholder}>Tap a time below</AppText>
-                )}
+                ) : <AppText style={styles.selectionPlaceholder}>Tap a time below</AppText>}
             </View>
         </View>
 
-        {/* Time Slots */}
         <View style={styles.section}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <AppText style={styles.sectionTitle}><Ionicons name="time-outline" size={16} /> Time Slots</AppText>
-            {selectedDay?.isFullDayOff && <View style={styles.badgeErr}><AppText style={styles.badgeErrText}>Time Off</AppText></View>}
-          </View>
+          <AppText style={styles.sectionTitle}><Ionicons name="time-outline" size={16} /> Time Slots</AppText>
           {(!selectedDay || (selectedDay.slots.length === 0 && !selectedDay.isFullDayOff)) ? (
-             <View style={styles.emptyState}><AppText style={{ color: '#999' }}>No slots configured for this day.</AppText></View>
+             <View style={styles.emptyState}><AppText style={{ color: '#999' }}>No slots available.</AppText></View>
           ) : selectedDay.isFullDayOff ? (
-            <View style={styles.emptyState}><AppText style={{ color: '#EF4444' }}>Mentor is unavailable on this date.</AppText></View>
+            <View style={styles.emptyState}><AppText style={{ color: '#EF4444' }}>Mentor is unavailable.</AppText></View>
           ) : (
             <View style={styles.grid}>
               {selectedDay.slots.map((slot) => {
                 const isSelected = selectedSlot?.time === slot.time && selectedSlot?.dateStr === selectedDay.dateStr;
-                
                 return (
                   <TouchableOpacity
                     key={`${selectedDay.dateStr}-${slot.time}`}
-                    style={[
-                        styles.slot, 
-                        !slot.isAvailable && styles.slotDisabled, 
-                        isSelected && styles.slotSelected
-                    ]}
+                    style={[styles.slot, !slot.isAvailable && styles.slotDisabled, isSelected && styles.slotSelected]}
                     disabled={!slot.isAvailable}
                     onPress={() => handleSlotPress(slot.time)}
                   >
-                    <AppText style={[
-                        styles.slotText, 
-                        !slot.isAvailable && styles.slotTextDisabled, 
-                        isSelected && styles.slotTextSelected
-                    ]}>
+                    <AppText style={[styles.slotText, !slot.isAvailable && styles.slotTextDisabled, isSelected && styles.slotTextSelected]}>
                       {slot.time}
                     </AppText>
                   </TouchableOpacity>
@@ -399,7 +292,6 @@ export default function ScheduleScreen() {
             {bookingInProgress ? <ActivityIndicator color="#FFF" /> : <AppText style={styles.btnPrimaryText}>Confirm Booking</AppText>}
           </TouchableOpacity>
         </View>
-
       </ScrollView>
     </View>
   );
@@ -412,7 +304,7 @@ const styles = StyleSheet.create({
   header: { marginBottom: 24 },
   subHeader: { color: '#666', marginTop: 4, fontSize: 14 },
   section: { marginBottom: 24 },
-  sectionTitle: { fontSize: 14, fontWeight: '700', color: '#333', marginBottom: 12, textTransform: 'uppercase', letterSpacing: 0.5 },
+  sectionTitle: { fontSize: 14, fontWeight: '700', color: '#333', marginBottom: 12, textTransform: 'uppercase' },
   dayCard: { width: 64, height: 84, backgroundColor: '#FFF', borderRadius: 12, borderWidth: 1, borderColor: '#E5E7EB', alignItems: 'center', justifyContent: 'center', padding: 4 },
   dayCardSelected: { borderColor: theme.colors.primary, backgroundColor: '#F0FDFA', borderWidth: 2 },
   dayCardTimeOff: { backgroundColor: '#FEF2F2', borderColor: '#FECACA' }, 
@@ -430,16 +322,7 @@ const styles = StyleSheet.create({
   selectionDate: { fontSize: 14, fontWeight: '500', color: '#666', marginTop: 4 },
   selectionPlaceholder: { fontSize: 16, color: '#CCC', fontStyle: 'italic' },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  slot: { 
-    width: '30%', 
-    paddingVertical: 12, 
-    borderRadius: 8, 
-    borderWidth: 1, 
-    borderColor: theme.colors.primary, 
-    backgroundColor: '#FFF', 
-    alignItems: 'center', 
-    marginBottom: 8
-  },
+  slot: { width: '30%', paddingVertical: 12, borderRadius: 8, borderWidth: 1, borderColor: theme.colors.primary, backgroundColor: '#FFF', alignItems: 'center', marginBottom: 8 },
   slotDisabled: { borderColor: '#E5E7EB', backgroundColor: '#F9FAFB', opacity: 0.5 },
   slotSelected: { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary },
   slotText: { color: theme.colors.primary, fontWeight: '600', fontSize: 14 },
