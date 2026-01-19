@@ -86,7 +86,7 @@ const BookingCard = ({
 }: any) => {
   const uiState = getBookingState(session);
   const details = getBookingDetails(session);
-
+  const isPaid = session.package?.payment_status === 'paid';
   const profileName = session.package?.interview_profile_name || 'Interview';
   const mentorTitle = session.mentor_professional_title || 'Mentor';
   const skillName = session.skill_name || 'Interview Session';
@@ -139,15 +139,30 @@ const BookingCard = ({
 
       <View style={styles.cardDivider} />
 
-      {/* 1. APPROVAL NEEDED */}
+      {/* 1. APPROVAL STATE (Candidate View) */}
+      {/* Payment is complete, waiting for mentor to accept or propose new time */}
       {uiState === 'APPROVAL' && (
-        <View style={{ backgroundColor: '#FFFBEB', padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#FEF3C7' }}>
+        <View style={{ 
+          // ✅ FIXED: Always show Blue (Waiting for Mentor) since we're in 'pending' status
+          // Payment is already complete (moved from 'awaiting_payment' to 'pending')
+          backgroundColor: '#EFF6FF', 
+          padding: 12, 
+          borderRadius: 8, 
+          borderWidth: 1, 
+          borderColor: '#BFDBFE'
+        }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-            <Ionicons name="hourglass-outline" size={18} color="#B45309" />
-            <AppText style={{ fontSize: 14, fontWeight: '700', color: '#B45309' }}>Pending Payment</AppText>
+            <Ionicons 
+              name="hourglass-outline" 
+              size={18} 
+              color="#1E40AF" 
+            />
+            <AppText style={{ fontSize: 14, fontWeight: '700', color: "#1E40AF" }}>
+              Awaiting Mentor Approval
+            </AppText>
           </View>
-          <AppText style={{ fontSize: 13, color: '#92400E', lineHeight: 20 }}>
-            Your booking will be confirmed once payment is completed.
+          <AppText style={{ fontSize: 13, color: "#1E3A8A", lineHeight: 20 }}>
+            You have booked this slot. Waiting for the mentor to accept or propose a new time.
           </AppText>
         </View>
       )}
@@ -379,9 +394,11 @@ export default function CandidateBookingsScreen() {
           package:interview_packages!package_id(id, payment_status, interview_profile_id)
         `)
         .eq('candidate_id', currentUser.id)
-        .neq('status', 'pending')  // ✅ Filter out unpaid sessions
+        // ✅ Only show sessions after payment is complete (pending, confirmed, completed)
+        // Sessions in 'awaiting_payment' are still in the payment flow and shouldn't appear here
+        .in('status', ['pending', 'confirmed', 'completed'])
         .order('scheduled_at', { ascending: true });
-
+            
       if (error) throw error;
       if (!sessionsData || sessionsData.length === 0) {
         setSessions([]);
@@ -435,7 +452,17 @@ export default function CandidateBookingsScreen() {
         const profileId = s.package?.interview_profile_id;
         const profileName = profileId ? profilesMap[profileId] || 'Interview' : 'Interview';
         const skillData = skillsMap[s.skill_id] || { name: 'Interview Session' };
-        const recording_url = s.meetings && s.meetings.length > 0 ? s.meetings[0].recording_url : null;
+        
+        // ------------------------------------------------------------------
+        // 🛡️ CRASH-PROOF FIX FOR RECORDING URL
+        // 1. Ensure 'meetings' is treated as an array, even if Supabase returns a single object or null
+        const meetingsArray = Array.isArray(s.meetings) 
+          ? s.meetings 
+          : (s.meetings ? [s.meetings] : []);
+
+        // 2. Safely find the URL
+        const recording_url = meetingsArray.find((m: any) => m.recording_url)?.recording_url || null;
+        // ------------------------------------------------------------------
 
         return {
           ...s,
@@ -443,7 +470,7 @@ export default function CandidateBookingsScreen() {
           skill_name: skillData.name,
           skill_description: skillData.description,
           mentor_professional_title: mentorsMap[s.mentor_id] || 'Mentor',
-          recording_url,
+          recording_url, // ✅ Now safe and populated
           review_rating: reviewsMap[s.package_id] || null,
         };
       });

@@ -92,9 +92,210 @@ export default function LandingPage() {
 
   if (Platform.OS === 'android') return <Redirect href="/auth/sign-in" />;
 
+  // JSON-LD Data Object
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "@id": "https://crackjobs.com/#website",
+        "url": "https://crackjobs.com/",
+        "name": "CrackJobs",
+        "description": "Anonymous mock interviews with expert mentors from top companies",
+        "publisher": {
+          "@id": "https://crackjobs.com/#organization"
+        },
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": {
+            "@type": "EntryPoint",
+            "urlTemplate": "https://crackjobs.com/search?q={search_term_string}"
+          },
+          "query-input": "required name=search_term_string"
+        },
+        "inLanguage": "en-US"
+      },
+      {
+        "@type": "Organization",
+        "@id": "https://crackjobs.com/#organization",
+        "name": "CrackJobs",
+        "url": "https://crackjobs.com",
+        "logo": {
+          "@type": "ImageObject",
+          "@id": "https://crackjobs.com/#logo",
+          "url": "https://crackjobs.com/logo.png",
+          "contentUrl": "https://crackjobs.com/logo.png",
+          "caption": "CrackJobs"
+        },
+        "image": {
+          "@id": "https://crackjobs.com/#logo"
+        },
+        "description": "Anonymous mock interview platform connecting job seekers with expert mentors",
+        "foundingDate": "2024",
+        "sameAs": [
+          "https://www.linkedin.com/company/crackjobs",
+          "https://twitter.com/crackjobs"
+        ],
+        "contactPoint": {
+          "@type": "ContactPoint",
+          "contactType": "Customer Support",
+          "url": "https://crackjobs.com/contact",
+          "email": "support@crackjobs.com"
+        }
+      },
+      {
+        "@type": "WebPage",
+        "@id": "https://crackjobs.com/#webpage",
+        "url": "https://crackjobs.com/",
+        "name": "CrackJobs | Anonymous Mock Interviews with Real Professionals",
+        "isPartOf": {
+          "@id": "https://crackjobs.com/#website"
+        },
+        "about": {
+          "@id": "https://crackjobs.com/#organization"
+        },
+        "description": "Practice interview topics anonymously with fully vetted expert mentors across Product Management, Data Analytics, Data Science and HR.",
+        "inLanguage": "en-US"
+      },
+      {
+        "@type": "Service",
+        "@id": "https://crackjobs.com/#service",
+        "serviceType": "Mock Interview Platform",
+        "provider": {
+          "@id": "https://crackjobs.com/#organization"
+        },
+        "name": "Anonymous Mock Interviews",
+        "description": "Professional 1:1 mock interview sessions with industry experts including detailed feedback and session recording",
+        "areaServed": "IN",
+        "availableChannel": {
+          "@type": "ServiceChannel",
+          "serviceUrl": "https://crackjobs.com/auth/sign-up",
+          "servicePhone": "+91-XXXXXXXXXX"
+        },
+        "aggregateRating": {
+          "@type": "AggregateRating",
+          "ratingValue": "4.8",
+          "reviewCount": "500",
+          "bestRating": "5",
+          "worstRating": "1"
+        },
+        "offers": {
+          "@type": "AggregateOffer",
+          "priceCurrency": "INR",
+          "lowPrice": "1500",
+          "highPrice": "3000",
+          "offerCount": "100",
+          "availability": "https://schema.org/InStock",
+          "url": "https://crackjobs.com/auth/sign-up"
+        }
+      },
+      {
+        "@type": "ItemList",
+        "@id": "https://crackjobs.com/#interviewtracks",
+        "name": "Interview Practice Tracks",
+        "description": "Available interview preparation tracks",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "item": {
+              "@type": "Course",
+              "@id": "https://crackjobs.com/interviews/product-management#course",
+              "name": "Product Management Interview Prep",
+              "description": "Product sense, execution, strategy, technical design and leadership",
+              "url": "https://crackjobs.com/interviews/product-management",
+              "provider": {
+                "@id": "https://crackjobs.com/#organization"
+              }
+            }
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "item": {
+              "@type": "Course",
+              "@id": "https://crackjobs.com/interviews/data-analytics#course",
+              "name": "Data Analytics Interview Prep",
+              "description": "SQL, data visualization, statistical analysis, and business insights",
+              "url": "https://crackjobs.com/interviews/data-analytics",
+              "provider": {
+                "@id": "https://crackjobs.com/#organization"
+              }
+            }
+          },
+          {
+            "@type": "ListItem",
+            "position": 3,
+            "item": {
+              "@type": "Course",
+              "@id": "https://crackjobs.com/interviews/data-science#course",
+              "name": "Data Science Interview Prep",
+              "description": "Machine learning, statistics, Python, and model deployment",
+              "url": "https://crackjobs.com/interviews/data-science",
+              "provider": {
+                "@id": "https://crackjobs.com/#organization"
+              }
+            }
+          },
+          {
+            "@type": "ListItem",
+            "position": 4,
+            "item": {
+              "@type": "Course",
+              "@id": "https://crackjobs.com/interviews/hr#course",
+              "name": "HR Interview Prep",
+              "description": "Behavioral questions, situational responses, and cultural fit",
+              "url": "https://crackjobs.com/interviews/hr",
+              "provider": {
+                "@id": "https://crackjobs.com/#organization"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "@type": "FAQPage",
+        "@id": "https://crackjobs.com/#faq",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "What is CrackJobs?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "CrackJobs is an anonymous mock interview platform that connects job seekers with expert mentors from top companies like Google, Amazon, and Meta across Product Management, Data Analytics, Data Science, and HR domains."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "How does the anonymous mock interview work?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "You book a 55-minute 1:1 session with a vetted mentor. During the session, you practice real interview questions while the mentor evaluates you. After the session, you receive structured feedback and a recording."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "What interview tracks are available?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "We offer mock interviews for Product Management, Data Analytics, Data Science, and HR roles. Each track covers specific skills and frameworks used in real FAANG interviews."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Who are the mentors?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Our mentors are experienced professionals from top tech companies including Google, Amazon, Meta, Microsoft, and other leading firms. All mentors are vetted and have real hiring experience."
+            }
+          }
+        ]
+      }
+    ]
+  };
+
   return (
     <>
-      {/* 🔥 COMPREHENSIVE SEO - HARDCODED FOR MAXIMUM INDEXING */}
       <Head>
         {/* Essential Meta Tags */}
         <meta charSet="utf-8" />
@@ -146,214 +347,7 @@ export default function LandingPage() {
         <meta property="al:android:url" content="crackjobs://home" />
         <meta property="al:android:package" content="com.crackjobs.app" />
         <meta property="al:android:app_name" content="CrackJobs" />
-        
-        {/* 🔥 COMPREHENSIVE STRUCTURED DATA */}
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@graph": [
-                {
-                  "@type": "WebSite",
-                  "@id": "https://crackjobs.com/#website",
-                  "url": "https://crackjobs.com/",
-                  "name": "CrackJobs",
-                  "description": "Anonymous mock interviews with expert mentors from top companies",
-                  "publisher": {
-                    "@id": "https://crackjobs.com/#organization"
-                  },
-                  "potentialAction": {
-                    "@type": "SearchAction",
-                    "target": {
-                      "@type": "EntryPoint",
-                      "urlTemplate": "https://crackjobs.com/search?q={search_term_string}"
-                    },
-                    "query-input": "required name=search_term_string"
-                  },
-                  "inLanguage": "en-US"
-                },
-                {
-                  "@type": "Organization",
-                  "@id": "https://crackjobs.com/#organization",
-                  "name": "CrackJobs",
-                  "url": "https://crackjobs.com",
-                  "logo": {
-                    "@type": "ImageObject",
-                    "@id": "https://crackjobs.com/#logo",
-                    "url": "https://crackjobs.com/logo.png",
-                    "contentUrl": "https://crackjobs.com/logo.png",
-                    "caption": "CrackJobs"
-                  },
-                  "image": {
-                    "@id": "https://crackjobs.com/#logo"
-                  },
-                  "description": "Anonymous mock interview platform connecting job seekers with expert mentors",
-                  "foundingDate": "2024",
-                  "sameAs": [
-                    "https://www.linkedin.com/company/crackjobs",
-                    "https://twitter.com/crackjobs"
-                  ],
-                  "contactPoint": {
-                    "@type": "ContactPoint",
-                    "contactType": "Customer Support",
-                    "url": "https://crackjobs.com/contact",
-                    "email": "support@crackjobs.com"
-                  }
-                },
-                {
-                  "@type": "WebPage",
-                  "@id": "https://crackjobs.com/#webpage",
-                  "url": "https://crackjobs.com/",
-                  "name": "CrackJobs | Anonymous Mock Interviews with Real Professionals",
-                  "isPartOf": {
-                    "@id": "https://crackjobs.com/#website"
-                  },
-                  "about": {
-                    "@id": "https://crackjobs.com/#organization"
-                  },
-                  "description": "Practice interview topics anonymously with fully vetted expert mentors across Product Management, Data Analytics, Data Science and HR.",
-                  "inLanguage": "en-US"
-                },
-                {
-                  "@type": "Service",
-                  "@id": "https://crackjobs.com/#service",
-                  "serviceType": "Mock Interview Platform",
-                  "provider": {
-                    "@id": "https://crackjobs.com/#organization"
-                  },
-                  "name": "Anonymous Mock Interviews",
-                  "description": "Professional 1:1 mock interview sessions with industry experts including detailed feedback and session recording",
-                  "areaServed": "IN",
-                  "availableChannel": {
-                    "@type": "ServiceChannel",
-                    "serviceUrl": "https://crackjobs.com/auth/sign-up",
-                    "servicePhone": "+91-XXXXXXXXXX"
-                  },
-                  "aggregateRating": {
-                    "@type": "AggregateRating",
-                    "ratingValue": "4.8",
-                    "reviewCount": "500",
-                    "bestRating": "5",
-                    "worstRating": "1"
-                  },
-                  "offers": {
-                    "@type": "AggregateOffer",
-                    "priceCurrency": "INR",
-                    "lowPrice": "1500",
-                    "highPrice": "3000",
-                    "offerCount": "100",
-                    "availability": "https://schema.org/InStock",
-                    "url": "https://crackjobs.com/auth/sign-up"
-                  }
-                },
-                {
-                  "@type": "ItemList",
-                  "@id": "https://crackjobs.com/#interviewtracks",
-                  "name": "Interview Practice Tracks",
-                  "description": "Available interview preparation tracks",
-                  "itemListElement": [
-                    {
-                      "@type": "ListItem",
-                      "position": 1,
-                      "item": {
-                        "@type": "Course",
-                        "@id": "https://crackjobs.com/interviews/product-management#course",
-                        "name": "Product Management Interview Prep",
-                        "description": "Product sense, execution, strategy, technical design and leadership",
-                        "url": "https://crackjobs.com/interviews/product-management",
-                        "provider": {
-                          "@id": "https://crackjobs.com/#organization"
-                        }
-                      }
-                    },
-                    {
-                      "@type": "ListItem",
-                      "position": 2,
-                      "item": {
-                        "@type": "Course",
-                        "@id": "https://crackjobs.com/interviews/data-analytics#course",
-                        "name": "Data Analytics Interview Prep",
-                        "description": "SQL, data visualization, statistical analysis, and business insights",
-                        "url": "https://crackjobs.com/interviews/data-analytics",
-                        "provider": {
-                          "@id": "https://crackjobs.com/#organization"
-                        }
-                      }
-                    },
-                    {
-                      "@type": "ListItem",
-                      "position": 3,
-                      "item": {
-                        "@type": "Course",
-                        "@id": "https://crackjobs.com/interviews/data-science#course",
-                        "name": "Data Science Interview Prep",
-                        "description": "Machine learning, statistics, Python, and model deployment",
-                        "url": "https://crackjobs.com/interviews/data-science",
-                        "provider": {
-                          "@id": "https://crackjobs.com/#organization"
-                        }
-                      }
-                    },
-                    {
-                      "@type": "ListItem",
-                      "position": 4,
-                      "item": {
-                        "@type": "Course",
-                        "@id": "https://crackjobs.com/interviews/hr#course",
-                        "name": "HR Interview Prep",
-                        "description": "Behavioral questions, situational responses, and cultural fit",
-                        "url": "https://crackjobs.com/interviews/hr",
-                        "provider": {
-                          "@id": "https://crackjobs.com/#organization"
-                        }
-                      }
-                    }
-                  ]
-                },
-                {
-                  "@type": "FAQPage",
-                  "@id": "https://crackjobs.com/#faq",
-                  "mainEntity": [
-                    {
-                      "@type": "Question",
-                      "name": "What is CrackJobs?",
-                      "acceptedAnswer": {
-                        "@type": "Answer",
-                        "text": "CrackJobs is an anonymous mock interview platform that connects job seekers with expert mentors from top companies like Google, Amazon, and Meta across Product Management, Data Analytics, Data Science, and HR domains."
-                      }
-                    },
-                    {
-                      "@type": "Question",
-                      "name": "How does the anonymous mock interview work?",
-                      "acceptedAnswer": {
-                        "@type": "Answer",
-                        "text": "You book a 55-minute 1:1 session with a vetted mentor. During the session, you practice real interview questions while the mentor evaluates you. After the session, you receive structured feedback and a recording."
-                      }
-                    },
-                    {
-                      "@type": "Question",
-                      "name": "What interview tracks are available?",
-                      "acceptedAnswer": {
-                        "@type": "Answer",
-                        "text": "We offer mock interviews for Product Management, Data Analytics, Data Science, and HR roles. Each track covers specific skills and frameworks used in real FAANG interviews."
-                      }
-                    },
-                    {
-                      "@type": "Question",
-                      "name": "Who are the mentors?",
-                      "acceptedAnswer": {
-                        "@type": "Answer",
-                        "text": "Our mentors are experienced professionals from top tech companies including Google, Amazon, Meta, Microsoft, and other leading firms. All mentors are vetted and have real hiring experience."
-                      }
-                    }
-                  ]
-                }
-              ]
-            })
-          }}
-        />
-        
+
         {/* Mobile Responsive Styles */}
         <style>{`
           body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; background-color: #f8f5f0; }
@@ -376,6 +370,14 @@ export default function LandingPage() {
           }
         `}</style>
       </Head>
+
+      {/* ✅ CORRECTED: Structured Data script moved OUT of Head to ensure it renders in Body */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(structuredData)
+        }}
+      />
 
       <ScrollView 
         style={styles.container} 
@@ -452,8 +454,8 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: BG_CREAM,
-    paddingTop: 30,
-    paddingBottom: 0,
+    paddingTop: 20,
+    paddingBottom:  0,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(0,0,0,0.05)',
   },
