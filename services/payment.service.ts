@@ -388,8 +388,9 @@ export const paymentService = {
       }
 
       // ✅ STEP 5: Send notification emails to candidate and mentor
+      // 🟢 FIXED: Added await to ensure emails are sent before continuing
       console.log("[Payment Service] 📧 Triggering booking notification emails...");
-      this.triggerBookingNotificationEmails(pkgId);
+      await this.triggerBookingNotificationEmails(pkgId);
       
       return { success: true };
 
@@ -442,13 +443,13 @@ export const paymentService = {
           ? new Date(session.scheduled_at).toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }) 
           : 'TBD';
 
-        // ✅ Send to Candidate - Payment received, awaiting mentor
+        // ✅ Send to Candidate - Booking confirmed
         if (candidate?.profile?.email) {
           console.log("[Email] 📧 Sending to candidate:", candidate.profile.email);
           await sendEmail(
             candidate.profile.email,
-            `✅ Payment Received - Awaiting Mentor Confirmation`,
-            EMAIL_TEMPLATES.CANDIDATE_PAYMENT_RECEIVED,
+            `✅ Interview Confirmed`,
+            EMAIL_TEMPLATES.CANDIDATE_BOOKING_CONFIRMATION,
             {
               name: candidate.profile.full_name,
               mentorTitle: mentor?.professional_title,
@@ -460,13 +461,13 @@ export const paymentService = {
           );
         }
 
-        // ✅ Send to Mentor - New booking request, needs approval
+        // ✅ Send to Mentor - Booking confirmed
         if (mentor?.profile?.email) {
           console.log("[Email] 📧 Sending to mentor:", mentor.profile.email);
           await sendEmail(
             mentor.profile.email,
-            `🎯 New Booking Request - Action Required`,
-            EMAIL_TEMPLATES.MENTOR_BOOKING_REQUEST,
+            `🎯 Interview Confirmed`,
+            EMAIL_TEMPLATES.MENTOR_BOOKING_CONFIRMATION,
             {
               name: mentor.profile.full_name,
               candidateTitle: candidate?.professional_title,

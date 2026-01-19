@@ -363,8 +363,12 @@ export default function MentorBookingsScreen() {
 
       if (error) throw error;
 
+      // ✅ FILTER: Exclude sessions with status = 'awaiting_payment'
+      // - 'awaiting_payment': Payment in progress, not yet confirmed
+      // - 'pending': Payment confirmed, awaiting mentor approval (SHOW THIS)
+      // - 'confirmed', 'completed', etc.: All other statuses (SHOW THESE)
       const paidSessions = (data || []).filter((s: any) =>
-        s.package?.payment_status && s.package.payment_status !== 'pending'
+        s.status !== 'awaiting_payment'
       );
 
       const rawSessions = paidSessions;
