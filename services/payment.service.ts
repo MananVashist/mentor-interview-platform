@@ -387,6 +387,24 @@ export const paymentService = {
         console.warn("[Payment Service] ⚠️ No session_id in booking metadata");
       }
 
+      // ✅ STEP 4.5: Create 100ms meeting after successful payment
+      if (session_id) {
+        console.log("[Payment Service] 🎥 Creating 100ms meeting for session:", session_id);
+        
+        const { data: meetingData, error: meetingError } = await supabase.functions.invoke('create-meeting', {
+          body: { sessionId: session_id }
+        });
+
+        if (meetingError || !meetingData?.success) {
+          console.error("[Payment Service] ⚠️ Meeting creation failed:", meetingError || meetingData);
+          // Don't fail the entire payment - meeting can be created manually if needed
+        } else {
+          console.log("[Payment Service] ✅ Meeting created successfully:", meetingData.roomId);
+        }
+      } else {
+        console.warn("[Payment Service] ⚠️ Cannot create meeting - no session_id");
+      }
+
       // ✅ STEP 5: Send notification emails to candidate and mentor
       // 🟢 FIXED: Added await to ensure emails are sent before continuing
       console.log("[Payment Service] 📧 Triggering booking notification emails...");

@@ -989,6 +989,8 @@ const styles = StyleSheet.create({
   modalContainer: {
     backgroundColor: '#fff',
     borderRadius: 16,
+    width: '100%',        // Fix: Force container to fill the overlay padding width
+    maxWidth: 500,
     maxHeight: '85%',
     overflow: 'hidden'
   },

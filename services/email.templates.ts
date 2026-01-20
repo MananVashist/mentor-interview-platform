@@ -204,7 +204,7 @@ export const EMAIL_TEMPLATES = {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Booking Confirmed</title>
+  <title>Booking Scheduled</title>
   <style>
     body { 
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; 
@@ -318,7 +318,7 @@ export const EMAIL_TEMPLATES = {
 <body>
   <div class="container">
     <div class="header">
-      <h1>✅ Your Interview is Confirmed!</h1>
+      <h1>✅ Your Interview is Scheduled!</h1>
     </div>
     <div class="content">
       <p>Hello,</p>
@@ -327,7 +327,7 @@ export const EMAIL_TEMPLATES = {
         <span class="success-badge">Payment Successful</span>
       </div>
 
-      <p>Great news! Your mock interview has been confirmed and your mentor is ready to help you succeed.</p>
+      <p>Great news! Your mock interview has been scheduled. The mentor will now accept the invite or might request for a reschedule</p>
       
       <div class="details">
         <div class="detail-row">
@@ -386,7 +386,7 @@ export const EMAIL_TEMPLATES = {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>New Booking Confirmed</title>
+  <title>New Booking Scheduled - APPROVAL NEEDED</title>
   <style>
     body { 
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; 
@@ -512,7 +512,7 @@ export const EMAIL_TEMPLATES = {
         <span class="success-badge">Payment Confirmed</span>
       </div>
 
-      <p>You have a new confirmed interview session! A candidate has successfully booked and paid for a session with you.</p>
+      <p>You have a new confirmed interview session! A candidate has successfully booked and paid for a session with you.Please approve the meeting in your "My Bookings" page</p>
       
       <div class="details">
         <div class="detail-row">

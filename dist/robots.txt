@@ -1,0 +1,34 @@
+# ================================================
+# robots.txt for CrackJobs
+# ================================================
+
+User-agent: *
+
+# --- DISALLOW Private Areas ---
+# Keep these! You don't want Google indexing user dashboards.
+Disallow: /admin/
+Disallow: /candidate/
+Disallow: /mentor/
+
+# --- BLOCK GHOST / LEGACY PAGES ---
+# These pages do not exist but are stuck in Google's index.
+# Blocking them here forces Google to stop trying to crawl them.
+Disallow: /shipping
+Disallow: /blog/technical-interview-preparation-guide
+
+# --- ALLOWED PAGES ---
+# (Removed Auth bans so Sitelinks work)
+
+# --- SYSTEM FILES ---
+Disallow: /api/
+Disallow: /_expo/
+
+# --- PREVENT DUPLICATE CONTENT ---
+# Good practice for search filters
+Disallow: /*?search=
+Disallow: /*?filter=
+Disallow: /*?sort=
+
+# ================================================
+Sitemap: https://crackjobs.com/sitemap.xml
+# ================================================
