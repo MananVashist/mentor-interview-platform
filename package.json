@@ -10,6 +10,7 @@
     "build": "expo export",
     "build:web": "expo export --platform web",
     "postbuild:web": "node scripts/copy-static-files.js && node scripts/prerender.js",
+    "build:cloudflare": "expo export --platform web && node scripts/copy-static-files.js",
     "build:production": "npm run build:web"
   },
   "dependencies": {
