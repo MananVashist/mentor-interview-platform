@@ -8,7 +8,9 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "build": "expo export",
-    "build:web": "expo export"
+    "build:web": "expo export --platform web",
+    "postbuild:web": "node scripts/copy-static-files.js && node scripts/prerender.js",
+    "build:production": "npm run build:web"
   },
   "dependencies": {
     "@expo-google-fonts/dancing-script": "^0.4.2",
@@ -61,44 +63,11 @@
     "@babel/core": "^7.20.0",
     "@types/luxon": "^3.7.1",
     "@types/react": "~18.3.12",
-    "react-snap": "^1.23.0",
+    "puppeteer": "^22.0.0",
+    "serve-handler": "^6.1.5",
     "supabase": "^1.192.5",
     "tailwindcss": "3.3.2",
     "typescript": "~5.3.3"
   },
-  "reactSnap": {
-    "source": "dist",
-    "minifyHtml": {
-      "collapseWhitespace": true,
-      "removeComments": true
-    },
-    "skipThirdPartyRequests": true,
-    "include": [
-      "/",
-      "/how-it-works",
-      "/about",
-      "/contact",
-      "/faq",
-      "/privacy",
-      "/terms",
-      "/cancellation-policy",
-      "/interviews/hr",
-      "/interviews/product-management",
-      "/interviews/data-analytics",
-      "/interviews/data-science",
-      "/blog"
-    ],
-    "exclude": [
-      "/candidate",
-      "/candidate/*",
-      "/mentor",
-      "/mentor/*",
-      "/admin",
-      "/admin/*",
-      "/auth",
-      "/auth/*"
-    ]
-  },
-  "private": true,
-  "overrides": {}
+  "private": true
 }

@@ -24,6 +24,8 @@ serve(async (req) => {
     const { sessionId } = await req.json();
     if (!sessionId) throw new Error('sessionId is required');
 
+    console.log('[create-meeting] Creating meeting for session:', sessionId);
+
     // 1. Create Room in 100ms
     const roomPayload = {
       name: `Interview-${sessionId}`,
@@ -41,9 +43,16 @@ serve(async (req) => {
       body: JSON.stringify(roomPayload),
     });
 
-    if (!roomResponse.ok) throw new Error(`100ms Room Error: ${await roomResponse.text()}`);
+    if (!roomResponse.ok) {
+      const errorText = await roomResponse.text();
+      console.error('[create-meeting] Room creation failed:', errorText);
+      throw new Error(`100ms Room Error: ${errorText}`);
+    }
+    
     const roomData = await roomResponse.json();
     const roomId = roomData.id;
+
+    console.log('[create-meeting] ✅ Room created:', roomId);
 
     // 2. Generate Room Codes
     // This creates codes like 'abc-def-ghi' for every role in your template
@@ -52,8 +61,15 @@ serve(async (req) => {
       headers: { "Authorization": `Bearer ${HMS_MANAGEMENT_TOKEN}` },
     });
 
-    if (!codesResponse.ok) throw new Error(`100ms Code Gen Error: ${await codesResponse.text()}`);
+    if (!codesResponse.ok) {
+      const errorText = await codesResponse.text();
+      console.error('[create-meeting] Code generation failed:', errorText);
+      throw new Error(`100ms Code Gen Error: ${errorText}`);
+    }
+    
     const codesData = await codesResponse.json();
+    
+    console.log('[create-meeting] Generated codes for roles:', codesData.data?.map((c: any) => c.role).join(', '));
     
     // Attempt to find the correct role codes. 
     // We check for 'host' OR 'mentor' to be safe.
@@ -63,8 +79,11 @@ serve(async (req) => {
     const hostCode = hostCodeObj ? hostCodeObj.code : codesData.data[0]?.code;
 
     if (!hostCode) {
-      console.error("CRITICAL: No room codes generated", codesData);
+      console.error("[create-meeting] CRITICAL: No room codes generated", codesData);
+      throw new Error('Failed to generate room codes');
     }
+
+    console.log('[create-meeting] Host code selected for role:', hostCodeObj?.role || 'fallback');
 
     // 3. Save to Supabase
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
@@ -80,7 +99,12 @@ serve(async (req) => {
       .select()
       .single();
 
-    if (dbError) throw dbError;
+    if (dbError) {
+      console.error('[create-meeting] Database insert failed:', dbError);
+      throw dbError;
+    }
+
+    console.log('[create-meeting] ✅ Meeting saved to database');
 
     return new Response(JSON.stringify({ 
       success: true, 
@@ -92,6 +116,7 @@ serve(async (req) => {
     });
 
   } catch (error) {
+    console.error('[create-meeting] Error:', error);
     return new Response(JSON.stringify({ success: false, error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 400,
