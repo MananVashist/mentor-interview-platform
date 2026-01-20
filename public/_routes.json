@@ -1,11 +1,5 @@
 {
   "version": 1,
-  "include": ["/*"],
-  "exclude": [
-    "/robots.txt",
-    "/sitemap.xml",
-    "/favicon.ico",
-    "/assets/*",
-    "/_expo/*"
-  ]
+  "include": [],
+  "exclude": ["/*"]
 }
