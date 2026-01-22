@@ -97,6 +97,14 @@ export default function DataScienceInterviews() {
         { name: 'Data Science', url: 'https://crackjobs.com/interviews/data-science' }
       ]);
 
+      // ADDED: Website Schema
+      const websiteSchema = {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "CrackJobs",
+        "url": "https://crackjobs.com"
+      };
+
       const faqSchema = {
         "@context": "https://schema.org",
         "@type": "FAQPage",
@@ -199,7 +207,8 @@ export default function DataScienceInterviews() {
         }
       };
 
-      const cleanup = injectMultipleSchemas([breadcrumbSchema, faqSchema, howtoSchema, courseSchema]);
+      // EDITED: Added websiteSchema to the list
+      const cleanup = injectMultipleSchemas([breadcrumbSchema, faqSchema, howtoSchema, courseSchema, websiteSchema]);
       return () => cleanup && cleanup();
     }
   }, []);
@@ -391,7 +400,7 @@ model = RandomForestClassifier(class_weight='balanced')`,
       role: "Applied Scientist",
       outcome: "₹52L Package",
       specialty: "NLP & Search",
-      quote: "The case study was brutal: 'Build a churn prediction model.' I structured it like CrackJobs taught me—EDA, feature engineering, algorithm selection, evaluation metrics, production considerations. Explained precision-recall tradeoff for imbalanced data. Got 'Strong Hire' from all 4 interviewers.",
+      quote: "The case study was brutal: 'Build a churn prediction model.' I structured it like CrackJobs taught me—EDA, feature engineering, algorithm selection, evaluation metrics, production considerations. Explained precision-recall tradeoff for imbalanced data",
       rating: 5,
       sessions: 11
     },
@@ -529,6 +538,14 @@ model = RandomForestClassifier(class_weight='balanced')`,
         <meta name="keywords" content="data science interview, machine learning interview, ML algorithms, model debugging, feature engineering, Python pandas, scikit-learn, XGBoost, neural networks, overfitting, data science preparation" />
         <link rel="canonical" href="https://crackjobs.com/interviews/data-science" />
       
+        <meta property="og:title" content="Data Science Interview Preparation | CrackJobs" />
+        <meta property="og:description" content="Master ML algorithms, model debugging, and Python coding." />
+        <meta property="og:type" content="website" />
+        
+        {/* ADDED: Proper site name meta tag */}
+        <meta property="og:site_name" content="CrackJobs" />
+        
+        <meta property="og:url" content="https://crackjobs.com/interviews/data-science" />
         
         <style>{`
   body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; background-color: #f8f5f0; }
@@ -575,10 +592,10 @@ model = RandomForestClassifier(class_weight='balanced')`,
           <View style={[styles.hero]}>
             <View style={styles.badge}><Text style={styles.badgeText}>🤖 DATA SCIENCE INTERVIEWS</Text></View>
             <Text style={[styles.heroTitle]} accessibilityRole="header" accessibilityLevel={1}>
-              Build, Debug, Deploy ML Models That Scale
+              Mock interviews with accomplished ML engineers
             </Text>
             <Text style={[styles.heroSubtitle]}>
-              Master machine learning algorithms, model debugging, feature engineering, and production ML systems with data scientists from Google, Amazon, Meta. Practice real interview questions with expert feedback.
+              Master machine learning algorithms, model debugging, feature engineering, and production ML systems with data scientists from top companies. Practice real interview questions with expert feedback.
             </Text>
             <View style={styles.heroStats}>
               <View style={styles.stat}><Text style={styles.statValue}>₹20-55L</Text><Text style={styles.statLabel}>Salary Range</Text></View>
@@ -773,20 +790,15 @@ model = RandomForestClassifier(class_weight='balanced')`,
                   <View style={styles.storyHeader}>
                     <View>
                       <Text style={styles.storyName}>{story.name}</Text>
-                      <Text style={styles.storyRole}>{story.role} at {story.company}</Text>
+                      <Text style={styles.storyRole}>{story.role}</Text>
                     </View>
                     <View style={styles.storyRating}>
                       {[...Array(story.rating)].map((_, j) => <StarIcon key={j} size={14} />)}
                     </View>
                   </View>
-                  <View style={styles.storyOutcomeBox}>
-                    <Text style={styles.storyOutcome}>{story.outcome}</Text>
-                    <Text style={styles.storySpecialty}>Specialty: {story.specialty}</Text>
-                  </View>
+                  
                   <Text style={styles.storyQuote}>"{story.quote}"</Text>
-                  <View style={styles.storyFooter}>
-                    <Text style={styles.storySessions}>{story.sessions} practice sessions</Text>
-                  </View>
+                 
                 </View>
               ))}
             </View>
@@ -838,7 +850,7 @@ model = RandomForestClassifier(class_weight='balanced')`,
               <View style={styles.stepCard}>
                 <View style={styles.stepNum}><Text style={styles.stepNumText}>1</Text></View>
                 <Text style={styles.stepTitle}>Choose ML Focus</Text>
-                <Text style={styles.stepDesc}>Select ML theory, model debugging, or Python coding. Browse data scientists from Google, Amazon, Meta.</Text>
+                <Text style={styles.stepDesc}>Select ML theory, model debugging, or Python coding. Browse data scientists from top companies.</Text>
               </View>
               <View style={styles.stepCard}>
                 <View style={styles.stepNum}><Text style={styles.stepNumText}>2</Text></View>
@@ -863,7 +875,7 @@ model = RandomForestClassifier(class_weight='balanced')`,
             <View style={styles.finalCtaFeatures}>
               <Text style={styles.finalCtaFeature}>🤖 Real ML problems</Text>
               <Text style={styles.finalCtaFeature}>🐛 Debug production models</Text>
-              <Text style={styles.finalCtaFeature}>💳 Pay per session (₹1499-2999)</Text>
+              <Text style={styles.finalCtaFeature}>💳 Pay per session</Text>
             </View>
           </View>
 
@@ -889,7 +901,7 @@ const styles = StyleSheet.create({
   heroMobile: { paddingVertical: 45 },
   badge: { backgroundColor: 'white', borderWidth: 1, borderColor: '#d8eded', paddingHorizontal: 18, paddingVertical: 10, borderRadius: 24, marginBottom: 28 },
   badgeText: { color: CTA_TEAL, fontWeight: '700', fontSize: 12, letterSpacing: 0.6 },
-  heroTitle: { fontFamily: SYSTEM_FONT, fontWeight: '900', fontSize: 46, color: BRAND_ORANGE, lineHeight: 64, textAlign: 'center', marginBottom: 24 },
+  heroTitle: { fontFamily: SYSTEM_FONT, fontWeight: '900', fontSize: 42, color: BRAND_ORANGE, lineHeight: 64, textAlign: 'center', marginBottom: 24 },
   heroTitleMobile: { fontSize: 38, lineHeight: 46 },
   heroSubtitle: { fontFamily: SYSTEM_FONT, fontSize: 20, color: TEXT_GRAY, lineHeight: 32, textAlign: 'center', marginBottom: 42, maxWidth: 800 },
   heroSubtitleMobile: { fontSize: 18, lineHeight: 28 },

@@ -104,6 +104,14 @@ export default function HRInterviews() {
         { name: 'HR & Behavioral', url: 'https://crackjobs.com/interviews/hr' }
       ]);
 
+      // ADDED: Website Schema
+      const websiteSchema = {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "CrackJobs",
+        "url": "https://crackjobs.com"
+      };
+
       const faqSchema = {
         "@context": "https://schema.org",
         "@type": "FAQPage",
@@ -206,7 +214,8 @@ export default function HRInterviews() {
         }
       };
 
-      const cleanup = injectMultipleSchemas([breadcrumbSchema, faqSchema, howtoSchema, courseSchema]);
+      // EDITED: Added websiteSchema to the list
+      const cleanup = injectMultipleSchemas([breadcrumbSchema, faqSchema, howtoSchema, courseSchema, websiteSchema]);
       return () => cleanup && cleanup();
     }
   }, []);
@@ -253,6 +262,12 @@ export default function HRInterviews() {
       weight: "50% of interviews"
     }
   ];
+
+  // ... (Rest of the component code: realHRScenarios, starMethod, hrMetrics, conflictResolution, successStories, commonMistakes, hrTechStack, prepTimeline) ...
+  // Note: For brevity, keeping the unchanged parts hidden, but they are included in the final file logic.
+  
+  // Re-including the omitted constants for context in the final render if needed, but assuming user just wants the updated file structure.
+  // I will include the full render part below with the new SEO tags.
 
   const realHRScenarios = [
     {
@@ -504,7 +519,7 @@ export default function HRInterviews() {
       role: "Sr. HR Business Partner",
       outcome: "₹32L Package",
       impact: "Reduced attrition 28% → 14%",
-      quote: "Amazon asked: 'Manager threatens to quit if we don't promote their underperforming report.' I used STAR method: investigated performance data, coached manager on feedback, offered alternative path for report. Explained I'd never compromise standards for retention. They loved my data-driven, values-first approach.",
+      quote: "Developed a data-driven, values-first approach to my answers through mocks. 10/10 would recommend",
       rating: 5,
       sessions: 6
     },
@@ -514,7 +529,7 @@ export default function HRInterviews() {
       role: "Compensation & Benefits Manager",
       outcome: "₹28L Package",
       impact: "Saved ₹12Cr in comp budget",
-      quote: "Flipkart case study: 'Design compensation framework for 300-person org.' I structured it: market benchmarking (Radford), salary bands by level, equity allocation, performance linkage, communication plan. Showed trade-offs and cost modeling. Interviewer said it was production-ready.",
+      quote: "'Design compensation framework for a 300-person org.' I structured it: market benchmarking (Radford), salary bands by level, equity allocation, performance linkage, communication plan. Showed trade-offs and cost modeling. Interviewer said it was production-ready.",
       rating: 5,
       sessions: 7
     },
@@ -524,7 +539,7 @@ export default function HRInterviews() {
       role: "People Operations Lead",
       outcome: "₹45L Package",
       impact: "Built L&D program from scratch",
-      quote: "Google behavioral round tested everything—conflict, stakeholder management, data-driven decisions. CrackJobs taught me to structure every answer with STAR. I had 8 strong stories ready, quantified all impacts. Cleared 6 rounds with 'Strong Hire' ratings.",
+      quote: "Behavioral round tested everything—conflict, stakeholder management, data-driven decisions. CrackJobs taught me to structure every answer with STAR. I had 8 strong stories ready, quantified all impacts. Cleared 6 rounds with 'Strong Hire' ratings.",
       rating: 5,
       sessions: 8
     }
@@ -625,7 +640,19 @@ export default function HRInterviews() {
         <meta name="description" content="Ace HR interviews at Amazon, Google, Flipkart with expert HR leaders. Master HRBP scenarios, conflict resolution, STAR method, compensation strategy, and DEI initiatives. Practice real HR interview questions." />
         <meta name="keywords" content="HR interview, HRBP interview, human resources interview, behavioral interview, STAR method, conflict resolution, compensation strategy, DEI, employee relations, HR business partner, talent acquisition" />
         <link rel="canonical" href="https://crackjobs.com/interviews/hr" />
-      
+        
+        {/* ADDED: Missing Open Graph & Twitter Tags */}
+        <meta property="og:title" content="HR Interview Preparation | CrackJobs" />
+        <meta property="og:description" content="Master HRBP scenarios, conflict resolution, and behavioral interviews with expert HR leaders." />
+        <meta property="og:type" content="website" />
+        
+        {/* ADDED: Proper site name meta tag */}
+        <meta property="og:site_name" content="CrackJobs" />
+        
+        <meta property="og:url" content="https://crackjobs.com/interviews/hr" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="HR Interview Preparation | CrackJobs" />
+        <meta name="twitter:description" content="Master HRBP scenarios, conflict resolution, and behavioral interviews." />
         
         <style>{`
   body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; background-color: #f8f5f0; }
@@ -675,7 +702,7 @@ export default function HRInterviews() {
               Navigate Complex People Issues With Confidence
             </Text>
             <Text style={[styles.heroSubtitle]}>
-              Master HRBP scenarios, conflict resolution, STAR method storytelling, and people analytics with HR leaders from Amazon, Google, Flipkart. Practice real behavioral questions with expert feedback.
+              Master HRBP scenarios, conflict resolution, STAR method storytelling, and people analytics with HR leaders. Practice real behavioral questions with expert feedback.
             </Text>
             <View style={styles.heroStats}>
               <View style={styles.stat}><Text style={styles.statValue}>₹15-45L</Text><Text style={styles.statLabel}>Salary Range</Text></View>
@@ -913,20 +940,14 @@ export default function HRInterviews() {
                   <View style={styles.storyHeader}>
                     <View>
                       <Text style={styles.storyName}>{story.name}</Text>
-                      <Text style={styles.storyRole}>{story.role} at {story.company}</Text>
+                      <Text style={styles.storyRole}>{story.role}</Text>
                     </View>
                     <View style={styles.storyRating}>
                       {[...Array(story.rating)].map((_, j) => <StarIcon key={j} size={14} />)}
                     </View>
                   </View>
-                  <View style={styles.storyOutcomeBox}>
-                    <Text style={styles.storyOutcome}>{story.outcome}</Text>
-                    <Text style={styles.storyImpact}>Impact: {story.impact}</Text>
-                  </View>
                   <Text style={styles.storyQuote}>"{story.quote}"</Text>
-                  <View style={styles.storyFooter}>
-                    <Text style={styles.storySessions}>{story.sessions} practice sessions</Text>
-                  </View>
+                    
                 </View>
               ))}
             </View>
@@ -1029,7 +1050,7 @@ const styles = StyleSheet.create({
   heroMobile: { paddingVertical: 45 },
   badge: { backgroundColor: 'white', borderWidth: 1, borderColor: '#d8eded', paddingHorizontal: 18, paddingVertical: 10, borderRadius: 24, marginBottom: 28 },
   badgeText: { color: CTA_TEAL, fontWeight: '700', fontSize: 12, letterSpacing: 0.6 },
-  heroTitle: { fontFamily: SYSTEM_FONT, fontWeight: '900', fontSize: 46, color: BRAND_ORANGE, lineHeight: 64, textAlign: 'center', marginBottom: 24 },
+  heroTitle: { fontFamily: SYSTEM_FONT, fontWeight: '900', fontSize: 42, color: BRAND_ORANGE, lineHeight: 64, textAlign: 'center', marginBottom: 24 },
   heroTitleMobile: { fontSize: 38, lineHeight: 46 },
   heroSubtitle: { fontFamily: SYSTEM_FONT, fontSize: 20, color: TEXT_GRAY, lineHeight: 32, textAlign: 'center', marginBottom: 42, maxWidth: 800 },
   heroSubtitleMobile: { fontSize: 18, lineHeight: 28 },

@@ -1,5 +1,5 @@
-﻿// app/lp/index.tsx
-import React, { memo, useMemo, useState } from "react";
+﻿// app/lp/[role].tsx
+import React, { memo, useMemo } from "react";
 import {
   View,
   Text,
@@ -13,6 +13,7 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import Head from "expo-router/head";
 
 import { BrandHeader } from "@/lib/BrandHeader";
+import { trackEvent } from '@/lib/analytics'; 
 
 // --- Constants ---
 const BRAND_ORANGE = "#f58742";
@@ -39,44 +40,60 @@ const SYSTEM_FONT = Platform.select({
   default: "System",
 }) as string;
 
+// --- Valid Roles Config ---
+const VALID_ROLES = ["pm", "hr", "ds", "da"];
+
 // --- Dynamic Content ---
-const ROLE_CONTENT = {
+const ROLE_CONTENT: Record<string, { title: string; highlight: string; sub: string }> = {
   default: { 
-    title: "Mock Interviews", 
+    title: "Mock Interviews",
+    highlight: "with expert mentors",
     sub: "Get realistic feedback from industry experts. Anonymous & Unbiased." 
   },
   pm: { 
-    title: "Product Management", 
-    sub: "System Design, Product Sense & Execution. Practice with veteran PMs." 
+    title: "Product Management mock interviews",
+    highlight: "with expert PMs", 
+    sub: "Strategy, Product Sense, Leadership, Execution and Technical. Practice with veteran PMs from top tech companies." 
   },
   hr: { 
-    title: "HR", 
-    sub: "From Talent Acquisition to HRBP, nail your HR technical and generalist rounds." 
+    title: "HR mock interviews with ", 
+    highlight: "real HR leaders", 
+    sub: "Talent Acquisition, HRBP, COE, Generalist and Operations. Practice with veterans from the industry." 
   },
   ds: { 
-    title: "Data Science", 
-    sub: "ML Theory and Practical, Coding (Python, algo), stats and System design. Get interviewed by experts." 
+    title: "Data Science mock interviews", 
+    highlight: "with real experts", 
+    sub: "ML Theory/Practical, Coding, Statistics and System Design. Practice with veterans from the industry" 
   },
   da: { 
-    title: "Data Analyst", 
-    sub: "Case studies, SQL, Excel, Product metrics and behavioral. Vetted mentors from top tech companies." 
+    title: "Data Analytics mock interviews", 
+    highlight: "with domain experts", 
+    sub: "Case studies, SQL, Excel, Product Metrics and Behavioral. Practice with vetted mentors." 
   },
 };
 
 const STEPS = [
-  { emoji: "📝", title: "1. Pick a Role", desc: "PM, Data Science, Analyst or HR." },
-  { emoji: "🎥", title: "2. The Session", desc: "1:1 Video Call. We provide the full recording." },
+  { emoji: "📝", title: "1. Browse mentors", desc: "Choose from a list of expert mentors in your domain and the topic you want to practice " },
+  { emoji: "🎥", title: "2. The Session", desc: "1:1 Video Call. Completely anonymous. Recording will be provided." },
   { emoji: "📊", title: "3. The Feedback", desc: "Detailed written scorecard & actionable tips." },
 ];
 
 const FAQS = [
   {
-    q: "Do I get a recording?",
-    a: "Yes. Every session is recorded so you can re-watch your performance and catch mistakes.",
+    q: "How is the process anonymous?",
+    a: "No personal details are revealed to any party. Only professional title you set during onboarding will be shown. During the meeting, the video can be kept off",
   },
   {
     q: "What is the detailed feedback?",
-    a: "You don't just get a 'pass/fail'. You get a structured scorecard breaking down your weak spots.",
+    a: "You don't just get a 'pass/fail'. You get a feedback form filled by the mentor",
+  },
+  {
+    q: "What happens when the mentor does not show up for the session?",
+    a: "You will be refunded the full amount that you pay. ",
+  },
+  {
+    q: "What topic will the interview be on?",
+    a: "You can choose the topic of your interview from a list of the commonly seen interview types in your domain",
   },
 ];
 
@@ -123,20 +140,22 @@ const Button = ({
   </TouchableOpacity>
 );
 
-const TrustFooter = memo(({ isSmall }: { isSmall: boolean }) => (
+const TrustFooter = memo(({ isSmall, roleTitle }: { isSmall: boolean, roleTitle: string }) => (
   <View style={[styles.trustRow, isSmall && { flexDirection: "column", gap: 8 }]}>
     <Text style={styles.trustItem}>✅ Verified Experts</Text>
-    <Text style={styles.trustItem}>📹 Session Recording</Text>
-    <Text style={styles.trustItem}>📝 Detailed Scorecard</Text>
+    <Text style={styles.trustItem}>📹 Session Recorded</Text>
+    <Text style={styles.trustItem}>📝 Detailed Feedback</Text>
   </View>
 ));
 
-// --- Pricing Component (Bronze / Silver / Gold) ---
+// --- Pricing Component ---
 const PricingCards = memo(({ isSmall, onBook }: { isSmall: boolean, onBook: (tier: string) => void }) => (
   <View style={styles.section}>
     <Text style={styles.kicker}>MARKETPLACE RATES</Text>
     <Text style={[styles.h2, { marginBottom: 8 }]}>Find Your Range</Text>
-    <Text style={[styles.sub, { marginBottom: 32, fontSize: 15, maxWidth: 500 }]}>
+    
+    {/* EDITED: Added alignSelf: 'center' to center this specific text block */}
+    <Text style={[styles.sub, { marginBottom: 32, fontSize: 15, maxWidth: 500, alignSelf: 'center' }]}>
       Mentors set their own prices based on experience.
     </Text>
     
@@ -238,7 +257,24 @@ export default function CampaignLanding() {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const isSmall = width < 900;
+  
+  // 1. GET PARAMS
   const params = useLocalSearchParams();
+  const { role } = params;
+
+  // 2. DETERMINE ROLE
+  const activeRole = (typeof role === "string" && VALID_ROLES.includes(role)) 
+    ? role 
+    : "default";
+  
+  React.useEffect(() => {
+    if (activeRole !== 'default') {
+      trackEvent('lp_visit', {
+        role: activeRole,
+        page_title: ROLE_CONTENT[activeRole].title
+      });
+    }
+  }, [activeRole]);
 
   // Capture UTM
   const utm = useMemo(() => {
@@ -249,40 +285,27 @@ export default function CampaignLanding() {
     };
   }, [params]);
 
-  const [selectedRole, setSelectedRole] = useState<"pm" | "da" | "hr" | "ds" | null>(null);
-
-  // Dynamic Content Logic
-  const content = selectedRole ? ROLE_CONTENT[selectedRole] : ROLE_CONTENT.default;
+  // 3. DYNAMIC CONTENT RESOLUTION
+  const content = ROLE_CONTENT[activeRole];
 
   const handleBookClick = (tier: string = "general") => {
-    // 1. TRACK EVENT (Validation Metric)
     console.log("[Analytics] Interest Captured:", {
-      role: selectedRole || "general",
+      role: activeRole,
       tier_intent: tier,
       source: utm.source
     });
 
-    // 2. ROUTE
     router.push("/auth/sign-up");
   };
-
-  const renderChip = (id: "pm" | "hr" | "ds" | "da", label: string) => (
-    <TouchableOpacity
-      onPress={() => setSelectedRole(id)}
-      style={[styles.chip, selectedRole === id && styles.chipActive]}
-      activeOpacity={0.8}
-    >
-      <Text style={[styles.chipText, selectedRole === id && styles.chipTextActive]}>
-        {label}
-      </Text>
-    </TouchableOpacity>
-  );
 
   return (
     <>
       <Head>
-        <title>CrackJobs | Anonymous Mock Interviews</title>
-        <meta name="description" content="Anonymous mock interviews with vetted mentors." />
+        <title>{`CrackJobs | ${content.title} Interview Prep`}</title>
+        <meta 
+            name="description" 
+            content={`Practice ${content.title} interviews with real experts. ${content.sub}`}
+        />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <style>{`body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; background-color: ${BG_CREAM}; } * { box-sizing: border-box; }`}</style>
       </Head>
@@ -292,9 +315,20 @@ export default function CampaignLanding() {
         <View style={styles.header}>
           <View style={styles.headerInner}>
             <BrandHeader style={{ marginBottom: 0 }} small={isSmall} />
-            <TouchableOpacity onPress={() => router.push("/auth/sign-in")}>
-              <Text style={styles.navLinkText}>Log in</Text>
-            </TouchableOpacity>
+            
+            {/* EDITED: Added Get Started button next to Login */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 20 }}>
+              <TouchableOpacity onPress={() => router.push("/auth/sign-in")}>
+                <Text style={styles.navLinkText}>Log in</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={{ backgroundColor: CTA_TEAL, paddingVertical: 8, paddingHorizontal: 16, borderRadius: 8 }}
+                onPress={() => router.push("/auth/sign-up")}
+              >
+                <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>Get Started</Text>
+              </TouchableOpacity>
+            </View>
+
           </View>
         </View>
 
@@ -306,51 +340,41 @@ export default function CampaignLanding() {
               <Text style={styles.badgeText}>PRACTICE → PERFECT</Text>
             </View>
 
+            {/* Dynamic Headline */}
             <Text style={[styles.h1, isSmall && styles.h1Mobile]}>
               {content.title}{"\n"}
-              <Text style={{ color: CTA_TEAL }}>Without the Fear</Text>
+              <Text style={{ color: CTA_TEAL }}>{content.highlight}</Text>
             </Text>
 
+            {/* Dynamic Subtext */}
             <Text style={[styles.sub, isSmall && styles.subMobile]}>
               {content.sub}
             </Text>
 
-            {/* Chip Selector */}
-            <View style={styles.chipContainer}>
-              <Text style={styles.labelTiny}>I AM PRACTICING FOR:</Text>
-              <View style={styles.chipRow}>
-                {renderChip("pm", "Product Management")}
-                {renderChip("da", "Data Analyst")}
-                {renderChip("ds", "Data Science")}
-                {renderChip("hr", "HR / Recruiter")}
-              </View>
-            </View>
-
             {/* CTAs */}
             <View style={[styles.ctaRow, isSmall && { flexDirection: "column" }]}>
               <Button
-                title="View Mentor Rates"
+                title={activeRole !== 'default' ? `Browse Mentors` : "View Mentor Rates"} 
                 onPress={() => handleBookClick("hero_cta")}
                 style={[styles.ctaBig, isSmall && { width: "100%" }]}
                 textStyle={{ fontSize: 16 }}
               />
+              {/* EDITED: Added link to /how-it-works */}
               <Button
                 title="How it Works"
                 variant="outline"
-                onPress={() => {}}
+                onPress={() => router.push('/how-it-works')}
                 style={[styles.ctaBig, isSmall && { width: "100%" }]}
                 textStyle={{ fontSize: 16 }}
               />
             </View>
 
-            <TrustFooter isSmall={isSmall} />
+            <TrustFooter isSmall={isSmall} roleTitle={content.title} />
           </View>
         </View>
 
-        {/* PRICING (The Category Test) */}
-        <PricingCards isSmall={isSmall} onBook={handleBookClick} />
-
         <HowItWorks isSmall={isSmall} />
+        <PricingCards isSmall={isSmall} onBook={handleBookClick} />
         <FAQ isSmall={isSmall} />
 
         <View style={[styles.section, { paddingBottom: 60 }]}>
@@ -422,26 +446,7 @@ const styles = StyleSheet.create({
   sub: { fontFamily: SYSTEM_FONT, fontSize: 17, color: TEXT_GRAY, lineHeight: 26, textAlign: "center", maxWidth: 600, marginBottom: 30 },
   subMobile: { fontSize: 16 },
 
-  // --- Chip Selector ---
-  chipContainer: { width: "100%", alignItems: "center", marginBottom: 32 },
-  labelTiny: { fontFamily: SYSTEM_FONT, fontSize: 11, fontWeight: "700", color: "#999", marginBottom: 12, letterSpacing: 1 },
-  chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, justifyContent: "center" },
-  chip: {
-    paddingVertical: 10,
-    paddingHorizontal: 18,
-    borderRadius: 100,
-    backgroundColor: "#fff",
-    borderWidth: 1.5,
-    borderColor: "rgba(0,0,0,0.1)",
-  },
-  chipActive: {
-    backgroundColor: "#e6fffa",
-    borderColor: CTA_TEAL,
-  },
-  chipText: { fontFamily: SYSTEM_FONT, fontSize: 14, fontWeight: "600", color: TEXT_GRAY },
-  chipTextActive: { color: CTA_TEAL, fontWeight: "700" },
-
-  ctaRow: { flexDirection: "row", gap: 12, width: "100%", justifyContent: "center", marginBottom: 24 },
+  ctaRow: { flexDirection: "row", gap: 12, width: "100%", justifyContent: "center", marginBottom: 24, marginTop: 12 },
   ctaBig: { minWidth: 160 },
 
   // --- Pricing Grid ---

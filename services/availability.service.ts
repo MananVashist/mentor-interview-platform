@@ -47,13 +47,10 @@ export const availabilityService = {
 
   /**
    * 🟢 CALLS YOUR EXISTING DB FUNCTION
-   * This triggers 'delete_expired_pending_packages' to remove old data.
    */
   async cleanupExpiredSessions() {
     try {
-      // ✅ Matches the function name in your screenshot
       const { error } = await supabase.rpc('delete_expired_pending_packages');
-      
       if (error) {
         console.error('[AvailabilityService] RPC Cleanup failed:', error.message);
       } else {
@@ -95,7 +92,7 @@ export const availabilityService = {
         );
       });
 
-      // 3. Fetch bookings (Checking created_at for extra safety)
+      // 3. Fetch bookings
       const startDateStr = startDate.toFormat('yyyy-MM-dd HH:mm:ss');
       const endDateStr = endDate.toFormat('yyyy-MM-dd HH:mm:ss');
       
@@ -112,13 +109,12 @@ export const availabilityService = {
       (bookingsData || []).forEach(b => {
         if (excludeSessionId && b.id === excludeSessionId) return;
 
-        // 🟢 Client-side Ignore (Safety Net)
-        // If DB cleanup hasn't run yet, ignore old pending sessions visually
+        // Ignore recently expired pending slots locally if DB job hasn't run
         if (b.status === 'awaiting_payment') {
           const createdAt = DateTime.fromISO(b.created_at || '').toUTC();
           if (createdAt.isValid) {
              const ageInMinutes = DateTime.now().toUTC().diff(createdAt, 'minutes').minutes;
-             if (ageInMinutes > 15) return; // Ignore this slot, it's expired
+             if (ageInMinutes > 15) return; 
           }
         }
 
@@ -199,7 +195,25 @@ export const availabilityService = {
     }
   },
 
+  /**
+   * 🟢 UPDATED: actually finds the next slot
+   */
   async findNextAvailableSlot(mentorId: string): Promise<string> {
-      return 'Check Calendar'; 
+    try {
+      // Reuse the generator logic to find the very first slot
+      const days = await this.generateAvailability(mentorId);
+      
+      for (const day of days) {
+        const firstAvailable = day.slots.find(s => s.isAvailable);
+        if (firstAvailable) {
+          // Format: "Mon, 12 Oct • 8:00 PM"
+          return `${day.weekdayName}, ${day.monthDay} • ${firstAvailable.time}`;
+        }
+      }
+      return 'No slots available';
+    } catch (error) {
+      console.error("Error finding next slot", error);
+      return 'Check Calendar'; // Fallback
+    }
   }
 };

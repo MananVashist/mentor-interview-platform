@@ -147,7 +147,7 @@ export default function LandingPage() {
         "@type": "WebPage",
         "@id": "https://crackjobs.com/#webpage",
         "url": "https://crackjobs.com/",
-        "name": "CrackJobs | Anonymous Mock Interviews with Real Professionals",
+        "name": "CrackJobs | Mock Interviews with vetted experts",
         "isPartOf": {
           "@id": "https://crackjobs.com/#website"
         },
@@ -303,7 +303,7 @@ export default function LandingPage() {
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
         
         {/* Primary SEO Tags */}
-        <title>CrackJobs | Anonymous Mock Interviews with Real Professionals</title>
+        <title>CrackJobs | Mock Interviews with expert mentors</title>
         <meta name="description" content="Practice interview topics anonymously with fully vetted expert mentors across Product Management, Data Analytics, Data Science and HR. Get structured feedback and ace your next interview." />
         <meta name="keywords" content="mock interview, interview preparation, interview practice, anonymous interview, product management interview, data analytics interview, data science interview, HR interview, FAANG interview prep, interview mentors" />
         
@@ -314,7 +314,7 @@ export default function LandingPage() {
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://crackjobs.com/" />
         <meta property="og:site_name" content="CrackJobs" />
-        <meta property="og:title" content="CrackJobs | Anonymous Mock Interviews with Real Professionals" />
+        <meta property="og:title" content="CrackJobs | Mock Interviews with Real experts" />
         <meta property="og:description" content="Practice interview topics anonymously with fully vetted expert mentors. Get structured feedback and ace your next interview at Google, Amazon, Meta." />
         <meta property="og:image" content="https://crackjobs.com/og-image.png" />
         <meta property="og:image:width" content="1200" />

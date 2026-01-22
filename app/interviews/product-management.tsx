@@ -117,6 +117,13 @@ export default function ProductManagementInterviews() {
         { name: 'Product Management', url: 'https://crackjobs.com/interviews/product-management' }
       ]);
 
+      const websiteSchema = {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "CrackJobs",
+        "url": "https://crackjobs.com"
+      };
+
       const faqSchema = {
         "@context": "https://schema.org",
         "@type": "FAQPage",
@@ -148,7 +155,8 @@ export default function ProductManagementInterviews() {
         ]
       };
 
-      const cleanup = injectMultipleSchemas([breadcrumbSchema, faqSchema]);
+      // EDITED: Added websiteSchema to the list
+      const cleanup = injectMultipleSchemas([breadcrumbSchema, faqSchema, websiteSchema]);
       return () => cleanup && cleanup();
     }
   }, []);
@@ -442,14 +450,18 @@ export default function ProductManagementInterviews() {
   return (
     <>
       <Head>
-        <title>Product Manager Interview Preparation | Master PM Frameworks & Land FAANG Offers</title>
-        <meta name="description" content="Ace Product Manager interviews at Google, Amazon, Meta with expert PM mentors. Master CIRCLES, AARM, RICE frameworks. Practice product sense, execution, technical design, and strategy. Get structured feedback from real FAANG PMs." />
+        <title>Product Manager Interview Preparation | Mock interviews with experienced PMs </title>
+        <meta name="description" content="Practice product sense, execution, technical design, analytics and strategy. Get structured feedback from expert PMs." />
         <meta name="keywords" content="product manager interview, PM interview prep, CIRCLES framework, AARM framework, RICE scoring, product sense, execution interview, Google PM, Amazon PM, Meta PM, FAANG PM interview, product strategy, PM frameworks" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="canonical" href="https://crackjobs.com/interviews/product-management" />
         <meta property="og:title" content="Product Manager Interview Preparation | CrackJobs" />
         <meta property="og:description" content="Master PM interviews with expert mentors from Google, Amazon, Meta. Learn frameworks, get feedback, land offers." />
         <meta property="og:type" content="website" />
+        
+        {/* EDITED: Added proper site name meta tag */}
+        <meta property="og:site_name" content="CrackJobs" />
+        
         <meta property="og:url" content="https://crackjobs.com/interviews/product-management" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="Product Manager Interview Preparation | CrackJobs" />
@@ -518,10 +530,10 @@ export default function ProductManagementInterviews() {
               accessibilityRole="header" 
               accessibilityLevel={1}
             >
-              Master PM Frameworks That Win FAANG Offers
+              Mock interviews with expert PMs
             </Text>
             <Text style={[styles.heroSubtitle]}>
-              Practice Product Sense, Execution, Technical Design, and Strategy with experienced PMs. Get structured feedback on every answer and a recording of the session
+              Practice Product Sense, Execution, Technical Design, and Strategy with experienced PMs. Get structured feedback and a recording of the session
             </Text>
             <View style={styles.heroStats}>
               <View style={styles.stat}>
@@ -890,7 +902,7 @@ const styles = StyleSheet.create({
   heroMobile: { paddingVertical: 45 },
   badge: { backgroundColor: 'white', borderWidth: 1, borderColor: '#d0f0f0', paddingHorizontal: 18, paddingVertical: 10, borderRadius: 24, marginBottom: 28 },
   badgeText: { color: CTA_TEAL, fontWeight: '700', fontSize: 12, letterSpacing: 0.6 },
-  heroTitle: { fontFamily: SYSTEM_FONT, fontWeight: '900', fontSize: 46, color: BRAND_ORANGE, lineHeight: 66, textAlign: 'center', marginBottom: 24 },
+  heroTitle: { fontFamily: SYSTEM_FONT, fontWeight: '900', fontSize: 42, color: BRAND_ORANGE, lineHeight: 66, textAlign: 'center', marginBottom: 24 },
   heroTitleMobile: { fontSize: 38, lineHeight: 46 },
   heroSubtitle: { fontFamily: SYSTEM_FONT, fontSize: 20, color: TEXT_GRAY, lineHeight: 32, textAlign: 'center', marginBottom: 42, maxWidth: 780 },
   heroSubtitleMobile: { fontSize: 18, lineHeight: 28 },
