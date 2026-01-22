@@ -20,6 +20,7 @@ import { supabase } from '@/lib/supabase/client';
 import { BrandHeader } from '@/lib/ui';
 import { useNotification } from '@/lib/ui/NotificationBanner';
 import { Footer } from '@/components/Footer';
+import { trackEvent } from '@/lib/analytics'; 
 
 // --- Types ---
 type InterviewProfile = { id: number; name: string };
@@ -206,6 +207,10 @@ export default function SignUpScreen() {
 
       // 3. Success State
       setUser(user);
+      trackEvent('sign_up', {
+        method: 'email',
+        role: role // 'candidate' or 'mentor'
+      });
       setProfile({
         id: user.id,
         email: email.trim(),

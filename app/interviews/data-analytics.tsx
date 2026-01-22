@@ -106,6 +106,14 @@ export default function DataAnalyticsInterviews() {
         { name: 'Data Analytics', url: 'https://crackjobs.com/interviews/data-analytics' }
       ]);
 
+      // ADDED: Website Schema for Brand Name
+      const websiteSchema = {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "CrackJobs",
+        "url": "https://crackjobs.com"
+      };
+
       const faqSchema = {
         "@context": "https://schema.org",
         "@type": "FAQPage",
@@ -208,7 +216,8 @@ export default function DataAnalyticsInterviews() {
         }
       };
 
-      const cleanup = injectMultipleSchemas([breadcrumbSchema, faqSchema, howtoSchema, courseSchema]);
+      // EDITED: Added websiteSchema to the list
+      const cleanup = injectMultipleSchemas([breadcrumbSchema, faqSchema, howtoSchema, courseSchema, websiteSchema]);
       return () => cleanup && cleanup();
     }
   }, []);
@@ -370,7 +379,7 @@ JOIN monthly_purchases b
       role: "Data Analyst",
       outcome: "₹28L Package",
       impact: "Saved $2M annually",
-      quote: "Amazon asked: 'How would you reduce shipping costs?' I wrote SQL to segment orders by route, distance, and carrier. Found 18% of orders were mis-routed. Showed the query, explained the business impact. They loved the practical approach.",
+      quote: "Interviewer asked: 'How would you reduce shipping costs?' I wrote SQL to segment orders by route, distance, and carrier. Found 18% of orders were mis-routed. Showed the query, explained the business impact. They loved the practical approach.",
       rating: 5,
       sessions: 5
     },
@@ -380,7 +389,7 @@ JOIN monthly_purchases b
       role: "Business Analyst",
       outcome: "₹22L Package",
       impact: "15% conversion increase",
-      quote: "CrackJobs taught me to think business-first, not query-first. When Flipkart asked about cart abandonment, I structured my answer: hypothesis → SQL to test → visualization → recommendation. Got 'Strong Hire' from interviewer.",
+      quote: "CrackJobs taught me to think business-first, not query-first. When Flipkart asked about cart abandonment, I structured my answer: hypothesis → SQL to test → visualization → recommendation.",
       rating: 5,
       sessions: 7
     },
@@ -502,6 +511,10 @@ JOIN monthly_purchases b
         <meta property="og:title" content="Data Analyst Interview Preparation | CrackJobs" />
         <meta property="og:description" content="Master SQL, business analytics, and dashboard design with expert data analysts from top companies." />
         <meta property="og:type" content="website" />
+        
+        {/* ADDED: Proper site name meta tag */}
+        <meta property="og:site_name" content="CrackJobs" />
+        
         <meta property="og:url" content="https://crackjobs.com/interviews/data-analytics" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="Data Analyst Interview Preparation | CrackJobs" />
@@ -553,10 +566,10 @@ JOIN monthly_purchases b
           <View style={[styles.hero]} accessibilityRole="region" accessibilityLabel="Hero section">
             <View style={styles.badge}><Text style={styles.badgeText}>📊 DATA ANALYTICS INTERVIEWS</Text></View>
             <Text style={[styles.heroTitle]} accessibilityRole="header" accessibilityLevel={1}>
-              Turn Data Into Business Decisions
+              Mock interviews with expert DAs/BAs
             </Text>
             <Text style={[styles.heroSubtitle]}>
-              Master SQL, business case analysis, dashboard design, and data storytelling with analysts from Amazon, Flipkart, Swiggy. Practice real interview questions with structured feedback.
+              Practice SQL, Business case analysis, Excel, Behavioral and Product experimentation with analysts from top companies. Practice real interview questions with structured feedback.
             </Text>
             <View style={styles.heroStats}>
               <View style={styles.stat}><Text style={styles.statValue}>₹12-35L</Text><Text style={styles.statLabel}>Salary Range</Text></View>
@@ -714,20 +727,15 @@ JOIN monthly_purchases b
                   <View style={styles.storyHeader}>
                     <View>
                       <Text style={styles.storyName}>{story.name}</Text>
-                      <Text style={styles.storyRole}>{story.role} at {story.company}</Text>
+                      <Text style={styles.storyRole}>{story.role}</Text>
                     </View>
                     <View style={styles.storyRating}>
                       {[...Array(story.rating)].map((_, j) => <StarIcon key={j} size={14} />)}
                     </View>
                   </View>
-                  <View style={styles.storyOutcomeBox}>
-                    <Text style={styles.storyOutcome}>{story.outcome}</Text>
-                    <Text style={styles.storyImpact}>Impact: {story.impact}</Text>
-                  </View>
+                  
                   <Text style={styles.storyQuote}>"{story.quote}"</Text>
-                  <View style={styles.storyFooter}>
-                    <Text style={styles.storySessions}>{story.sessions} practice sessions</Text>
-                  </View>
+                  
                 </View>
               ))}
             </View>
@@ -846,7 +854,7 @@ const styles = StyleSheet.create({
   heroMobile: { paddingVertical: 45 },
   badge: { backgroundColor: 'white', borderWidth: 1, borderColor: '#d8eded', paddingHorizontal: 18, paddingVertical: 10, borderRadius: 24, marginBottom: 28 },
   badgeText: { color: CTA_TEAL, fontWeight: '700', fontSize: 12, letterSpacing: 0.6 },
-  heroTitle: { fontFamily: SYSTEM_FONT, fontWeight: '900', fontSize: 46, color: BRAND_ORANGE, lineHeight: 64, textAlign: 'center', marginBottom: 24 },
+  heroTitle: { fontFamily: SYSTEM_FONT, fontWeight: '900', fontSize: 42, color: BRAND_ORANGE, lineHeight: 64, textAlign: 'center', marginBottom: 24 },
   heroTitleMobile: { fontSize: 38, lineHeight: 46 },
   heroSubtitle: { fontFamily: SYSTEM_FONT, fontSize: 20, color: TEXT_GRAY, lineHeight: 32, textAlign: 'center', marginBottom: 42, maxWidth: 780 },
   heroSubtitleMobile: { fontSize: 18, lineHeight: 28 },

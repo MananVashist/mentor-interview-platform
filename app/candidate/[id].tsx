@@ -33,7 +33,10 @@ export default function MentorDetailsScreen() {
   // State for Selection
   const [profiles, setProfiles] = useState<any[]>([]);
   const [selectedProfileId, setSelectedProfileId] = useState<number | null>(null);
+  
+  // Skills State
   const [skills, setSkills] = useState<any[]>([]);
+  const [loadingSkills, setLoadingSkills] = useState(false);
   const [selectedSkill, setSelectedSkill] = useState<any>(null);
 
   // 1. Fetch Mentor Details & Profiles
@@ -107,25 +110,30 @@ export default function MentorDetailsScreen() {
   useEffect(() => {
     async function fetchSkills() {
         if (!selectedProfileId) {
-          console.log('⏭️ No profile selected');
           setSkills([]);
           return;
         }
 
+        // NOTE: We don't set loading(true) here because we did it in the onPress.
+        // Doing it here causes the "flicker" because useEffect runs after the render.
         console.log('🔍 Fetching skills for profile_id:', selectedProfileId);
 
-        const { data, error } = await supabase
-            .from('interview_skills_admin')
-            .select('id, name, description')
-            .eq('interview_profile_id', selectedProfileId)
-            .order('name');
+        try {
+            const { data, error } = await supabase
+                .from('interview_skills_admin')
+                .select('id, name, description')
+                .eq('interview_profile_id', selectedProfileId)
+                .order('name');
 
-        if (error) {
-            console.error('❌ Error fetching skills:', error);
-            setSkills([]);
-        } else {
-            console.log(`✅ Fetched ${data?.length || 0} skills`);
-            setSkills(data || []);
+            if (error) {
+                console.error('❌ Error fetching skills:', error);
+                setSkills([]);
+            } else {
+                console.log(`✅ Fetched ${data?.length || 0} skills`);
+                setSkills(data || []);
+            }
+        } finally {
+            setLoadingSkills(false); // Stop loading when done
         }
     }
 
@@ -246,7 +254,7 @@ export default function MentorDetailsScreen() {
         <View style={styles.card}>
           <View style={styles.sectionHeader}>
             <Ionicons name="create-outline" size={20} color={theme.colors.text.light} style={{ marginRight: 8 }} />
-            <AppText style={styles.sectionTitle}>What would you like to practice?</AppText>
+            <AppText style={styles.sectionTitle}>Please select the domain and topic you want to practice</AppText>
           </View>
           
           {/* 1. Profile Pills */}
@@ -263,8 +271,12 @@ export default function MentorDetailsScreen() {
                       style={[styles.tag, isSelected && styles.tagActive]}
                       onPress={() => {
                         console.log('🎯 Selected profile:', profile.name, 'ID:', profile.id);
+                        
+                        // FIX: Set loading state immediately to prevent flicker
+                        setLoadingSkills(true);
+                        setSkills([]); // Clear old skills instantly
                         setSelectedProfileId(profile.id);
-                        setSelectedSkill(null); // Reset skill selection
+                        setSelectedSkill(null); 
                       }}
                       activeOpacity={0.7}
                   >
@@ -277,45 +289,50 @@ export default function MentorDetailsScreen() {
           </View>
 
           {/* 2. Skill Pills (Dynamic based on Profile) */}
-          {selectedProfileId && skills.length > 0 && (
-             <View style={{ marginTop: 20, paddingTop: 20, borderTopWidth: 1, borderTopColor: '#f0f0f0' }}>
+          {selectedProfileId && (
+             <View style={{ marginTop: 20, paddingTop: 20, borderTopWidth: 1, borderTopColor: '#f0f0f0', minHeight: 100 }}>
                 <AppText style={styles.subLabel}>Specific Skill to Evaluate:</AppText>
-                <View style={styles.tagsContainer}>
-                    {skills.map((skill) => {
-                        const isSelected = selectedSkill?.id === skill.id;
-                        return (
-                        <TouchableOpacity 
-                            key={skill.id} 
-                            style={[styles.tag, isSelected && styles.skillTagActive]}
-                            onPress={() => {
-                              console.log('🎯 Selected skill:', skill.name, 'ID:', skill.id);
-                              setSelectedSkill(skill);
-                            }}
-                        >
-                            <AppText style={[styles.tagText, isSelected && styles.tagTextActive]}>
-                                {skill.name}
-                            </AppText>
-                        </TouchableOpacity>
-                        );
-                    })}
-                </View>
-                {selectedSkill?.description && (
-                    <AppText style={styles.skillDesc}>{selectedSkill.description}</AppText>
+                
+                {loadingSkills ? (
+                    <View style={{ padding: 20, alignItems: 'center' }}>
+                        <ActivityIndicator size="small" color={theme.colors.primary} />
+                        <AppText style={{ fontSize: 12, color: theme.colors.text.light, marginTop: 8 }}>Loading skills...</AppText>
+                    </View>
+                ) : skills.length > 0 ? (
+                    <>
+                        <View style={styles.tagsContainer}>
+                            {skills.map((skill) => {
+                                const isSelected = selectedSkill?.id === skill.id;
+                                return (
+                                <TouchableOpacity 
+                                    key={skill.id} 
+                                    style={[styles.tag, isSelected && styles.skillTagActive]}
+                                    onPress={() => {
+                                      console.log('🎯 Selected skill:', skill.name, 'ID:', skill.id);
+                                      setSelectedSkill(skill);
+                                    }}
+                                >
+                                    <AppText style={[styles.tagText, isSelected && styles.tagTextActive]}>
+                                        {skill.name}
+                                    </AppText>
+                                </TouchableOpacity>
+                                );
+                            })}
+                        </View>
+                        {selectedSkill?.description && (
+                            <AppText style={styles.skillDesc}>{selectedSkill.description}</AppText>
+                        )}
+                    </>
+                ) : (
+                    <View style={{ padding: 16, backgroundColor: '#FEF2F2', borderRadius: 8, marginTop: 8 }}>
+                        <AppText style={{ color: '#DC2626', fontSize: 14, textAlign: 'center' }}>
+                          No skills available for this profile. Please contact support.
+                        </AppText>
+                    </View>
                 )}
              </View>
           )}
 
-          {/* Show message if profile selected but no skills available */}
-          {selectedProfileId && skills.length === 0 && (
-            <View style={{ marginTop: 20, paddingTop: 20, borderTopWidth: 1, borderTopColor: '#f0f0f0' }}>
-              <AppText style={styles.subLabel}>Specific Skill to Evaluate:</AppText>
-              <View style={{ padding: 16, backgroundColor: '#FEF2F2', borderRadius: 8, marginTop: 8 }}>
-                <AppText style={{ color: '#DC2626', fontSize: 14, textAlign: 'center' }}>
-                  No skills available for this profile. Please contact support.
-                </AppText>
-              </View>
-            </View>
-          )}
         </View>
 
         {/* PRICING */}
@@ -405,7 +422,7 @@ const styles = StyleSheet.create({
   skillTagActive: { backgroundColor: '#059669', borderColor: '#059669' },
   tagText: { fontSize: 14, color: theme.colors.text.body, fontWeight: "500" },
   tagTextActive: { color: "#FFF", fontWeight: "600" },
-  skillDesc: { fontSize: 12, color: '#666', marginTop: 8, fontStyle: 'italic' },
+  skillDesc: { fontSize: 14, color: '#666', marginTop: 8, fontStyle: 'italic' },
   emptyText: { fontSize: 14, color: theme.colors.text.light, fontStyle: 'italic' },
   priceContainer: { marginTop: 4 },
   priceRow: { flexDirection: "row", alignItems: "center" },

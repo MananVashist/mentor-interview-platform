@@ -13,6 +13,7 @@ import { paymentService } from '@/services/payment.service';
 import { useAuthStore } from '@/lib/store';
 import { availabilityService, type DayAvailability } from '@/services/availability.service';
 import { DateTime } from 'luxon';
+import { trackEvent } from '@/lib/analytics';
 
 type SelectedSession = {
   dateStr: string;  
@@ -96,6 +97,16 @@ export default function ScheduleScreen() {
     }
     fetchMentor();
   }, [mentorId]);
+
+  useEffect(() => {
+    if (mentor) {
+      trackEvent('schedule_screen', {
+        mentor_id: mentor.id,
+        mentor_name: mentor.name,
+        price: mentor.price
+      });
+    }
+  }, [mentor]);
 
   const fetchAvailability = useCallback(async () => {
     if (!mentorId) return;
@@ -196,7 +207,12 @@ export default function ScheduleScreen() {
         setSelectedSlot(null);
         return;
       }
-
+      trackEvent('begin_checkout', {
+        mentor_id: mentorId,
+        value: mentor.price,
+        currency: 'INR',
+        slot_time: selectedSlot.iso
+      });
       const { data: candidate } = await supabase.from('candidates').select('id').eq('id', currentUserId).maybeSingle();
       if (!candidate) await supabase.from('candidates').insert([{ id: currentUserId }]);
 

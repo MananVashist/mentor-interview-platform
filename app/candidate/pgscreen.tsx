@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { paymentService } from '../../services/payment.service';
+import { trackEvent } from '@/lib/analytics'; 
 
 export default function PGScreen() {
   const router = useRouter();
@@ -225,6 +226,13 @@ export default function PGScreen() {
       );
 
       console.log('[PGScreen] ✅ Verification successful!', result);
+
+      trackEvent('purchase', {
+        transaction_id: data.razorpay_payment_id,
+        value: Number(amount) / 100, // Convert paise to Rupees
+        currency: 'INR',
+        package_id: packageId
+      });
 
       // ✅ AUTO-REDIRECT: Navigate immediately after success
       setTimeout(() => {

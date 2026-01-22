@@ -8,6 +8,8 @@ import {
   RefreshControl,
   useWindowDimensions,
   Platform,
+  Modal,
+  Pressable
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Svg, Path, Circle } from "react-native-svg";
@@ -23,14 +25,22 @@ import { availabilityService } from "@/services/availability.service";
 const SUPABASE_URL = "https://rcbaaiiawrglvyzmawvr.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJjYmFhaWlhd3JnbHZ5em1hd3ZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjExNTA1NjAsImV4cCI6MjA3NjcyNjU2MH0.V3qRHGXBMlspRS7XFJlXdo4qIcCms60Nepp7dYMEjLA";
 
-// Tier multipliers
-const TIER_MULTIPLIERS: Record<string, number> = {
-  bronze: 2.0,   // 100% commission
-  silver: 1.75,  // 75% commission
-  gold: 1.5,     // 50% commission
+// --- STRICT TYPOGRAPHY SYSTEM ---
+const FONTS = {
+  heading: { fontSize: 20, fontWeight: "700" as const, lineHeight: 28 },
+  body: { fontSize: 14, fontWeight: "400" as const, lineHeight: 20 },
+  bodyBold: { fontSize: 14, fontWeight: "600" as const, lineHeight: 20 },
+  caption: { fontSize: 12, fontWeight: "400" as const, lineHeight: 16 },
+  captionBold: { fontSize: 12, fontWeight: "600" as const, lineHeight: 16 },
 };
 
-// Tier Rank for Sorting (Bronze first = 1)
+// Tier multipliers
+const TIER_MULTIPLIERS: Record<string, number> = {
+  bronze: 2.0,   
+  silver: 1.75,  
+  gold: 1.5,     
+};
+
 const TIER_RANK: Record<string, number> = {
   bronze: 1,
   silver: 2,
@@ -80,7 +90,7 @@ const BriefcaseIcon = ({ size = 12, color = "#111827" }: { size?: number; color?
 
 const SparklesIcon = ({ size = 14, color = "#1E40AF" }: { size?: number; color?: string }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <Path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    <Path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 14.5L2 12L9.5 9.5L12 2Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     <Path d="M6 3L6.5 5.5L9 6L6.5 6.5L6 9L5.5 6.5L3 6L5.5 5.5L6 3Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
   </Svg>
 );
@@ -112,11 +122,11 @@ const MedalIcon = ({ size = 14, color = "#CD7F32" }: { size?: number; color?: st
   </Svg>
 );
 
-const SortIcon = ({ size = 14, color = "#4B5563" }: { size?: number; color?: string }) => (
-  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <Path d="M3 6H21" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    <Path d="M7 12H17" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    <Path d="M10 18H14" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+const InfoIcon = ({ size = 16, color = "#6B7280" }: { size?: number; color?: string }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <Circle cx="12" cy="12" r="10" />
+    <Path d="M12 16v-4" />
+    <Path d="M12 8h.01" />
   </Svg>
 );
 
@@ -157,11 +167,11 @@ const StarRating = ({ rating }: { rating: number }) => {
 // ============================================
 
 const TierBadge = ({ tier }: { tier?: string | null }) => {
-  let tierName = '';
-  let tierColor = '';
-  let bgColor = '';
-  let borderColor = '';
-  let medalColor = '';
+  let tierName = 'Bronze';
+  let tierColor = '#8B4513';
+  let bgColor = '#FFF8F0';
+  let borderColor = '#CD7F32';
+  let medalColor = '#CD7F32';
 
   const normalizedTier = tier?.toLowerCase();
   
@@ -177,19 +187,6 @@ const TierBadge = ({ tier }: { tier?: string | null }) => {
     bgColor = '#F8F9FA';          
     borderColor = '#A8A8A8';      
     medalColor = '#C0C0C0';       
-  } else if (normalizedTier === 'bronze') {
-    tierName = 'Bronze';
-    tierColor = '#8B4513';        
-    bgColor = '#FFF8F0';          
-    borderColor = '#CD7F32';      
-    medalColor = '#CD7F32';       
-  } else {
-    // Fallback if tier is null or unknown
-    tierName = 'Bronze';
-    tierColor = '#8B4513';        
-    bgColor = '#FFF8F0';          
-    borderColor = '#CD7F32';      
-    medalColor = '#CD7F32';
   }
 
   return (
@@ -206,9 +203,7 @@ const TierBadge = ({ tier }: { tier?: string | null }) => {
 
 export default function CandidateDashboard() {
   const { width } = useWindowDimensions();
-  const isDesktop = width > 768; 
   const isMobile = width <= 768;
-
   const router = useRouter();
 
   const [adminProfiles, setAdminProfiles] = useState<AdminProfile[]>([]);
@@ -220,8 +215,8 @@ export default function CandidateDashboard() {
   const [refreshing, setRefreshing] = useState(false);
   const [mentorAvailability, setMentorAvailability] = useState<Record<string, string>>({});
   
-  // Sorting State
   const [sortBy, setSortBy] = useState<SortOption>('tier');
+  const [showTierInfo, setShowTierInfo] = useState(false);
 
   // --- 1. Fetch Profiles ---
   useEffect(() => {
@@ -251,7 +246,6 @@ export default function CandidateDashboard() {
           });
           
           const sortedProfiles = profileMentorCounts.sort((a, b) => b.mentorCount - a.mentorCount);
-          
           setAdminProfiles(sortedProfiles);
           if (sortedProfiles.length > 0) setSelectedProfileId(sortedProfiles[0].id);
         }
@@ -263,7 +257,7 @@ export default function CandidateDashboard() {
     })();
   }, []);
 
-  // --- 2. Fetch Mentors for Selected Profile ---
+  // --- 2. Fetch Mentors & Availability ---
   const fetchMentorsForProfile = useCallback(async (profileId: number | null) => {
     if (!profileId) return;
     setMentorsLoading(true);
@@ -281,7 +275,7 @@ export default function CandidateDashboard() {
         
         setMentors(filtered);
 
-        // Fetch Availability
+        // Fetch Actual Availability
         const availabilityPromises = filtered.map(async (m: Mentor) => {
           const slot = await availabilityService.findNextAvailableSlot(m.id);
           return { id: m.id, slot };
@@ -305,25 +299,18 @@ export default function CandidateDashboard() {
     if (selectedProfileId) fetchMentorsForProfile(selectedProfileId); 
   }, [selectedProfileId, fetchMentorsForProfile]);
 
-  // --- 3. Sorting Logic (Memoized) ---
+  // --- 3. Sorting Logic ---
   const sortedMentors = useMemo(() => {
     let sorted = [...mentors];
-
     switch (sortBy) {
       case 'tier':
-        // Default: Tier (Bronze -> Silver -> Gold), then Sessions Descending
         sorted.sort((a, b) => {
           const rankA = TIER_RANK[a.tier?.toLowerCase() || 'bronze'] || 1;
           const rankB = TIER_RANK[b.tier?.toLowerCase() || 'bronze'] || 1;
-          
-          // 1. Sort by Rank Ascending (1, 2, 3)
           if (rankA !== rankB) return rankA - rankB; 
-          
-          // 2. Tie-break: Total Sessions Descending
           return (b.total_sessions || 0) - (a.total_sessions || 0);
         });
         break;
-
       case 'price_low':
         sorted.sort((a, b) => {
           const priceA = (a.session_price_inr ?? a.session_price ?? 0) * (TIER_MULTIPLIERS[a.tier?.toLowerCase() || 'bronze'] || 2);
@@ -331,7 +318,6 @@ export default function CandidateDashboard() {
           return priceA - priceB;
         });
         break;
-
       case 'price_high':
         sorted.sort((a, b) => {
           const priceA = (a.session_price_inr ?? a.session_price ?? 0) * (TIER_MULTIPLIERS[a.tier?.toLowerCase() || 'bronze'] || 2);
@@ -339,22 +325,18 @@ export default function CandidateDashboard() {
           return priceB - priceA;
         });
         break;
-
       case 'sessions':
         sorted.sort((a, b) => (b.total_sessions || 0) - (a.total_sessions || 0));
         break;
-      
       case 'rating':
         sorted.sort((a, b) => (b.average_rating || 0) - (a.average_rating || 0));
         break;
-
       case 'experience':
         sorted.sort((a, b) => (b.years_of_experience || 0) - (a.years_of_experience || 0));
         break;
     }
     return sorted;
   }, [mentors, sortBy]);
-
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -366,6 +348,7 @@ export default function CandidateDashboard() {
     router.push({ pathname: "/candidate/[id]", params: { id } });
   };
 
+  // Reusing SortButton for simplicity in UI
   const SortButton = ({ label, active, onPress }: { label: string, active: boolean, onPress: () => void }) => (
     <TouchableOpacity 
       style={[styles.sortBtn, active && styles.sortBtnActive]} 
@@ -377,30 +360,64 @@ export default function CandidateDashboard() {
 
   return (
     <ScreenBackground style={styles.container}>
+       {/* --- TIER INFO MODAL --- */}
+      <Modal
+        visible={showTierInfo}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowTierInfo(false)}
+      >
+        <Pressable style={styles.modalOverlay} onPress={() => setShowTierInfo(false)}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <AppText style={styles.modalTitle}>Mentor Tiers</AppText>
+              <TouchableOpacity onPress={() => setShowTierInfo(false)}>
+                <AppText style={styles.modalClose}>✕</AppText>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.tierInfoRow}>
+              <MedalIcon size={16} color="#FFD700" />
+              <View>
+                <AppText style={styles.tierInfoTitle}>Gold Mentor</AppText>
+                <AppText style={styles.tierInfoDesc}>VPs, Directors, CXOs</AppText>
+              </View>
+            </View>
+            <View style={styles.tierInfoRow}>
+              <MedalIcon size={16} color="#C0C0C0" />
+              <View>
+                <AppText style={styles.tierInfoTitle}>Silver Mentor</AppText>
+                <AppText style={styles.tierInfoDesc}>Senior Management & Leads</AppText>
+              </View>
+            </View>
+            <View style={styles.tierInfoRow}>
+              <MedalIcon size={16} color="#CD7F32" />
+              <View>
+                <AppText style={styles.tierInfoTitle}>Bronze Mentor</AppText>
+                <AppText style={styles.tierInfoDesc}>Mid-level Professionals</AppText>
+              </View>
+            </View>
+          </View>
+        </Pressable>
+      </Modal>
+
       <ScrollView
         refreshControl={
-          <RefreshControl 
-            refreshing={refreshing} 
-            onRefresh={onRefresh} 
-            tintColor={theme.colors.primary} 
-          />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} />
         }
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
         {/* --- HEADER --- */}
         <View style={[styles.headerContainer, isMobile && styles.headerContainerMobile]}>
-          <View style={styles.headerLeft}>
-            <Heading level={1} style={styles.headerTitle}>Find Your Mentor</Heading>
-            <AppText style={styles.headerSubtitle}>
-              Select from a range of gold, silver and bronze professionals
-            </AppText>
-          </View>
+          <Heading level={1} style={styles.headerTitle}>Find Your Mentor</Heading>
+          <AppText style={styles.headerSubtitle}>
+            Select from a range of top industry professionals
+          </AppText>
         </View>
 
         <View style={styles.headerDivider} />
 
-        {/* --- PROFILE PILLS --- */}
+        {/* --- FILTERS & RESULTS --- */}
         <View style={[styles.filtersContainer, isMobile && { paddingHorizontal: 20 }]}>
           <AppText style={styles.filterLabel}>Select Interview Profile</AppText>
           <ScrollView 
@@ -420,7 +437,7 @@ export default function CandidateDashboard() {
                     onPress={() => setSelectedProfileId(p.id)}
                     style={[styles.pill, isActive ? styles.pillActive : styles.pillInactive]}
                   >
-                    {isActive && <View style={{ marginRight: 6 }}><CheckmarkIcon size={16} color="#FFF" /></View>}
+                    {isActive && <View style={{ marginRight: 6 }}><CheckmarkIcon size={14} color="#FFF" /></View>}
                     <AppText style={[styles.pillText, isActive ? styles.pillTextActive : styles.pillTextInactive]}>
                       {p.name}
                     </AppText>
@@ -433,49 +450,34 @@ export default function CandidateDashboard() {
           {/* --- SORT CONTROLS --- */}
           <View style={styles.sortContainer}>
             <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 8 }}>
-              <SortIcon size={16} color="#6B7280" />
+              {/* Using a simple text icon or existing SVG */}
+               <AppText style={{ fontSize: 16, marginRight: 4 }}>⇅</AppText>
               <AppText style={styles.sortLabel}>Sort by:</AppText>
             </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-              <SortButton 
-                label="Tier" 
-                active={sortBy === 'tier'} 
-                onPress={() => setSortBy('tier')} 
-              />
-              <SortButton 
-                label="Sessions" 
-                active={sortBy === 'sessions'} 
-                onPress={() => setSortBy('sessions')} 
-              />
-              <SortButton 
-                label="Price: Low to High" 
-                active={sortBy === 'price_low'} 
-                onPress={() => setSortBy('price_low')} 
-              />
-              <SortButton 
-                label="Price: High to Low" 
-                active={sortBy === 'price_high'} 
-                onPress={() => setSortBy('price_high')} 
-              />
-              <SortButton 
-                label="Rating" 
-                active={sortBy === 'rating'} 
-                onPress={() => setSortBy('rating')} 
-              />
-              <SortButton 
-                label="Experience" 
-                active={sortBy === 'experience'} 
-                onPress={() => setSortBy('experience')} 
-              />
+              <SortButton label="Tier" active={sortBy === 'tier'} onPress={() => setSortBy('tier')} />
+              <SortButton label="Sessions" active={sortBy === 'sessions'} onPress={() => setSortBy('sessions')} />
+              <SortButton label="Price: Low" active={sortBy === 'price_low'} onPress={() => setSortBy('price_low')} />
+              <SortButton label="Price: High" active={sortBy === 'price_high'} onPress={() => setSortBy('price_high')} />
+              <SortButton label="Rating" active={sortBy === 'rating'} onPress={() => setSortBy('rating')} />
+              <SortButton label="Experience" active={sortBy === 'experience'} onPress={() => setSortBy('experience')} />
             </ScrollView>
           </View>
 
-          <AppText style={styles.resultsCount}>
-            {sortedMentors.length} {sortedMentors.length === 1 ? "mentor" : "mentors"} available
-          </AppText>
+          {/* --- RESULTS BAR WITH TIER INFO --- */}
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 16 }}>
+            <AppText style={styles.resultsCount}>
+              {sortedMentors.length} {sortedMentors.length === 1 ? "mentor" : "mentors"} available
+            </AppText>
+            
+            <TouchableOpacity onPress={() => setShowTierInfo(true)} style={styles.infoBtn}>
+              <InfoIcon size={14} color="#3B82F6" />
+              <AppText style={styles.infoBtnText}>About Tiers</AppText>
+            </TouchableOpacity>
+          </View>
         </View>
 
-        {/* --- MENTORS LIST --- */}
+        {/* --- MENTORS LIST (ORIGINAL CARD DESIGN) --- */}
         <View style={[styles.listContainer, isMobile && { paddingHorizontal: 20 }]}>
           {mentorsLoading ? (
             <ActivityIndicator size="large" color={theme.colors.primary} />
@@ -498,11 +500,14 @@ export default function CandidateDashboard() {
               
               const nextSlot = mentorAvailability[m.id] || "Loading...";
               const hasSlots = nextSlot !== "No slots available" && nextSlot !== "Loading...";
+              // Use real slot if available, else standard message
+              const displaySlot = hasSlots ? nextSlot : "No slots available";
 
               return (
                 <Card key={m.id} style={styles.card}>
                   <View style={styles.cardContent}>
                     
+                    {/* ORIGINAL TOP ROW */}
                     <View style={styles.topRow}>
                       <View style={styles.identityGroup}>
                         <AppText style={styles.mentorName}>
@@ -521,6 +526,7 @@ export default function CandidateDashboard() {
                       )}
                     </View>
 
+                    {/* ORIGINAL STATS ROW */}
                     <View style={styles.statsRow}>
                       <TierBadge tier={m.tier} />
                       
@@ -544,14 +550,16 @@ export default function CandidateDashboard() {
                       
                       <View style={[styles.availabilityBadge, !hasSlots && styles.availabilityBadgeUnavailable]}>
                         <AppText style={styles.availabilityIcon}>{hasSlots ? '🟢' : '⏰'}</AppText>
+                        {/* REPLACED "Check Calendar" with REAL DATA */}
                         <AppText style={[styles.availabilityText, !hasSlots && styles.availabilityTextUnavailable]}>
-                          {hasSlots ? nextSlot : 'No slots'}
+                          Next slot: {displaySlot}
                         </AppText>
                       </View>
                     </View>
 
                     <View style={styles.dividerLine} />
 
+                    {/* ORIGINAL DETAILS ROW */}
                     <View style={styles.detailsRow}>
                       <View>
                         <AppText style={styles.priceText}>₹{displayPrice.toLocaleString()}</AppText>
@@ -589,31 +597,35 @@ const styles = StyleSheet.create({
   headerContainer: { paddingHorizontal: 32, paddingTop: 32, paddingBottom: 24, backgroundColor: "#f8f5f0" },
   headerContainerMobile: { paddingHorizontal: 20 },
   headerLeft: { maxWidth: 800 },
-  headerTitle: { fontSize: 32, fontFamily: theme.typography.fontFamily.bold, color: theme.colors.text.main, marginBottom: 8 },
-  headerSubtitle: { fontSize: 15, color: theme.colors.text.light, maxWidth: 600 },
+  headerTitle: { ...FONTS.heading, fontSize: 32, color: theme.colors.text.main, marginBottom: 8 },
+  headerSubtitle: { ...FONTS.body, color: theme.colors.text.light, maxWidth: 600 },
   headerDivider: { height: 1, backgroundColor: theme.colors.border, width: "100%" },
 
   // Filters & Sort
   filtersContainer: { paddingHorizontal: 32, paddingTop: 24, marginBottom: 24 },
-  filterLabel: { fontSize: 16, fontFamily: theme.typography.fontFamily.bold, color: theme.colors.text.main, marginBottom: 16 },
+  filterLabel: { ...FONTS.bodyBold, fontSize: 16, color: theme.colors.text.main, marginBottom: 16 },
   pillsScroll: { gap: 12, paddingRight: 20 },
   
   pill: { flexDirection: "row", alignItems: "center", paddingHorizontal: 20, paddingVertical: 10, borderRadius: 999, borderWidth: 1 },
   pillActive: { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary },
   pillInactive: { backgroundColor: "#FFF", borderColor: "#E5E7EB" },
-  pillText: { fontSize: 14, fontWeight: "500" },
+  pillText: { ...FONTS.body, fontWeight: "500" },
   pillTextActive: { color: "#FFF" },
   pillTextInactive: { color: "#4B5563" },
   
   // Sorting Styles
   sortContainer: { marginTop: 16, flexDirection: 'row', alignItems: 'center' },
-  sortLabel: { fontSize: 13, color: '#6B7280', fontWeight: '500', marginLeft: 6 },
+  sortLabel: { ...FONTS.caption, fontSize: 13, color: '#6B7280', fontWeight: '500', marginLeft: 6 },
   sortBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, backgroundColor: '#F3F4F6', borderWidth: 1, borderColor: '#E5E7EB' },
   sortBtnActive: { backgroundColor: '#EEF2FF', borderColor: theme.colors.primary },
-  sortBtnText: { fontSize: 12, color: '#4B5563', fontWeight: '500' },
+  sortBtnText: { ...FONTS.caption, color: '#4B5563', fontWeight: '500' },
   sortBtnTextActive: { color: theme.colors.primary, fontWeight: '600' },
 
-  resultsCount: { marginTop: 16, fontSize: 14, color: theme.colors.text.light },
+  resultsCount: { ...FONTS.body, fontSize: 14, color: theme.colors.text.light },
+  
+  // Info Btn
+  infoBtn: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  infoBtnText: { ...FONTS.captionBold, color: '#3B82F6', textDecorationLine: 'underline' },
 
   // List
   listContainer: { paddingHorizontal: 32, gap: 16, paddingBottom: 24 },
@@ -624,49 +636,60 @@ const styles = StyleSheet.create({
   
   topRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 8 },
   identityGroup: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
-  mentorName: { fontSize: 18, fontWeight: "bold", color: theme.colors.text.main, flexShrink: 1 },
+  mentorName: { ...FONTS.heading, fontSize: 18, color: theme.colors.text.main, flexShrink: 1 },
   verifiedBadge: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  verifiedText: { fontSize: 12, fontWeight: '600', color: '#3B82F6' },
+  verifiedText: { ...FONTS.captionBold, color: '#3B82F6' },
   expBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.colors.gray[100], paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, gap: 4 },
-  expText: { fontSize: 12, fontWeight: "600", color: theme.colors.text.body },
+  expText: { ...FONTS.captionBold, color: theme.colors.text.body },
 
   statsRow: { flexDirection: 'row', gap: 16, alignItems: 'center', flexWrap: 'wrap' },
   statItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  statText: { fontSize: 13, color: '#4B5563' },
+  statText: { ...FONTS.caption, fontSize: 13, color: '#4B5563' },
   statValue: { fontWeight: '600', color: '#111827' },
   newBadge: { backgroundColor: '#DBEAFE', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 },
-  newBadgeText: { fontSize: 12, fontWeight: '600', color: '#1E40AF' },
+  newBadgeText: { ...FONTS.captionBold, color: '#1E40AF' },
 
   // Tier Badge
   tierBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, borderWidth: 1 },
-  tierText: { fontSize: 12, fontWeight: '600' },
+  tierText: { ...FONTS.captionBold },
   
   // Rating
   ratingSection: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   starsContainer: { flexDirection: 'row', gap: 2 },
   starFilled: { fontSize: 14, color: '#FBBF24' },
   starEmpty: { fontSize: 14, color: '#D1D5DB' },
-  ratingText: { fontSize: 13, fontWeight: '600', color: '#111827' },
+  ratingText: { ...FONTS.captionBold, fontSize: 13, color: '#111827' },
   
   // Availability
   availabilityBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#ECFDF5', borderWidth: 1, borderColor: '#D1FAE5', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 },
   availabilityBadgeUnavailable: { backgroundColor: '#F3F4F6', borderColor: '#E5E7EB' },
   availabilityIcon: { fontSize: 12 },
-  availabilityText: { fontSize: 12, fontWeight: '500', color: '#047857' },
+  availabilityText: { ...FONTS.caption, fontWeight: '500', color: '#047857' },
   availabilityTextUnavailable: { color: '#6B7280' },
 
   dividerLine: { height: 1, backgroundColor: '#F3F4F6', width: '100%' },
 
   detailsRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 },
-  priceText: { fontSize: 20, fontWeight: "800", color: theme.colors.text.main },
-  perBookingText: { fontSize: 12, color: "#9CA3AF" },
+  priceText: { ...FONTS.heading, fontSize: 20, color: theme.colors.text.main },
+  perBookingText: { ...FONTS.caption, color: "#9CA3AF" },
   includesRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4, gap: 4 },
   includesIcon: { fontSize: 14, color: theme.colors.primary },
-  includesText: { fontSize: 12, color: theme.colors.text.light, fontWeight: '500' },
+  includesText: { ...FONTS.caption, color: theme.colors.text.light, fontWeight: '500' },
 
   bookBtn: { backgroundColor: theme.colors.primary, paddingVertical: 10, paddingHorizontal: 24, borderRadius: 8 },
-  bookBtnText: { color: '#FFF', fontWeight: '600', fontSize: 14 },
+  bookBtnText: { ...FONTS.bodyBold, color: '#FFF' },
 
+  // Empty
   emptyState: { alignItems: 'center', padding: 40 },
-  emptyText: { marginTop: 10, color: theme.colors.text.light },
+  emptyText: { ...FONTS.body, marginTop: 10, color: theme.colors.text.light },
+
+  // Modal
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 },
+  modalContent: { backgroundColor: 'white', borderRadius: 12, padding: 20, width: '100%', maxWidth: 400 },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 },
+  modalTitle: { ...FONTS.heading, fontSize: 18 },
+  modalClose: { fontSize: 20, color: '#6B7280' },
+  tierInfoRow: { flexDirection: 'row', gap: 12, marginBottom: 16, alignItems: 'center' },
+  tierInfoTitle: { ...FONTS.bodyBold },
+  tierInfoDesc: { ...FONTS.caption, color: '#4B5563' },
 });

@@ -1,6 +1,6 @@
 ﻿import { useEffect, useState } from 'react';
-import { Platform, View } from 'react-native';
-import { Slot, SplashScreen, usePathname } from 'expo-router';
+import { Platform } from 'react-native';
+import { Slot, SplashScreen } from 'expo-router';
 import Head from 'expo-router/head';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NotificationProvider } from '@/lib/ui/NotificationBanner';
@@ -14,9 +14,11 @@ import {
   Inter_700Bold,
   Inter_800ExtraBold,
 } from '@expo-google-fonts/inter';
-import { trackPageView } from '@/lib/analytics';
 
-// ⬇️ IMPORTANT: alias import to avoid name collision
+// 1. IMPORT THE NEW COMPONENT
+import { GoogleAnalytics } from '@/components/GoogleAnalytics';
+
+// alias import to avoid name collision
 import { SplashScreen as AppSplash } from '@/components/SplashScreen';
 
 // Prevent native splash from auto-hiding
@@ -33,20 +35,17 @@ if (Platform.OS === 'web' && typeof window !== 'undefined') {
 export default function RootLayout() {
   const [isReady, setIsReady] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
-  const pathname = usePathname();
   
-  // 1. SEO FIX: Disable custom splash by default on Web.
+  // SEO FIX: Disable custom splash by default on Web.
   const [showSplash, setShowSplash] = useState(Platform.OS !== 'web');
 
   // Load fonts using useFonts hook
   const [fontsLoaded] = useFonts(
     Platform.OS === 'web'
       ? {
-          // For web, load Ionicons from local assets
           Ionicons: require('../assets/fonts/Ionicons.ttf'),
         }
       : {
-          // For native, load Inter fonts
           Inter_400Regular,
           Inter_500Medium,
           Inter_600SemiBold,
@@ -88,13 +87,6 @@ export default function RootLayout() {
     }
   }, [fontsLoaded, isReady]);
 
-  // Track page views on route changes (web only)
-  useEffect(() => {
-    if (Platform.OS === 'web' && !showSplash) {
-      trackPageView(pathname);
-    }
-  }, [pathname, showSplash]);
-
   const shouldBlockRender = Platform.OS !== 'web' && (!fontsLoaded || !isReady);
 
   if (shouldBlockRender) {
@@ -110,6 +102,9 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <NotificationProvider>
+        {/* 2. ADD THE TRACKER HERE */}
+        <GoogleAnalytics /> 
+
         <Head>
           <title>
             CrackJobs | Mock Interviews for Product Manager, Data Analyst,
@@ -123,30 +118,7 @@ export default function RootLayout() {
           <meta property="og:site_name" content="CrackJobs" />
           <meta property="og:type" content="website" />
           <meta name="twitter:card" content="summary_large_image" />
-
-          {Platform.OS === 'web' && (
-            <>
-              {/* ✅ OPTIMIZED: Defer GTM so it doesn't block painting */}
-              <script
-                defer
-                src={`https://www.googletagmanager.com/gtag/js?id=${process.env.EXPO_PUBLIC_GA_MEASUREMENT_ID}`}
-              />
-              <script
-                dangerouslySetInnerHTML={{
-                  __html: `
-                    window.dataLayer = window.dataLayer || [];
-                    function gtag(){dataLayer.push(arguments);}
-                    gtag('js', new Date());
-                    gtag('config', '${process.env.EXPO_PUBLIC_GA_MEASUREMENT_ID}', {
-                      page_path: window.location.pathname,
-                    });
-                  `,
-                }}
-              />
-              {/* 🗑️ DELETED: Google Fonts links were here. 
-                  We now rely on system fonts for instant load. */}
-            </>
-          )}
+          {/* Note: Scripts removed from here as they are now in GoogleAnalytics component */}
         </Head>
 
         <Slot />
