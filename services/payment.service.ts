@@ -5,13 +5,6 @@ import { DateTime } from 'luxon';
 export const ENABLE_RAZORPAY = true; 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://crackjobs.com';
 
-// Tier multiplier mapping
-const TIER_MULTIPLIERS: Record<string, number> = {
-  bronze: 2.0,   // 100% commission
-  silver: 1.75,  // 75% commission
-  gold: 1.5,     // 50% commission
-};
-
 // ==========================================
 // 📧 EMAIL HELPER
 // ==========================================
@@ -124,18 +117,33 @@ export const paymentService = {
           throw new Error("Unable to retrieve mentor pricing details.");
         }
 
+        // ✅ NEW: Fetch Tier Logic from DB
+        const tierName = mentorData.tier || 'bronze';
+        const { data: tierData, error: tierError } = await supabase
+          .from('mentor_tiers')
+          .select('percentage_cut')
+          .eq('tier', tierName)
+          .single();
+
+        if (tierError || !tierData) {
+            console.error('[Payment] ❌ Tier fetch error:', tierError);
+            throw new Error(`Unable to retrieve pricing logic for tier: ${tierName}`);
+        }
+
         const basePrice = mentorData.session_price_inr || 0;
-        const tier = mentorData.tier || 'bronze'; // Default to bronze if not set
-        const multiplier = TIER_MULTIPLIERS[tier] || 2.0; // Default to 2.0 if tier not found
+        const percentageCut = tierData.percentage_cut || 50; // default safety
+
+        // 💰 Pricing Formula: Final = Base / (1 - Cut%)
+        const cutDecimal = percentageCut / 100;
+        const totalPrice = Math.round(basePrice / (1 - cutDecimal));
         
         console.log(`💰 Pricing Calculation:`, {
-          tier,
+          tier: tierName,
           basePrice,
-          multiplier,
-          totalPrice: Math.round(basePrice * multiplier)
+          percentageCut,
+          totalPrice
         });
         
-        const totalPrice = Math.round(basePrice * multiplier); 
         const amountToSend = totalPrice * 100; // in paise
         const mentorPayout = basePrice;
         const platformFee = totalPrice - mentorPayout;

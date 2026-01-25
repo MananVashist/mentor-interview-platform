@@ -16,8 +16,7 @@ import {
 } from '@expo-google-fonts/inter';
 
 // 1. IMPORT THE NEW COMPONENT
-import { GoogleAnalytics } from '@/components/GoogleAnalytics';
-
+import { GoogleTagManager } from '@/components/GoogleTagManager';
 // alias import to avoid name collision
 import { SplashScreen as AppSplash } from '@/components/SplashScreen';
 
@@ -103,7 +102,7 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <NotificationProvider>
         {/* 2. ADD THE TRACKER HERE */}
-        <GoogleAnalytics /> 
+        <GoogleTagManager />    
 
         <Head>
           <title>
