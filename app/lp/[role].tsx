@@ -99,6 +99,7 @@ const FAQS = [
 
 // --- Sub-Components ---
 
+// ✅ EDITED: Added nativeID to props
 const Button = ({
   title,
   onPress,
@@ -106,6 +107,7 @@ const Button = ({
   color = CTA_TEAL,
   style,
   textStyle,
+  nativeID, // <--- Added
 }: {
   title: string;
   onPress: () => void;
@@ -113,8 +115,10 @@ const Button = ({
   color?: string;
   style?: any;
   textStyle?: any;
+  nativeID?: string; // <--- Added
 }) => (
   <TouchableOpacity
+    nativeID={nativeID} // <--- Passed to component
     style={[
       styles.buttonBase,
       variant === "primary" && { backgroundColor: color, shadowColor: color },
@@ -154,7 +158,6 @@ const PricingCards = memo(({ isSmall, onBook }: { isSmall: boolean, onBook: (tie
     <Text style={styles.kicker}>MARKETPLACE RATES</Text>
     <Text style={[styles.h2, { marginBottom: 8 }]}>Find Your Range</Text>
     
-    {/* EDITED: Added alignSelf: 'center' to center this specific text block */}
     <Text style={[styles.sub, { marginBottom: 32, fontSize: 15, maxWidth: 500, alignSelf: 'center' }]}>
       Mentors set their own prices based on experience.
     </Text>
@@ -316,12 +319,19 @@ export default function CampaignLanding() {
           <View style={styles.headerInner}>
             <BrandHeader style={{ marginBottom: 0 }} small={isSmall} />
             
-            {/* EDITED: Added Get Started button next to Login */}
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 20 }}>
-              <TouchableOpacity onPress={() => router.push("/auth/sign-in")}>
+              
+              {/* ✅ EDITED: Added nativeID */}
+              <TouchableOpacity 
+                nativeID="btn-lp-login"
+                onPress={() => router.push("/auth/sign-in")}
+              >
                 <Text style={styles.navLinkText}>Log in</Text>
               </TouchableOpacity>
+
+              {/* ✅ EDITED: Added nativeID */}
               <TouchableOpacity
+                nativeID="btn-lp-signup-nav"
                 style={{ backgroundColor: CTA_TEAL, paddingVertical: 8, paddingHorizontal: 16, borderRadius: 8 }}
                 onPress={() => router.push("/auth/sign-up")}
               >
@@ -353,13 +363,16 @@ export default function CampaignLanding() {
 
             {/* CTAs */}
             <View style={[styles.ctaRow, isSmall && { flexDirection: "column" }]}>
+              
+              {/* ✅ EDITED: Added nativeID */}
               <Button
+                nativeID="btn-lp-hero-cta"
                 title={activeRole !== 'default' ? `Browse Mentors` : "View Mentor Rates"} 
                 onPress={() => handleBookClick("hero_cta")}
                 style={[styles.ctaBig, isSmall && { width: "100%" }]}
                 textStyle={{ fontSize: 16 }}
               />
-              {/* EDITED: Added link to /how-it-works */}
+
               <Button
                 title="How it Works"
                 variant="outline"

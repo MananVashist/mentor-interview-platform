@@ -1,44 +1,49 @@
 ﻿import { Platform } from 'react-native';
 
 /**
- * Google Analytics helper for tracking custom events
+ * Google Tag Manager helper for tracking custom events
  * Works on web only - mobile platforms are ignored
+ * Uses dataLayer to send events to GTM
  */
 
 declare global {
   interface Window {
-    gtag?: (
-      command: string,
-      targetId: string,
-      config?: Record<string, any>
-    ) => void;
+    dataLayer?: Array<Record<string, any>>;
   }
 }
 
 /**
- * Track a custom event in Google Analytics
- * @param eventName - Name of the event (e.g., 'booking_started')
+ * Track a custom event in Google Tag Manager via dataLayer
+ * @param eventName - Name of the event (e.g., 'sign_up', 'select_mentor')
  * @param params - Optional parameters for the event
  */
 export const trackEvent = (
   eventName: string,
   params?: Record<string, any>
 ): void => {
-  if (Platform.OS === 'web' && typeof window !== 'undefined' && window.gtag) {
-    window.gtag('event', eventName, params);
+  if (Platform.OS === 'web' && typeof window !== 'undefined' && window.dataLayer) {
+    window.dataLayer.push({
+      event: eventName,
+      ...params,
+    });
+    
+    // Debug log (remove in production if needed)
+    console.log('GTM Event Tracked:', eventName, params);
   }
 };
 
 /**
- * Track a page view manually (auto-tracked by default, use for SPA navigation)
+ * Track a page view manually (auto-tracked by GoogleTagManager component)
  * @param path - Page path (e.g., '/candidate/dashboard')
  * @param title - Optional page title
  */
 export const trackPageView = (path: string, title?: string): void => {
-  if (Platform.OS === 'web' && typeof window !== 'undefined' && window.gtag) {
-    window.gtag('config', process.env.EXPO_PUBLIC_GA_MEASUREMENT_ID!, {
+  if (Platform.OS === 'web' && typeof window !== 'undefined' && window.dataLayer) {
+    window.dataLayer.push({
+      event: 'page_view',
       page_path: path,
-      page_title: title,
+      page_title: title || document.title,
+      page_location: window.location.href,
     });
   }
 };
@@ -50,7 +55,10 @@ export const trackPageView = (path: string, title?: string): void => {
 export const setUserProperties = (
   properties: Record<string, any>
 ): void => {
-  if (Platform.OS === 'web' && typeof window !== 'undefined' && window.gtag) {
-    window.gtag('set', 'user_properties', properties);
+  if (Platform.OS === 'web' && typeof window !== 'undefined' && window.dataLayer) {
+    window.dataLayer.push({
+      event: 'user_properties',
+      user_properties: properties,
+    });
   }
 };
