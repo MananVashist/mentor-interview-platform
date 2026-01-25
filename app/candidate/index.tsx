@@ -573,7 +573,7 @@ export default function CandidateDashboard() {
                         </View>
                       </View>
                       
-                      <TouchableOpacity 
+                      <TouchableOpacity nativeID="btn-select-mentor"
                         style={styles.bookBtn} 
                         onPress={() => handleViewMentor(m.id)}
                         activeOpacity={0.8}
