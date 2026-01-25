@@ -16,13 +16,6 @@ import { AppText } from "@/lib/ui";
 import { supabase } from "@/lib/supabase/client";
 import { theme } from "@/lib/theme";
 
-// Tier multipliers
-const TIER_MULTIPLIERS: Record<string, number> = {
-  bronze: 2.0,   // 100% commission
-  silver: 1.75,  // 75% commission
-  gold: 1.5,     // 50% commission
-};
-
 export default function MentorDetailsScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
@@ -56,10 +49,19 @@ export default function MentorDetailsScreen() {
         if (data) {
             const basePrice = data.session_price_inr || 1000;
             const tier = data.tier || 'bronze';
-            const multiplier = TIER_MULTIPLIERS[tier] || 2.0;
-            const totalPrice = Math.round(basePrice * multiplier);
             
-            console.log('💰 Pricing Details:', { tier, basePrice, multiplier, totalPrice });
+            // ✅ NEW: Fetch Tier Cut from DB
+            const { data: tierData } = await supabase
+                .from('mentor_tiers')
+                .select('percentage_cut')
+                .eq('tier', tier)
+                .single();
+
+            const percentageCut = tierData?.percentage_cut || 50;
+            // Formula: Final = Base / (1 - Cut%)
+            const totalPrice = Math.round(basePrice / (1 - (percentageCut / 100)));
+            
+            console.log('💰 Pricing Details:', { tier, basePrice, percentageCut, totalPrice });
             
             const profileIds = data.profile_ids || [];
             console.log('📊 Mentor Profile IDs:', profileIds);
@@ -361,6 +363,7 @@ export default function MentorDetailsScreen() {
       <SafeAreaView style={styles.footerWrapper}>
         <View style={styles.footerContent}>
           <TouchableOpacity 
+          nativeID="btn-proceed-to-schedule" 
             style={[
               styles.scheduleButton,
               (!selectedProfileId || !selectedSkill) && styles.scheduleButtonDisabled

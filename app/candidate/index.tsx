@@ -21,6 +21,7 @@ import {
 } from "@/lib/ui";
 import { theme } from "@/lib/theme";
 import { availabilityService } from "@/services/availability.service";
+import { supabase } from "@/lib/supabase/client";
 
 const SUPABASE_URL = "https://rcbaaiiawrglvyzmawvr.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJjYmFhaWlhd3JnbHZ5em1hd3ZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjExNTA1NjAsImV4cCI6MjA3NjcyNjU2MH0.V3qRHGXBMlspRS7XFJlXdo4qIcCms60Nepp7dYMEjLA";
@@ -32,13 +33,6 @@ const FONTS = {
   bodyBold: { fontSize: 14, fontWeight: "600" as const, lineHeight: 20 },
   caption: { fontSize: 12, fontWeight: "400" as const, lineHeight: 16 },
   captionBold: { fontSize: 12, fontWeight: "600" as const, lineHeight: 16 },
-};
-
-// Tier multipliers
-const TIER_MULTIPLIERS: Record<string, number> = {
-  bronze: 2.0,   
-  silver: 1.75,  
-  gold: 1.5,     
 };
 
 const TIER_RANK: Record<string, number> = {
@@ -217,12 +211,21 @@ export default function CandidateDashboard() {
   
   const [sortBy, setSortBy] = useState<SortOption>('tier');
   const [showTierInfo, setShowTierInfo] = useState(false);
+  
+  // ✅ NEW: Store tier cut percentages
+  const [tierMap, setTierMap] = useState<Record<string, number>>({});
 
   // --- 1. Fetch Profiles ---
   useEffect(() => {
     (async () => {
       setProfilesLoading(true);
       try {
+        // Fetch Tiers First
+        const { data: tiersData } = await supabase.from('mentor_tiers').select('tier, percentage_cut');
+        const tMap: Record<string, number> = {};
+        tiersData?.forEach((t: any) => tMap[t.tier] = t.percentage_cut);
+        setTierMap(tMap);
+
         const profilesRes = await fetch(
           `${SUPABASE_URL}/rest/v1/interview_profiles_admin?select=*`, 
           { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
@@ -302,6 +305,14 @@ export default function CandidateDashboard() {
   // --- 3. Sorting Logic ---
   const sortedMentors = useMemo(() => {
     let sorted = [...mentors];
+    
+    // Helper to get display price
+    const getPrice = (m: Mentor) => {
+        const base = m.session_price_inr ?? m.session_price ?? 0;
+        const cut = tierMap[m.tier || 'bronze'] || 50; 
+        return Math.round(base / (1 - (cut/100)));
+    };
+
     switch (sortBy) {
       case 'tier':
         sorted.sort((a, b) => {
@@ -312,18 +323,10 @@ export default function CandidateDashboard() {
         });
         break;
       case 'price_low':
-        sorted.sort((a, b) => {
-          const priceA = (a.session_price_inr ?? a.session_price ?? 0) * (TIER_MULTIPLIERS[a.tier?.toLowerCase() || 'bronze'] || 2);
-          const priceB = (b.session_price_inr ?? b.session_price ?? 0) * (TIER_MULTIPLIERS[b.tier?.toLowerCase() || 'bronze'] || 2);
-          return priceA - priceB;
-        });
+        sorted.sort((a, b) => getPrice(a) - getPrice(b));
         break;
       case 'price_high':
-        sorted.sort((a, b) => {
-          const priceA = (a.session_price_inr ?? a.session_price ?? 0) * (TIER_MULTIPLIERS[a.tier?.toLowerCase() || 'bronze'] || 2);
-          const priceB = (b.session_price_inr ?? b.session_price ?? 0) * (TIER_MULTIPLIERS[b.tier?.toLowerCase() || 'bronze'] || 2);
-          return priceB - priceA;
-        });
+        sorted.sort((a, b) => getPrice(b) - getPrice(a));
         break;
       case 'sessions':
         sorted.sort((a, b) => (b.total_sessions || 0) - (a.total_sessions || 0));
@@ -336,7 +339,7 @@ export default function CandidateDashboard() {
         break;
     }
     return sorted;
-  }, [mentors, sortBy]);
+  }, [mentors, sortBy, tierMap]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -489,9 +492,9 @@ export default function CandidateDashboard() {
           ) : (
             sortedMentors.map((m) => {
               const basePrice = m.session_price_inr ?? m.session_price ?? 0;
-              const tier = m.tier || 'bronze';
-              const multiplier = TIER_MULTIPLIERS[tier.toLowerCase()] || 2.0;
-              const displayPrice = basePrice ? Math.round(basePrice * multiplier) : 0;
+              const cut = tierMap[m.tier || 'bronze'] || 50; 
+              // Final Price = Base / (1 - Cut%)
+              const displayPrice = basePrice ? Math.round(basePrice / (1 - (cut/100))) : 0;
               
               const totalSessions = m.total_sessions ?? 0;
               const isNewMentor = totalSessions === 0;

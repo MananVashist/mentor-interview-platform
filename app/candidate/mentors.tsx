@@ -27,17 +27,30 @@ type Mentor = {
   session_price_inr?: number | null; // mentor’s own price
   session_price?: number | null;     // legacy fallback
   mentor_level?: string | null;
+  tier?: string | null;
 };
 
 export default function CandidateMentorsList() {
   const [loading, setLoading] = useState(true);
   const [mentors, setMentors] = useState<Mentor[]>([]);
+  const [tierMap, setTierMap] = useState<Record<string, number>>({});
   const router = useRouter();
 
   useEffect(() => {
     (async () => {
       setLoading(true);
       try {
+        // 1. Fetch Tiers
+        const { data: tiersData } = await fetch(
+            `${SUPABASE_URL}/rest/v1/mentor_tiers?select=tier,percentage_cut`,
+            { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
+        ).then(r => r.json());
+        
+        const tMap: Record<string, number> = {};
+        tiersData?.forEach((t: any) => tMap[t.tier] = t.percentage_cut);
+        setTierMap(tMap);
+
+        // 2. Fetch Mentors
         const res = await fetch(
           `${SUPABASE_URL}/rest/v1/mentors?select=*,profile:profiles(*)`,
           {
@@ -114,7 +127,11 @@ export default function CandidateMentorsList() {
             <View style={styles.mentorList}>
               {mentors.map((m) => {
                 const basePrice = m.session_price_inr ?? m.session_price ?? 0;
-                const candidatePrice = basePrice ? Math.round(basePrice * 2.0) : 0;
+                // ✅ UPDATED: Dynamic calculation
+                const cut = tierMap[m.tier || 'bronze'] || 50; 
+                // Final = Base / (1 - Cut%)
+                const candidatePrice = basePrice ? Math.round(basePrice / (1 - (cut/100))) : 0;
+                
                 const levelCfg = getLevelBadgeStyle(m.mentor_level);
 
                 const subtitle =
@@ -208,7 +225,7 @@ export default function CandidateMentorsList() {
                           ₹{candidatePrice.toLocaleString('en-IN')}
                         </AppText>
                         <AppText style={styles.priceSub}>
-                          Mentor payout + 20% platform fee
+                          Mentor payout + {cut}% platform fee
                         </AppText>
                       </View>
 

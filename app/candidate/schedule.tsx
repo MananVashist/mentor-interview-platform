@@ -304,7 +304,7 @@ export default function ScheduleScreen() {
         </View>
 
         <View style={{ marginTop: 20 }}>
-          <TouchableOpacity style={[styles.btnPrimary, bookingInProgress && { opacity: 0.7 }]} onPress={handleConfirm} disabled={bookingInProgress}>
+          <TouchableOpacity nativeID="btn-initiate-payment" style={[styles.btnPrimary, bookingInProgress && { opacity: 0.7 }]} onPress={handleConfirm} disabled={bookingInProgress}>
             {bookingInProgress ? <ActivityIndicator color="#FFF" /> : <AppText style={styles.btnPrimaryText}>Confirm Booking</AppText>}
           </TouchableOpacity>
         </View>

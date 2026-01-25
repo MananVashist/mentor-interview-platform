@@ -34,38 +34,18 @@ type InterviewProfile = {
   is_active: boolean;
 };
 
-// Tier configuration
-const TIER_CONFIG = {
-  bronze: {
-    minPrice: 1500,
-    maxPrice: 3000,
-    defaultPrice: 2000,
-    multiplier: 2.0,
-    commission: '100%',
-    displayName: 'Bronze',
-    color: '#CD7F32',
-    bgColor: '#FEF2F2',
-  },
-  silver: {
-    minPrice: 3000,
-    maxPrice: 5000,
-    defaultPrice: 4200,
-    multiplier: 1.75,
-    commission: '75%',
-    displayName: 'Silver',
-    color: '#9CA3AF',
-    bgColor: '#F8F9FA',
-  },
-  gold: {
-    minPrice: 6000,
-    maxPrice: 10000,
-    defaultPrice: 8000,
-    multiplier: 1.5,
-    commission: '50%',
-    displayName: 'Gold',
-    color: '#F59E0B',
-    bgColor: '#FFFBEB',
-  },
+type TierConfig = {
+  tier: string;
+  min_price: number;
+  max_price: number;
+  percentage_cut: number;
+};
+
+// UI Config for display/colors only
+const TIER_UI = {
+  bronze: { displayName: 'Bronze', color: '#CD7F32', bgColor: '#FEF2F2' },
+  silver: { displayName: 'Silver', color: '#9CA3AF', bgColor: '#F8F9FA' },
+  gold: { displayName: 'Gold', color: '#F59E0B', bgColor: '#FFFBEB' },
 };
 
 export default function MentorProfileScreen() {
@@ -75,7 +55,11 @@ export default function MentorProfileScreen() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   
+  // Tier Logic
   const [tier, setTier] = useState<TierType>('bronze');
+  const [tierConfigs, setTierConfigs] = useState<Record<string, TierConfig>>({});
+  const [currentTierConfig, setCurrentTierConfig] = useState<TierConfig | null>(null);
+
   const [sessionPrice, setSessionPrice] = useState('');
   const [availableProfiles, setAvailableProfiles] = useState<InterviewProfile[]>([]);
   const [selectedProfiles, setSelectedProfiles] = useState<number[]>([]);
@@ -100,6 +84,14 @@ export default function MentorProfileScreen() {
       try {
         setLoading(true);
 
+        // 1. Fetch Tier Configurations from DB
+        const { data: tiersData } = await supabase.from('mentor_tiers').select('*');
+        const tierMap: Record<string, TierConfig> = {};
+        if (tiersData) {
+            tiersData.forEach((t: any) => tierMap[t.tier] = t);
+            if (mounted) setTierConfigs(tierMap);
+        }
+
         const { data: mentor } = await supabase
           .from('mentors')
           .select('id, professional_title, years_of_experience, profile_ids, session_price_inr, total_sessions, average_rating, experience_description, tier, bank_details')
@@ -110,6 +102,11 @@ export default function MentorProfileScreen() {
           const m = mentor as MentorRow;
           const mentorTier = (m.tier || 'bronze') as TierType;
           setTier(mentorTier);
+
+          // Set current config for easy access
+          if (tierMap[mentorTier]) {
+            setCurrentTierConfig(tierMap[mentorTier]);
+          }
           
           setProfessionalTitle(m.professional_title ?? '');
           setYearsOfExperience(m.years_of_experience != null ? String(m.years_of_experience) : '');
@@ -125,11 +122,11 @@ export default function MentorProfileScreen() {
             setIfscCode(m.bank_details.ifsc_code ?? '');
           }
           
-          // Set price - use existing or tier default
+          // Set price - use existing or tier min default
           if (m.session_price_inr != null) {
             setSessionPrice(String(m.session_price_inr));
-          } else {
-            setSessionPrice(String(TIER_CONFIG[mentorTier].defaultPrice));
+          } else if (tierMap[mentorTier]) {
+            setSessionPrice(String(tierMap[mentorTier].min_price));
           }
         }
 
@@ -174,16 +171,20 @@ export default function MentorProfileScreen() {
       return;
     }
     
-    const tierConfig = TIER_CONFIG[tier];
+    // ✅ VALIDATION FROM DB CONFIG
+    if (!currentTierConfig) {
+        showNotification('Tier configuration not loaded. Please refresh.', 'error');
+        return;
+    }
     
     if (price !== null) {
       if (isNaN(price)) {
         showNotification('Price must be a valid number.', 'error');
         return;
       }
-      if (price < tierConfig.minPrice || price > tierConfig.maxPrice) {
+      if (price < currentTierConfig.min_price || price > currentTierConfig.max_price) {
         showNotification(
-          `Price must be between ₹${tierConfig.minPrice.toLocaleString()} and ₹${tierConfig.maxPrice.toLocaleString()} for ${tierConfig.displayName} tier.`,
+          `Price must be between ₹${currentTierConfig.min_price.toLocaleString()} and ₹${currentTierConfig.max_price.toLocaleString()} for ${tier} tier.`,
           'error'
         );
         return;
@@ -249,10 +250,12 @@ export default function MentorProfileScreen() {
     );
   }
 
-  const tierConfig = TIER_CONFIG[tier];
-  const basePrice = sessionPrice ? Number(sessionPrice) : tierConfig.defaultPrice;
-  const candidatePrice = Math.round(basePrice * tierConfig.multiplier);
-  const platformFee = candidatePrice - basePrice;
+  const tierUi = TIER_UI[tier] || TIER_UI.bronze;
+  const basePrice = sessionPrice ? Number(sessionPrice) : (currentTierConfig?.min_price || 0);
+  
+  // Calculate display price using DB cut
+  const percentageCut = currentTierConfig?.percentage_cut || 50;
+  const candidatePrice = Math.round(basePrice / (1 - (percentageCut / 100)));
 
   return (
     <ScreenBackground>
@@ -266,17 +269,19 @@ export default function MentorProfileScreen() {
 
         {/* TIER BADGE */}
         <Section>
-          <Card style={[styles.tierCard, { backgroundColor: tierConfig.bgColor }]}>
+          <Card style={[styles.tierCard, { backgroundColor: tierUi.bgColor }]}>
             <View style={styles.tierContent}>
-              <View style={[styles.tierBadge, { borderColor: tierConfig.color }]}>
-                <Ionicons name="ribbon" size={20} color={tierConfig.color} />
-                <AppText style={[styles.tierText, { color: tierConfig.color }]}>
-                  {tierConfig.displayName} Tier
+              <View style={[styles.tierBadge, { borderColor: tierUi.color }]}>
+                <Ionicons name="ribbon" size={20} color={tierUi.color} />
+                <AppText style={[styles.tierText, { color: tierUi.color }]}>
+                  {tierUi.displayName} Tier
                 </AppText>
               </View>
-              <AppText style={styles.tierDescription}>
-                Price Range: ₹{tierConfig.minPrice.toLocaleString()} - ₹{tierConfig.maxPrice.toLocaleString()}
-              </AppText>
+              {currentTierConfig && (
+                <AppText style={styles.tierDescription}>
+                    Price Range: ₹{currentTierConfig.min_price.toLocaleString()} - ₹{currentTierConfig.max_price.toLocaleString()}
+                </AppText>
+              )}
             </View>
           </Card>
         </Section>
@@ -323,7 +328,7 @@ export default function MentorProfileScreen() {
             </View>
             
             <AppText style={styles.cardDescription}>
-              Set your base fee for a mock interview session. Your tier is {tierConfig.displayName}.
+              Set your base fee for a mock interview session. Your tier is {tierUi.displayName}.
             </AppText>
 
             <View style={styles.inputGroup}>
@@ -334,13 +339,15 @@ export default function MentorProfileScreen() {
                   value={sessionPrice}
                   onChangeText={setSessionPrice}
                   keyboardType="number-pad"
-                  placeholder={String(tierConfig.defaultPrice)}
+                  placeholder={String(currentTierConfig?.min_price || 0)}
                   style={styles.currencyInput}
                 />
               </View>
-              <AppText style={styles.priceHint}>
-                Range: ₹{tierConfig.minPrice.toLocaleString()} - ₹{tierConfig.maxPrice.toLocaleString()}
-              </AppText>
+              {currentTierConfig && (
+                <AppText style={styles.priceHint}>
+                    Range: ₹{currentTierConfig.min_price.toLocaleString()} - ₹{currentTierConfig.max_price.toLocaleString()}
+                </AppText>
+              )}
             </View>
           </Card>
         </Section>

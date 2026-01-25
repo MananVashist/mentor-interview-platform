@@ -32,7 +32,7 @@ export default function BookingConfirmedScreen() {
           <AppText style={styles.btnText}>Go to My Bookings</AppText>
         </TouchableOpacity>
         
-        <TouchableOpacity 
+        <TouchableOpacity nativeID="btn-back-to-dashboard"
           style={styles.outlineBtn}
           onPress={() => router.replace('/candidate')}
         >
