@@ -216,13 +216,11 @@ export default function PGScreen() {
     try {
       console.log('[PGScreen] 🔐 Starting verification...');
       
-      // ✅ FIX: Pass orderId as the 4th argument
-      // The Edge Function "verify-razorpay-signature" REQUIRES: packageId, paymentId, signature, AND orderId
       const result = await paymentService.verifyPayment(
         packageId as string,          
         data.razorpay_payment_id,     
         data.razorpay_signature,
-        orderId as string // <-- ADDED THIS
+        orderId as string 
       );
 
       console.log('[PGScreen] ✅ Verification successful!', result);
@@ -232,6 +230,13 @@ export default function PGScreen() {
         value: Number(amount) / 100, // Convert paise to Rupees
         currency: 'INR',
         package_id: packageId
+      });
+
+      // ✅ ADDED: Custom event 'payment_success' for GTM Tracking
+      trackEvent('payment_success', {
+        value: Number(amount) / 100,
+        currency: 'INR',
+        transaction_id: data.razorpay_payment_id
       });
 
       // ✅ AUTO-REDIRECT: Navigate immediately after success
