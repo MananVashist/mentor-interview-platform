@@ -205,15 +205,12 @@ export default function SignUpScreen() {
         if (candidateError) throw new Error(`Candidate profile failed: ${candidateError.message}`);
       }
 
-      // 3. Track Success Event - This will now push to dataLayer for GTM
+      // 3. Success State
+      setUser(user);
       trackEvent('sign_up', {
         method: 'email',
-        role: role, // 'candidate' or 'mentor'
-        user_id: user.id,
+        role: role // 'candidate' or 'mentor'
       });
-
-      // 4. Success State
-      setUser(user);
       setProfile({
         id: user.id,
         email: email.trim(),
@@ -284,147 +281,135 @@ export default function SignUpScreen() {
                 </View>
               </View>
 
+              {/* --- PRIVACY NOTE --- */}
+              <View style={styles.privacyNoteContainer}>
+                <Text style={styles.privacyNoteText}>
+                  All personal details except professional title will be kept private
+                </Text>
+              </View>
+
               {/* --- COMMON FIELDS --- */}
               <View style={styles.section}>
-                <Text style={styles.label}>
-                  FULL NAME <Text style={styles.required}>*</Text>
-                </Text>
+                <Text style={styles.label}>FULL NAME <Text style={styles.required}>*</Text></Text>
                 <TextInput
                   style={styles.input}
-                  placeholder="Enter your full name"
                   value={name}
                   onChangeText={setName}
-                  autoCapitalize="words"
+                  placeholder="John Doe"
+                  placeholderTextColor="#9CA3AF"
                 />
               </View>
 
               <View style={styles.section}>
-                <Text style={styles.label}>
-                  EMAIL ADDRESS <Text style={styles.required}>*</Text>
-                </Text>
+                <Text style={styles.label}>EMAIL ADDRESS <Text style={styles.required}>*</Text></Text>
                 <TextInput
                   style={styles.input}
-                  placeholder="you@example.com"
                   value={email}
                   onChangeText={setEmail}
-                  keyboardType="email-address"
                   autoCapitalize="none"
+                  keyboardType="email-address"
+                  placeholder="name@email.com"
+                  placeholderTextColor="#9CA3AF"
                 />
               </View>
 
               <View style={styles.section}>
-                <Text style={styles.label}>
-                  PASSWORD <Text style={styles.required}>*</Text>
-                </Text>
+                <Text style={styles.label}>PASSWORD <Text style={styles.required}>*</Text></Text>
                 <TextInput
                   style={styles.input}
-                  placeholder="Minimum 6 characters"
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry
+                  placeholder="••••••••"
+                  placeholderTextColor="#9CA3AF"
                 />
+                <Text style={styles.hintText}>Minimum 6 characters</Text>
               </View>
 
               <View style={styles.section}>
-                <Text style={styles.label}>
-                  CONFIRM PASSWORD <Text style={styles.required}>*</Text>
-                </Text>
+                <Text style={styles.label}>CONFIRM PASSWORD <Text style={styles.required}>*</Text></Text>
                 <TextInput
                   style={styles.input}
-                  placeholder="Re-enter your password"
                   value={confirmPassword}
                   onChangeText={setConfirmPassword}
                   secureTextEntry
+                  placeholder="••••••••"
+                  placeholderTextColor="#9CA3AF"
                 />
               </View>
 
-              {/* --- CONDITIONAL FIELDS --- */}
-              {role === 'candidate' ? (
+              {/* --- CANDIDATE FIELDS --- */}
+              {role === 'candidate' && (
+                <View style={styles.section}>
+                  <Text style={styles.label}>PROFESSIONAL TITLE <Text style={styles.required}>*</Text></Text>
+                  <TextInput
+                    style={styles.input}
+                    value={candidateTitle}
+                    onChangeText={setCandidateTitle}
+                    placeholder="e.g., Product Manager at Microsoft"
+                    placeholderTextColor="#9CA3AF"
+                  />
+                  <Text style={styles.hintText}>This will be visible to mentors</Text>
+                </View>
+              )}
+
+              {/* --- MENTOR FIELDS --- */}
+              {role === 'mentor' && (
                 <>
                   <View style={styles.section}>
-                    <Text style={styles.label}>
-                      PROFESSIONAL TITLE <Text style={styles.required}>*</Text>
-                    </Text>
+                    <Text style={styles.label}>PHONE NUMBER <Text style={styles.required}>*</Text></Text>
                     <TextInput
                       style={styles.input}
-                      placeholder="e.g., Product Manager, Data Analyst"
-                      value={candidateTitle}
-                      onChangeText={setCandidateTitle}
-                    />
-                  </View>
-                  
-                  {/* Privacy Note */}
-                  <View style={styles.privacyNoteContainer}>
-                    <Text style={styles.privacyNoteText}>
-                      🔒 Your identity remains anonymous during interviews
-                    </Text>
-                  </View>
-                </>
-              ) : (
-                <>
-                  <View style={styles.section}>
-                    <Text style={styles.label}>
-                      PHONE NUMBER <Text style={styles.required}>*</Text>
-                    </Text>
-                    <TextInput
-                      style={styles.input}
-                      placeholder="Enter your phone number"
                       value={phone}
                       onChangeText={setPhone}
                       keyboardType="phone-pad"
+                      placeholder="9876543210"
+                      placeholderTextColor="#9CA3AF"
                     />
                   </View>
 
                   <View style={styles.section}>
-                    <Text style={styles.label}>
-                      LINKEDIN PROFILE <Text style={styles.required}>*</Text>
-                    </Text>
+                    <Text style={styles.label}>PROFESSIONAL TITLE <Text style={styles.required}>*</Text></Text>
                     <TextInput
                       style={styles.input}
-                      placeholder="https://linkedin.com/in/yourprofile"
-                      value={linkedinUrl}
-                      onChangeText={setLinkedinUrl}
-                      keyboardType="url"
-                      autoCapitalize="none"
-                    />
-                  </View>
-
-                  <View style={styles.section}>
-                    <Text style={styles.label}>
-                      PROFESSIONAL TITLE <Text style={styles.required}>*</Text>
-                    </Text>
-                    <TextInput
-                      style={styles.input}
-                      placeholder="e.g., Senior Product Manager at Google"
                       value={professionalTitle}
                       onChangeText={setProfessionalTitle}
+                      placeholder="e.g., Senior Product Manager at Google"
+                      placeholderTextColor="#9CA3AF"
+                    />
+                    <Text style={styles.hintText}>This will be visible to candidates</Text>
+                  </View>
+
+                  <View style={styles.section}>
+                    <Text style={styles.label}>LINKEDIN URL <Text style={styles.required}>*</Text></Text>
+                    <TextInput
+                      style={styles.input}
+                      value={linkedinUrl}
+                      onChangeText={setLinkedinUrl}
+                      autoCapitalize="none"
+                      placeholder="https://linkedin.com/in/yourprofile"
+                      placeholderTextColor="#9CA3AF"
                     />
                   </View>
 
                   <View style={styles.section}>
-                    <Text style={styles.label}>
-                      YEARS OF EXPERIENCE <Text style={styles.required}>*</Text>
-                    </Text>
+                    <Text style={styles.label}>YEARS OF EXPERIENCE <Text style={styles.required}>*</Text></Text>
                     <TextInput
                       style={styles.input}
-                      placeholder="e.g., 5"
                       value={yearsOfExp}
                       onChangeText={setYearsOfExp}
                       keyboardType="numeric"
+                      placeholder="5"
+                      placeholderTextColor="#9CA3AF"
                     />
                   </View>
 
                   <View style={styles.section}>
-                    <Text style={styles.label}>
-                      EXPERTISE AREAS <Text style={styles.required}>*</Text>
-                    </Text>
-                    <TouchableOpacity
-                      style={styles.dropdownButton}
-                      onPress={() => setProfilesModalVisible(true)}
-                    >
+                    <Text style={styles.label}>INTERVIEW PROFILES <Text style={styles.required}>*</Text></Text>
+                    <TouchableOpacity style={styles.dropdownButton} onPress={() => setProfilesModalVisible(true)}>
                       <Text style={styles.dropdownText}>
-                        {selectedProfiles.length > 0
-                          ? `${selectedProfiles.length} selected`
+                        {selectedProfiles.length > 0 
+                          ? `${selectedProfiles.length} selected` 
                           : 'Select profiles'}
                       </Text>
                       <Ionicons name="chevron-down" size={20} color="#6B7280" />
