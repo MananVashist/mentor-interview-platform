@@ -11,9 +11,11 @@
     "build:web": "expo export --platform web",
     "postbuild:web": "node scripts/copy-static-files.js && node scripts/prerender.js",
     "build:cloudflare": "expo export --platform web && node scripts/copy-static-files.js",
-    "build:production": "npm run build:web"
+    "build:production": "npm run build:web",
+    "setup-partytown": "powershell -ExecutionPolicy Bypass -File ./setup-partytown.ps1"
   },
   "dependencies": {
+    "@builder.io/partytown": "^0.10.2",
     "@expo-google-fonts/dancing-script": "^0.4.2",
     "@expo-google-fonts/inter": "^0.4.2",
     "@expo/vector-icons": "~14.0.4",
