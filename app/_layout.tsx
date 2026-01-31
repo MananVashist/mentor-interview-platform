@@ -1,4 +1,5 @@
-﻿import { useEffect, useState } from 'react';
+﻿// app/_layout.tsx
+import { useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 import { Slot, SplashScreen } from 'expo-router';
 import Head from 'expo-router/head';
@@ -15,7 +16,6 @@ import {
   Inter_800ExtraBold,
 } from '@expo-google-fonts/inter';
 
-// 1. IMPORT THE NEW COMPONENT
 import { GoogleTagManager } from '@/components/GoogleTagManager';
 // alias import to avoid name collision
 import { SplashScreen as AppSplash } from '@/components/SplashScreen';
@@ -34,7 +34,7 @@ if (Platform.OS === 'web' && typeof window !== 'undefined') {
 export default function RootLayout() {
   const [isReady, setIsReady] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
-  
+
   // SEO FIX: Disable custom splash by default on Web.
   const [showSplash, setShowSplash] = useState(Platform.OS !== 'web');
 
@@ -60,10 +60,11 @@ export default function RootLayout() {
       setIsReady(true);
     });
 
-    const { data: { subscription } } =
-      supabase.auth.onAuthStateChange((_event, session) => {
-        setSession(session);
-      });
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
 
     return () => subscription.unsubscribe();
   }, []);
@@ -80,7 +81,7 @@ export default function RootLayout() {
 
       const timer = setTimeout(() => {
         setShowSplash(false);
-      }, 4000); 
+      }, 4000);
 
       return () => clearTimeout(timer);
     }
@@ -88,40 +89,37 @@ export default function RootLayout() {
 
   const shouldBlockRender = Platform.OS !== 'web' && (!fontsLoaded || !isReady);
 
-  if (shouldBlockRender) {
-    return null;
-  }
+  if (shouldBlockRender) return null;
 
   // Phase 1: animated splash (Native Only)
-  if (showSplash) {
-    return <AppSplash />;
-  }
+  if (showSplash) return <AppSplash />;
 
   // Phase 2: app
   return (
-    <SafeAreaProvider>
-      <NotificationProvider>
-        {/* 2. ADD THE TRACKER HERE */}
-        <GoogleTagManager />    
+    <>
+      {/* Tracking is handled via GTM container only (no direct gtag.js on site). */}
+      <GoogleTagManager />
 
-        <Head>
-          <title>
-            CrackJobs | Mock Interviews for Product Manager, Data Analyst,
-            Data Scientist & HR
-          </title>
-          <meta
-            name="description"
-            content="Master your interview skills with expert mentors from FAANG."
-          />
-          <meta name="theme-color" content="#11998e" />
-          <meta property="og:site_name" content="CrackJobs" />
-          <meta property="og:type" content="website" />
-          <meta name="twitter:card" content="summary_large_image" />
-          {/* Note: Scripts removed from here as they are now in GoogleAnalytics component */}
-        </Head>
+      <SafeAreaProvider>
+        <NotificationProvider>
+          <Head>
+            <title>
+              CrackJobs | Mock Interviews for Product Manager, Data Analyst, Data
+              Scientist & HR
+            </title>
+            <meta
+              name="description"
+              content="Master your interview skills with expert mentors from FAANG."
+            />
+            <meta name="theme-color" content="#11998e" />
+            <meta property="og:site_name" content="CrackJobs" />
+            <meta property="og:type" content="website" />
+            <meta name="twitter:card" content="summary_large_image" />
+          </Head>
 
-        <Slot />
-      </NotificationProvider>
-    </SafeAreaProvider>
+          <Slot />
+        </NotificationProvider>
+      </SafeAreaProvider>
+    </>
   );
 }

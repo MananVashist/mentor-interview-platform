@@ -1,6 +1,8 @@
 ﻿// supabase/functions/get-room-code/index.ts
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+// ✅ NEW: Import JWT signing libraries
+import { create, getNumericDate } from "https://deno.land/x/djwt@v2.9.1/mod.ts"; 
 
 const HMS_API_ENDPOINT = "https://api.100ms.live/v2";
 
@@ -9,19 +11,53 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// ✅ FIXED: Function now generates a signed JWT locally instead of fetching from API
+async function generateManagementToken(appAccessKey: string, appSecret: string): Promise<string> {
+  try {
+    const payload = {
+      access_key: appAccessKey,
+      type: "management",
+      version: 2,
+      iat: getNumericDate(0),
+      nbf: getNumericDate(0),
+      exp: getNumericDate(24 * 60 * 60), // Valid for 24 hours
+      jti: crypto.randomUUID(),
+    };
+
+    // Import the secret key for signing
+    const key = await crypto.subtle.importKey(
+      "raw",
+      new TextEncoder().encode(appSecret),
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign", "verify"],
+    );
+
+    // Sign the token using HS256
+    const token = await create({ alg: "HS256", typ: "JWT" }, payload, key);
+
+    console.log('[generateManagementToken] ✅ Successfully generated local management token');
+    return token;
+  } catch (error) {
+    console.error('[generateManagementToken] Error:', error);
+    throw error;
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   try {
     const { sessionId, role } = await req.json(); // role is 'host' or 'guest'
     
-    // ✅ FIX: Get environment variables with proper error checking
+    // ✅ Get environment variables
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-    const HMS_MANAGEMENT_TOKEN = Deno.env.get('HMS_MANAGEMENT_TOKEN');
+    const HMS_APP_ACCESS_KEY = Deno.env.get('HMS_APP_ACCESS_KEY');
+    const HMS_APP_SECRET = Deno.env.get('HMS_APP_SECRET');
 
-    // ✅ FIX: Validate all required environment variables
-    if (!HMS_MANAGEMENT_TOKEN || !SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+    // ✅ Validate all required environment variables
+    if (!HMS_APP_ACCESS_KEY || !HMS_APP_SECRET || !SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
       throw new Error('Missing required environment variables');
     }
 
@@ -32,6 +68,10 @@ serve(async (req) => {
     if (!role || !['host', 'guest'].includes(role)) {
       throw new Error('role must be either "host" or "guest"');
     }
+
+    // ✅ NEW: Generate management token on-demand
+    console.log('[get-room-code] Generating fresh management token...');
+    const managementToken = await generateManagementToken(HMS_APP_ACCESS_KEY, HMS_APP_SECRET);
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
@@ -54,9 +94,9 @@ serve(async (req) => {
 
     console.log('[get-room-code] Found room:', meeting.hms_room_id, 'for session:', sessionId);
 
-    // 2. Fetch all active codes for this room from 100ms
+    // 2. Fetch all active codes for this room from 100ms using the fresh token
     const response = await fetch(`${HMS_API_ENDPOINT}/room-codes/room/${meeting.hms_room_id}`, {
-      headers: { "Authorization": `Bearer ${HMS_MANAGEMENT_TOKEN}` },
+      headers: { "Authorization": `Bearer ${managementToken}` },
     });
     
     if (!response.ok) {
@@ -75,7 +115,6 @@ serve(async (req) => {
     console.log('[get-room-code] Available codes:', codes.map((c: any) => c.role).join(', '));
 
     // 3. Match the requested "App Role" to the "100ms Role"
-    // Adjust these strings if your template uses 'mentor'/'candidate'
     let targetRole = '';
     
     if (role === 'host') {

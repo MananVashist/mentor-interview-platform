@@ -108,10 +108,10 @@ export const BrandHeader = ({ style, small }: BrandHeaderProps) => {
 };
 
 const SYSTEM_FONT = Platform.select({
-  web: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif",
-  ios: "System",
-  android: "Roboto",
-  default: "System"
+  web: "sans-serif",
+  ios: "sans-serif",
+  android: "sans-serif",
+  default: "sans-serif"
 }) as string;
 
 const styles = StyleSheet.create({
@@ -119,13 +119,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row', 
     alignItems: 'center', 
     justifyContent: 'flex-start',
-    alignSelf: 'flex-start',
-    marginBottom: 32 
+    alignSelf: 'center',
+    marginBottom: 15
   },
   eyesWrapper: { 
     flexDirection: 'row', 
     gap: 6, 
-    marginRight: 12 
+    marginRight: 12
   },
   eye: { 
     width: 32, 
@@ -165,7 +165,7 @@ const styles = StyleSheet.create({
     fontSize: 14, 
     fontWeight: '700', 
     color: '#18a7a7', 
-    marginTop: -4 
+    marginTop: 0 
   },
   logoTaglineSmall: { 
     fontSize: 12 
