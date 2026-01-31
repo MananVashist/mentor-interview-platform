@@ -52,7 +52,7 @@ const STATS = [
 ];
 
 const INTERVIEW_TRACKS = [
-  { id: 'pm', emoji: '📊', title: 'Product Management', desc: 'Product sense, strategy, execution, technical,leadership', path: '/interviews/product-management' },
+  { id: 'pm', emoji: '📊', title: 'Product Management', desc: 'Product sense, strategy, execution, technical, leadership', path: '/interviews/product-management' },
   { id: 'data-analytics', emoji: '📈', title: 'Data Analytics', desc: 'SQL, Case studies, Excel, business intelligence', path: '/interviews/data-analytics' },
   { id: 'data-science', emoji: '🤖', title: 'Data Science', desc: 'ML, statistics, modeling', path: '/interviews/data-science' },
   { id: 'hr', emoji: '👥', title: 'HR Interviews', desc: 'Talent acquisition, HR generalist, HRBP', path: '/interviews/hr' },
@@ -98,26 +98,58 @@ const StarIcon = () => (
 
 const BronzeBadge = () => (
   <Svg width={56} height={56} viewBox="0 0 56 56" fill="none">
-    <Circle cx={28} cy={28} r={26} fill="#cd7f32" />
-    <Circle cx={28} cy={28} r={22} fill="#b8692d" opacity={0.3} />
-    <Path d="M28 12l3 9h9l-7 5 3 9-8-6-8 6 3-9-7-5h9l3-9z" fill="#fff" />
+    {/* Outer glow */}
+    <Circle cx={28} cy={28} r={27} fill="#8B4513" opacity={0.2} />
+    {/* Main circle */}
+    <Circle cx={28} cy={28} r={24} fill="#CD7F32" />
+    {/* Inner circle with gradient effect */}
+    <Circle cx={28} cy={28} r={20} fill="#B87333" />
+    {/* Center highlight */}
+    <Circle cx={28} cy={28} r={16} fill="#D4A574" opacity={0.4} />
+    {/* Star */}
+    <Path 
+      d="M28 14l2.5 7.5h8l-6.5 5 2.5 7.5-6.5-5-6.5 5 2.5-7.5-6.5-5h8L28 14z" 
+      fill="#FFFFFF" 
+      opacity={0.9}
+    />
   </Svg>
 );
 
 const SilverBadge = () => (
   <Svg width={56} height={56} viewBox="0 0 56 56" fill="none">
-    <Path d="M28 4L20 20H4l13 10-5 16 16-12 16 12-5-16 13-10H36L28 4z" fill="#c0c0c0" />
-    <Path d="M28 4L20 20H4l13 10-5 16 16-12 16 12-5-16 13-10H36L28 4z" fill="#d4d4d4" opacity={0.5} />
-    <Circle cx={28} cy={24} r={8} fill="#fff" />
+    {/* Outer glow */}
+    <Circle cx={28} cy={28} r={27} fill="#808080" opacity={0.2} />
+    {/* Main circle */}
+    <Circle cx={28} cy={28} r={24} fill="#C0C0C0" />
+    {/* Inner circle with gradient effect */}
+    <Circle cx={28} cy={28} r={20} fill="#D3D3D3" />
+    {/* Center highlight */}
+    <Circle cx={28} cy={28} r={16} fill="#E8E8E8" opacity={0.5} />
+    {/* Star */}
+    <Path 
+      d="M28 14l2.5 7.5h8l-6.5 5 2.5 7.5-6.5-5-6.5 5 2.5-7.5-6.5-5h8L28 14z" 
+      fill="#FFFFFF" 
+      opacity={0.95}
+    />
   </Svg>
 );
 
 const GoldBadge = () => (
   <Svg width={56} height={56} viewBox="0 0 56 56" fill="none">
-    <Path d="M10 36h36v12c0 2.2-1.8 4-4 4H14c-2.2 0-4-1.8-4-4V36z" fill="#fbbf24" />
-    <Path d="M8 28c0-2.2 1.8-4 4-4h32c2.2 0 4 1.8 4 4v8H8v-8z" fill="#f59e0b" />
-    <Path d="M28 4l6 12h12l-10 8 4 12-12-9-12 9 4-12-10-8h12l6-12z" fill="#fbbf24" />
-    <Circle cx={28} cy={32} r={3} fill="#fff" />
+    {/* Outer glow */}
+    <Circle cx={28} cy={28} r={27} fill="#B8860B" opacity={0.3} />
+    {/* Main circle */}
+    <Circle cx={28} cy={28} r={24} fill="#FFD700" />
+    {/* Inner circle with gradient effect */}
+    <Circle cx={28} cy={28} r={20} fill="#FFC700" />
+    {/* Center highlight */}
+    <Circle cx={28} cy={28} r={16} fill="#FFED4E" opacity={0.5} />
+    {/* Star */}
+    <Path 
+      d="M28 14l2.5 7.5h8l-6.5 5 2.5 7.5-6.5-5-6.5 5 2.5-7.5-6.5-5h8L28 14z" 
+      fill="#FFFFFF" 
+      opacity={0.95}
+    />
   </Svg>
 );
 
@@ -139,6 +171,7 @@ const LogoWall = memo(() => {
   return (
     <View 
       style={styles.logoSection}
+      nativeID="our-mentors"
       accessibilityRole="region"
       accessibilityLabel="Companies where our mentors work"
     >
@@ -173,22 +206,22 @@ const InterviewTracks = memo(() => {
   return (
     <View 
       style={[styles.sectionContainer, styles.tracksSection]}
+      nativeID="interview-tracks"
       accessibilityRole="region"
-      accessibilityLabel="Interview tracks section"
+      accessibilityLabel="Interview practice tracks"
     >
       <Text 
         style={styles.sectionKicker}
         accessibilityRole="header"
-        accessibilityLevel={2}
       >
         INTERVIEW TRACKS
       </Text>
       <Text 
         style={[styles.sectionTitle, isSmall && styles.sectionTitleMobile]}
         accessibilityRole="header"
-        accessibilityLevel={3}
+        accessibilityLevel={2}
       >
-        Choose your focus area
+        Choose Your Interview Track
       </Text>
       <View style={[styles.tracksGrid, isSmall && styles.tracksGridMobile]}>
         {INTERVIEW_TRACKS.map((track) => (
@@ -198,27 +231,13 @@ const InterviewTracks = memo(() => {
             onPress={() => router.push(track.path as any)}
             activeOpacity={0.8}
             accessibilityRole="button"
-            accessibilityLabel={`${track.title}: ${track.desc}`}
-            accessibilityHint={`Maps to ${track.title} interview track`}
+            accessibilityLabel={`Practice ${track.title} interviews`}
+            accessibilityHint={`Navigate to ${track.title} interview preparation page`}
           >
-            <Text 
-              style={styles.trackEmoji}
-              accessibilityLabel={track.emoji}
-            >
-              {track.emoji}
-            </Text>
-            <Text 
-              style={styles.trackTitle}
-              accessibilityRole="header"
-              accessibilityLevel={4}
-            >
-              {track.title}
-            </Text>
+            <Text style={styles.trackEmoji}>{track.emoji}</Text>
+            <Text style={styles.trackTitle}>{track.title}</Text>
             <Text style={styles.trackDesc}>{track.desc}</Text>
-            <View 
-              style={styles.trackArrow}
-              accessible={false}
-            >
+            <View style={styles.trackArrow}>
               <Text style={styles.trackArrowText}>→</Text>
             </View>
           </TouchableOpacity>
@@ -232,16 +251,12 @@ const SocialProof = memo(() => {
   const { width } = useWindowDimensions();
   const isSmall = width < 900;
 
-  const handleLinkedInPress = () => {
-    const linkedInUrl = 'https://www.linkedin.com/company/crackjobs';
-    Linking.openURL(linkedInUrl).catch(err => console.error('Failed to open LinkedIn:', err));
-  };
-
   return (
     <View 
       style={styles.socialProofSection}
+      nativeID="social-proof"
       accessibilityRole="region"
-      accessibilityLabel="Platform statistics and social proof"
+      accessibilityLabel="Our impact in numbers"
     >
       <View style={[styles.statsGrid, isSmall && styles.statsGridMobile]}>
         {STATS.map((stat) => (
@@ -251,26 +266,20 @@ const SocialProof = memo(() => {
             accessibilityRole="text"
             accessibilityLabel={`${stat.number} ${stat.label}`}
           >
-            <Text 
-              style={styles.statNumber}
-              accessibilityRole="header"
-              accessibilityLevel={3}
-            >
-              {stat.number}
-            </Text>
+            <Text style={styles.statNumber}>{stat.number}</Text>
             <Text style={styles.statLabel}>{stat.label}</Text>
           </View>
         ))}
       </View>
       <TouchableOpacity 
         style={styles.linkedinButton}
-        onPress={handleLinkedInPress}
+        onPress={() => Linking.openURL('https://www.linkedin.com/company/crackjobs')}
         activeOpacity={0.8}
         accessibilityRole="button"
         accessibilityLabel="Follow us on LinkedIn"
-        accessibilityHint="Opens LinkedIn company page in browser"
+        accessibilityHint="Opens LinkedIn page in browser"
       >
-        <Text style={styles.linkedinButtonText}>Follow us on LinkedIn →</Text>
+        <Text style={styles.linkedinButtonText}>🔗 Follow on LinkedIn</Text>
       </TouchableOpacity>
     </View>
   );
@@ -282,244 +291,214 @@ const Reviews = memo(() => {
 
   return (
     <View 
-      style={styles.reviewsSection}
+      style={[styles.sectionContainer, styles.reviewsSection]}
+      nativeID="reviews"
       accessibilityRole="region"
-      accessibilityLabel="User reviews section"
+      accessibilityLabel="Customer testimonials"
     >
-      <View style={styles.sectionContainer}>
-        <Text 
-          style={styles.sectionKicker}
-          accessibilityRole="header"
-          accessibilityLevel={2}
-        >
-          SUCCESS STORIES
-        </Text>
-        <Text 
-          style={[styles.sectionTitle, isSmall && styles.sectionTitleMobile]}
-          accessibilityRole="header"
-          accessibilityLevel={3}
-        >
-          What our candidates say
-        </Text>
-        <View style={[styles.reviewsGrid, isSmall && styles.reviewsGridMobile]}>
-          {REVIEWS.map((review) => (
-            <View 
-              key={review.id} 
-              style={styles.reviewCard}
-              accessibilityRole="text"
-              accessibilityLabel={`Review from ${review.name}, ${review.role}: ${review.text}`}
-            >
-              <View style={styles.reviewHeader}>
-                <View style={styles.reviewHeaderLeft}>
-                  <Text 
-                    style={styles.reviewName}
-                    accessibilityRole="header"
-                    accessibilityLevel={4}
-                  >
-                    {review.name}
-                  </Text>
-                  <Text style={styles.reviewRole}>{review.role}</Text>
-                </View>
-                <View style={styles.reviewStarsContainer}>
-                  <Text 
-                    style={styles.reviewStars}
-                    accessibilityLabel={`${review.rating} stars`}
-                  >
-                    {'★'.repeat(review.rating)}
-                  </Text>
-                </View>
+      <Text 
+        style={styles.sectionKicker}
+        accessibilityRole="header"
+      >
+        TESTIMONIALS
+      </Text>
+      <Text 
+        style={[styles.sectionTitle, isSmall && styles.sectionTitleMobile]}
+        accessibilityRole="header"
+        accessibilityLevel={2}
+      >
+        What Our Users Say
+      </Text>
+      <View style={[styles.reviewsGrid, isSmall && styles.reviewsGridMobile]}>
+        {REVIEWS.map((review) => (
+          <View 
+            key={review.id} 
+            style={styles.reviewCard}
+            accessibilityRole="article"
+            accessibilityLabel={`Review from ${review.name}, ${review.role} at ${review.company}`}
+          >
+            <View style={styles.reviewHeader}>
+              <View style={styles.reviewHeaderLeft}>
+                <Text style={styles.reviewName}>{review.name}</Text>
+                <Text style={styles.reviewRole}>{review.role} • {review.company}</Text>
               </View>
-              <Text style={styles.reviewText}>"{review.text}"</Text>
+              <View style={styles.reviewStarsContainer}>
+                <Text 
+                  style={styles.reviewStars}
+                  accessibilityLabel={`Rating: ${review.rating} out of 5 stars`}
+                >
+                  {'⭐'.repeat(review.rating)}
+                </Text>
+              </View>
             </View>
-          ))}
-        </View>
+            <Text style={styles.reviewText}>"{review.text}"</Text>
+          </View>
+        ))}
       </View>
     </View>
   );
 });
 
-// 🟢 REPLACED: "Become a Mentor" -> "WHY CHOOSE US"
-// Focused on Recording, Feedback, and Quality
 const WhyChooseUs = memo(() => {
-  const router = useRouter();
   const { width } = useWindowDimensions();
-  const isSmall = width <900;
+  const isSmall = width < 900;
+  const router = useRouter();
 
-  const FEATURES = [
+  const BENEFITS = [
     { 
-      Icon: VideoIcon, 
-      title: 'Session Recordings', 
-      desc: 'Don’t worry about taking notes. Get a full HD recording of your interview to review your performance later.' 
+      icon: <FeedbackIcon />, 
+      title: 'Structured Feedback', 
+      desc: 'Detailed evaluation covering strengths, gaps, and actionable improvement areas',
+      ariaLabel: 'Structured feedback benefit'
     },
     { 
-      Icon: FeedbackIcon, 
-      title: 'Actionable Feedback', 
-      desc: 'Receive a detailed scorecard highlighting your strong points and specific areas to improve.' 
+      icon: <VideoIcon />, 
+      title: 'Session Recording', 
+      desc: 'Review your performance anytime with full session recordings',
+      ariaLabel: 'Session recording benefit'
     },
     { 
-      Icon: StarIcon, 
-      title: 'Top 1% Mentors', 
-      desc: 'Practice with vetted experts from FAANG and top startups who know exactly what hiring managers want.' 
+      icon: <StarIcon />, 
+      title: 'Verified Mentors', 
+      desc: 'All mentors manually vetted and verified from top companies',
+      ariaLabel: 'Verified mentors benefit'
     },
   ];
 
   return (
     <View 
       style={styles.sectionContainer}
+      nativeID="why-choose-us"
       accessibilityRole="region"
       accessibilityLabel="Why choose CrackJobs"
     >
       <Text 
         style={styles.sectionKicker}
         accessibilityRole="header"
-        accessibilityLevel={2}
       >
-        WHY CRACKJOBS?
+        WHY CHOOSE US
       </Text>
       <Text 
         style={[styles.sectionTitle, isSmall && styles.sectionTitleMobile]}
         accessibilityRole="header"
-        accessibilityLevel={3}
+        accessibilityLevel={2}
       >
-        Everything you need to improve
+        Practice with confidence
       </Text>
-      
       <View style={[styles.benefitsGrid, isSmall && styles.benefitsGridMobile]}>
-        {FEATURES.map((feature, i) => (
+        {BENEFITS.map((benefit, i) => (
           <View 
             key={i} 
             style={styles.benefitCard}
-            accessibilityRole="summary"
-            accessibilityLabel={`${feature.title}. ${feature.desc}`}
+            accessibilityRole="article"
+            accessibilityLabel={benefit.ariaLabel}
           >
-            <View style={styles.benefitIconContainer}>
-              <feature.Icon />
-            </View>
-            <Text 
-              style={styles.benefitTitle}
-              accessibilityRole="header"
-              accessibilityLevel={4}
-            >
-              {feature.title}
-            </Text>
-            <Text style={styles.benefitDesc}>{feature.desc}</Text>
+            <View style={styles.benefitIconContainer}>{benefit.icon}</View>
+            <Text style={styles.benefitTitle}>{benefit.title}</Text>
+            <Text style={styles.benefitDesc}>{benefit.desc}</Text>
           </View>
         ))}
       </View>
 
+      {/* Mentor CTA */}
       <View style={styles.mentorCtaContainer}>
-        <TouchableOpacity
-          style={styles.mentorCtaButton}
-          onPress={() => router.push('/auth/sign-up')}
-          activeOpacity={0.9}
-          accessibilityRole="button"
-          accessibilityLabel="Start Practicing"
+        <Text 
+          style={[styles.sectionTitle, { fontSize: 28, marginTop: 40, marginBottom: 24 }]}
+          accessibilityRole="header"
         >
-          <Text style={styles.mentorCtaButtonText}>Start Practicing Now</Text>
+              Want to become a mentor?
+            </Text>
+            <TouchableOpacity 
+              style={styles.mentorCtaButton}
+              onPress={() => Linking.openURL('https://crackjobs.com/auth/sign-up')}
+              activeOpacity={0.9}
+              accessibilityRole="button"
+              accessibilityLabel="Apply to become a mentor"
+              accessibilityHint="Opens signup page"
+            >
+          <Text style={styles.mentorCtaButtonText}>Sign up</Text>
         </TouchableOpacity>
       </View>
     </View>
   );
 });
 
-// 🟢 REPLACED: "Level Up" -> "CANDIDATE TIERS" (Using Bronze/Silver/Gold Ranges)
 const CandidateTiers = memo(() => {
   const { width } = useWindowDimensions();
   const isSmall = width < 900;
 
-  // 🟢 RANGES: Adapted from Mentor Tiers to Candidate Prep Volume
   const TIERS = [
     {
-      Badge: BronzeBadge,
-      title: 'Bronze mentors',
-      sessions: 'Rs 3000-6000', // Range 1
-      benefits: ['Quality Mid level professionals', 'Good for starting out'],
-      bgGradient: { background: 'linear-gradient(135deg, #fef3e7 0%, #fde8d0 100%)' },
-      borderColor: '#f0bb84',
-      titleColor: '#8b4513',
-      sessionsColor: '#a0522d',
-      textColor: '#6b4423',
+      badge: <BronzeBadge />,
+      title: 'Bronze Tier',
+      sessions: '0-5 Sessions',
+      price: '₹3,500 - ₹6,000',
+      color: '#cd7f32',
+      bgColor: '#fff5e6',
+      borderColor: '#cd7f32',
+      benefits: [ '5-10 yrs Experienced interviewer', 'Top performers','Good for strengthening basics' ],
+      ariaLabel: 'Bronze tier pricing'
     },
     {
-      Badge: SilverBadge,
-      title: 'Silver mentors',
-      sessions: 'Rs 6000-9000', // Range 2
-      benefits: ['Senior Management at reputable organisations', 'Good for mid level professionals'],
-      bgGradient: { background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)' },
-      borderColor: '#9ca3af',
-      titleColor: '#4b5563',
-      sessionsColor: '#6b7280',
-      textColor: '#374151',
+      badge: <SilverBadge />,
+      title: 'Silver Tier',
+      sessions: '5-15 Sessions',
+      price: '₹6,000 - ₹10,000',
+      color: '#c0c0c0',
+      bgColor: '#f5f5f5',
+      borderColor: '#c0c0c0',
+      benefits: ['10-15 yrs experienced interviewers', '. Senior mentors from top companies', 'Good for senior manager interviews'],
+      ariaLabel: 'Silver tier pricing'
     },
     {
-      Badge: GoldBadge,
-      title: 'Gold mentors',
-      sessions: 'Rs 9000-15000', // Range 3
-      benefits: ['Masters in their fields', 'Good for practicing CXO and founder rounds for senior management'],
-      bgGradient: { background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)' },
-      borderColor: '#d97706',
-      titleColor: '#b45309',
-      sessionsColor: '#d97706',
-      textColor: '#92400e',
+      badge: <GoldBadge />,
+      title: 'Gold Tier',
+      sessions: '15+ Sessions',
+      price: '₹10,000 - ₹15,000',
+      color: '#fbbf24',
+      bgColor: '#fffbeb',
+      borderColor: '#fbbf24',
+      benefits: ['15-20 yrs of experience', 'Expert-level mentors', 'Good for hiring manager interviews'],
+      ariaLabel: 'Gold tier pricing'
     },
   ];
 
   return (
     <View 
       style={styles.sectionContainer}
+      nativeID="pricing"
       accessibilityRole="region"
-      accessibilityLabel="Candidate preparation tiers"
+      accessibilityLabel="Pricing tiers"
     >
       <Text 
         style={styles.sectionKicker}
         accessibilityRole="header"
-        accessibilityLevel={2}
       >
-        PREP JOURNEY
+        PRICING
       </Text>
       <Text 
         style={[styles.sectionTitle, isSmall && styles.sectionTitleMobile]}
         accessibilityRole="header"
-        accessibilityLevel={3}
+        accessibilityLevel={2}
       >
-        Choose your level of preparation
+        Choose Your Mentor Tier
       </Text>
-      
       <View style={[styles.tiersGrid, isSmall && styles.tiersGridMobile]}>
         {TIERS.map((tier, i) => (
           <View 
             key={i} 
-            style={[
-              styles.tierCard,
-              Platform.OS === 'web' && tier.bgGradient,
-              Platform.OS !== 'web' && { 
-                backgroundColor: i === 0 ? '#fef3e7' : i === 1 ? '#f8f9fa' : '#fef3c7' 
-              },
-              { borderColor: tier.borderColor }
-            ]}
-            accessibilityRole="summary"
-            accessibilityLabel={`${tier.title}. ${tier.sessions}. Benefits: ${tier.benefits.join(', ')}`}
+            style={[styles.tierCard, { backgroundColor: tier.bgColor, borderColor: tier.borderColor }]}
+            accessibilityRole="article"
+            accessibilityLabel={tier.ariaLabel}
           >
-            <View style={styles.tierBadgeContainer}>
-              <tier.Badge />
-            </View>
-            <Text 
-              style={[styles.tierTitle, { color: tier.titleColor }]}
-              accessibilityRole="header"
-              accessibilityLevel={4}
-            >
-              {tier.title}
-            </Text>
-            <Text style={[styles.tierSessions, { color: tier.sessionsColor }]}>
-              {tier.sessions}
-            </Text>
+            <View style={styles.tierBadgeContainer}>{tier.badge}</View>
+            <Text style={[styles.tierTitle, { color: tier.color }]}>{tier.title}</Text>
+            <Text style={[styles.tierTitle, { fontSize: 24, marginBottom: 24, color: tier.color }]}>{tier.price}</Text>
             <View style={styles.tierBenefits}>
               {tier.benefits.map((benefit, j) => (
                 <View key={j} style={styles.tierBenefitRow}>
-                  <Text style={[styles.tierBenefitBullet, { color: tier.textColor }]}>•</Text>
-                  <Text style={[styles.tierBenefitText, { color: tier.textColor }]}>
-                    {benefit}
-                  </Text>
+                  <Text style={[styles.tierBenefitBullet, { color: tier.color }]}>✓</Text>
+                  <Text style={[styles.tierBenefitText, { color: TEXT_DARK }]}>{benefit}</Text>
                 </View>
               ))}
             </View>
@@ -537,35 +516,34 @@ const FAQSection = memo(() => {
   return (
     <View 
       style={styles.sectionContainer}
+      nativeID="faq"
       accessibilityRole="region"
-      accessibilityLabel="Frequently asked questions section"
+      accessibilityLabel="Frequently asked questions"
     >
       <Text 
         style={styles.sectionKicker}
         accessibilityRole="header"
-        accessibilityLevel={2}
       >
         FAQ
       </Text>
       <Text 
         style={[styles.sectionTitle, isSmall && styles.sectionTitleMobile]}
         accessibilityRole="header"
-        accessibilityLevel={3}
+        accessibilityLevel={2}
       >
-        Common questions answered
+        Common Questions
       </Text>
       <View style={styles.faqContainer}>
         {FAQ.map((item, i) => (
           <View 
             key={i} 
             style={styles.faqItem}
-            accessibilityRole="summary"
-            accessibilityLabel={`Question: ${item.q}. Answer: ${item.a}`}
+            accessibilityRole="article"
+            accessibilityLabel={`Question: ${item.q}`}
           >
             <Text 
               style={styles.faqQ}
               accessibilityRole="header"
-              accessibilityLevel={4}
             >
               {item.q}
             </Text>
@@ -578,15 +556,16 @@ const FAQSection = memo(() => {
 });
 
 const BottomCTA = memo(() => {
-  const router = useRouter();
   const { width } = useWindowDimensions();
   const isSmall = width < 900;
+  const router = useRouter();
 
   return (
     <View 
       style={styles.ctaSection}
+      nativeID="get-started"
       accessibilityRole="region"
-      accessibilityLabel="Call to action section"
+      accessibilityLabel="Call to action to get started"
     >
       <View style={[styles.ctaInner, isSmall && styles.ctaInnerMobile]}>
         <Text 
@@ -598,11 +577,10 @@ const BottomCTA = memo(() => {
         </Text>
         <Text 
           style={[styles.ctaSubtitle, isSmall && styles.ctaSubtitleMobile]}
-          accessibilityRole="text"
         >
-          Join hundreds of candidates landing offers at top companies
+          Join hundreds of successful candidates who practiced with us
         </Text>
-        <TouchableOpacity
+        <TouchableOpacity 
           style={styles.ctaButton}
           onPress={() => router.push('/auth/sign-up')}
           activeOpacity={0.9}
@@ -774,4 +752,4 @@ const styles = StyleSheet.create({
   ctaSubtitleMobile: { fontSize: 16 },
   ctaButton: { backgroundColor: '#fff', paddingHorizontal: 40, paddingVertical: 16, borderRadius: 100 },
   ctaButtonText: { fontFamily: SYSTEM_FONT, fontWeight: '700', fontSize: 16, color: BRAND_ORANGE },
-});                 
+});

@@ -1,6 +1,8 @@
 ﻿// supabase/functions/create-meeting/index.ts
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+// ✅ NEW: Import JWT signing libraries (Required for 100ms)
+import { create, getNumericDate } from "https://deno.land/x/djwt@v2.9.1/mod.ts";
 
 const HMS_API_ENDPOINT = "https://api.100ms.live/v2";
 
@@ -9,15 +11,46 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// ✅ FIXED: Generate Management Token locally (No fetch)
+async function generateManagementToken(appAccessKey: string, appSecret: string): Promise<string> {
+  try {
+    const payload = {
+      access_key: appAccessKey,
+      type: "management",
+      version: 2,
+      iat: getNumericDate(0),
+      nbf: getNumericDate(0),
+      exp: getNumericDate(24 * 60 * 60), // 24 hours
+      jti: crypto.randomUUID(),
+    };
+
+    const key = await crypto.subtle.importKey(
+      "raw",
+      new TextEncoder().encode(appSecret),
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign", "verify"],
+    );
+
+    const token = await create({ alg: "HS256", typ: "JWT" }, payload, key);
+    console.log('[generateManagementToken] ✅ Locally generated management token');
+    return token;
+  } catch (error) {
+    console.error('[generateManagementToken] Error generating token:', error);
+    throw error;
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   try {
-    const HMS_MANAGEMENT_TOKEN = Deno.env.get('HMS_MANAGEMENT_TOKEN');
+    const HMS_APP_ACCESS_KEY = Deno.env.get('HMS_APP_ACCESS_KEY');
+    const HMS_APP_SECRET = Deno.env.get('HMS_APP_SECRET');
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
-    if (!HMS_MANAGEMENT_TOKEN || !SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+    if (!HMS_APP_ACCESS_KEY || !HMS_APP_SECRET || !SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
       throw new Error('Missing required environment variables');
     }
 
@@ -26,18 +59,21 @@ serve(async (req) => {
 
     console.log('[create-meeting] Creating meeting for session:', sessionId);
 
-    // 1. Create Room in 100ms
+    // 1. Generate Token (Now works locally)
+    const managementToken = await generateManagementToken(HMS_APP_ACCESS_KEY, HMS_APP_SECRET);
+
+    // 2. Create Room in 100ms
     const roomPayload = {
       name: `Interview-${sessionId}`,
       description: "CrackJobs Mock Interview Session",
-      template_id: "6964f1c5a090b0544dfd9c7d", // Your specific Template ID
+      template_id: "6964f1c5a090b0544dfd9c7d", // Your Template ID
       region: "in",
     };
 
     const roomResponse = await fetch(`${HMS_API_ENDPOINT}/rooms`, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${HMS_MANAGEMENT_TOKEN}`,
+        "Authorization": `Bearer ${managementToken}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(roomPayload),
@@ -54,11 +90,10 @@ serve(async (req) => {
 
     console.log('[create-meeting] ✅ Room created:', roomId);
 
-    // 2. Generate Room Codes
-    // This creates codes like 'abc-def-ghi' for every role in your template
+    // 3. Generate Room Codes
     const codesResponse = await fetch(`${HMS_API_ENDPOINT}/room-codes/room/${roomId}`, {
       method: "POST",
-      headers: { "Authorization": `Bearer ${HMS_MANAGEMENT_TOKEN}` },
+      headers: { "Authorization": `Bearer ${managementToken}` },
     });
 
     if (!codesResponse.ok) {
@@ -69,35 +104,25 @@ serve(async (req) => {
     
     const codesData = await codesResponse.json();
     
-    console.log('[create-meeting] Generated codes for roles:', codesData.data?.map((c: any) => c.role).join(', '));
-    
-    // Attempt to find the correct role codes. 
-    // We check for 'host' OR 'mentor' to be safe.
+    // Find 'host' or 'mentor' code
     const hostCodeObj = codesData.data.find((c: any) => c.role === 'host' || c.role === 'mentor');
-    
-    // Fallback: If no host/mentor role found, grab the first available code (risky but better than crashing)
     const hostCode = hostCodeObj ? hostCodeObj.code : codesData.data[0]?.code;
 
     if (!hostCode) {
-      console.error("[create-meeting] CRITICAL: No room codes generated", codesData);
       throw new Error('Failed to generate room codes');
     }
 
-    console.log('[create-meeting] Host code selected for role:', hostCodeObj?.role || 'fallback');
-
-    // 3. Save to Supabase
+    // 4. Save to Supabase
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    const { data: insertedMeeting, error: dbError } = await supabase
+    const { error: dbError } = await supabase
       .from('session_meetings')
       .insert({
         session_id: sessionId,
         hms_room_id: roomId,
-        hms_room_code: hostCode, // Saving the HOST code
+        hms_room_code: hostCode,
         recording_status: 'pending',
-      })
-      .select()
-      .single();
+      });
 
     if (dbError) {
       console.error('[create-meeting] Database insert failed:', dbError);

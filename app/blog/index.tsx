@@ -1,4 +1,4 @@
-﻿import React, { useEffect } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -22,6 +22,12 @@ export default function BlogListing() {
   const isMobile = width < 600;
 
   const posts = getAllPosts();
+  const [selectedCategory, setSelectedCategory] = useState('All');
+
+  // Filter posts by category
+  const filteredPosts = selectedCategory === 'All' 
+    ? posts 
+    : posts.filter(post => post.tags?.includes(selectedCategory));
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -31,6 +37,8 @@ export default function BlogListing() {
       day: 'numeric'
     });
   };
+
+  const categories = ['All', 'Product Management', 'Data Analytics', 'Data Science', 'HR'];
 
   return (
     <PageLayout>
@@ -44,7 +52,7 @@ export default function BlogListing() {
         {/* Primary SEO Tags */}
         <title>Interview Preparation Blog | Tips & Insights - CrackJobs</title>
         <meta name="description" content="Expert advice on interview preparation, mock interview tips, career guidance, and success stories from candidates who landed their dream jobs at Google, Amazon, Meta." />
-        <meta name="keywords" content="interview tips, career advice, interview preparation blog, mock interview insights, interview success stories, FAANG interview tips, product management tips, data analytics tips" />
+        <meta name="keywords" content="interview tips, career advice, interview preparation blog, mock interview insights, interview success stories, FAANG interview tips, product management tips, data analytics tips, SQL interview tips, machine learning interviews, behavioral interview guide, technical interview prep, mock interview benefits, Amazon interview, Google interview, Meta interview" />
         
         {/* Canonical URL */}
         <link rel="canonical" href="https://crackjobs.com/blog" />
@@ -55,7 +63,7 @@ export default function BlogListing() {
         <meta property="og:site_name" content="CrackJobs" />
         <meta property="og:title" content="Interview Preparation Blog | Tips & Insights - CrackJobs" />
         <meta property="og:description" content="Expert advice on interview preparation, mock interview tips, and career guidance. Success stories from candidates who landed FAANG jobs." />
-        <meta property="og:image" content="https://crackjobs.com/og-images/blog.png" />
+        <meta property="og:image" content="https://crackjobs.com/og-image.png" />
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
         <meta property="og:image:alt" content="CrackJobs Interview Preparation Blog" />
@@ -67,7 +75,7 @@ export default function BlogListing() {
         <meta name="twitter:creator" content="@crackjobs" />
         <meta name="twitter:title" content="Interview Preparation Blog - CrackJobs" />
         <meta name="twitter:description" content="Expert interview tips, career advice, and success stories from FAANG candidates." />
-        <meta name="twitter:image" content="https://crackjobs.com/og-images/blog.png" />
+        <meta name="twitter:image" content="https://crackjobs.com/og-image.png" />
         <meta name="twitter:image:alt" content="CrackJobs Blog" />
         
         {/* Additional SEO Tags */}
@@ -202,13 +210,36 @@ export default function BlogListing() {
               Blog
             </Text>
             <Text style={styles.subtitle}>
-              Interview tips, career advice, and industry insights
+              {posts.length} articles • Interview tips, career advice, and industry insights
             </Text>
+          </View>
+
+          {/* Category Filter */}
+          <View style={styles.categories}>
+            {categories.map((category) => (
+              <TouchableOpacity
+                key={category}
+                style={[
+                  styles.categoryPill,
+                  selectedCategory === category && styles.categoryPillActive
+                ]}
+                onPress={() => setSelectedCategory(category)}
+                accessibilityRole="button"
+                accessibilityLabel={`Filter by ${category}`}
+              >
+                <Text style={[
+                  styles.categoryText,
+                  selectedCategory === category && styles.categoryTextActive
+                ]}>
+                  {category}
+                </Text>
+              </TouchableOpacity>
+            ))}
           </View>
 
           {/* Blog Posts Grid */}
           <View style={[styles.grid, isSmall && styles.gridMobile]}>
-            {posts.map((post) => (
+            {filteredPosts.map((post) => (
               <TouchableOpacity
                 key={post.slug}
                 style={[styles.card, isSmall && styles.cardMobile]}
@@ -249,30 +280,69 @@ export default function BlogListing() {
                   </Text>
 
                   {/* Meta */}
-                  <View style={styles.meta}>
-                    <Text style={styles.metaText}>{post.author}</Text>
-                    <Text style={styles.metaDot}>•</Text>
-                    <Text style={styles.metaText}>{formatDate(post.publishedAt)}</Text>
+                  <View style={styles.cardMeta}>
+                    <Text style={styles.author}>{post.author}</Text>
+                    <Text style={styles.date}>{formatDate(post.publishedAt)}</Text>
                   </View>
-
-                  {/* Read More Link */}
-                  <Text style={styles.readMore}>Read More →</Text>
                 </View>
               </TouchableOpacity>
             ))}
           </View>
 
-          {/* CTA Section */}
+          {/* Internal Links Section - Practice Your Interview Skills */}
           <View style={styles.ctaSection}>
-            <Text style={styles.ctaTitle}>Ready to Practice?</Text>
-            <Text style={styles.ctaText}>
-              Book a mock interview with industry experts and get personalized feedback
+            <Text style={[styles.ctaTitle, isMobile && styles.ctaTitleMobile]}>
+              Ready to Practice Your Interview Skills?
             </Text>
-            <TouchableOpacity
-              style={styles.ctaButton}
+            <Text style={styles.ctaDesc}>
+              Book a 1:1 mock interview with expert mentors from Google, Meta, Amazon
+            </Text>
+            
+            <View style={[styles.ctaLinks, isMobile && styles.ctaLinksMobile]}>
+              <TouchableOpacity 
+                style={styles.ctaButton}
+                onPress={() => router.push('/interviews/product-management')}
+                accessibilityRole="button"
+                accessibilityLabel="Practice Product Management interviews"
+              >
+                <Text style={styles.ctaButtonText}>📊 PM Interviews</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.ctaButton}
+                onPress={() => router.push('/interviews/data-analytics')}
+                accessibilityRole="button"
+                accessibilityLabel="Practice Data Analytics interviews"
+              >
+                <Text style={styles.ctaButtonText}>📈 Data Analytics</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.ctaButton}
+                onPress={() => router.push('/interviews/data-science')}
+                accessibilityRole="button"
+                accessibilityLabel="Practice Data Science interviews"
+              >
+                <Text style={styles.ctaButtonText}>🤖 Data Science</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.ctaButton}
+                onPress={() => router.push('/interviews/hr')}
+                accessibilityRole="button"
+                accessibilityLabel="Practice HR interviews"
+              >
+                <Text style={styles.ctaButtonText}>👥 HR Interviews</Text>
+              </TouchableOpacity>
+            </View>
+            
+            <TouchableOpacity 
+              style={styles.ctaPrimary}
               onPress={() => router.push('/auth/sign-up')}
+              accessibilityRole="button"
+              accessibilityLabel="Browse all mentors and book interview"
             >
-              <Text style={styles.ctaButtonText}>GET STARTED</Text>
+              <Text style={styles.ctaPrimaryText}>Browse All Mentors →</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -284,170 +354,221 @@ export default function BlogListing() {
 const styles = StyleSheet.create({
   scrollContainer: {
     flexGrow: 1,
+    paddingVertical: 60,
   },
   container: {
     maxWidth: 1200,
     width: '100%',
-    marginHorizontal: 'auto',
-    paddingHorizontal: 40,
-    paddingVertical: 60,
     alignSelf: 'center',
-  } as any,
-  containerMobile: {
-    paddingHorizontal: 20,
-    paddingVertical: 40,
+    paddingHorizontal: 24,
   },
-
-  // Header
+  containerMobile: {
+    paddingHorizontal: 16,
+  },
   header: {
-    marginBottom: 48,
+    marginBottom: 40,
     alignItems: 'center',
   },
   title: {
-    fontFamily: theme.typography.fontFamily.extrabold,
-    fontSize: 48,
+    fontSize: 56,
+    fontWeight: '900',
     color: theme.colors.text.main,
+    marginBottom: 16,
     textAlign: 'center',
-    marginBottom: 12,
   },
   titleMobile: {
-    fontSize: 32,
+    fontSize: 40,
   },
   subtitle: {
-    fontFamily: theme.typography.fontFamily.regular,
     fontSize: 18,
-    color: theme.colors.text.body,
+    color: theme.colors.text.light,
     textAlign: 'center',
     maxWidth: 600,
   },
-
+  
+  // Category Filter
+  categories: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginBottom: 48,
+    justifyContent: 'center',
+  },
+  categoryPill: {
+    paddingVertical: 10,
+    paddingHorizontal: 24,
+    borderRadius: 100,
+    backgroundColor: 'white',
+    borderWidth: 2,
+    borderColor: theme.colors.border,
+  },
+  categoryPillActive: {
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
+  },
+  categoryText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: theme.colors.text.main,
+  },
+  categoryTextActive: {
+    color: 'white',
+  },
+  
   // Grid
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 24,
-    marginBottom: 60,
+    gap: 32,
+    marginBottom: 80,
   },
   gridMobile: {
-    flexDirection: 'column',
+    gap: 24,
   },
-
-  // Card
   card: {
-    width: '48%',
-    backgroundColor: theme.colors.surface,
+    flex: 1,
+    minWidth: 320,
+    maxWidth: 380,
+    backgroundColor: 'white',
     borderRadius: 16,
     overflow: 'hidden',
-    ...theme.shadows.card,
     borderWidth: 1,
     borderColor: theme.colors.border,
-    cursor: 'pointer',
-  } as any,
-  cardMobile: {
-    width: '100%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
-
+  cardMobile: {
+    minWidth: '100%',
+  },
   thumbnail: {
     width: '100%',
     height: 220,
-    backgroundColor: theme.colors.gray[100],
+    backgroundColor: theme.colors.cream,
   },
-
   cardContent: {
     padding: 24,
   },
-
   tags: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 8,
-    marginBottom: 12,
+    marginBottom: 16,
   },
   tag: {
-    backgroundColor: theme.colors.gray[100],
+    paddingVertical: 6,
     paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
+    backgroundColor: theme.colors.cream,
+    borderRadius: 6,
   },
   tagText: {
-    fontFamily: theme.typography.fontFamily.semibold,
     fontSize: 12,
+    fontWeight: '600',
     color: theme.colors.primary,
     textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
-
   cardTitle: {
-    fontFamily: theme.typography.fontFamily.bold,
     fontSize: 22,
+    fontWeight: '800',
     color: theme.colors.text.main,
     marginBottom: 12,
     lineHeight: 30,
   },
-
   excerpt: {
-    fontFamily: theme.typography.fontFamily.regular,
-    fontSize: 16,
-    color: theme.colors.text.body,
+    fontSize: 15,
+    color: theme.colors.text.light,
     lineHeight: 24,
     marginBottom: 16,
   },
-
-  meta: {
+  cardMeta: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 12,
+    gap: 12,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.border,
   },
-  metaText: {
-    fontFamily: theme.typography.fontFamily.regular,
+  author: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: theme.colors.text.main,
+  },
+  date: {
     fontSize: 14,
     color: theme.colors.text.light,
   },
-  metaDot: {
-    color: theme.colors.text.light,
-  },
-
-  readMore: {
-    fontFamily: theme.typography.fontFamily.semibold,
-    fontSize: 14,
-    color: theme.colors.primary,
-  },
-
+  
   // CTA Section
   ctaSection: {
-    backgroundColor: theme.colors.gray[50],
-    borderRadius: 16,
-    padding: 48,
+    backgroundColor: theme.colors.cream,
+    padding: 60,
+    borderRadius: 20,
     alignItems: 'center',
-    marginTop: 20,
-    width: '100%',
+    borderWidth: 1,
+    borderColor: theme.colors.border,
   },
   ctaTitle: {
-    fontFamily: theme.typography.fontFamily.bold,
-    fontSize: 28,
+    fontSize: 36,
+    fontWeight: '800',
     color: theme.colors.text.main,
-    marginBottom: 12,
     textAlign: 'center',
+    marginBottom: 16,
+    maxWidth: 700,
   },
-  ctaText: {
-    fontFamily: theme.typography.fontFamily.regular,
-    fontSize: 16,
-    color: theme.colors.text.body,
+  ctaTitleMobile: {
+    fontSize: 28,
+  },
+  ctaDesc: {
+    fontSize: 18,
+    color: theme.colors.text.light,
     textAlign: 'center',
-    marginBottom: 24,
-    maxWidth: 500,
+    marginBottom: 36,
+    maxWidth: 600,
+    lineHeight: 28,
+  },
+  ctaLinks: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    justifyContent: 'center',
+    marginBottom: 28,
+  },
+  ctaLinksMobile: {
+    flexDirection: 'column',
+    width: '100%',
   },
   ctaButton: {
-    backgroundColor: theme.colors.primary,
-    paddingHorizontal: 32,
+    backgroundColor: 'white',
     paddingVertical: 14,
+    paddingHorizontal: 28,
     borderRadius: 12,
-    ...theme.shadows.card,
-    cursor: 'pointer',
-  } as any,
+    borderWidth: 2,
+    borderColor: theme.colors.primary,
+    minWidth: 160,
+  },
   ctaButtonText: {
-    color: theme.colors.surface,
-    fontFamily: theme.typography.fontFamily.extrabold,
-    fontSize: 14,
-    letterSpacing: 0.5,
+    color: theme.colors.primary,
+    fontSize: 15,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  ctaPrimary: {
+    backgroundColor: theme.colors.primary,
+    paddingVertical: 18,
+    paddingHorizontal: 40,
+    borderRadius: 100,
+    shadowColor: theme.colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  ctaPrimaryText: {
+    color: 'white',
+    fontSize: 17,
+    fontWeight: '700',
   },
 });
