@@ -4,7 +4,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Platform, ScrollView } from '
 import { useRouter } from 'expo-router';
 import Head from 'expo-router/head';
 import Svg, { Path, Circle, Rect, Line, Polyline } from 'react-native-svg';
-import { BrandHeader } from '@/lib/BrandHeader';
+import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { createBreadcrumbSchema, injectMultipleSchemas } from '@/lib/structured-data';
 
@@ -503,12 +503,12 @@ JOIN monthly_purchases b
   return (
     <>
       <Head>
-        <title>Data Analyst Interview Prep | Master SQL, Business Analytics & Dashboards</title>
-        <meta name="description" content="Ace Data Analyst interviews at Amazon, Flipkart, Swiggy with expert mentors. Master SQL queries, business case analysis, dashboard design, and stakeholder communication. Practice real interview questions." />
+        <title>Data Analyst Mock interviews | Master SQL, Business Analytics & Case studies</title>
+        <meta name="description" content="Ace Data Analyst interviews at Amazon, Flipkart, Swiggy with expert mentors. Master SQL queries, business case analysis and stakeholder communication. Practice real interview questions." />
         <meta name="keywords" content="data analyst interview, SQL interview questions, business analytics, data analysis, dashboard design, Tableau, Power BI, SQL joins, window functions, A/B testing, data visualization, business intelligence" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="canonical" href="https://crackjobs.com/interviews/data-analytics" />
-        <meta property="og:title" content="Data Analyst Interview Preparation | CrackJobs" />
+        <meta property="og:title" content="Data Analyst Mock Interviews | CrackJobs" />
         <meta property="og:description" content="Master SQL, business analytics, and dashboard design with expert data analysts from top companies." />
         <meta property="og:type" content="website" />
         
@@ -548,18 +548,8 @@ JOIN monthly_purchases b
         <ScrollView style={styles.scrollContent} accessibilityRole="main">
           
           {/* Header */}
-          <View style={styles.header} accessibilityRole="navigation" accessibilityLabel="Main navigation">
-            <View style={[styles.headerInner]}>
-              <BrandHeader style={{ marginBottom: 0 }} small={false} />
-              <View style={[styles.navRight]}>
-                <TouchableOpacity onPress={() => router.push('/auth/sign-in')} accessibilityRole="link" accessibilityLabel="Log in">
-                  <Text style={styles.navLinkText}>Log in</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.btnSmall} onPress={() => router.push('/auth/sign-up')} accessibilityRole="button" accessibilityLabel="Get Started">
-                  <Text style={styles.btnSmallText}>Get Started</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
+          <View>
+          <Header />
           </View>
 
           {/* Hero */}

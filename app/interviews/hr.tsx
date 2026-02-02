@@ -4,8 +4,9 @@ import { View, Text, StyleSheet, TouchableOpacity, Platform, ScrollView } from '
 import { useRouter } from 'expo-router';
 import Head from 'expo-router/head';
 import Svg, { Path, Circle } from 'react-native-svg';
-import { BrandHeader } from '@/lib/BrandHeader';
 import { Footer } from '@/components/Footer';
+import { Header } from '@/components/Header';
+
 import { createBreadcrumbSchema, injectMultipleSchemas } from '@/lib/structured-data';
 
 const BRAND_ORANGE = '#f58742';
@@ -215,8 +216,8 @@ export default function HRInterviews() {
       };
 
       // EDITED: Added websiteSchema to the list
-      const cleanup = injectMultipleSchemas([breadcrumbSchema, faqSchema, howtoSchema, courseSchema, websiteSchema]);
-      return () => cleanup && cleanup();
+     const cleanup = injectMultipleSchemas([breadcrumbSchema, faqSchema, howtoSchema, courseSchema, websiteSchema]);
+      return () => {};
     }
   }, []);
 
@@ -681,19 +682,7 @@ export default function HRInterviews() {
         <ScrollView style={styles.scrollContent}>
           
           {/* Header */}
-          <View style={styles.header}>
-            <View style={[styles.headerInner]}>
-              <BrandHeader style={{ marginBottom: 0 }} small={false} />
-              <View style={[styles.navRight]}>
-                <TouchableOpacity onPress={() => router.push('/auth/sign-in')}>
-                  <Text style={styles.navLinkText}>Log in</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.btnSmall} onPress={() => router.push('/auth/sign-up')}>
-                  <Text style={styles.btnSmallText}>Get Started</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
+          <Header />
 
           {/* Hero */}
           <View style={[styles.hero]}>

@@ -48,14 +48,14 @@ const COMPANIES = [
 
 const STATS = [
   { id: 1, number: '500+', label: 'Interviews Conducted' },
-  { id: 2, number: '4.8★', label: 'Average Mentor Rating' },
+  { id: 2, number: '4.5★', label: 'Average Mentor Rating' },
 ];
 
 const INTERVIEW_TRACKS = [
   { id: 'pm', emoji: '📊', title: 'Product Management', desc: 'Product sense, strategy, execution, technical, leadership', path: '/interviews/product-management' },
   { id: 'data-analytics', emoji: '📈', title: 'Data Analytics', desc: 'SQL, Case studies, Excel, business intelligence', path: '/interviews/data-analytics' },
-  { id: 'data-science', emoji: '🤖', title: 'Data Science', desc: 'ML, statistics, modeling', path: '/interviews/data-science' },
-  { id: 'hr', emoji: '👥', title: 'HR Interviews', desc: 'Talent acquisition, HR generalist, HRBP', path: '/interviews/hr' },
+  { id: 'data-science', emoji: '🤖', title: 'Data Science', desc: 'ML theory, Practical ML, statistics, modeling, coding', path: '/interviews/data-science' },
+  { id: 'hr', emoji: '👥', title: 'HR Interviews', desc: 'Talent acquisition, HR generalist, HRBP, COE, HR operations', path: '/interviews/hr' },
 ];
 
 const REVIEWS = [
@@ -447,7 +447,7 @@ const CandidateTiers = memo(() => {
       color: '#c0c0c0',
       bgColor: '#f5f5f5',
       borderColor: '#c0c0c0',
-      benefits: ['10-15 yrs experienced interviewers', '. Senior mentors from top companies', 'Good for senior manager interviews'],
+      benefits: ['10-15 yrs of experience', 'Senior managers from top companies', 'Good for senior level interviews'],
       ariaLabel: 'Silver tier pricing'
     },
     {
@@ -693,7 +693,7 @@ const styles = StyleSheet.create({
   tracksSection: { backgroundColor: BG_CREAM },
   tracksGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 20, justifyContent: 'center' },
   tracksGridMobile: { flexDirection: 'column',alignItems: 'center' },
-  trackCard: { flex: 1, minWidth: 260, maxWidth: 280, backgroundColor: '#fff', padding: 24, borderRadius: 16, borderWidth: 1, borderColor: '#f0f0f0' },
+  trackCard: { flex: 1, minWidth: 260, maxWidth: 280, backgroundColor: '#fff', padding: 20, borderRadius: 16, borderWidth: 1, borderColor: '#f0f0f0' },
   trackEmoji: { fontSize: 32, marginBottom: 12 },
   trackTitle: { fontFamily: SYSTEM_FONT, fontWeight: '700', fontSize: 18, color: TEXT_DARK, marginBottom: 8 },
   trackDesc: { fontFamily: SYSTEM_FONT, fontSize: 14, color: TEXT_GRAY, lineHeight: 20, marginBottom: 16 },

@@ -1,4 +1,5 @@
-﻿import React, { useEffect, useState } from 'react';
+﻿// app/blog/index.tsx
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -11,7 +12,9 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import Head from 'expo-router/head';
-import { PageLayout } from '@/components/PageLayout';
+// Removed: import { PageLayout } from '@/components/PageLayout';
+import { Header } from '@/components/Header';
+import { Footer } from '@/components/Footer';
 import { theme } from '@/lib/theme';
 import { getAllPosts } from '@/data/blog-posts';
 
@@ -41,7 +44,7 @@ export default function BlogListing() {
   const categories = ['All', 'Product Management', 'Data Analytics', 'Data Science', 'HR'];
 
   return (
-    <PageLayout>
+    <View style={{ flex: 1, backgroundColor: 'white' }}>
       {/* 🔥 COMPREHENSIVE SEO - HARDCODED FOR BLOG INDEX */}
       <Head>
         {/* Essential Meta Tags */}
@@ -202,6 +205,8 @@ export default function BlogListing() {
         />
       </Head>
 
+      <Header />
+
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={[styles.container, isSmall && styles.containerMobile]}>
           {/* Header */}
@@ -346,8 +351,12 @@ export default function BlogListing() {
             </TouchableOpacity>
           </View>
         </View>
+
+        <View style={{ width: '100%', marginTop: 60 }}>
+          <Footer />
+        </View>
       </ScrollView>
-    </PageLayout>
+    </View>
   );
 }
 

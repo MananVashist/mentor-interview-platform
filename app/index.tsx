@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { useRouter, Redirect } from 'expo-router';
 import Head from 'expo-router/head';
-import { BrandHeader } from '@/lib/BrandHeader';
+import { Header } from '@/components/Header';
 
 const LazySections = lazy(() => import('../components/LazySections'));
 
@@ -102,7 +102,7 @@ export default function LandingPage() {
         "url": "https://crackjobs.com/",
         "name": "CrackJobs - Anonymous Mock Interviews with Expert Mentors",
         "alternateName": "CrackJobs Mock Interview Platform",
-        "description": "Practice interviews anonymously with vetted expert mentors from Google, Amazon, Meta, Microsoft. Prepare for Product Management, Data Analytics, Data Science, and HR interviews.",
+        "description": "Practice interviews anonymously with vetted expert mentors and crack interviews from Google, Amazon, Meta, Microsoft. Prepare for Product Management, Data Analytics, Data Science, and HR interviews.",
         "publisher": {
           "@id": "https://crackjobs.com/#organization"
         },
@@ -152,14 +152,14 @@ export default function LandingPage() {
         "@type": "WebPage",
         "@id": "https://crackjobs.com/#webpage",
         "url": "https://crackjobs.com/",
-        "name": "CrackJobs | Anonymous Mock Interviews with Real Expert Mentors",
+        "name": "CrackJobs |Mock Interviews with Real Experts",
         "isPartOf": {
           "@id": "https://crackjobs.com/#website"
         },
         "about": {
           "@id": "https://crackjobs.com/#organization"
         },
-        "description": "Practice interview topics anonymously with fully vetted expert mentors across Product Management, Data Analytics, Data Science and HR. Get detailed feedback and session recordings.",
+        "description": "Mock interviews with fully vetted expert mentors across Product Management, Data Analytics, Data Science and HR. Get detailed feedback and session recordings.",
         "inLanguage": "en-US",
         "primaryImageOfPage": {
           "@id": "https://crackjobs.com/#logo"
@@ -219,7 +219,7 @@ export default function LandingPage() {
             "@type": "SiteNavigationElement",
             "name": "HR Interviews",
             "url": "https://crackjobs.com/interviews/hr",
-            "description": "Practice HR and behavioral interviews"
+            "description": "Practice HR interviews covering Talent Acquisition to HRBP"
           },
           {
             "@type": "SiteNavigationElement",
@@ -261,7 +261,7 @@ export default function LandingPage() {
           "@id": "https://crackjobs.com/#organization"
         },
         "name": "Anonymous Mock Interviews",
-        "description": "Professional 1:1 mock interview sessions with industry experts from Google, Amazon, Meta, Microsoft. Includes detailed feedback, session recording, and anonymous practice environment.",
+        "description": "Professional 1:1 mock interview sessions with industry experts. Includes detailed feedback, session recording and anonymous practice environment.",
         "areaServed": {
           "@type": "Country",
           "name": "India"
@@ -316,7 +316,7 @@ export default function LandingPage() {
               "itemOffered": {
                 "@type": "Service",
                 "name": "Gold Tier Mock Interview",
-                "description": "Premium mock interview with elite mentors from FAANG companies"
+                "description": "Premium mock interview with senior leadership mentors from top companies"
               },
               "price": "9000-15000",
               "priceCurrency": "INR"
@@ -482,9 +482,9 @@ export default function LandingPage() {
     <>
       <Head>
         {/* Primary Meta Tags */}
-        <title>CrackJobs | Anonymous Mock Interviews with Expert Mentors from Google, Amazon, Meta</title>
-        <meta name="title" content="CrackJobs | Anonymous Mock Interviews with Expert Mentors from Google, Amazon, Meta" />
-        <meta name="description" content="Practice interviews anonymously with vetted expert mentors from Google, Amazon, Meta, Microsoft. Prepare for Product Management, Data Analytics, Data Science, and HR interviews. Get detailed feedback and session recordings." />
+        <title>CrackJobs | Anonymous Mock Interviews with Expert Mentors</title>
+        <meta name="title" content="CrackJobs | Anonymous Mock Interviews with Expert Mentors" />
+        <meta name="description" content="Practice interviews anonymously with vetted expert mentors. Prepare for Product Management, Data Analytics, Data Science, and HR interviews. Get detailed feedback and session recordings." />
         <meta name="keywords" content="mock interviews, interview preparation, product management interview, data analytics interview, data science interview, HR interview, anonymous interviews, Google interview prep, Amazon interview prep, Meta interview prep, FAANG interviews, tech interview practice" />
         <meta name="author" content="CrackJobs" />
         <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
@@ -496,7 +496,7 @@ export default function LandingPage() {
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://crackjobs.com/" />
         <meta property="og:title" content="CrackJobs | Anonymous Mock Interviews with Expert Mentors" />
-        <meta property="og:description" content="Practice interviews anonymously with vetted expert mentors from Google, Amazon, Meta, Microsoft. Get detailed feedback and ace your next interview." />
+        <meta property="og:description" content="Practice interviews anonymously with vetted expert mentors. Get detailed feedback and ace your next interview." />
         <meta property="og:image" content="https://crackjobs.com/og-image.png" />
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
@@ -562,22 +562,7 @@ export default function LandingPage() {
         contentContainerStyle={styles.scrollContent}
       >
         {/* Header with Navigation */}
-        <View style={styles.header} nativeID="main-header">
-          <View style={styles.headerInner} nativeID="header-inner">
-            <BrandHeader />
-            <View style={styles.navRight} nativeID="nav-right">
-              <TouchableOpacity onPress={() => router.push('/auth/sign-in')}>
-                <Text style={styles.navLink}>Log in</Text>
-              </TouchableOpacity>
-              <Button
-                title="Get Started"
-                onPress={() => router.push('/auth/sign-up')}
-                variant="primary"
-                style={{ paddingVertical: 10, paddingHorizontal: 20 }}
-              />
-            </View>
-          </View>
-        </View>
+        <Header showGetStarted={true} />
 
         {/* Hero Section */}
         <View style={styles.sectionContainer} nativeID="section-container-hero">
@@ -632,34 +617,6 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-  },
-  header: {
-    backgroundColor: BG_CREAM,
-    paddingTop: 20,
-    paddingBottom:  0,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.05)',
-  },
-  headerInner: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    maxWidth: 1200,
-    width: '100%',
-    alignSelf: 'center',
-    paddingLeft: 32,
-    paddingRight: 32,
-  },
-  navRight: {
-    flexDirection: 'row',
-    gap: 24,
-    alignItems: 'center',
-  },
-  navLink: {
-    fontFamily: SYSTEM_FONT,
-    fontSize: 15,
-    fontWeight: '600',
-    color: TEXT_DARK,
   },
   buttonBase: {
     paddingVertical: 14,

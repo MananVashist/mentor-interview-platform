@@ -4,7 +4,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Platform, useWindowDimensions
 import { useRouter } from 'expo-router';
 import Head from 'expo-router/head';
 import Svg, { Path, Circle, Rect } from 'react-native-svg';
-import { BrandHeader } from '@/lib/ui';
+import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 
 const BRAND_ORANGE = '#f58742';
@@ -119,18 +119,8 @@ export default function Contact() {
         <ScrollView style={styles.scrollContent}>
           
           {/* Header */}
-          <View style={styles.header}>
-            <View style={[styles.headerInner, isSmall && styles.headerInnerMobile]}>
-              <BrandHeader style={{ marginBottom: 0 }} small={isSmall} />
-              <View style={[styles.navRight, isSmall && styles.navRightMobile]}>
-                <TouchableOpacity onPress={() => router.push('/auth/sign-in')}>
-                  <Text style={styles.navLinkText}>Log in</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.btnSmall} onPress={() => router.push('/auth/sign-up')}>
-                  <Text style={styles.btnSmallText}>Get Started</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
+          <View>
+          <Header/>
           </View>
 
           {/* Hero */}
