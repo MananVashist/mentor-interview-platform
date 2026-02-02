@@ -4,7 +4,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Platform, ScrollView } from '
 import { useRouter } from 'expo-router';
 import Head from 'expo-router/head';
 import Svg, { Path, Circle, Rect, Line } from 'react-native-svg';
-import { BrandHeader } from '@/lib/BrandHeader';
+import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { createBreadcrumbSchema, injectMultipleSchemas } from '@/lib/structured-data';
 
@@ -450,12 +450,12 @@ export default function ProductManagementInterviews() {
   return (
     <>
       <Head>
-        <title>Product Manager Interview Preparation | Mock interviews with experienced PMs </title>
+        <title>Mock interviews with experienced PMs </title>
         <meta name="description" content="Practice product sense, execution, technical design, analytics and strategy. Get structured feedback from expert PMs." />
         <meta name="keywords" content="product manager interview, PM interview prep, CIRCLES framework, AARM framework, RICE scoring, product sense, execution interview, Google PM, Amazon PM, Meta PM, FAANG PM interview, product strategy, PM frameworks" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="canonical" href="https://crackjobs.com/interviews/product-management" />
-        <meta property="og:title" content="Product Manager Interview Preparation | CrackJobs" />
+        <meta property="og:title" content="Mock interviews with experienced PMs | CrackJobs" />
         <meta property="og:description" content="Master PM interviews with expert mentors from Google, Amazon, Meta. Learn frameworks, get feedback, land offers." />
         <meta property="og:type" content="website" />
         
@@ -495,30 +495,10 @@ export default function ProductManagementInterviews() {
         <ScrollView style={styles.scrollContent} accessibilityRole="main">
           
           {/* Header - Same as Homepage */}
-          <View style={styles.header} accessibilityRole="navigation" accessibilityLabel="Main navigation">
-            <View style={[styles.headerInner]}>
-              <BrandHeader style={{ marginBottom: 0 }} small={false} />
-              <View style={[styles.navRight]}>
-                <TouchableOpacity 
-                  onPress={() => router.push('/auth/sign-in')} 
-                  accessibilityRole="link" 
-                  accessibilityLabel="Log in to your account"
-                  accessibilityHint="Navigate to sign in page"
-                >
-                  <Text style={styles.navLinkText}>Log in</Text>
-                </TouchableOpacity>
-                <TouchableOpacity 
-                  style={styles.btnSmall} 
-                  onPress={() => router.push('/auth/sign-up')} 
-                  accessibilityRole="button" 
-                  accessibilityLabel="Get Started"
-                  accessibilityHint="Navigate to sign up page"
-                >
-                  <Text style={styles.btnSmallText}>Get Started</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
+          <View>               
+          <Header/>
           </View>
+          
 
           {/* Hero Section */}
           <View style={[styles.hero]} accessibilityRole="region" accessibilityLabel="Hero section">

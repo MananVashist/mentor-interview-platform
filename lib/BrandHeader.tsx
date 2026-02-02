@@ -9,6 +9,7 @@ import {
   Platform,
   Easing,
   TouchableOpacity,
+  useWindowDimensions,
 } from "react-native";
 import { useRouter } from "expo-router";
 
@@ -19,6 +20,11 @@ interface BrandHeaderProps {
 
 export const BrandHeader = ({ style, small }: BrandHeaderProps) => {
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  
+  // Auto-detect mobile based on screen width
+  const isMobile = width < 768;
+  const shouldBeSmall = small || isMobile;
   
   // Track mounting for animations only (prevents animation glitches during SSR)
   const [isMounted, setIsMounted] = useState(false);
@@ -82,23 +88,25 @@ export const BrandHeader = ({ style, small }: BrandHeaderProps) => {
     >
       <View style={[styles.brandContainer, style]} nativeID="brand-header">
         
-        {/* Eyes wrapper - hidden on mobile via CSS */}
-        <View style={styles.eyesWrapper} nativeID="brand-eyes">
+        {/* Eyes wrapper - hidden on mobile */}
+        {!shouldBeSmall && (
+          <View style={styles.eyesWrapper} nativeID="brand-eyes">
             <View style={styles.eye}>
               <Animated.View style={[styles.pupil, { transform: [{ translateX: leftEyeX }, { translateY: leftEyeY }] }]} />
             </View>
             <View style={styles.eye}>
               <Animated.View style={[styles.pupil, { transform: [{ translateX: rightEyeX }, { translateY: rightEyeY }] }]} />
             </View>
-        </View>
+          </View>
+        )}
 
-        {/* Text container - size adjusted on mobile via CSS */}
+        {/* Text container - responsive sizing */}
         <View nativeID="brand-text-container">
-          <Text style={[styles.logoMain, small && styles.logoMainSmall]}>
+          <Text style={[styles.logoMain, shouldBeSmall && styles.logoMainSmall]}>
             <Text style={styles.logoMainCrack}>Crack</Text>
             <Text style={styles.logoMainJobs}>Jobs</Text>
           </Text>
-          <Text style={[styles.logoTagline, small && styles.logoTaglineSmall]}>
+          <Text style={[styles.logoTagline, shouldBeSmall && styles.logoTaglineSmall]}>
             Mad skills. Dream job!
           </Text>
         </View>
@@ -146,13 +154,13 @@ const styles = StyleSheet.create({
   },
   logoMain: { 
     fontFamily: SYSTEM_FONT, 
-    fontSize: 32, 
+    fontSize: 26, 
     fontWeight: '800', 
     lineHeight: 38 
   },
   logoMainSmall: { 
-    fontSize: 24, 
-    lineHeight: 30 
+    fontSize: 26, // Reduced from 24px for mobile
+    lineHeight: 24 
   },
   logoMainCrack: { 
     color: '#333' 
@@ -162,12 +170,13 @@ const styles = StyleSheet.create({
   },
   logoTagline: { 
     fontFamily: SYSTEM_FONT, 
-    fontSize: 14, 
+    fontSize: 10, 
     fontWeight: '700', 
     color: '#18a7a7', 
-    marginTop: 0 
+    marginTop: 0,
+    marginLeft: 2
   },
   logoTaglineSmall: { 
-    fontSize: 12 
+    fontSize: 12 // Reduced from 12px for mobile
   },
 });

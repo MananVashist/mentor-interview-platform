@@ -13,7 +13,9 @@ import {
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import Head from 'expo-router/head';
-import { PageLayout } from '@/components/PageLayout';
+// Removed: import { PageLayout } from '@/components/PageLayout';
+import { Header } from '@/components/Header';
+import { Footer } from '@/components/Footer';
 import { BlogRenderer } from '@/components/BlogRenderer';
 import { theme } from '@/lib/theme';
 import { getPostBySlug, getAllPosts } from '@/data/blog-posts';
@@ -49,14 +51,15 @@ export default function BlogPost() {
   // Handle 404s - If post is missing, render a simple "Not Found" state
   if (!post) {
     return (
-       <PageLayout>
+       <View style={{ flex: 1, backgroundColor: '#fff' }}>
+         <Header />
          <View style={styles.notFoundContainer}>
            <Text style={styles.title}>Post Not Found</Text>
            <TouchableOpacity onPress={() => router.push('/blog')}>
              <Text style={styles.backButtonText}>Go Back to Blog</Text>
            </TouchableOpacity>
          </View>
-       </PageLayout>
+       </View>
     );
   }
 
@@ -164,7 +167,7 @@ export default function BlogPost() {
   };
 
   return (
-    <PageLayout>
+    <View style={{ flex: 1, backgroundColor: '#fff' }}>
       <Head>
         <title>{`${post.title} | CrackJobs Blog`}</title>
         <meta name="description" content={post.excerpt} />
@@ -190,6 +193,8 @@ export default function BlogPost() {
           {JSON.stringify(structuredData)}
         </script>
       </Head>
+
+      <Header />
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.articleContainer}>
@@ -356,8 +361,13 @@ export default function BlogPost() {
             </TouchableOpacity>
           </View>
         </View>
+        
+        {/* Footer added inside ScrollView so it sits at the bottom */}
+        <View style={{ width: '100%' }}>
+          <Footer />
+        </View>
       </ScrollView>
-    </PageLayout>
+    </View>
   );
 }
 

@@ -9,13 +9,16 @@ console.log('🚀 Starting pre-rendering with Puppeteer...\n');
 
 const distPath = path.join(__dirname, '..', 'dist');
 
+// Sleep helper (compatible with all Puppeteer versions)
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 // Check if dist exists
 if (!fs.existsSync(distPath)) {
   console.error('❌ dist directory not found. Run expo export first.');
   process.exit(1);
 }
 
-// All routes to pre-render
+// Routes to pre-render
 const routes = [
   '/',
   '/how-it-works',
@@ -36,95 +39,131 @@ const routes = [
   '/blog/machine-learning-interview-mistakes-data-scientists',
   '/blog/hr-interview-mistakes-talent-acquisition',
   '/blog/product-manager-interview-execution-mistakes',
-  '/blog/product-manager-interview-product-sense-mistakes'
+  '/blog/product-manager-interview-product-sense-mistakes',
 ];
 
-(async () => {
-  // Start local server
-  const server = http.createServer((request, response) => {
-    return handler(request, response, {
-      public: distPath,
-      cleanUrls: true,
-      trailingSlash: false
-    });
-  });
+function isRecoverablePuppeteerError(err) {
+  const msg = err?.message || String(err);
+  return (
+    msg.includes('Target.createTarget') ||
+    msg.includes('Session with given id not found') ||
+    msg.includes('Target closed') ||
+    msg.includes('Protocol error') ||
+    msg.includes('browser has disconnected') ||
+    msg.includes('Browser has disconnected')
+  );
+}
 
-  const PORT = 45678;
-  server.listen(PORT);
-  console.log(`✅ Local server started on http://localhost:${PORT}\n`);
-
-  // Launch browser
-  const browser = await puppeteer.launch({
+async function launchBrowser() {
+  return puppeteer.launch({
     headless: 'new',
     args: [
       '--no-sandbox',
       '--disable-setuid-sandbox',
       '--disable-dev-shm-usage',
-      '--disable-gpu'
-    ]
+      '--disable-gpu',
+      '--no-zygote',
+      '--disable-features=site-per-process',
+      '--js-flags=--max-old-space-size=2048',
+    ],
   });
+}
 
-  console.log(`📄 Pre-rendering ${routes.length} pages...\n`);
+(async () => {
+  // Start local server
+  const server = http.createServer((request, response) =>
+    handler(request, response, {
+      public: distPath,
+      cleanUrls: true,
+      trailingSlash: false,
+    })
+  );
+
+  const PORT = 45678;
+  server.listen(PORT);
+  console.log(`✅ Local server started on http://localhost:${PORT}\n`);
+
+  let browser = await launchBrowser();
+
+  console.log(`📄 Pre-rendering ${routes.length} pages.\n`);
 
   let successCount = 0;
   let errorCount = 0;
 
   for (const route of routes) {
-    try {
-      const page = await browser.newPage();
-      
-      // Set viewport
-      await page.setViewport({ width: 1920, height: 1080 });
-      
-      // Navigate to page
-      const url = `http://localhost:${PORT}${route}`;
-      await page.goto(url, {
-        waitUntil: 'networkidle0',
-        timeout: 30000
-      });
-      
-      // Wait for content to render (modern way)
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      
-      // Get rendered HTML
-      const html = await page.content();
-      
-      // Determine output path
-      let outputPath;
-      if (route === '/') {
-        outputPath = path.join(distPath, 'index.html');
-      } else {
-        const routePath = path.join(distPath, route);
-        if (!fs.existsSync(routePath)) {
-          fs.mkdirSync(routePath, { recursive: true });
+    const url = `http://localhost:${PORT}${route}`;
+
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      let page = null;
+
+      try {
+        page = await browser.newPage();
+
+        await page.setViewport({ width: 1366, height: 768 });
+
+        // Block heavy assets to prevent Chromium crashes
+        await page.setRequestInterception(true);
+        page.on('request', (req) => {
+          const type = req.resourceType();
+          if (type === 'image' || type === 'media' || type === 'font') {
+            return req.abort();
+          }
+          req.continue();
+        });
+
+        await page.goto(url, {
+          waitUntil: 'domcontentloaded',
+          timeout: 120000,
+        });
+
+        await sleep(4000);
+
+        const html = await page.content();
+
+        let outputPath;
+        if (route === '/') {
+          outputPath = path.join(distPath, 'index.html');
+        } else {
+          const routePath = path.join(distPath, route);
+          if (!fs.existsSync(routePath)) {
+            fs.mkdirSync(routePath, { recursive: true });
+          }
+          outputPath = path.join(routePath, 'index.html');
         }
-        outputPath = path.join(routePath, 'index.html');
+
+        fs.writeFileSync(outputPath, html);
+        console.log(`✅ ${route}`);
+        successCount++;
+        break;
+
+      } catch (err) {
+        if (attempt === 1 && isRecoverablePuppeteerError(err)) {
+          try { await browser.close(); } catch {}
+          browser = await launchBrowser();
+          continue;
+        }
+
+        console.error(`❌ ${route}: ${err.message}`);
+        errorCount++;
+        break;
+
+      } finally {
+        if (page) {
+          await page.close().catch(() => {});
+        }
       }
-      
-      // Write the rendered HTML
-      fs.writeFileSync(outputPath, html);
-      console.log(`✅ ${route}`);
-      successCount++;
-      
-      await page.close();
-      
-    } catch (err) {
-      console.error(`❌ ${route}: ${err.message}`);
-      errorCount++;
     }
   }
 
-  // Clean up
-  await browser.close();
+  try { await browser.close(); } catch {}
   server.close();
 
-  // Summary
   console.log(`\n✨ Pre-rendering complete!`);
   console.log(`   ✅ ${successCount} pages rendered successfully`);
   if (errorCount > 0) {
     console.log(`   ❌ ${errorCount} pages failed`);
   }
   console.log('');
-  
+
   process.exit(errorCount > 0 ? 1 : 0);
 })();

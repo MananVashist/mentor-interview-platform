@@ -1,5 +1,5 @@
 ﻿// components/Header.tsx
-import React, { Suspense } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -9,62 +9,63 @@ import {
   Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-
-// 🟢 CRITICAL: Lazy load named export from main library
-// This ensures Header.tsx doesn't force the whole UI library to load immediately
-const BrandHeader = React.lazy(() => 
-  import('@/lib/ui').then(module => ({ default: module.BrandHeader }))
-);
+import { BrandHeader } from '@/lib/BrandHeader';
 
 const CTA_TEAL = '#18a7a7';
+const BG_CREAM = '#f8f5f0';
 
-// ⚡ LIGHTWEIGHT FALLBACK
-const BrandFallback = ({ small }: { small: boolean }) => (
-  <View style={{ justifyContent: 'center' }}>
-    <Text style={[styles.fallbackLogo, small && styles.fallbackLogoSmall]}>
-      Crack<Text style={{ color: CTA_TEAL }}>Jobs</Text>
-    </Text>
-    <Text style={[styles.fallbackTag, small && styles.fallbackTagSmall]}>
-      Mad skills. Dream job!
-    </Text>
-  </View>
-);
+interface HeaderProps {
+  showGetStarted?: boolean; // Controls whether to show "Get Started" or "Sign Up"
+}
 
-export const Header = () => {
+export const Header = ({ showGetStarted = false }: HeaderProps) => {
   const router = useRouter();
   const { width } = useWindowDimensions();
-  const isSmall = width < 900;
+  const isMobile = width < 768;
 
   return (
     <View style={styles.header} accessibilityRole="banner">
-      <View style={[styles.headerInner, isSmall && styles.headerInnerMobile]}>
+      <View style={[styles.headerInner, isMobile && styles.headerInnerMobile]}>
         
         {/* Brand Section */}
-        <TouchableOpacity onPress={() => router.push('/')} activeOpacity={0.8}>
-          <Suspense fallback={<BrandFallback small={isSmall} />}>
-             <BrandHeader small={isSmall} style={styles.brandOverride} />
-          </Suspense>
+        <TouchableOpacity 
+          onPress={() => router.push('/')} 
+          activeOpacity={0.8}
+          style={styles.brandTouchable}
+        >
+          <BrandHeader small={isMobile} style={styles.brandOverride} />
         </TouchableOpacity>
 
         {/* Navigation Buttons */}
-        <View style={[styles.navRight, isSmall && styles.navRightMobile]} accessibilityRole="navigation">
-          <TouchableOpacity 
-            style={[styles.btn, styles.btnSecondary, isSmall && styles.btnMobile]} 
-            onPress={() => router.push('/auth/sign-in')}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.btnText, styles.btnTextSecondary, isSmall && styles.btnTextMobile]}>
-              LOGIN
-            </Text>
-          </TouchableOpacity>
+        <View style={[styles.navRight, isMobile && styles.navRightMobile]} accessibilityRole="navigation">
+          {/* Log in / Login - Text on mobile, Button on desktop */}
+          {isMobile ? (
+            <TouchableOpacity 
+              onPress={() => router.push('/auth/sign-in')}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.loginTextMobile}>Log in</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity 
+              style={[styles.btn, styles.btnSecondary]} 
+              onPress={() => router.push('/auth/sign-in')}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.btnText, styles.btnTextSecondary]}>
+                LOGIN
+              </Text>
+            </TouchableOpacity>
+          )}
           
+          {/* Get Started / Sign Up Button */}
           <TouchableOpacity 
-            style={[styles.btn, styles.btnPrimary, isSmall && styles.btnMobile]} 
+            style={[styles.btn, styles.btnPrimary, isMobile && styles.btnMobile]} 
             onPress={() => router.push('/auth/sign-up')}
             activeOpacity={0.7}
           >
-            <Text style={[styles.btnText, styles.btnTextPrimary, isSmall && styles.btnTextMobile]}>
-              SIGN UP
+            <Text style={[styles.btnText, styles.btnTextPrimary, isMobile && styles.btnTextMobile]}>
+              {showGetStarted ? 'Get Started' : 'SIGN UP'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -74,71 +75,67 @@ export const Header = () => {
   );
 };
 
+const SYSTEM_FONT = Platform.select({
+  web: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif",
+  ios: "System",
+  android: "Roboto",
+  default: "System"
+}) as string;
+
 const styles = StyleSheet.create({
   header: { 
-    backgroundColor: '#f8f5f0', 
-    paddingVertical: 16,
+    backgroundColor: BG_CREAM, 
+    paddingTop: 20,
+    paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: 'rgba(0,0,0,0.05)',
   },
   
   headerInner: { 
     flexDirection: 'row', 
     alignItems: 'center', 
     justifyContent: 'space-between', 
-    maxWidth: 1400, 
+    maxWidth: 1200, 
     width: '100%', 
     marginHorizontal: 'auto', 
-    paddingHorizontal: 40 
+    paddingHorizontal: 32 
   },
   
   headerInnerMobile: { 
-    paddingHorizontal: 16, 
-    justifyContent: 'space-between' 
+    paddingHorizontal: 16,
+  },
+  
+  brandTouchable: {
+    // No extra styles needed, just for grouping
   },
   
   brandOverride: {
     marginBottom: 0,
   },
-
-  // Fallback Styles
-  fallbackLogo: {
-    fontSize: 32,
-    fontWeight: '900',
-    color: '#333',
-    fontFamily: Platform.OS === 'web' ? 'System' : undefined,
-    lineHeight: 38,
-  },
-  fallbackLogoSmall: {
-    fontSize: 24,
-    lineHeight: 30,
-  },
-  fallbackTag: {
+  
+  // Mobile "Log in" text (not a button)
+  loginTextMobile: {
+    fontFamily: SYSTEM_FONT,
     fontSize: 14,
-    fontWeight: '900',
-    color: CTA_TEAL,
-    marginTop: -4,
-    fontFamily: Platform.OS === 'web' ? 'System' : undefined,
-  },
-  fallbackTagSmall: {
-    fontSize: 12,
+    fontWeight: '600',
+    color: '#333',
   },
   
   // Navigation Buttons
   navRight: { 
     flexDirection: 'row', 
-    gap: 12, 
+    gap: 24, 
     alignItems: 'center' 
   },
   
   navRightMobile: { 
-    gap: 8 
+    gap: 16, 
   },
   
   btn: { 
-    paddingHorizontal: 24, 
+    paddingHorizontal: 28, 
     paddingVertical: 10, 
-    borderRadius: 999, 
+    borderRadius: 100, 
     borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
@@ -155,15 +152,15 @@ const styles = StyleSheet.create({
   },
   
   btnMobile: { 
-    paddingHorizontal: 16, 
-    paddingVertical: 8 
+    paddingHorizontal: 5, 
+    paddingVertical: 10,
   },
   
   btnText: { 
     fontWeight: '700', 
-    fontSize: 13, 
+    fontSize: 15, 
     letterSpacing: 1,
-    fontFamily: Platform.OS === 'web' ? 'System' : undefined,
+    fontFamily: SYSTEM_FONT,
   },
   
   btnTextPrimary: {
@@ -175,7 +172,8 @@ const styles = StyleSheet.create({
   },
   
   btnTextMobile: { 
-    fontSize: 11, 
-    letterSpacing: 0.5 
+    fontSize: 12, 
+    fontWeight: '700',
+    letterSpacing: 0,
   },
 });
