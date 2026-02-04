@@ -141,7 +141,7 @@ export default function SignInScreen() {
               style={styles.content}
               accessibilityLabel="Sign in form"
             >
-              <BrandHeader />
+              <BrandHeader showEyes={true} />
 
               <View style={styles.spacer} />
 

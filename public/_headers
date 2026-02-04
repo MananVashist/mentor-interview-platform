@@ -49,14 +49,14 @@
   Cache-Control: public, max-age=2592000
 
 # ================================================
-# SEO FILES - Allow crawling, short cache
+# SEO FILES - No cache for fresh content
 # ================================================
 /robots.txt
-  Cache-Control: public, max-age=3600, must-revalidate
+  Cache-Control: public, max-age=0, must-revalidate
   Content-Type: text/plain
 
 /sitemap.xml
-  Cache-Control: public, max-age=3600, must-revalidate
+  Cache-Control: public, max-age=0, must-revalidate
   Content-Type: application/xml
 
 # ================================================
