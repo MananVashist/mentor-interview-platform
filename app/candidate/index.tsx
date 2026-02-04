@@ -41,7 +41,7 @@ const TIER_RANK: Record<string, number> = {
   gold: 3,
 };
 
-type SortOption = 'tier' | 'price_low' | 'price_high' | 'sessions' | 'rating' | 'experience';
+type SortOption = 'price_low' | 'sessions' | 'rating' | 'experience';
 
 type AdminProfile = { 
   id: number; 
@@ -166,7 +166,7 @@ const TierBadge = ({ tier }: { tier?: string | null }) => {
   let bgColor = '#FFF8F0';
   let borderColor = '#CD7F32';
   let medalColor = '#CD7F32';
-
+  
   const normalizedTier = tier?.toLowerCase();
   
   if (normalizedTier === 'gold') {
@@ -209,7 +209,7 @@ export default function CandidateDashboard() {
   const [refreshing, setRefreshing] = useState(false);
   const [mentorAvailability, setMentorAvailability] = useState<Record<string, string>>({});
   
-  const [sortBy, setSortBy] = useState<SortOption>('tier');
+  const [sortBy, setSortBy] = useState<SortOption>('price_low');
   const [showTierInfo, setShowTierInfo] = useState(false);
   
   // ✅ NEW: Store tier cut percentages
@@ -314,19 +314,8 @@ export default function CandidateDashboard() {
     };
 
     switch (sortBy) {
-      case 'tier':
-        sorted.sort((a, b) => {
-          const rankA = TIER_RANK[a.tier?.toLowerCase() || 'bronze'] || 1;
-          const rankB = TIER_RANK[b.tier?.toLowerCase() || 'bronze'] || 1;
-          if (rankA !== rankB) return rankA - rankB; 
-          return (b.total_sessions || 0) - (a.total_sessions || 0);
-        });
-        break;
       case 'price_low':
         sorted.sort((a, b) => getPrice(a) - getPrice(b));
-        break;
-      case 'price_high':
-        sorted.sort((a, b) => getPrice(b) - getPrice(a));
         break;
       case 'sessions':
         sorted.sort((a, b) => (b.total_sessions || 0) - (a.total_sessions || 0));
@@ -454,14 +443,12 @@ export default function CandidateDashboard() {
           <View style={styles.sortContainer}>
             <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 8 }}>
               {/* Using a simple text icon or existing SVG */}
-               <AppText style={{ fontSize: 16, marginRight: 4 }}>⇅</AppText>
+               <AppText style={{ fontSize: 14, marginRight: 4 }}>⇅</AppText>
               <AppText style={styles.sortLabel}>Sort by:</AppText>
             </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-              <SortButton label="Tier" active={sortBy === 'tier'} onPress={() => setSortBy('tier')} />
-              <SortButton label="Sessions" active={sortBy === 'sessions'} onPress={() => setSortBy('sessions')} />
               <SortButton label="Price: Low" active={sortBy === 'price_low'} onPress={() => setSortBy('price_low')} />
-              <SortButton label="Price: High" active={sortBy === 'price_high'} onPress={() => setSortBy('price_high')} />
+              <SortButton label="Sessions" active={sortBy === 'sessions'} onPress={() => setSortBy('sessions')} />
               <SortButton label="Rating" active={sortBy === 'rating'} onPress={() => setSortBy('rating')} />
               <SortButton label="Experience" active={sortBy === 'experience'} onPress={() => setSortBy('experience')} />
             </ScrollView>
@@ -606,25 +593,25 @@ const styles = StyleSheet.create({
 
   // Filters & Sort
   filtersContainer: { paddingHorizontal: 32, paddingTop: 24, marginBottom: 24 },
-  filterLabel: { ...FONTS.bodyBold, fontSize: 16, color: theme.colors.text.main, marginBottom: 16 },
+  filterLabel: { ...FONTS.bodyBold, color: theme.colors.text.main, marginBottom: 16 },
   pillsScroll: { gap: 12, paddingRight: 20 },
   
   pill: { flexDirection: "row", alignItems: "center", paddingHorizontal: 20, paddingVertical: 10, borderRadius: 999, borderWidth: 1 },
   pillActive: { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary },
   pillInactive: { backgroundColor: "#FFF", borderColor: "#E5E7EB" },
-  pillText: { ...FONTS.body, fontWeight: "500" },
+  pillText: { ...FONTS.bodyBold },
   pillTextActive: { color: "#FFF" },
   pillTextInactive: { color: "#4B5563" },
   
   // Sorting Styles
   sortContainer: { marginTop: 16, flexDirection: 'row', alignItems: 'center' },
-  sortLabel: { ...FONTS.caption, fontSize: 13, color: '#6B7280', fontWeight: '500', marginLeft: 6 },
+  sortLabel: { ...FONTS.caption, color: '#6B7280', fontWeight: '500', marginLeft: 6 },
   sortBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, backgroundColor: '#F3F4F6', borderWidth: 1, borderColor: '#E5E7EB' },
   sortBtnActive: { backgroundColor: '#EEF2FF', borderColor: theme.colors.primary },
   sortBtnText: { ...FONTS.caption, color: '#4B5563', fontWeight: '500' },
   sortBtnTextActive: { color: theme.colors.primary, fontWeight: '600' },
 
-  resultsCount: { ...FONTS.body, fontSize: 14, color: theme.colors.text.light },
+  resultsCount: { ...FONTS.body, color: theme.colors.text.light },
   
   // Info Btn
   infoBtn: { flexDirection: 'row', alignItems: 'center', gap: 6 },

@@ -14,17 +14,19 @@ import {
 import { useRouter } from "expo-router";
 
 interface BrandHeaderProps {
+  showEyes?: boolean;
   style?: ViewStyle;
   small?: boolean;
 }
 
-export const BrandHeader = ({ style, small }: BrandHeaderProps) => {
+export const BrandHeader = ({ style, small, showEyes }: BrandHeaderProps) => {
   const router = useRouter();
   const { width } = useWindowDimensions();
   
   // Auto-detect mobile based on screen width
   const isMobile = width < 768;
   const shouldBeSmall = small || isMobile;
+  const shouldShowEyes = showEyes !== undefined ? showEyes : !shouldBeSmall;
   
   // Track mounting for animations only (prevents animation glitches during SSR)
   const [isMounted, setIsMounted] = useState(false);
@@ -43,7 +45,7 @@ export const BrandHeader = ({ style, small }: BrandHeaderProps) => {
 
   // Eye Animation Loop
   useEffect(() => {
-    if (!isMounted) return; 
+    if (!isMounted || !shouldShowEyes) return; 
     
     const randomRange = (min: number, max: number) => Math.random() * (max - min) + min;
     const SPEED = 0.04; 
@@ -77,7 +79,7 @@ export const BrandHeader = ({ style, small }: BrandHeaderProps) => {
     
     moveEye(leftEyeX, leftEyeY, leftPos.current);
     moveEye(rightEyeX, rightEyeY, rightPos.current);
-  }, [isMounted]);
+  }, [isMounted, shouldShowEyes]);
 
   return (
     <TouchableOpacity 
@@ -89,7 +91,7 @@ export const BrandHeader = ({ style, small }: BrandHeaderProps) => {
       <View style={[styles.brandContainer, style]} nativeID="brand-header">
         
         {/* Eyes wrapper - hidden on mobile */}
-        {!shouldBeSmall && (
+        {shouldShowEyes && (
           <View style={styles.eyesWrapper} nativeID="brand-eyes">
             <View style={styles.eye}>
               <Animated.View style={[styles.pupil, { transform: [{ translateX: leftEyeX }, { translateY: leftEyeY }] }]} />
@@ -170,7 +172,7 @@ const styles = StyleSheet.create({
   },
   logoTagline: { 
     fontFamily: SYSTEM_FONT, 
-    fontSize: 10, 
+    fontSize: 14, 
     fontWeight: '700', 
     color: '#18a7a7', 
     marginTop: 0,
