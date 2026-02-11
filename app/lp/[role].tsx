@@ -12,7 +12,7 @@ import {
 import { useRouter, useLocalSearchParams } from "expo-router";
 import Head from "expo-router/head";
 
-import { BrandHeader } from "@/lib/BrandHeader";
+import { Header } from "@/components/Header";
 import { trackEvent } from '@/lib/analytics'; 
 
 // --- Constants ---
@@ -40,10 +40,70 @@ const SYSTEM_FONT = Platform.select({
   default: "System",
 }) as string;
 
+// Testimonials Data
+const TESTIMONIALS = [
+  {
+    name: 'Priya S.',
+    role: 'Product Manager',
+    company: 'TATA',
+    avatar: '👩‍💼',
+    rating: 5,
+    quote: "The mock interview was incredibly realistic. My mentor's feedback on my product sense helped me identify exact gaps.",
+  },
+  {
+    name: 'Rahul V.',
+    role: 'Data Analyst',
+    company: 'Bigbasket',
+    avatar: '👨‍💻',
+    rating: 5,
+    quote: "I practiced SQL and case studies with a senior analyst. The detailed scorecard showed me exactly what to improve. Worth every rupee!",
+  },
+  {
+    name: 'Sneha P.',
+    role: 'Data Scientist',
+    company: 'Musigma',
+    avatar: '👩‍🔬',
+    rating: 5,
+    quote: "Anonymous format removed all pressure. My mentor's ML system design feedback was gold. Recording helped me review and improve 2x faster.",
+  },
+  {
+    name: 'Amit K.',
+    role: 'HR Manager',
+    company: 'Flipkart',
+    avatar: '👨‍💼',
+    rating: 5,
+    quote: "Practiced behavioral questions with an actual HRBP from ABFRL. The structured feedback on my STAR responses made all the difference in my interviews.",
+  }
+];
+
+// Guarantee Data
+const GUARANTEES = [
+  {
+    icon: '💰',
+    title: '100% Money-Back Guarantee',
+    description: 'If your mentor doesn\'t show up, you get a full refund. No questions asked.',
+  },
+  {
+    icon: '🔄',
+    title: 'Free Rescheduling',
+    description: 'Cancel or reschedule up to 24 hours before your session. Life happens, we get it.',
+  },
+  {
+    icon: '📹',
+    title: 'Recording Guaranteed',
+    description: 'Every session is recorded and shared within 24 hours. Review unlimited times.',
+  },
+  {
+    icon: '📝',
+    title: 'Detailed Feedback Promise',
+    description: 'Structured scorecard with actionable tips delivered within 48 hours of your session.',
+  },
+];
+
 // --- Valid Roles Config ---
 const VALID_ROLES = ["pm", "hr", "ds", "da"];
 
-// --- Dynamic Content ---
+// Role-Specific Content
 const ROLE_CONTENT: Record<string, { title: string; highlight: string; sub: string }> = {
   default: { 
     title: "Mock Interviews",
@@ -53,7 +113,7 @@ const ROLE_CONTENT: Record<string, { title: string; highlight: string; sub: stri
   pm: { 
     title: "Product Management mock interviews",
     highlight: "with expert PMs", 
-    sub: "Strategy, Product Sense, Leadership, Execution and Technical. Practice with veteran PMs from top tech companies." 
+    sub: "Test yourself on Product Strategy, Product Sense, Leadership, Execution or Technical PM skills against top hiring managers" 
   },
   hr: { 
     title: "HR mock interviews with ", 
@@ -72,12 +132,26 @@ const ROLE_CONTENT: Record<string, { title: string; highlight: string; sub: stri
   },
 };
 
+// How It Works Data
 const STEPS = [
-  { emoji: "📝", title: "1. Browse mentors", desc: "Choose from a list of expert mentors in your domain and the topic you want to practice " },
-  { emoji: "🎥", title: "2. The Session", desc: "1:1 Video Call. Completely anonymous. Recording will be provided." },
-  { emoji: "📊", title: "3. The Feedback", desc: "Detailed written scorecard & actionable tips." },
+  { 
+    emoji: "📝", 
+    title: "1. Browse mentors", 
+    desc: "Choose from a list of expert mentors in your domain and the topic you want to practice " 
+  },
+  { 
+    emoji: "🎥", 
+    title: "2. The Session", 
+    desc: "1:1 Video Call. Completely anonymous. Recording will be provided." 
+  },
+  { 
+    emoji: "📊", 
+    title: "3. The Feedback", 
+    desc: "Detailed written scorecard & actionable tips." 
+  },
 ];
 
+// FAQ Data
 const FAQS = [
   {
     q: "How is the process anonymous?",
@@ -97,9 +171,7 @@ const FAQS = [
   },
 ];
 
-// --- Sub-Components ---
-
-// ✅ EDITED: Added nativeID to props
+// ===== Button Component =====
 const Button = ({
   title,
   onPress,
@@ -107,7 +179,7 @@ const Button = ({
   color = CTA_TEAL,
   style,
   textStyle,
-  nativeID, // <--- Added
+  nativeID,
 }: {
   title: string;
   onPress: () => void;
@@ -115,144 +187,265 @@ const Button = ({
   color?: string;
   style?: any;
   textStyle?: any;
-  nativeID?: string; // <--- Added
-}) => (
-  <TouchableOpacity
-    nativeID={nativeID} // <--- Passed to component
-    style={[
-      styles.buttonBase,
-      variant === "primary" && { backgroundColor: color, shadowColor: color },
-      variant === "primary" && styles.buttonShadow,
-      variant === "outline" && styles.buttonOutline,
-      variant === "outline" && { borderColor: color },
-      style,
-    ]}
-    onPress={onPress}
-    activeOpacity={0.75}
-    accessibilityRole="button"
-  >
-    <Text
+  nativeID?: string;
+}) => {
+  return (
+    <TouchableOpacity
+      nativeID={nativeID}
       style={[
-        styles.buttonText,
-        variant === "primary" && { color: "#fff" },
-        variant === "outline" && { color: TEXT_DARK },
-        textStyle,
+        styles.buttonBase,
+        variant === "primary" && { backgroundColor: color, shadowColor: color },
+        variant === "primary" && styles.buttonShadow,
+        variant === "outline" && styles.buttonOutline,
+        variant === "outline" && { borderColor: color },
+        style,
       ]}
+      onPress={onPress}
+      activeOpacity={0.75}
+      accessibilityRole="button"
     >
-      {title}
-    </Text>
-  </TouchableOpacity>
-);
+      <Text
+        style={[
+          styles.buttonText,
+          variant === "primary" && { color: "#fff" },
+          variant === "outline" && { color: TEXT_DARK },
+          textStyle,
+        ]}
+      >
+        {title}
+      </Text>
+    </TouchableOpacity>
+  );
+};
 
-const TrustFooter = memo(({ isSmall, roleTitle }: { isSmall: boolean, roleTitle: string }) => (
-  <View style={[styles.trustRow, isSmall && { flexDirection: "column", gap: 8 }]}>
-    <Text style={styles.trustItem}>✅ Verified Experts</Text>
-    <Text style={styles.trustItem}>📹 Session Recorded</Text>
-    <Text style={styles.trustItem}>📝 Detailed Feedback</Text>
-  </View>
-));
+// ===== Trust Footer Component =====
+const TrustFooter = memo(({ isSmall, roleTitle }: { isSmall: boolean, roleTitle: string }) => {
+  return (
+    <View style={[styles.trustRow, isSmall && { flexDirection: "column", gap: 8 }]}>
+      <Text style={styles.trustItem}>✅ Verified Experts</Text>
+      <Text style={styles.trustItem}>📹 Session Recorded</Text>
+      <Text style={styles.trustItem}>📝 Detailed Feedback</Text>
+    </View>
+  );
+});
 
-// --- Pricing Component ---
-const PricingCards = memo(({ isSmall, onBook }: { isSmall: boolean, onBook: (tier: string) => void }) => (
-  <View style={styles.section}>
-    <Text style={styles.kicker}>MARKETPLACE RATES</Text>
-    <Text style={[styles.h2, { marginBottom: 8 }]}>Find Your Range</Text>
-    
-    <Text style={[styles.sub, { marginBottom: 32, fontSize: 15, maxWidth: 500, alignSelf: 'center' }]}>
-      Mentors set their own prices based on experience.
-    </Text>
-    
-    <View style={[styles.pricingGrid, isSmall && styles.pricingGridMobile]}>
-      {/* BRONZE */}
-      <View style={[styles.priceCard, { backgroundColor: BG_BRONZE, borderColor: COLOR_BRONZE }]}>
-        <Text style={[styles.priceTier, { color: COLOR_BRONZE }]}>BRONZE</Text>
-        <Text style={styles.priceAmount}>₹3k - ₹6k</Text>
-        <Text style={styles.perSession}>per session</Text>
-        <View style={[styles.divider, { backgroundColor: COLOR_BRONZE, opacity: 0.2 }]} />
-        <Text style={styles.priceDesc}>• Mid-Level Managers</Text>
-        <Text style={styles.priceDesc}>• less than 10 yrs experienced</Text>
-        <Text style={styles.priceDesc}>• Best for: Entry level experience</Text>
-        <Button 
-          title="Browse Bronze" 
-          onPress={() => onBook('bronze')} 
-          variant="outline" 
-          color={COLOR_BRONZE}
-          style={{ marginTop: 24, width: '100%' }} 
-        />
-      </View>
+// ===== Pricing Section =====
+const PricingCards = memo(({ isSmall, onBook }: { isSmall: boolean, onBook: (tier: string) => void }) => {
+  return (
+    <View style={styles.section}>
+      <Text style={styles.kicker}>MARKETPLACE RATES</Text>
+      <Text style={[styles.h2, { marginBottom: 8 }]}>Find Your Range</Text>
+      
+      <Text style={[styles.sub, { marginBottom: 32, fontSize: 15, maxWidth: 500, alignSelf: 'center' }]}>
+        Mentors set their own prices based on experience.
+      </Text>
+      
+      {/* Pricing Grid */}
+      <View style={[styles.pricingGrid, isSmall && styles.pricingGridMobile]}>
+        {/* Bronze Tier */}
+        <View style={[styles.priceCard, { backgroundColor: BG_BRONZE, borderColor: COLOR_BRONZE }]}>
+          <Text style={[styles.priceTier, { color: COLOR_BRONZE }]}>BRONZE</Text>
+          <Text style={styles.priceAmount}>₹3.5k - ₹6k</Text>
+          <Text style={styles.perSession}>per session</Text>
+          <View style={[styles.divider, { backgroundColor: COLOR_BRONZE, opacity: 0.2 }]} />
+          <Text style={styles.priceDesc}>• Mid-Level Managers</Text>
+          <Text style={styles.priceDesc}>• less than 10 yrs experienced</Text>
+          <Text style={styles.priceDesc}>• Best for: Entry level experience</Text>
+          <Button 
+            title="Browse Bronze" 
+            onPress={() => onBook('bronze')} 
+            variant="outline" 
+            color={COLOR_BRONZE}
+            style={{ marginTop: 24, width: '100%' }} 
+          />
+        </View>
 
-      {/* SILVER */}
-      <View style={[styles.priceCard, { backgroundColor: BG_SILVER, borderColor: COLOR_SILVER }]}>
-        <Text style={[styles.priceTier, { color: COLOR_SILVER }]}>SILVER</Text>
-        <Text style={styles.priceAmount}>₹6k - 9k</Text>
-        <Text style={styles.perSession}>per session</Text>
-        <View style={[styles.divider, { backgroundColor: COLOR_SILVER, opacity: 0.2 }]} />
-        <Text style={styles.priceDesc}>• Senior Management</Text>
-        <Text style={styles.priceDesc}>• 10-15 yrs experience</Text>
-        <Text style={styles.priceDesc}>• Best for: Mid level experience </Text>
-        <Button 
-          title="Browse Silver" 
-          onPress={() => onBook('silver')} 
-          variant="outline"
-          color={COLOR_SILVER} 
-          style={{ marginTop: 24, width: '100%' }} 
-        />
-      </View>
+        {/* Silver Tier */}
+        <View style={[styles.priceCard, { backgroundColor: BG_SILVER, borderColor: COLOR_SILVER }]}>
+          <Text style={[styles.priceTier, { color: COLOR_SILVER }]}>SILVER</Text>
+          <Text style={styles.priceAmount}>₹6k - 10k</Text>
+          <Text style={styles.perSession}>per session</Text>
+          <View style={[styles.divider, { backgroundColor: COLOR_SILVER, opacity: 0.2 }]} />
+          <Text style={styles.priceDesc}>• Senior Management</Text>
+          <Text style={styles.priceDesc}>• 10-15 yrs experience</Text>
+          <Text style={styles.priceDesc}>• Best for: Mid level experience </Text>
+          <Button 
+            title="Browse Silver" 
+            onPress={() => onBook('silver')} 
+            variant="outline"
+            color={COLOR_SILVER} 
+            style={{ marginTop: 24, width: '100%' }} 
+          />
+        </View>
 
-      {/* GOLD */}
-      <View style={[styles.priceCard, { backgroundColor: BG_GOLD, borderColor: COLOR_GOLD }]}>
-        <Text style={[styles.priceTier, { color: COLOR_GOLD }]}>GOLD</Text>
-        <Text style={styles.priceAmount}>₹9k - ₹15k</Text>
-        <Text style={styles.perSession}>per session</Text>
-        <View style={[styles.divider, { backgroundColor: COLOR_GOLD, opacity: 0.2 }]} />
-        <Text style={styles.priceDesc}>• Leadership / Directors</Text>
-        <Text style={styles.priceDesc}>• Hiring Managers</Text>
-        <Text style={styles.priceDesc}>• Best for: Senior level experience</Text>
-        <Button 
-          title="Browse Gold" 
-          onPress={() => onBook('gold')} 
-          variant="outline" 
-          color={COLOR_GOLD}
-          style={{ marginTop: 24, width: '100%' }} 
-        />
+        {/* Gold Tier */}
+        <View style={[styles.priceCard, { backgroundColor: BG_GOLD, borderColor: COLOR_GOLD }]}>
+          <Text style={[styles.priceTier, { color: COLOR_GOLD }]}>GOLD</Text>
+          <Text style={styles.priceAmount}>₹10k - ₹15k</Text>
+          <Text style={styles.perSession}>per session</Text>
+          <View style={[styles.divider, { backgroundColor: COLOR_GOLD, opacity: 0.2 }]} />
+          <Text style={styles.priceDesc}>• Leadership / Directors</Text>
+          <Text style={styles.priceDesc}>• Hiring Managers</Text>
+          <Text style={styles.priceDesc}>• Best for: Senior level experience</Text>
+          <Button 
+            title="Browse Gold" 
+            onPress={() => onBook('gold')} 
+            variant="outline" 
+            color={COLOR_GOLD}
+            style={{ marginTop: 24, width: '100%' }} 
+          />
+        </View>
       </View>
     </View>
-  </View>
-));
+  );
+});
 
-const HowItWorks = memo(({ isSmall }: { isSmall: boolean }) => (
-  <View style={styles.section}>
-    <Text style={styles.kicker}>THE PROCESS</Text>
-    <Text style={[styles.h2, isSmall && styles.h2Mobile]}>Simple.</Text>
+// ===== How It Works Section =====
+const HowItWorks = memo(({ isSmall }: { isSmall: boolean }) => {
+  return (
+    <View style={styles.section}>
+      <Text style={styles.kicker}>THE PROCESS</Text>
+      <Text style={[styles.h2, isSmall && styles.h2Mobile]}>Simple.</Text>
 
-    <View style={[styles.stepsGrid, isSmall && styles.stepsGridMobile]}>
-      {STEPS.map((s, i) => (
-        <View key={i} style={styles.stepCard}>
-          <Text style={styles.stepEmoji}>{s.emoji}</Text>
-          <View>
-            <Text style={styles.stepTitle}>{s.title}</Text>
-            <Text style={styles.stepDesc}>{s.desc}</Text>
+      {/* Steps Grid */}
+      <View style={[styles.stepsGrid, isSmall && styles.stepsGridMobile]}>
+        {STEPS.map((s, i) => (
+          <View key={i} style={styles.stepCard}>
+            <Text style={styles.stepEmoji}>{s.emoji}</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.stepTitle}>{s.title}</Text>
+              <Text style={styles.stepDesc}>{s.desc}</Text>
+            </View>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+});
+
+// ===== FAQ Section =====
+const FAQ = memo(({ isSmall }: { isSmall: boolean }) => {
+  return (
+    <View style={styles.section}>
+      <Text style={styles.kicker}>FAQ</Text>
+      <Text style={[styles.h2, isSmall && styles.h2Mobile]}>Common Questions</Text>
+      
+      {/* FAQ Items */}
+      <View style={styles.faqWrap}>
+        {FAQS.map((f) => (
+          <View key={f.q} style={styles.faqItem}>
+            <Text style={styles.faqQ}>{f.q}</Text>
+            <Text style={styles.faqA}>{f.a}</Text>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+});
+
+// ===== Testimonials Section =====
+const TestimonialsSection = memo(() => {
+  return (
+    <View style={styles.testimonialsContainer} nativeID="testimonials">
+      <Text style={styles.kicker}>SUCCESS STORIES</Text>
+     
+      {/* Testimonial Cards */}
+      <View style={styles.testimonialsGrid}>
+        {TESTIMONIALS.map((testimonial, index) => (
+          <View key={index} style={styles.testimonialCard}>
+            <View style={styles.testimonialHeader}>
+              <View style={styles.avatarContainer}>
+                <Text style={styles.avatar}>{testimonial.avatar}</Text>
+              </View>
+              <View style={styles.testimonialMeta}>
+                <Text style={styles.testimonialName}>{testimonial.name}</Text>
+                <Text style={styles.testimonialRole}>
+                  {testimonial.role} at {testimonial.company}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.ratingContainer}>
+              {[...Array(testimonial.rating)].map((_, i) => (
+                <Text key={i} style={styles.star}>⭐</Text>
+              ))}
+            </View>
+
+            <Text style={styles.testimonialQuote}>"{testimonial.quote}"</Text>
+
+            <View style={styles.highlightBadge}>
+              <Text style={styles.highlightText}>✓ {testimonial.highlight}</Text>
+            </View>
+          </View>
+        ))}
+      </View>
+
+      {/* Trust Indicators */}
+      <View style={styles.trustIndicators}>
+        <Text style={styles.trustText}>✓ All testimonials verified</Text>
+        <Text style={styles.trustText}>✓ Real candidate outcomes</Text>
+        <Text style={styles.trustText}>✓ Updated monthly</Text>
+      </View>
+    </View>
+  );
+});
+
+// ===== Guarantee Section =====
+const GuaranteeSection = memo(() => {
+  return (
+    <View style={styles.guaranteeContainer} nativeID="guarantee">
+      <View style={styles.guaranteeBox}>
+        {/* Badge */}
+        <View style={styles.guaranteeBadgeContainer}>
+          <View style={styles.guaranteeBadge}>
+            <Text style={styles.guaranteeBadgeEmoji}>🛡️</Text>
+            <Text style={styles.guaranteeBadgeText}>RISK-FREE GUARANTEE</Text>
           </View>
         </View>
-      ))}
-    </View>
-  </View>
-));
 
-const FAQ = memo(({ isSmall }: { isSmall: boolean }) => (
-  <View style={styles.section}>
-    <Text style={styles.kicker}>FAQ</Text>
-    <Text style={[styles.h2, isSmall && styles.h2Mobile]}>Common Questions</Text>
-    <View style={styles.faqWrap}>
-      {FAQS.map((f) => (
-        <View key={f.q} style={styles.faqItem}>
-          <Text style={styles.faqQ}>{f.q}</Text>
-          <Text style={styles.faqA}>{f.a}</Text>
+        {/* Title */}
+        <Text style={styles.guaranteeTitle}>
+          Practice with complete <Text style={{ color: CTA_TEAL }}>confidence</Text>
+        </Text>
+        
+        <Text style={styles.guaranteeSubtitle}>
+          Your investment is protected. We've got your back every step of the way.
+        </Text>
+
+        {/* Guarantee Cards */}
+        <View style={styles.guaranteesGrid}>
+          {GUARANTEES.map((guarantee, index) => (
+            <View key={index} style={styles.guaranteeCard}>
+              <Text style={styles.guaranteeIcon}>{guarantee.icon}</Text>
+              <Text style={styles.guaranteeCardTitle}>{guarantee.title}</Text>
+              <Text style={styles.guaranteeDescription}>{guarantee.description}</Text>
+            </View>
+          ))}
         </View>
-      ))}
+
+        {/* Trust Seal */}
+        <View style={styles.trustSeal}>
+          <View style={styles.sealBadge}>
+            <Text style={styles.sealText}>✓ SECURE PAYMENTS</Text>
+          </View>
+          <View style={styles.sealBadge}>
+            <Text style={styles.sealText}>✓ VERIFIED MENTORS</Text>
+          </View>
+          <View style={styles.sealBadge}>
+            <Text style={styles.sealText}>✓ INSTANT REFUNDS</Text>
+          </View>
+        </View>
+
+        {/* Assurance Box */}
+        <View style={styles.assuranceBox}>
+          <Text style={styles.assuranceText}>
+            <Text style={{ fontWeight: '800', color: TEXT_DARK }}>Still unsure?</Text> Our support team is available 24/7 to answer any questions. Email us at support@crackjobs.com
+          </Text>
+        </View>
+      </View>
     </View>
-  </View>
-));
+  );
+});
 
 // --- Main Page ---
 
@@ -315,32 +508,8 @@ export default function CampaignLanding() {
 
       <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
         {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.headerInner}>
-            <BrandHeader style={{ marginBottom: 0 }} small={isSmall} />
-            
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 20 }}>
-              
-              {/* ✅ EDITED: Added nativeID */}
-              <TouchableOpacity 
-                nativeID="btn-lp-login"
-                onPress={() => router.push("/auth/sign-in")}
-              >
-                <Text style={styles.navLinkText}>Log in</Text>
-              </TouchableOpacity>
-
-              {/* ✅ EDITED: Added nativeID */}
-              <TouchableOpacity
-                nativeID="btn-lp-signup-nav"
-                style={{ backgroundColor: CTA_TEAL, paddingVertical: 8, paddingHorizontal: 16, borderRadius: 8 }}
-                onPress={() => router.push("/auth/sign-up")}
-              >
-                <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>Get Started</Text>
-              </TouchableOpacity>
-            </View>
-
-          </View>
-        </View>
+        
+        < Header />
 
         {/* HERO SECTION */}
         <View style={styles.heroSection}>
@@ -367,19 +536,13 @@ export default function CampaignLanding() {
               {/* ✅ EDITED: Added nativeID */}
               <Button
                 nativeID="btn-lp-hero-cta"
-                title={activeRole !== 'default' ? `Browse Mentors` : "View Mentor Rates"} 
+                title={activeRole !== 'default' ? `Book Your ${ROLE_CONTENT[activeRole].title.split(' ')[0]} Interview` : "Book Your Mock Interview"} 
                 onPress={() => handleBookClick("hero_cta")}
                 style={[styles.ctaBig, isSmall && { width: "100%" }]}
                 textStyle={{ fontSize: 16 }}
               />
 
-              <Button
-                title="How it Works"
-                variant="outline"
-                onPress={() => router.push('/how-it-works')}
-                style={[styles.ctaBig, isSmall && { width: "100%" }]}
-                textStyle={{ fontSize: 16 }}
-              />
+             
             </View>
 
             <TrustFooter isSmall={isSmall} roleTitle={content.title} />
@@ -387,7 +550,9 @@ export default function CampaignLanding() {
         </View>
 
         <HowItWorks isSmall={isSmall} />
+        <TestimonialsSection />
         <PricingCards isSmall={isSmall} onBook={handleBookClick} />
+        <GuaranteeSection />
         <FAQ isSmall={isSmall} />
 
         <View style={[styles.section, { paddingBottom: 60 }]}>
@@ -399,10 +564,16 @@ export default function CampaignLanding() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: BG_CREAM },
-  scrollContent: { minHeight: "100%" },
+  // ===== Base Styles =====
+  container: {
+    flex: 1,
+    backgroundColor: BG_CREAM,
+  },
+  scrollContent: {
+    minHeight: "100%",
+  },
 
-  // --- Buttons ---
+  // ===== Button Styles =====
   buttonBase: {
     borderRadius: 8,
     alignItems: "center",
@@ -410,25 +581,30 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 28,
   },
-  buttonShadow: { shadowOpacity: 0.2, shadowRadius: 8, shadowOffset: { width: 0, height: 4 } },
-  buttonOutline: { backgroundColor: "transparent", borderWidth: 2 },
-  buttonText: { fontFamily: SYSTEM_FONT, fontSize: 15, fontWeight: "700" },
+  buttonShadow: {
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+  },
+  buttonOutline: {
+    backgroundColor: "transparent",
+    borderWidth: 2,
+  },
+  buttonText: {
+    fontFamily: SYSTEM_FONT,
+    fontSize: 15,
+    fontWeight: "700",
+  },
 
-  // --- Header ---
-  header: { backgroundColor: BG_CREAM, paddingVertical: 16 },
-  headerInner: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+  // ===== Hero Section =====
+  heroSection: {
     maxWidth: 1000,
     width: "100%",
     alignSelf: "center",
     paddingHorizontal: 24,
+    paddingTop: 20,
+    paddingBottom: 30,
   },
-  navLinkText: { fontFamily: SYSTEM_FONT, fontWeight: "600", color: TEXT_DARK },
-
-  // --- Hero ---
-  heroSection: { maxWidth: 1000, width: "100%", alignSelf: "center", paddingHorizontal: 24, paddingTop: 20, paddingBottom: 30 },
   heroInner: {
     backgroundColor: "#fff",
     borderRadius: 24,
@@ -442,8 +618,10 @@ const styles = StyleSheet.create({
     borderColor: BORDER_LIGHT,
     alignItems: "center",
   },
-  heroInnerMobile: { padding: 24, paddingBottom: 32 },
-
+  heroInnerMobile: {
+    padding: 24,
+    paddingBottom: 32,
+  },
   badge: {
     backgroundColor: "#f0fdfd",
     paddingHorizontal: 12,
@@ -451,52 +629,100 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 20,
   },
-  badgeText: { color: CTA_TEAL, fontWeight: "800", fontSize: 11, fontFamily: SYSTEM_FONT, letterSpacing: 0.5 },
-
-  h1: { fontFamily: SYSTEM_FONT, fontWeight: "800", fontSize: 42, color: BRAND_ORANGE, lineHeight: 48, marginBottom: 12, textAlign: "center" },
-  h1Mobile: { fontSize: 32, lineHeight: 38 },
-
-  sub: { fontFamily: SYSTEM_FONT, fontSize: 17, color: TEXT_GRAY, lineHeight: 26, textAlign: "center", maxWidth: 600, marginBottom: 30 },
-  subMobile: { fontSize: 16 },
-
-  ctaRow: { flexDirection: "row", gap: 12, width: "100%", justifyContent: "center", marginBottom: 24, marginTop: 12 },
-  ctaBig: { minWidth: 160 },
-
-  // --- Pricing Grid ---
-  pricingGrid: { flexDirection: 'row', gap: 16, justifyContent: 'center', width: '100%' },
-  pricingGridMobile: { flexDirection: 'column' },
-  priceCard: { 
-    flex: 1, 
-    padding: 24, 
-    borderRadius: 16, 
-    borderWidth: 1, 
-    alignItems: 'center',
-    shadowColor: "#000",
-    shadowOpacity: 0.02,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 5 },
+  badgeText: {
+    color: CTA_TEAL,
+    fontWeight: "800",
+    fontSize: 11,
+    fontFamily: SYSTEM_FONT,
+    letterSpacing: 0.5,
   },
-  priceTier: { fontFamily: SYSTEM_FONT, fontSize: 12, fontWeight: '800', letterSpacing: 1, marginBottom: 8 },
-  priceAmount: { fontFamily: SYSTEM_FONT, fontSize: 24, fontWeight: '800', color: TEXT_DARK },
-  perSession: { fontSize: 13, color: '#999', fontWeight: '500', marginBottom: 16 },
-  divider: { height: 1, width: '100%', marginBottom: 16 },
-  priceDesc: { fontFamily: SYSTEM_FONT, fontSize: 14, color: TEXT_GRAY, marginVertical: 4, width: '100%' },
+  h1: {
+    fontFamily: SYSTEM_FONT,
+    fontWeight: "800",
+    fontSize: 42,
+    color: BRAND_ORANGE,
+    lineHeight: 48,
+    marginBottom: 12,
+    textAlign: "center",
+  },
+  h1Mobile: {
+    fontSize: 32,
+    lineHeight: 38,
+  },
+  sub: {
+    fontFamily: SYSTEM_FONT,
+    fontSize: 17,
+    color: TEXT_GRAY,
+    lineHeight: 26,
+    textAlign: "center",
+    maxWidth: 600,
+    marginBottom: 30,
+  },
+  subMobile: {
+    fontSize: 16,
+  },
+  ctaRow: {
+    flexDirection: "row",
+    gap: 12,
+    width: "100%",
+    justifyContent: "center",
+    marginBottom: 24,
+    marginTop: 12,
+  },
+  ctaBig: {
+    minWidth: 160,
+  },
+  trustRow: {
+    flexDirection: "row",
+    gap: 24,
+    opacity: 0.8,
+  },
+  trustItem: {
+    fontFamily: SYSTEM_FONT,
+    fontSize: 13,
+    fontWeight: "500",
+    color: TEXT_GRAY,
+  },
 
-  // --- Trust Footer ---
-  trustRow: { flexDirection: "row", gap: 24, opacity: 0.8 },
-  trustItem: { fontFamily: SYSTEM_FONT, fontSize: 13, fontWeight: "500", color: TEXT_GRAY },
+  // ===== Section Styles =====
+  section: {
+    maxWidth: 900,
+    width: "100%",
+    alignSelf: "center",
+    paddingHorizontal: 24,
+    paddingVertical: 40,
+  },
+  kicker: {
+    fontFamily: SYSTEM_FONT,
+    fontWeight: "800",
+    fontSize: 12,
+    color: CTA_TEAL,
+    marginBottom: 10,
+    textAlign: "center",
+    letterSpacing: 1,
+  },
+  h2: {
+    fontFamily: SYSTEM_FONT,
+    fontWeight: "800",
+    fontSize: 28,
+    color: TEXT_DARK,
+    marginBottom: 20,
+    textAlign: "center",
+  },
+  h2Mobile: {
+    fontSize: 24,
+  },
 
-  // --- Sections ---
-  section: { maxWidth: 900, width: "100%", alignSelf: "center", paddingHorizontal: 24, paddingVertical: 40 },
-  kicker: { fontFamily: SYSTEM_FONT, fontWeight: "800", fontSize: 12, color: CTA_TEAL, marginBottom: 10, textAlign: "center", letterSpacing: 1 },
-  h2: { fontFamily: SYSTEM_FONT, fontWeight: "800", fontSize: 28, color: TEXT_DARK, marginBottom: 20, textAlign: "center" },
-  h2Mobile: { fontSize: 24 },
-
-  stepsGrid: { gap: 16 },
-  stepsGridMobile: { gap: 16 },
+  // ===== How It Works Section =====
+  stepsGrid: {
+    gap: 16,
+  },
+  stepsGridMobile: {
+    gap: 16,
+  },
   stepCard: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     backgroundColor: "#fff",
     padding: 20,
     borderRadius: 16,
@@ -504,14 +730,389 @@ const styles = StyleSheet.create({
     borderColor: BORDER_LIGHT,
     gap: 16,
   },
-  stepEmoji: { fontSize: 28 },
-  stepTitle: { fontFamily: SYSTEM_FONT, fontWeight: "700", fontSize: 16, color: TEXT_DARK, marginBottom: 2 },
-  stepDesc: { fontFamily: SYSTEM_FONT, fontWeight: "500", fontSize: 14, color: TEXT_GRAY },
+  stepEmoji: {
+    fontSize: 28,
+  },
+  stepTitle: {
+    fontFamily: SYSTEM_FONT,
+    fontWeight: "700",
+    fontSize: 16,
+    color: TEXT_DARK,
+    marginBottom: 2,
+  },
+  stepDesc: {
+    fontFamily: SYSTEM_FONT,
+    fontWeight: "500",
+    fontSize: 14,
+    color: TEXT_GRAY,
+  },
 
-  faqWrap: { gap: 12 },
-  faqItem: { backgroundColor: "#fff", padding: 20, borderRadius: 12, borderWidth: 1, borderColor: BORDER_LIGHT },
-  faqQ: { fontFamily: SYSTEM_FONT, fontWeight: "700", fontSize: 16, color: TEXT_DARK, marginBottom: 6 },
-  faqA: { fontFamily: SYSTEM_FONT, fontWeight: "400", fontSize: 14, color: TEXT_GRAY, lineHeight: 22 },
+  // ===== Pricing Section =====
+  pricingGrid: {
+    flexDirection: 'row',
+    gap: 16,
+    justifyContent: 'center',
+    width: '100%',
+  },
+  pricingGridMobile: {
+    flexDirection: 'column',
+  },
+  priceCard: {
+    flex: 1,
+    padding: 24,
+    borderRadius: 16,
+    borderWidth: 1,
+    alignItems: 'center',
+    shadowColor: "#000",
+    shadowOpacity: 0.02,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 5 },
+  },
+  priceTier: {
+    fontFamily: SYSTEM_FONT,
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 1,
+    marginBottom: 8,
+  },
+  priceAmount: {
+    fontFamily: SYSTEM_FONT,
+    fontSize: 24,
+    fontWeight: '800',
+    color: TEXT_DARK,
+  },
+  perSession: {
+    fontSize: 13,
+    color: '#999',
+    fontWeight: '500',
+    marginBottom: 16,
+  },
+  divider: {
+    height: 1,
+    width: '100%',
+    marginBottom: 16,
+  },
+  priceDesc: {
+    fontFamily: SYSTEM_FONT,
+    fontSize: 14,
+    color: TEXT_GRAY,
+    marginVertical: 4,
+    width: '100%',
+  },
 
-  footerText: { textAlign: "center", fontFamily: SYSTEM_FONT, color: "#999", fontSize: 13 },
+  // ===== FAQ Section =====
+  faqWrap: {
+    gap: 12,
+  },
+  faqItem: {
+    backgroundColor: "#fff",
+    padding: 20,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: BORDER_LIGHT,
+  },
+  faqQ: {
+    fontFamily: SYSTEM_FONT,
+    fontWeight: "700",
+    fontSize: 16,
+    color: TEXT_DARK,
+    marginBottom: 6,
+  },
+  faqA: {
+    fontFamily: SYSTEM_FONT,
+    fontWeight: "400",
+    fontSize: 14,
+    color: TEXT_GRAY,
+    lineHeight: 22,
+  },
+
+  footerText: {
+    textAlign: "center",
+    fontFamily: SYSTEM_FONT,
+    color: "#999",
+    fontSize: 13,
+  },
+
+  // ===== Testimonials Section =====
+  testimonialsContainer: {
+    paddingTop: 60,
+    paddingBottom: 80,
+    paddingLeft: 24,
+    paddingRight: 24,
+    backgroundColor: BG_CREAM,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 80,
+    marginBottom: 60,
+    flexWrap: 'wrap',
+  },
+  statItem: {
+    alignItems: 'center',
+  },
+  statNumber: {
+    fontFamily: SYSTEM_FONT,
+    fontSize: 44,
+    fontWeight: '900',
+    color: CTA_TEAL,
+    marginBottom: 10,
+    letterSpacing: -1,
+  },
+  statLabel: {
+    fontFamily: SYSTEM_FONT,
+    fontSize: 15,
+    fontWeight: '600',
+    color: TEXT_GRAY,
+    letterSpacing: 0.3,
+  },
+  testimonialsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 24,
+    maxWidth: 1200,
+    alignSelf: 'center',
+    justifyContent: 'center',
+  },
+  testimonialCard: {
+    backgroundColor: '#ffffff',
+    padding: 32,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.08)',
+    width: 'calc(50% - 12px)',
+    minWidth: 280,
+    maxWidth: 550,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+  },
+  testimonialHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 18,
+    gap: 14,
+  },
+  avatarContainer: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: BG_CREAM,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: 'rgba(0,0,0,0.05)',
+  },
+  avatar: {
+    fontSize: 26,
+  },
+  testimonialMeta: {
+    flex: 1,
+  },
+  testimonialName: {
+    fontFamily: SYSTEM_FONT,
+    fontSize: 17,
+    fontWeight: '700',
+    color: TEXT_DARK,
+    marginBottom: 3,
+  },
+  testimonialRole: {
+    fontFamily: SYSTEM_FONT,
+    fontSize: 14,
+    fontWeight: '600',
+    color: TEXT_GRAY,
+  },
+  ratingContainer: {
+    flexDirection: 'row',
+    gap: 3,
+    marginBottom: 18,
+  },
+  star: {
+    fontSize: 15,
+  },
+  testimonialQuote: {
+    fontFamily: SYSTEM_FONT,
+    fontSize: 15,
+    lineHeight: 25,
+    color: TEXT_DARK,
+    marginBottom: 18,
+  },
+  highlightBadge: {
+    backgroundColor: '#e8f9f9',
+    paddingVertical: 9,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderColor: 'rgba(24, 167, 167, 0.2)',
+  },
+  highlightText: {
+    fontFamily: SYSTEM_FONT,
+    fontSize: 13,
+    fontWeight: '700',
+    color: CTA_TEAL,
+  },
+  trustIndicators: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 32,
+    marginTop: 48,
+    flexWrap: 'wrap',
+  },
+  trustText: {
+    fontFamily: SYSTEM_FONT,
+    fontSize: 13,
+    fontWeight: '600',
+    color: TEXT_GRAY,
+    opacity: 0.8,
+  },
+
+  // ===== Guarantee Section =====
+  guaranteeContainer: {
+    paddingTop: 40,
+    paddingBottom: 80,
+    paddingLeft: 24,
+    paddingRight: 24,
+    backgroundColor: BG_CREAM,
+  },
+  guaranteeBox: {
+    backgroundColor: '#ffffff',
+    padding: 56,
+    borderRadius: 20,
+    maxWidth: 1100,
+    alignSelf: 'center',
+    width: '100%',
+    borderWidth: 2,
+    borderColor: 'rgba(24, 167, 167, 0.3)',
+    shadowColor: CTA_TEAL,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+  },
+  guaranteeBadgeContainer: {
+    alignItems: 'center',
+    marginBottom: 28,
+  },
+  guaranteeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#e8f9f9',
+    paddingVertical: 11,
+    paddingHorizontal: 22,
+    borderRadius: 100,
+    gap: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(24, 167, 167, 0.2)',
+  },
+  guaranteeBadgeEmoji: {
+    fontSize: 18,
+  },
+  guaranteeBadgeText: {
+    fontFamily: SYSTEM_FONT,
+    fontSize: 13,
+    fontWeight: '800',
+    color: CTA_TEAL,
+    letterSpacing: 1.2,
+  },
+  guaranteeTitle: {
+    fontFamily: SYSTEM_FONT,
+    fontSize: 38,
+    fontWeight: '800',
+    color: TEXT_DARK,
+    textAlign: 'center',
+    lineHeight: 50,
+    marginBottom: 18,
+  },
+  guaranteeSubtitle: {
+    fontFamily: SYSTEM_FONT,
+    fontSize: 18,
+    fontWeight: '500',
+    color: TEXT_GRAY,
+    textAlign: 'center',
+    lineHeight: 30,
+    marginBottom: 52,
+    maxWidth: 600,
+    alignSelf: 'center',
+  },
+  guaranteesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 24,
+    marginBottom: 44,
+    justifyContent: 'center',
+  },
+  guaranteeCard: {
+    backgroundColor: BG_CREAM,
+    padding: 28,
+    borderRadius: 16,
+    width: 'calc(50% - 12px)',
+    minWidth: 240,
+    maxWidth: 500,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.08)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+  },
+  guaranteeIcon: {
+    fontSize: 36,
+    marginBottom: 14,
+  },
+  guaranteeCardTitle: {
+    fontFamily: SYSTEM_FONT,
+    fontSize: 17,
+    fontWeight: '700',
+    color: TEXT_DARK,
+    marginBottom: 10,
+    lineHeight: 24,
+  },
+  guaranteeDescription: {
+    fontFamily: SYSTEM_FONT,
+    fontSize: 15,
+    fontWeight: '500',
+    color: TEXT_GRAY,
+    lineHeight: 24,
+  },
+  trustSeal: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 18,
+    paddingVertical: 26,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.08)',
+    flexWrap: 'wrap',
+  },
+  sealBadge: {
+    backgroundColor: '#e8f9f9',
+    paddingVertical: 9,
+    paddingHorizontal: 18,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(24, 167, 167, 0.15)',
+  },
+  sealText: {
+    fontFamily: SYSTEM_FONT,
+    fontSize: 12,
+    fontWeight: '700',
+    color: CTA_TEAL,
+    letterSpacing: 0.6,
+  },
+  assuranceBox: {
+    backgroundColor: '#fff9f5',
+    padding: 22,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(245, 135, 66, 0.25)',
+    marginTop: 28,
+  },
+  assuranceText: {
+    fontFamily: SYSTEM_FONT,
+    fontSize: 15,
+    fontWeight: '500',
+    color: TEXT_GRAY,
+    textAlign: 'center',
+    lineHeight: 24,
+  },
 });

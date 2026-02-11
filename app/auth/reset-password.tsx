@@ -38,15 +38,49 @@ export default function ResetPasswordScreen() {
       try {
         console.log('[ResetPassword] Starting session check...');
         
+        // FIRST: Check if session was already established by parent layout
+        // This prevents race conditions and duplicate processing
+        const { data: { session: existingSession } } = await supabase.auth.getSession();
+        
+        if (existingSession) {
+          console.log('[ResetPassword] ✅ Session already established (likely by parent layout)');
+          if (mounted) {
+            setHasValidSession(true);
+            setCheckingSession(false);
+          }
+          return;
+        }
+        
+        // CRITICAL FIX: Check if we're in browser environment
+        if (Platform.OS !== 'web') {
+          console.log('[ResetPassword] Mobile platform - checking for recovery event');
+          
+          // On mobile, the recovery token is handled by Supabase automatically
+          // We just need to check if there's a valid session
+          console.error('[ResetPassword] ❌ No session on mobile and no recovery token');
+          if (mounted) {
+            setErrorMessage('Invalid or expired reset link');
+            setCheckingSession(false);
+            showNotification('Invalid reset link. Please request a new one.', 'error');
+            setTimeout(() => router.replace('/auth/forgot-password'), 3000);
+          }
+          return;
+        }
+
+        // WEB PLATFORM HANDLING
         if (typeof window === 'undefined') {
           console.error('[ResetPassword] Not in browser environment');
+          if (mounted) {
+            setErrorMessage('Invalid environment');
+            setCheckingSession(false);
+          }
           return;
         }
 
         const hash = window.location.hash;
-        console.log('[ResetPassword] URL hash:', hash);
+        console.log('[ResetPassword] URL hash:', hash.substring(0, 50) + '...');
 
-        // Check for errors first
+        // Check for errors in URL first
         if (hash.includes('error=')) {
           const params = new URLSearchParams(hash.substring(1));
           const error = params.get('error');
@@ -65,19 +99,26 @@ export default function ResetPasswordScreen() {
           return;
         }
 
-        // Extract token from hash
+        // Extract and verify recovery token from hash
         if (hash.includes('access_token=') && hash.includes('type=recovery')) {
           console.log('[ResetPassword] Recovery token detected in URL');
           
           const params = new URLSearchParams(hash.substring(1));
           const accessToken = params.get('access_token');
           const refreshToken = params.get('refresh_token');
-          const tokenType = params.get('token_type');
+          const type = params.get('type');
 
-          if (!accessToken) {
-            console.error('[ResetPassword] No access token found in URL');
+          console.log('[ResetPassword] Token details:', {
+            hasAccessToken: !!accessToken,
+            hasRefreshToken: !!refreshToken,
+            type: type,
+            accessTokenLength: accessToken?.length
+          });
+
+          if (!accessToken || type !== 'recovery') {
+            console.error('[ResetPassword] Invalid token parameters');
             if (mounted) {
-              setErrorMessage('Invalid reset link - no access token');
+              setErrorMessage('Invalid reset link - missing or incorrect token');
               setCheckingSession(false);
               showNotification('Invalid reset link', 'error');
               setTimeout(() => router.replace('/auth/forgot-password'), 3000);
@@ -85,9 +126,9 @@ export default function ResetPasswordScreen() {
             return;
           }
 
-          console.log('[ResetPassword] Verifying OTP token...');
+          console.log('[ResetPassword] Setting session with recovery token...');
 
-          // Manually set the session using the tokens from the URL
+          // Set the session using the recovery tokens
           const { data, error } = await supabase.auth.setSession({
             access_token: accessToken,
             refresh_token: refreshToken || '',
@@ -96,6 +137,7 @@ export default function ResetPasswordScreen() {
           console.log('[ResetPassword] setSession result:', {
             hasSession: !!data.session,
             hasUser: !!data.user,
+            userEmail: data.user?.email,
             error: error?.message,
           });
 
@@ -110,14 +152,16 @@ export default function ResetPasswordScreen() {
             return;
           }
 
-          if (data.session) {
-            console.log('[ResetPassword] ✅ Recovery session established');
+          if (data.session && data.user) {
+            console.log('[ResetPassword] ✅ Recovery session established successfully');
+            console.log('[ResetPassword] User email:', data.user.email);
+            
             if (mounted) {
               setHasValidSession(true);
               setCheckingSession(false);
             }
           } else {
-            console.error('[ResetPassword] ❌ No session returned from setSession');
+            console.error('[ResetPassword] ❌ No session or user returned from setSession');
             if (mounted) {
               setErrorMessage('Failed to establish session');
               setCheckingSession(false);
@@ -127,10 +171,12 @@ export default function ResetPasswordScreen() {
           }
         } else {
           console.error('[ResetPassword] No recovery token in URL hash');
+          console.log('[ResetPassword] Hash contents:', hash);
+          
           if (mounted) {
             setErrorMessage('Invalid reset link - missing recovery token');
             setCheckingSession(false);
-            showNotification('Invalid reset link', 'error');
+            showNotification('Invalid reset link. Please request a new one.', 'error');
             setTimeout(() => router.replace('/auth/forgot-password'), 3000);
           }
         }
@@ -139,17 +185,18 @@ export default function ResetPasswordScreen() {
         if (mounted) {
           setErrorMessage(err.message || 'Something went wrong');
           setCheckingSession(false);
-          showNotification('Something went wrong', 'error');
+          showNotification('Something went wrong. Please try again.', 'error');
         }
       }
     };
 
+    // CRITICAL: Process recovery token immediately on mount
     verifyRecoveryToken();
 
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [router, showNotification]);
 
   const handleSubmit = async () => {
     // Validation
@@ -199,6 +246,7 @@ export default function ResetPasswordScreen() {
     }
   };
 
+  // LOADING STATE - Verifying token
   if (checkingSession) {
     return (
       <>
@@ -214,6 +262,7 @@ export default function ResetPasswordScreen() {
     );
   }
 
+  // ERROR STATE - Invalid or expired link
   if (!hasValidSession) {
     return (
       <>
@@ -227,6 +276,9 @@ export default function ResetPasswordScreen() {
           <Text style={styles.errorMessage}>
             {errorMessage || 'This password reset link is invalid or has expired.'}
           </Text>
+          <Text style={styles.errorHint}>
+            Reset links expire after a short period for security. Please request a new one.
+          </Text>
           <TouchableOpacity
             onPress={() => router.replace('/auth/forgot-password')}
             style={styles.errorButton}
@@ -238,6 +290,7 @@ export default function ResetPasswordScreen() {
     );
   }
 
+  // MAIN FORM - Valid session, ready to reset password
   return (
     <>
       <Head>
@@ -319,7 +372,7 @@ export default function ResetPasswordScreen() {
               <View style={styles.securityNote}>
                 <Text style={styles.securityNoteIcon}>🔒</Text>
                 <Text style={styles.securityNoteText}>
-                  After resetting your password, you'll be redirected to sign in.
+                  After resetting your password, you'll be redirected to sign in with your new credentials.
                 </Text>
               </View>
             </View>
@@ -420,6 +473,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#f8f5f0',
+    padding: 24,
   },
   loadingText: {
     marginTop: 16,
@@ -451,7 +505,15 @@ const styles = StyleSheet.create({
     color: '#6b7280',
     textAlign: 'center',
     lineHeight: 20,
+    marginBottom: 12,
+  },
+  errorHint: {
+    fontSize: 12,
+    color: '#9ca3af',
+    textAlign: 'center',
+    lineHeight: 18,
     marginBottom: 24,
+    paddingHorizontal: 16,
   },
   errorButton: {
     backgroundColor: '#0E9384',
