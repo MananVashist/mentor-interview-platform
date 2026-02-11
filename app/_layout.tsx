@@ -53,20 +53,92 @@ export default function RootLayout() {
         }
   );
 
-  // Init session
+  // CRITICAL FIX: Process recovery token FIRST, before any auth checks
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setIsReady(true);
-    });
+    let mounted = true;
 
+    const handleRecoveryToken = async () => {
+      // Only run on web platform
+      if (Platform.OS !== 'web' || typeof window === 'undefined') {
+        return false;
+      }
+
+      const hash = window.location.hash;
+      const pathname = window.location.pathname;
+
+      // Check if this is a password reset page with recovery token
+      if (pathname.includes('/auth/reset-password') && 
+          hash.includes('access_token=') && 
+          hash.includes('type=recovery')) {
+        
+        console.log('[App] 🔐 Processing recovery token EARLY to prevent auth errors...');
+        
+        try {
+          const params = new URLSearchParams(hash.substring(1));
+          const accessToken = params.get('access_token');
+          const refreshToken = params.get('refresh_token');
+          
+          if (accessToken) {
+            // Set the session IMMEDIATELY before any other auth checks
+            const { data, error } = await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken || '',
+            });
+
+            if (error) {
+              console.error('[App] ❌ Failed to set recovery session:', error);
+              return false;
+            }
+
+            if (data.session && mounted) {
+              console.log('[App] ✅ Recovery session established early');
+              setSession(data.session);
+              return true; // Token processed successfully
+            }
+          }
+        } catch (err) {
+          console.error('[App] ❌ Exception processing recovery token:', err);
+        }
+      }
+
+      return false; // No recovery token or failed to process
+    };
+
+    // Init session
+    const initSession = async () => {
+      // First, try to handle recovery token if present
+      const tokenProcessed = await handleRecoveryToken();
+      
+      if (tokenProcessed && mounted) {
+        // Recovery token was processed, we already have the session
+        setIsReady(true);
+        return;
+      }
+
+      // Normal session initialization
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (mounted) {
+          setSession(session);
+          setIsReady(true);
+        }
+      });
+    };
+
+    initSession();
+
+    // Listen for auth state changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
+      if (mounted) {
+        setSession(session);
+      }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   // Native splash → animated splash → app

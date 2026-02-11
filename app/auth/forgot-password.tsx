@@ -43,25 +43,29 @@ export default function ForgotPasswordScreen() {
     setLoading(true);
 
     try {
+      console.log('[ForgotPassword] Requesting password reset for:', email);
       const { error } = await authService.requestPasswordReset(email.trim().toLowerCase());
 
       if (error) {
+        console.error('[ForgotPassword] Error:', error);
         showNotification(error.message || 'Failed to send reset email', 'error');
         setLoading(false);
         return;
       }
 
       // Success - show confirmation
+      console.log('[ForgotPassword] ✅ Reset email sent successfully');
       setEmailSent(true);
       showNotification('Password reset email sent! Check your inbox.', 'success');
     } catch (err: any) {
-      console.error('[ForgotPassword] Error:', err);
+      console.error('[ForgotPassword] Exception:', err);
       showNotification(err.message || 'Something went wrong', 'error');
     } finally {
       setLoading(false);
     }
   };
 
+  // SUCCESS STATE - Email sent confirmation
   if (emailSent) {
     return (
       <>
@@ -92,7 +96,7 @@ export default function ForgotPasswordScreen() {
 
                 <Text style={styles.successTitle}>Check your email</Text>
                 <Text style={styles.successMessage}>
-                  We've sent a password reset link to {email}. 
+                  We've sent a password reset link to <Text style={styles.emailHighlight}>{email}</Text>. 
                   Click the link in the email to reset your password.
                 </Text>
 
@@ -137,6 +141,7 @@ export default function ForgotPasswordScreen() {
     );
   }
 
+  // MAIN FORM - Enter email to request reset
   return (
     <>
       <Head>
@@ -312,6 +317,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 24,
     lineHeight: 20,
+  },
+  emailHighlight: {
+    fontWeight: '600',
+    color: '#1f2937',
   },
   instructionsBox: {
     backgroundColor: '#f0fdf4',
