@@ -1,5 +1,5 @@
 ﻿// app/lp/[role].tsx
-import React, { memo, useMemo } from "react";
+import React, { memo, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -13,8 +13,8 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import Head from "expo-router/head";
 
 import { Header } from "@/components/Header";
-import { trackEvent } from '@/lib/analytics'; 
-import { BronzeBadge, SilverBadge, GoldBadge } from '@/components/AppIcons'; 
+import { trackEvent } from "@/lib/analytics";
+import { BronzeBadge, SilverBadge, GoldBadge } from "@/components/AppIcons";
 
 // --- Constants ---
 const BRAND_ORANGE = "#f58742";
@@ -25,7 +25,7 @@ const TEXT_GRAY = "#555";
 const BORDER_LIGHT = "rgba(0,0,0,0.05)";
 
 // Metal Colors
-const COLOR_BRONZE = "#A67C52"; 
+const COLOR_BRONZE = "#A67C52";
 const BG_BRONZE = "#FCF8F5";
 
 const COLOR_SILVER = "#71797E";
@@ -44,60 +44,64 @@ const SYSTEM_FONT = Platform.select({
 // Testimonials Data
 const TESTIMONIALS = [
   {
-    name: 'Priya S.',
-    role: 'Product Manager',
-    company: 'TATA',
-    avatar: '👩‍💼',
+    name: "Priya S.",
+    role: "Product Manager",
+    company: "TATA",
+    avatar: "👩‍💼",
     rating: 5,
-    quote: "The mock interview was incredibly realistic. My mentor's feedback on my product sense helped me identify exact gaps.",
+    quote:
+      "The mock interview was incredibly realistic. My mentor's feedback on my product sense helped me identify exact gaps.",
   },
   {
-    name: 'Rahul V.',
-    role: 'Data Analyst',
-    company: 'Bigbasket',
-    avatar: '👨‍💻',
+    name: "Rahul V.",
+    role: "Data Analyst",
+    company: "Bigbasket",
+    avatar: "👨‍💻",
     rating: 5,
-    quote: "I practiced SQL and case studies with a senior analyst. The detailed scorecard showed me exactly what to improve. Worth every rupee!",
+    quote:
+      "I practiced SQL and case studies with a senior analyst. The detailed scorecard showed me exactly what to improve. Worth every rupee!",
   },
   {
-    name: 'Sneha P.',
-    role: 'Data Scientist',
-    company: 'Musigma',
-    avatar: '👩‍🔬',
+    name: "Sneha P.",
+    role: "Data Scientist",
+    company: "Musigma",
+    avatar: "👩‍🔬",
     rating: 5,
-    quote: "Anonymous format removed all pressure. My mentor's ML system design feedback was gold. Recording helped me review and improve 2x faster.",
+    quote:
+      "Anonymous format removed all pressure. My mentor's ML system design feedback was gold. Recording helped me review and improve 2x faster.",
   },
   {
-    name: 'Amit K.',
-    role: 'HR Manager',
-    company: 'Flipkart',
-    avatar: '👨‍💼',
+    name: "Amit K.",
+    role: "HR Manager",
+    company: "Flipkart",
+    avatar: "👨‍💼",
     rating: 5,
-    quote: "Practiced behavioral questions with an actual HRBP from ABFRL. The structured feedback on my STAR responses made all the difference in my interviews.",
-  }
+    quote:
+      "Practiced behavioral questions with an actual HRBP from ABFRL. The structured feedback on my STAR responses made all the difference in my interviews.",
+  },
 ];
 
 // Guarantee Data
 const GUARANTEES = [
   {
-    icon: '💰',
-    title: '100% Money-Back Guarantee',
-    description: 'If your mentor doesn\'t show up, you get a full refund. No questions asked.',
+    icon: "💰",
+    title: "100% Money-Back Guarantee",
+    description: "If your mentor doesn't show up, you get a full refund. No questions asked.",
   },
   {
-    icon: '🔄',
-    title: 'Free Rescheduling',
-    description: 'Cancel or reschedule up to 24 hours before your session. Life happens, we get it.',
+    icon: "🔄",
+    title: "Free Rescheduling",
+    description: "Life happens, we get it. Reschedule for free before your session. ",
   },
   {
-    icon: '📹',
-    title: 'Recording Guaranteed',
-    description: 'Every session is recorded and shared within 24 hours. Review unlimited times.',
+    icon: "📹",
+    title: "Recording Guaranteed",
+    description: "Every session is recorded and shared within 24 hours. Review unlimited times.",
   },
   {
-    icon: '📝',
-    title: 'Detailed Feedback Promise',
-    description: 'Structured scorecard with actionable tips delivered within 48 hours of your session.',
+    icon: "📝",
+    title: "Detailed Feedback Promise",
+    description: "Structured scorecard with actionable tips delivered within 48 hours of your session.",
   },
 ];
 
@@ -106,49 +110,49 @@ const VALID_ROLES = ["pm", "hr", "ds", "da"];
 
 // Role-Specific Content
 const ROLE_CONTENT: Record<string, { title: string; highlight: string; sub: string }> = {
-  default: { 
+  default: {
     title: "Mock Interviews",
     highlight: "with expert mentors",
-    sub: "Get realistic feedback from industry experts. Anonymous & Unbiased." 
+    sub: "Get realistic feedback from industry experts. Anonymous & Unbiased.",
   },
-  pm: { 
+  pm: {
     title: "Product Management mock interviews",
-    highlight: "with expert PMs", 
-    sub: "Test yourself on Product Strategy, Product Sense, Leadership, Execution or Technical PM skills against top hiring managers" 
+    highlight: "with expert PMs",
+    sub: "Test yourself on Product Strategy, Product Sense, Leadership, Execution or Technical PM skills against top hiring managers",
   },
-  hr: { 
-    title: "HR mock interviews with ", 
-    highlight: "real HR leaders", 
-    sub: "Talent Acquisition, HRBP, COE, Generalist and Operations. Practice with veterans from the industry." 
+  hr: {
+    title: "HR mock interviews with ",
+    highlight: "real HR leaders",
+    sub: "Talent Acquisition, HRBP, COE, Generalist and Operations. Practice with veterans from the industry.",
   },
-  ds: { 
-    title: "Data Science mock interviews", 
-    highlight: "with real experts", 
-    sub: "ML Theory/Practical, Coding, Statistics and System Design. Practice with veterans from the industry" 
+  ds: {
+    title: "Data Science mock interviews",
+    highlight: "with real experts",
+    sub: "ML Theory/Practical, Coding, Statistics and System Design. Practice with veterans from the industry",
   },
-  da: { 
-    title: "Data Analytics mock interviews", 
-    highlight: "with domain experts", 
-    sub: "Case studies, SQL, Excel, Product Metrics and Behavioral. Practice with vetted mentors." 
+  da: {
+    title: "Data Analytics mock interviews",
+    highlight: "with domain experts",
+    sub: "Case studies, SQL, Excel, Product Metrics and Behavioral. Practice with vetted mentors.",
   },
 };
 
 // How It Works Data
 const STEPS = [
-  { 
-    emoji: "📝", 
-    title: "1. Browse mentors", 
-    desc: "Choose from a list of expert mentors in your domain and the topic you want to practice " 
+  {
+    emoji: "📝",
+    title: "1. Browse mentors",
+    desc: "Choose from a list of expert mentors in your domain and the topic you want to practice ",
   },
-  { 
-    emoji: "🎥", 
-    title: "2. The Session", 
-    desc: "1:1 Video Call. Completely anonymous. Recording will be provided." 
+  {
+    emoji: "🎥",
+    title: "2. The Session",
+    desc: "1:1 Video Call. Completely anonymous. Recording will be provided.",
   },
-  { 
-    emoji: "📊", 
-    title: "3. The Feedback", 
-    desc: "Detailed written scorecard & actionable tips." 
+  {
+    emoji: "📊",
+    title: "3. The Feedback",
+    desc: "Detailed written scorecard & actionable tips.",
   },
 ];
 
@@ -159,12 +163,12 @@ const FAQS = [
     a: "No personal details are revealed to any party. Only professional title you set during onboarding will be shown. During the meeting, the video can be kept off",
   },
   {
-    q: "What is the detailed feedback?",
-    a: "You don't just get a 'pass/fail'. You get a feedback form filled by the mentor",
+    q: "What will the detailed feedback be like?",
+    a: "You don't just get a 'pass/fail'. You will get a feedback form with your strengths and areas of improvements highlighted by the interviewer",
   },
   {
     q: "What happens when the mentor does not show up for the session?",
-    a: "You will be refunded the full amount that you pay. ",
+    a: "You will be refunded the full amount. ",
   },
   {
     q: "What topic will the interview be on?",
@@ -219,67 +223,85 @@ const Button = ({
   );
 };
 
-// ===== Trust Footer Component =====
-const TrustFooter = memo(({ isSmall, roleTitle }: { isSmall: boolean, roleTitle: string }) => {
+// ===== Trust Footer Component (UPDATED) =====
+const TrustFooter = memo(({ isSmall }: { isSmall: boolean }) => {
   return (
-    <View style={[styles.trustRow, isSmall && { flexDirection: "column", gap: 8 }]}>
-      <Text style={styles.trustItem}>✅ Verified Experts</Text>
-      <Text style={styles.trustItem}>📹 Session Recorded</Text>
-      <Text style={styles.trustItem}>📝 Detailed Feedback</Text>
+    <View
+      style={[
+        styles.trustRow,
+        isSmall && { flexDirection: "column", gap: 8, alignItems: "center" },
+      ]}
+    >
+      <Text style={styles.trustItem}>✓ Starts at ₹3,500</Text>
+      <Text style={styles.trustItem}>✓ 1:1 call</Text>
+      <Text style={styles.trustItem}>✓ Recording + scorecard</Text>
     </View>
   );
 });
 
 // ===== Pricing Section =====
-const CandidateTiers = memo(() => {
+const CandidateTiers = memo(({ onPricingLayout }: { onPricingLayout?: (y: number) => void }) => {
   const { width } = useWindowDimensions();
   const isSmall = width < 900;
 
   const TIERS = [
     {
       badge: <BronzeBadge />,
-      title: 'Bronze Tier',
-      sessions: '0-5 Sessions',
-      price: '₹3,500 - ₹6,000',
-      color: '#cd7f32',
-      bgColor: '#fff5e6',
-      borderColor: '#cd7f32',
-      benefits: [ 'Top performing mid-Level Managers', '5 - 10 yrs experienced','Best for: Strengthening basics' ],
-      ariaLabel: 'Bronze tier pricing'
+      title: "Bronze Tier",
+      sessions: "0-5 Sessions",
+      price: "₹3,500 - ₹6,000",
+      color: "#cd7f32",
+      bgColor: "#fff5e6",
+      borderColor: "#cd7f32",
+      benefits: ["Top performing mid-Level Managers", "5 - 10 yrs experienced", "Best for: Strengthening basics"],
+      ariaLabel: "Bronze tier pricing",
     },
     {
       badge: <SilverBadge />,
-      title: 'Silver Tier',
-      sessions: '5-15 Sessions',
-      price: '₹6,000 - ₹10,000',
-      color: '#c0c0c0',
-      bgColor: '#f5f5f5',
-      borderColor: '#c0c0c0',
-      benefits: ['Senior Management from top companies', '10-15 yrs experienced', 'Best for: Senior level interviews'],
-      ariaLabel: 'Silver tier pricing'
+      title: "Silver Tier",
+      sessions: "5-15 Sessions",
+      price: "₹6,000 - ₹10,000",
+      color: "#706F6D",
+      bgColor: "#f5f5f5",
+      borderColor: "#c0c0c0",
+      benefits: ["Senior Management from top companies", "10-15 yrs experienced", "Best for: Senior level interviews"],
+      ariaLabel: "Silver tier pricing",
     },
     {
       badge: <GoldBadge />,
-      title: 'Gold Tier',
-      sessions: '15+ Sessions',
-      price: '₹10,000 - ₹15,000',
-      color: '#fbbf24',
-      bgColor: '#fffbeb',
-      borderColor: '#fbbf24',
-      benefits: ['Leadership / Directors', '15-20 yrs experienced', 'Best for: Hiring manager or CXO rounds'],
-      ariaLabel: 'Gold tier pricing'
+      title: "Gold Tier",
+      sessions: "15+ Sessions",
+      price: "₹10,000 - ₹15,000",
+      color: "#B8860B",
+      bgColor: "#fffbeb",
+      borderColor: "#fbbf24",
+      benefits: ["Leadership / Directors", "15-20 yrs experienced", "Best for: Hiring manager or CXO rounds"],
+      ariaLabel: "Gold tier pricing",
     },
   ];
 
   return (
-    <View style={styles.section} nativeID="pricing" accessibilityRole="region" accessibilityLabel="Pricing tiers">
-      <Text style={styles.kicker} accessibilityRole="header">PRICING</Text>
+    <View
+      style={styles.section}
+      nativeID="pricing"
+      accessibilityRole="region"
+      accessibilityLabel="Pricing tiers"
+      onLayout={(e) => onPricingLayout?.(e.nativeEvent.layout.y)}
+    >
+      <Text style={styles.kicker} accessibilityRole="header">
+        PRICING
+      </Text>
       <Text style={[styles.h2, isSmall && styles.h2Mobile]} accessibilityRole="header" accessibilityLevel={2}>
         Choose Your Mentor Tier
       </Text>
       <View style={[styles.tiersGrid, isSmall && styles.tiersGridMobile]}>
         {TIERS.map((tier, i) => (
-          <View key={i} style={[styles.tierCard, { backgroundColor: tier.bgColor, borderColor: tier.borderColor }]} accessibilityRole="article" accessibilityLabel={tier.ariaLabel}>
+          <View
+            key={i}
+            style={[styles.tierCard, { backgroundColor: tier.bgColor, borderColor: tier.borderColor }]}
+            accessibilityRole="article"
+            accessibilityLabel={tier.ariaLabel}
+          >
             <View style={styles.tierBadgeContainer}>{tier.badge}</View>
             <Text style={[styles.tierTitle, { color: tier.color }]}>{tier.title}</Text>
             <Text style={[styles.tierTitle, { fontSize: 24, marginBottom: 24, color: tier.color }]}>{tier.price}</Text>
@@ -327,7 +349,7 @@ const FAQ = memo(({ isSmall }: { isSmall: boolean }) => {
     <View style={styles.section}>
       <Text style={styles.kicker}>FAQ</Text>
       <Text style={[styles.h2, isSmall && styles.h2Mobile]}>Common Questions</Text>
-      
+
       {/* FAQ Items */}
       <View style={styles.faqWrap}>
         {FAQS.map((f) => (
@@ -346,7 +368,7 @@ const TestimonialsSection = memo(() => {
   return (
     <View style={styles.testimonialsContainer} nativeID="testimonials">
       <Text style={styles.kicker}>SUCCESS STORIES</Text>
-     
+
       {/* Testimonial Cards */}
       <View style={styles.testimonialsGrid}>
         {TESTIMONIALS.map((testimonial, index) => (
@@ -365,24 +387,22 @@ const TestimonialsSection = memo(() => {
 
             <View style={styles.ratingContainer}>
               {[...Array(testimonial.rating)].map((_, i) => (
-                <Text key={i} style={styles.star}>⭐</Text>
+                <Text key={i} style={styles.star}>
+                  ⭐
+                </Text>
               ))}
             </View>
 
             <Text style={styles.testimonialQuote}>"{testimonial.quote}"</Text>
-
-            <View style={styles.highlightBadge}>
-              <Text style={styles.highlightText}>✓ {testimonial.highlight}</Text>
-            </View>
           </View>
         ))}
       </View>
 
       {/* Trust Indicators */}
       <View style={styles.trustIndicators}>
-        <Text style={styles.trustText}>✓ All testimonials verified</Text>
+        <Text style={styles.trustText}>✓ Verified testimonials</Text>
         <Text style={styles.trustText}>✓ Real candidate outcomes</Text>
-        <Text style={styles.trustText}>✓ Updated monthly</Text>
+        <Text style={styles.trustText}>✓ Proven results</Text>
       </View>
     </View>
   );
@@ -405,7 +425,7 @@ const GuaranteeSection = memo(() => {
         <Text style={styles.guaranteeTitle}>
           Practice with complete <Text style={{ color: CTA_TEAL }}>confidence</Text>
         </Text>
-        
+
         <Text style={styles.guaranteeSubtitle}>
           Your investment is protected. We've got your back every step of the way.
         </Text>
@@ -437,7 +457,8 @@ const GuaranteeSection = memo(() => {
         {/* Assurance Box */}
         <View style={styles.assuranceBox}>
           <Text style={styles.assuranceText}>
-            <Text style={{ fontWeight: '800', color: TEXT_DARK }}>Still unsure?</Text> Our support team is available 24/7 to answer any questions. Email us at crackjobshelpdesk@gmail.com
+            <Text style={{ fontWeight: "800", color: TEXT_DARK }}>Still unsure?</Text> Our support team is available
+            24/7 to answer any questions. Email us at crackjobshelpdesk@gmail.com
           </Text>
         </View>
       </View>
@@ -446,26 +467,26 @@ const GuaranteeSection = memo(() => {
 });
 
 // --- Main Page ---
-
 export default function CampaignLanding() {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const isSmall = width < 900;
-  
+
+  const scrollRef = useRef<ScrollView>(null);
+  const [pricingY, setPricingY] = useState<number>(0);
+
   // 1. GET PARAMS
   const params = useLocalSearchParams();
   const { role } = params;
 
   // 2. DETERMINE ROLE
-  const activeRole = (typeof role === "string" && VALID_ROLES.includes(role)) 
-    ? role 
-    : "default";
-  
+  const activeRole = typeof role === "string" && VALID_ROLES.includes(role) ? role : "default";
+
   React.useEffect(() => {
-    if (activeRole !== 'default') {
-      trackEvent('lp_visit', {
+    if (activeRole !== "default") {
+      trackEvent("lp_visit", {
         role: activeRole,
-        page_title: ROLE_CONTENT[activeRole].title
+        page_title: ROLE_CONTENT[activeRole].title,
       });
     }
   }, [activeRole]);
@@ -482,74 +503,87 @@ export default function CampaignLanding() {
   // 3. DYNAMIC CONTENT RESOLUTION
   const content = ROLE_CONTENT[activeRole];
 
+  const CTA_LABEL: Record<string, string> = {
+    pm: "Book a PM Mock Interview",
+    da: "Book a Data Analytics Mock Interview",
+    ds: "Book a Data Science Mock Interview",
+    hr: "Book an HR Mock Interview",
+    default: "Book Your Mock Interview",
+  };
+
   const handleBookClick = (tier: string = "general") => {
     console.log("[Analytics] Interest Captured:", {
       role: activeRole,
       tier_intent: tier,
-      source: utm.source
+      source: utm.source,
     });
 
     router.push("/auth/sign-up");
+  };
+
+  const handlePricingClick = () => {
+    if (Platform.OS === "web") {
+      const el = document.getElementById("pricing");
+      el?.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
+    scrollRef.current?.scrollTo({ y: pricingY, animated: true });
   };
 
   return (
     <>
       <Head>
         <title>{`CrackJobs | ${content.title} Interview Prep`}</title>
-        <meta 
-            name="description" 
-            content={`Practice ${content.title} interviews with real experts. ${content.sub}`}
-        />
+        <meta name="description" content={`Practice ${content.title} interviews with real experts. ${content.sub}`} />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <style>{`body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; background-color: ${BG_CREAM}; } * { box-sizing: border-box; }`}</style>
       </Head>
 
-      <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
+      <ScrollView ref={scrollRef} style={styles.container} contentContainerStyle={styles.scrollContent}>
         {/* Header */}
-        
-        < Header />
+        <Header />
 
         {/* HERO SECTION */}
         <View style={styles.heroSection}>
           <View style={[styles.heroInner, isSmall && styles.heroInnerMobile]}>
-            
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>PRACTICE → PERFECT</Text>
-            </View>
 
             {/* Dynamic Headline */}
             <Text style={[styles.h1, isSmall && styles.h1Mobile]}>
-              {content.title}{"\n"}
+              {content.title}
+              {"\n"}
               <Text style={{ color: CTA_TEAL }}>{content.highlight}</Text>
             </Text>
 
             {/* Dynamic Subtext */}
-            <Text style={[styles.sub, isSmall && styles.subMobile]}>
-              {content.sub}
-            </Text>
+            <Text style={[styles.sub, isSmall && styles.subMobile]}>{content.sub}</Text>
 
             {/* CTAs */}
             <View style={[styles.ctaRow, isSmall && { flexDirection: "column" }]}>
-              
-              {/* ✅ EDITED: Added nativeID */}
               <Button
                 nativeID="btn-lp-hero-cta"
-                title={activeRole !== 'default' ? `Book Your ${ROLE_CONTENT[activeRole].title.split(' ')[0]} Interview` : "Book Your Mock Interview"} 
+                title={CTA_LABEL[activeRole] ?? CTA_LABEL.default}
                 onPress={() => handleBookClick("hero_cta")}
                 style={[styles.ctaBig, isSmall && { width: "100%" }]}
                 textStyle={{ fontSize: 16 }}
               />
 
-             
+              <Button
+                nativeID="btn-lp-hero-pricing"
+                title="View pricing"
+                variant="outline"
+                color={CTA_TEAL}
+                onPress={handlePricingClick}
+                style={[styles.ctaBig, isSmall && { width: "100%" }]}
+              />
             </View>
 
-            <TrustFooter isSmall={isSmall} roleTitle={content.title} />
+            <TrustFooter isSmall={isSmall} />
           </View>
         </View>
 
         <HowItWorks isSmall={isSmall} />
         <TestimonialsSection />
-        <CandidateTiers />
+        <CandidateTiers onPricingLayout={setPricingY} />
         <GuaranteeSection />
         <FAQ isSmall={isSmall} />
 
@@ -566,6 +600,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: BG_CREAM,
+
   },
   scrollContent: {
     minHeight: "100%",
@@ -747,15 +782,15 @@ const styles = StyleSheet.create({
 
   // ===== Pricing Section =====
   tiersGrid: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 24,
-    justifyContent: 'center',
-    alignItems: 'stretch',
+    justifyContent: "center",
+    alignItems: "stretch",
     maxWidth: 1200,
-    alignSelf: 'center',
+    alignSelf: "center",
   },
   tiersGridMobile: {
-    flexDirection: 'column',
+    flexDirection: "column",
     maxWidth: 800,
     gap: 20,
   },
@@ -764,7 +799,7 @@ const styles = StyleSheet.create({
     maxWidth: 360,
     padding: 28,
     borderRadius: 16,
-    alignItems: 'center',
+    alignItems: "center",
     borderWidth: 2,
   },
   tierBadgeContainer: {
@@ -772,40 +807,37 @@ const styles = StyleSheet.create({
   },
   tierTitle: {
     fontFamily: SYSTEM_FONT,
-    fontWeight: '700',
+    fontWeight: "700",
     fontSize: 20,
     marginBottom: 4,
-    textAlign: 'center',
+    textAlign: "center",
   },
   tierSessions: {
     fontFamily: SYSTEM_FONT,
     fontSize: 14,
     marginBottom: 16,
-    textAlign: 'center',
+    textAlign: "center",
   },
   tierBenefits: {
     gap: 8,
-    alignSelf: 'stretch',
+    alignSelf: "stretch",
   },
   tierBenefitRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    alignItems: "flex-start",
     gap: 8,
   },
   tierBenefitBullet: {
     fontFamily: SYSTEM_FONT,
     fontSize: 15,
     lineHeight: 24,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   tierBenefitText: {
     fontFamily: SYSTEM_FONT,
     fontSize: 15,
     lineHeight: 24,
     flex: 1,
-  },
-  h2Mobile: {
-    fontSize: 28,
   },
 
   // ===== FAQ Section =====
@@ -850,19 +882,19 @@ const styles = StyleSheet.create({
     backgroundColor: BG_CREAM,
   },
   statsRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
     gap: 80,
     marginBottom: 60,
-    flexWrap: 'wrap',
+    flexWrap: "wrap",
   },
   statItem: {
-    alignItems: 'center',
+    alignItems: "center",
   },
   statNumber: {
     fontFamily: SYSTEM_FONT,
     fontSize: 44,
-    fontWeight: '900',
+    fontWeight: "900",
     color: CTA_TEAL,
     marginBottom: 10,
     letterSpacing: -1,
@@ -870,35 +902,35 @@ const styles = StyleSheet.create({
   statLabel: {
     fontFamily: SYSTEM_FONT,
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: "600",
     color: TEXT_GRAY,
     letterSpacing: 0.3,
   },
   testimonialsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: 24,
     maxWidth: 1200,
-    alignSelf: 'center',
-    justifyContent: 'center',
+    alignSelf: "center",
+    justifyContent: "center",
   },
   testimonialCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: "#ffffff",
     padding: 32,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.08)',
-    width: 'calc(50% - 12px)',
+    borderColor: "rgba(0,0,0,0.08)",
+    width: "calc(50% - 12px)",
     minWidth: 280,
     maxWidth: 550,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 16,
   },
   testimonialHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 18,
     gap: 14,
   },
@@ -907,10 +939,10 @@ const styles = StyleSheet.create({
     height: 52,
     borderRadius: 26,
     backgroundColor: BG_CREAM,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     borderWidth: 2,
-    borderColor: 'rgba(0,0,0,0.05)',
+    borderColor: "rgba(0,0,0,0.05)",
   },
   avatar: {
     fontSize: 26,
@@ -921,18 +953,18 @@ const styles = StyleSheet.create({
   testimonialName: {
     fontFamily: SYSTEM_FONT,
     fontSize: 17,
-    fontWeight: '700',
+    fontWeight: "700",
     color: TEXT_DARK,
     marginBottom: 3,
   },
   testimonialRole: {
     fontFamily: SYSTEM_FONT,
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     color: TEXT_GRAY,
   },
   ratingContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 3,
     marginBottom: 18,
   },
@@ -946,32 +978,17 @@ const styles = StyleSheet.create({
     color: TEXT_DARK,
     marginBottom: 18,
   },
-  highlightBadge: {
-    backgroundColor: '#e8f9f9',
-    paddingVertical: 9,
-    paddingHorizontal: 14,
-    borderRadius: 8,
-    alignSelf: 'flex-start',
-    borderWidth: 1,
-    borderColor: 'rgba(24, 167, 167, 0.2)',
-  },
-  highlightText: {
-    fontFamily: SYSTEM_FONT,
-    fontSize: 13,
-    fontWeight: '700',
-    color: CTA_TEAL,
-  },
   trustIndicators: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
     gap: 32,
     marginTop: 48,
-    flexWrap: 'wrap',
+    flexWrap: "wrap",
   },
   trustText: {
     fontFamily: SYSTEM_FONT,
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: "600",
     color: TEXT_GRAY,
     opacity: 0.8,
   },
@@ -985,33 +1002,33 @@ const styles = StyleSheet.create({
     backgroundColor: BG_CREAM,
   },
   guaranteeBox: {
-    backgroundColor: '#ffffff',
+    backgroundColor: "#ffffff",
     padding: 56,
     borderRadius: 20,
     maxWidth: 1100,
-    alignSelf: 'center',
-    width: '100%',
+    alignSelf: "center",
+    width: "100%",
     borderWidth: 2,
-    borderColor: 'rgba(24, 167, 167, 0.3)',
+    borderColor: "rgba(24, 167, 167, 0.3)",
     shadowColor: CTA_TEAL,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 20,
   },
   guaranteeBadgeContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 28,
   },
   guaranteeBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#e8f9f9',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#e8f9f9",
     paddingVertical: 11,
     paddingHorizontal: 22,
     borderRadius: 100,
     gap: 10,
     borderWidth: 1,
-    borderColor: 'rgba(24, 167, 167, 0.2)',
+    borderColor: "rgba(24, 167, 167, 0.2)",
   },
   guaranteeBadgeEmoji: {
     fontSize: 18,
@@ -1019,47 +1036,47 @@ const styles = StyleSheet.create({
   guaranteeBadgeText: {
     fontFamily: SYSTEM_FONT,
     fontSize: 13,
-    fontWeight: '800',
+    fontWeight: "800",
     color: CTA_TEAL,
     letterSpacing: 1.2,
   },
   guaranteeTitle: {
     fontFamily: SYSTEM_FONT,
     fontSize: 38,
-    fontWeight: '800',
+    fontWeight: "800",
     color: TEXT_DARK,
-    textAlign: 'center',
+    textAlign: "center",
     lineHeight: 50,
     marginBottom: 18,
   },
   guaranteeSubtitle: {
     fontFamily: SYSTEM_FONT,
     fontSize: 18,
-    fontWeight: '500',
+    fontWeight: "500",
     color: TEXT_GRAY,
-    textAlign: 'center',
+    textAlign: "center",
     lineHeight: 30,
     marginBottom: 52,
     maxWidth: 600,
-    alignSelf: 'center',
+    alignSelf: "center",
   },
   guaranteesGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: 24,
     marginBottom: 44,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   guaranteeCard: {
     backgroundColor: BG_CREAM,
     padding: 28,
     borderRadius: 16,
-    width: 'calc(50% - 12px)',
+    width: "calc(50% - 12px)",
     minWidth: 240,
     maxWidth: 500,
     borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.08)',
-    shadowColor: '#000',
+    borderColor: "rgba(0,0,0,0.08)",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
     shadowRadius: 8,
@@ -1071,7 +1088,7 @@ const styles = StyleSheet.create({
   guaranteeCardTitle: {
     fontFamily: SYSTEM_FONT,
     fontSize: 17,
-    fontWeight: '700',
+    fontWeight: "700",
     color: TEXT_DARK,
     marginBottom: 10,
     lineHeight: 24,
@@ -1079,48 +1096,48 @@ const styles = StyleSheet.create({
   guaranteeDescription: {
     fontFamily: SYSTEM_FONT,
     fontSize: 15,
-    fontWeight: '500',
+    fontWeight: "500",
     color: TEXT_GRAY,
     lineHeight: 24,
   },
   trustSeal: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
     gap: 18,
     paddingVertical: 26,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(0,0,0,0.08)',
-    flexWrap: 'wrap',
+    borderTopColor: "rgba(0,0,0,0.08)",
+    flexWrap: "wrap",
   },
   sealBadge: {
-    backgroundColor: '#e8f9f9',
+    backgroundColor: "#e8f9f9",
     paddingVertical: 9,
     paddingHorizontal: 18,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(24, 167, 167, 0.15)',
+    borderColor: "rgba(24, 167, 167, 0.15)",
   },
   sealText: {
     fontFamily: SYSTEM_FONT,
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: "700",
     color: CTA_TEAL,
     letterSpacing: 0.6,
   },
   assuranceBox: {
-    backgroundColor: '#fff9f5',
+    backgroundColor: "#fff9f5",
     padding: 22,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(245, 135, 66, 0.25)',
+    borderColor: "rgba(245, 135, 66, 0.25)",
     marginTop: 28,
   },
   assuranceText: {
     fontFamily: SYSTEM_FONT,
     fontSize: 15,
-    fontWeight: '500',
+    fontWeight: "500",
     color: TEXT_GRAY,
-    textAlign: 'center',
+    textAlign: "center",
     lineHeight: 24,
   },
 });

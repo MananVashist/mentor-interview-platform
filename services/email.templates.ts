@@ -64,7 +64,7 @@ export const EMAIL_TEMPLATES = {
       text-decoration: none; 
       border-radius: 6px; 
       font-weight: 600; 
-      margin: 20px 0; 
+      margin: 20px 0 10px 0; 
       font-size: 16px;
     }
     .features { 
@@ -123,12 +123,16 @@ export const EMAIL_TEMPLATES = {
     ol li {
       margin: 8px 0;
     }
+    .muted {
+      color: #6b7280;
+      font-size: 14px;
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="header">
-      <h1>🎉 Welcome to CrackJobs!</h1>
+      <h1>Welcome to CrackJobs</h1>
       <p>Your mentor account is now active</p>
     </div>
     <div class="content">
@@ -138,60 +142,61 @@ export const EMAIL_TEMPLATES = {
 
       <p>Hello,</p>
       
-      <p>Congratulations! Your mentor profile has been approved and activated. You're now ready to help candidates ace their interviews and earn money doing what you do best.</p>
+      <p>Your mentor profile has been approved and activated. You can now accept bookings, conduct sessions, and earn for each completed interview.</p>
 
       <div class="features">
         <div class="feature-item">
-          <div class="feature-icon">💰</div>
+          <div class="feature-icon">💼</div>
           <div class="feature-text">
-            <div class="feature-title">Earn on Your Terms</div>
-            <div class="feature-desc">Set your own availability and pricing. Get paid for each completed session.</div>
+            <div class="feature-title">Work on Your Terms</div>
+            <div class="feature-desc">Set your availability and session pricing. Accept only what fits your schedule.</div>
           </div>
         </div>
         <div class="feature-item">
           <div class="feature-icon">📅</div>
           <div class="feature-text">
-            <div class="feature-title">Flexible Scheduling</div>
-            <div class="feature-desc">Accept bookings that fit your schedule. No commitment required.</div>
+            <div class="feature-title">Manage Bookings Easily</div>
+            <div class="feature-desc">Review upcoming sessions, approve requests, and submit evaluations from your dashboard.</div>
           </div>
         </div>
         <div class="feature-item">
           <div class="feature-icon">🎯</div>
           <div class="feature-text">
-            <div class="feature-title">Make an Impact</div>
-            <div class="feature-desc">Help aspiring professionals land their dream jobs with your expertise.</div>
+            <div class="feature-title">Create Real Impact</div>
+            <div class="feature-desc">Help candidates improve and build confidence with structured mock interviews.</div>
           </div>
         </div>
         <div class="feature-item">
           <div class="feature-icon">🔒</div>
           <div class="feature-text">
-            <div class="feature-title">Complete Anonymity</div>
-            <div class="feature-desc">All sessions are anonymous - only professional titles are shared.</div>
+            <div class="feature-title">Anonymous by Design</div>
+            <div class="feature-desc">Only professional titles are shared. Personal identity stays private.</div>
           </div>
         </div>
       </div>
 
       <div style="text-align: center;">
-        <a href="{{baseUrl}}/mentor/profile" class="button">Go to Dashboard</a>
+        <a href="{{baseUrl}}/mentor/bookings" class="button">Go to My Bookings</a>
       </div>
 
       <div class="next-steps">
-        <strong>🚀 Next Steps:</strong>
+        <strong>Next steps</strong>
         <ol>
-          <li>Complete your profile and set your availability</li>
-          <li>Review your session pricing and bank details</li>
-          <li>Wait for booking requests from candidates</li>
-          <li>Conduct sessions and provide feedback</li>
+          <li>Review and complete your profile</li>
+          <li>Set your availability and confirm session pricing</li>
+          <li>Monitor booking requests in “My Bookings”</li>
+          <li>Conduct sessions and submit evaluations to trigger payouts</li>
         </ol>
       </div>
 
-      <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
-        Questions? We're here to help! Reach out to us at <a href="{{baseUrl}}/contact" style="color: #0E9384;">{{baseUrl}}/contact</a>
+      <p class="muted" style="margin-top: 24px;">
+        Need help? Contact support at
+        <a href="{{baseUrl}}/contact" style="color: #0E9384;">{{baseUrl}}/contact</a>
       </p>
     </div>
     <div class="footer">
-      <p><strong>CrackJobs</strong> - Mock Interview Platform</p>
-      <p>Empowering candidates, one interview at a time</p>
+      <p><strong>CrackJobs</strong></p>
+      <p>Mock interviews, done right.</p>
     </div>
   </div>
 </body>
@@ -204,7 +209,7 @@ export const EMAIL_TEMPLATES = {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Booking Scheduled</title>
+  <title>Booking Confirmed</title>
   <style>
     body { 
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; 
@@ -318,25 +323,25 @@ export const EMAIL_TEMPLATES = {
 <body>
   <div class="container">
     <div class="header">
-      <h1>✅ Your Interview is Scheduled!</h1>
+      <h1>Your Interview Is Scheduled</h1>
     </div>
     <div class="content">
       <p>Hello,</p>
       
       <div style="text-align: center;">
-        <span class="success-badge">Payment Successful</span>
+        <span class="success-badge">Payment Confirmed</span>
       </div>
 
-      <p>Great news! Your mock interview has been scheduled. The mentor will now accept the invite or might request for a reschedule</p>
+      <p>Your booking is confirmed. Your mentor will review and accept the session. If the mentor needs a change, you may receive a reschedule request.</p>
       
       <div class="details">
         <div class="detail-row">
-          <div class="label">Your Mentor</div>
+          <div class="label">Mentor</div>
           <div class="value">{{mentorTitle}}</div>
         </div>
         <div class="detail-row">
           <div class="label">Interview Type</div>
-          <div class="value">{{profileName}} - {{skillName}}</div>
+          <div class="value">{{profileName}} — {{skillName}}</div>
         </div>
         <div class="detail-row">
           <div class="label">Scheduled For</div>
@@ -344,36 +349,27 @@ export const EMAIL_TEMPLATES = {
         </div>
       </div>
 
-      <p><strong>Before Your Interview:</strong></p>
-      <ol>
-        <li>Review the job description and role requirements</li>
-        <li>Prepare specific questions or scenarios you want to practice</li>
-        <li>Test your video and audio setup 10 minutes early</li>
-        <li>Have a notepad ready for feedback and notes</li>
-      </ol>
+      <p><strong>How to join the session</strong><br/>
+      Please join the meeting by logging in to your CrackJobs account and opening <strong>My Bookings</strong>. The join option will be available on your booking at the appropriate time.</p>
 
       <div style="text-align: center;">
-        <a href="{{baseUrl}}/candidate/bookings" class="button">View Booking Details</a>
+        <a href="{{baseUrl}}/candidate/bookings" class="button">Go to My Bookings</a>
       </div>
 
       <div class="pro-tip">
-        <strong>⏰ Pro Tip:</strong> You'll receive the meeting link closer to your scheduled time. Add this to your calendar so you don't miss it!
+        <strong>Tip:</strong> We recommend logging in 10 minutes early to test your audio/video setup.
       </div>
 
       <div class="note">
         <strong>What happens next?</strong><br>
-        • 15 minutes before: Meeting link becomes available<br>
-        • During: Conduct your interview with the mentor<br>
-        • After: Receive detailed feedback to improve your skills
+        • Your mentor reviews and confirms the booking<br>
+        • Join from “My Bookings” at the scheduled time<br>
+        • Receive structured feedback after the session
       </div>
-
-      <p style="color: #6b7280; font-size: 14px; margin-top: 20px;">
-        You can access all your bookings anytime in your dashboard.
-      </p>
     </div>
     <div class="footer">
-      <p><strong>CrackJobs</strong> - Mock Interview Platform</p>
-      <p>Need help? Reply to this email or visit our support page</p>
+      <p><strong>CrackJobs</strong></p>
+      <p>Need help? Reply to this email or visit <a href="{{baseUrl}}/contact" style="color:#0E9384;">{{baseUrl}}/contact</a></p>
     </div>
   </div>
 </body>
@@ -386,7 +382,7 @@ export const EMAIL_TEMPLATES = {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>New Booking Scheduled - APPROVAL NEEDED</title>
+  <title>New Booking - Action Required</title>
   <style>
     body { 
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; 
@@ -459,10 +455,6 @@ export const EMAIL_TEMPLATES = {
       font-weight: 600; 
       font-size: 16px; 
     }
-    .value a {
-      color: #0E9384;
-      word-break: break-all;
-    }
     .footer { 
       text-align: center; 
       color: #6b7280; 
@@ -503,7 +495,7 @@ export const EMAIL_TEMPLATES = {
 <body>
   <div class="container">
     <div class="header">
-      <h1>🎯 New Interview Booking Confirmed</h1>
+      <h1>New Booking Request</h1>
     </div>
     <div class="content">
       <p>Hello,</p>
@@ -512,7 +504,7 @@ export const EMAIL_TEMPLATES = {
         <span class="success-badge">Payment Confirmed</span>
       </div>
 
-      <p>You have a new confirmed interview session! A candidate has successfully booked and paid for a session with you.Please approve the meeting in your "My Bookings" page</p>
+      <p>A candidate has booked and paid for a session with you. Please review and approve the booking from your dashboard.</p>
       
       <div class="details">
         <div class="detail-row">
@@ -521,47 +513,44 @@ export const EMAIL_TEMPLATES = {
         </div>
         <div class="detail-row">
           <div class="label">Interview Type</div>
-          <div class="value">{{profileName}} - {{skillName}}</div>
+          <div class="value">{{profileName}} — {{skillName}}</div>
         </div>
         <div class="detail-row">
           <div class="label">Scheduled For</div>
           <div class="value">{{dateTime}}</div>
         </div>
-        <div class="detail-row">
-          <div class="label">Meeting Link</div>
-          <div class="value"><a href="{{meetingLink}}">{{meetingLink}}</a></div>
-        </div>
       </div>
 
-      <p><strong>Preparation Checklist:</strong></p>
+      <p><strong>How to join the session</strong><br/>
+      Please join the meeting by logging in to your CrackJobs account and opening <strong>My Bookings</strong>. The join option will be available on the booking at the appropriate time.</p>
+
+      <div style="text-align: center;">
+        <a href="{{baseUrl}}/mentor/bookings" class="button">Go to My Bookings</a>
+      </div>
+
+      <p><strong>Preparation checklist</strong></p>
       <ol>
-        <li>Review the interview profile and skill requirements</li>
-        <li>Prepare relevant questions and scenarios</li>
-        <li>Test your video/audio setup 10 minutes before</li>
-        <li>Join the meeting link at the scheduled time</li>
+        <li>Review the interview type and skill area</li>
+        <li>Prepare relevant questions and evaluation criteria</li>
+        <li>Log in 10 minutes early to test audio/video</li>
+        <li>Join from “My Bookings” at the scheduled time</li>
       </ol>
 
-      <a href="{{meetingLink}}" class="button">Join Meeting (Available 15 min before)</a>
-
       <div class="earning-highlight">
-        <strong>💰 Earning Info:</strong> Your payout will be processed after you submit the evaluation feedback for this session. Payment typically arrives within 3-5 business days.
+        <strong>Payout</strong><br/>
+        Your payout is initiated after you submit the session evaluation. Processing typically completes within 3–5 business days.
       </div>
 
       <div class="note">
-        <strong>After the interview:</strong><br>
-        • Provide detailed feedback through the evaluation form<br>
-        • Rate the candidate's performance across key criteria<br>
-        • Share actionable insights to help them improve<br>
-        • Your payout will be initiated once evaluation is submitted
+        <strong>After the session</strong><br>
+        • Submit structured feedback via the evaluation form<br>
+        • Share actionable improvement points<br>
+        • Payout begins once evaluation is submitted
       </div>
-
-      <p style="color: #6b7280; font-size: 14px; margin-top: 20px;">
-        Access all your bookings and submit evaluations from your dashboard at <a href="{{baseUrl}}/mentor/bookings" style="color: #0E9384;">{{baseUrl}}/mentor/bookings</a>
-      </p>
     </div>
     <div class="footer">
-      <p><strong>CrackJobs</strong> - Mock Interview Platform</p>
-      <p>Questions? Reply to this email or visit our mentor support page</p>
+      <p><strong>CrackJobs</strong></p>
+      <p>Questions? Reply to this email or visit <a href="{{baseUrl}}/contact" style="color:#0E9384;">{{baseUrl}}/contact</a></p>
     </div>
   </div>
 </body>
@@ -647,10 +636,6 @@ export const EMAIL_TEMPLATES = {
       font-weight: 600; 
       font-size: 15px; 
     }
-    .value a {
-      color: #0E9384;
-      word-break: break-all;
-    }
     .section-title {
       font-size: 16px;
       font-weight: 600;
@@ -677,39 +662,39 @@ export const EMAIL_TEMPLATES = {
       font-size: 13px;
       color: #92400E;
     }
+    .muted {
+      color: #6b7280;
+      font-size: 14px;
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="header">
-      <h1>🔔 New Booking Alert</h1>
+      <h1>New Booking Alert</h1>
     </div>
     <div class="content">
       <div style="text-align: center;">
-        <span class="alert-badge">Action Required</span>
+        <span class="alert-badge">New Paid Booking</span>
       </div>
 
-      <p><strong>A new interview session has been successfully booked and paid for on CrackJobs.</strong></p>
+      <p><strong>A new interview session has been booked and paid for on CrackJobs.</strong></p>
       
       <p>Package ID: <span class="pkg-id">{{packageId}}</span></p>
 
-      <div class="section-title">📅 Session Details</div>
+      <div class="section-title">Session Details</div>
       <div class="details">
         <div class="detail-row">
           <div class="label">Interview Type</div>
-          <div class="value">{{profileName}} - {{skillName}}</div>
+          <div class="value">{{profileName}} — {{skillName}}</div>
         </div>
         <div class="detail-row">
           <div class="label">Scheduled For</div>
           <div class="value">{{dateTime}}</div>
         </div>
-        <div class="detail-row">
-          <div class="label">Meeting Link</div>
-          <div class="value"><a href="{{meetingLink}}">{{meetingLink}}</a></div>
-        </div>
       </div>
 
-      <div class="section-title">👤 Candidate Information</div>
+      <div class="section-title">Candidate</div>
       <div class="details">
         <div class="detail-row">
           <div class="label">Name</div>
@@ -725,7 +710,7 @@ export const EMAIL_TEMPLATES = {
         </div>
       </div>
 
-      <div class="section-title">🎯 Mentor Information</div>
+      <div class="section-title">Mentor</div>
       <div class="details">
         <div class="detail-row">
           <div class="label">Name</div>
@@ -741,13 +726,13 @@ export const EMAIL_TEMPLATES = {
         </div>
       </div>
 
-      <p style="color: #6b7280; font-size: 14px; margin-top: 25px; padding: 15px; background: #f9fafb; border-radius: 6px;">
-        <strong>Note:</strong> Both mentor and candidate have received their respective confirmation emails with session details.
+      <p class="muted" style="margin-top: 25px; padding: 15px; background: #f9fafb; border-radius: 6px;">
+        <strong>Note:</strong> Mentor and candidate confirmation emails have been sent with the session details. Users join sessions from their dashboards under “My Bookings”.
       </p>
     </div>
     <div class="footer">
       <p><strong>CrackJobs Helpdesk</strong></p>
-      <p>This is an automated notification</p>
+      <p>This is an automated notification.</p>
     </div>
   </div>
 </body>
@@ -870,19 +855,23 @@ export const EMAIL_TEMPLATES = {
       font-size: 13px;
       color: #92400E;
     }
+    .muted {
+      color: #6b7280;
+      font-size: 14px;
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="header">
-      <h1>👋 New User Signup</h1>
+      <h1>New User Signup</h1>
     </div>
     <div class="content">
       <div style="text-align: center;">
         <span class="signup-badge">New Registration</span>
       </div>
 
-      <p><strong>A new user has signed up on CrackJobs!</strong></p>
+      <p><strong>A new user has signed up on CrackJobs.</strong></p>
 
       <div class="details">
         <div class="detail-row">
@@ -913,21 +902,21 @@ export const EMAIL_TEMPLATES = {
         </div>
       </div>
 
-      <p style="color: #6b7280; font-size: 14px; margin-top: 25px; padding: 15px; background: #f9fafb; border-radius: 6px;">
-        <strong>Next Steps:</strong><br>
+      <p class="muted" style="margin-top: 25px; padding: 15px; background: #f9fafb; border-radius: 6px;">
+        <strong>Next steps</strong><br>
         {{#if isMentor}}
         • Mentor account is pending approval<br>
         • Review profile and verify credentials<br>
-        • Approve or reject from admin dashboard
+        • Approve or reject from the admin dashboard
         {{else}}
         • Candidate can now browse mentors<br>
-        • No action required from admin
+        • No action required
         {{/if}}
       </p>
     </div>
     <div class="footer">
       <p><strong>CrackJobs Helpdesk</strong></p>
-      <p>This is an automated notification</p>
+      <p>This is an automated notification.</p>
     </div>
   </div>
 </body>
