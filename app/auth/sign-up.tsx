@@ -207,10 +207,15 @@ export default function SignUpScreen() {
 
       // 3. Success State
       setUser(user);
+      
+      // ✅ FIXED: Added email parameter for Google Enhanced Conversions
+      console.log('[SignUp] 📊 Tracking sign_up event with email:', email.trim());
       trackEvent('sign_up', {
         method: 'email',
-        role: role // 'candidate' or 'mentor'
+        role: role, // 'candidate' or 'mentor'
+        email: email.trim() // ✅ Added for Enhanced Conversions
       });
+      
       setProfile({
         id: user.id,
         email: email.trim(),

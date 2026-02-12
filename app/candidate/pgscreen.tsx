@@ -10,11 +10,12 @@ import {
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { paymentService } from '../../services/payment.service';
 import { trackEvent } from '@/lib/analytics'; 
+import { authService } from '../../services/auth.service';
+import { supabase } from '../../lib/supabase/client';
 
 export default function PGScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
-
   const { 
     orderId, 
     packageId, 
@@ -213,6 +214,16 @@ export default function PGScreen() {
 
     setVerifying(true);
 
+    // ✅ FIXED: Get email directly from auth session (guaranteed to be available)
+    let userEmail: string | undefined;
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      userEmail = user?.email;
+      console.log('[PGScreen] 📧 Retrieved email from session:', userEmail);
+    } catch (err) {
+      console.warn('[PGScreen] ⚠️ Could not retrieve email from session:', err);
+    }
+
     try {
       console.log('[PGScreen] 🔐 Starting verification...');
       
@@ -232,11 +243,13 @@ export default function PGScreen() {
         package_id: packageId
       });
 
-      // ✅ ADDED: Custom event 'payment_success' for GTM Tracking
+      // ✅ FIXED: Custom event 'payment_success' with email for Enhanced Conversions
+      console.log('[PGScreen] 📊 Tracking payment_success event with email:', userEmail);
       trackEvent('payment_success', {
         value: Number(amount) / 100,
         currency: 'INR',
-        transaction_id: data.razorpay_payment_id
+        transaction_id: data.razorpay_payment_id,
+        email: userEmail // ✅ Now guaranteed to have value
       });
 
       // ✅ AUTO-REDIRECT: Navigate immediately after success

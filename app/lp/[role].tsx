@@ -14,6 +14,7 @@ import Head from "expo-router/head";
 
 import { Header } from "@/components/Header";
 import { trackEvent } from '@/lib/analytics'; 
+import { BronzeBadge, SilverBadge, GoldBadge } from '@/components/AppIcons'; 
 
 // --- Constants ---
 const BRAND_ORANGE = "#f58742";
@@ -230,71 +231,68 @@ const TrustFooter = memo(({ isSmall, roleTitle }: { isSmall: boolean, roleTitle:
 });
 
 // ===== Pricing Section =====
-const PricingCards = memo(({ isSmall, onBook }: { isSmall: boolean, onBook: (tier: string) => void }) => {
+const CandidateTiers = memo(() => {
+  const { width } = useWindowDimensions();
+  const isSmall = width < 900;
+
+  const TIERS = [
+    {
+      badge: <BronzeBadge />,
+      title: 'Bronze Tier',
+      sessions: '0-5 Sessions',
+      price: '₹3,500 - ₹6,000',
+      color: '#cd7f32',
+      bgColor: '#fff5e6',
+      borderColor: '#cd7f32',
+      benefits: [ 'Top performing mid-Level Managers', '5 - 10 yrs experienced','Best for: Strengthening basics' ],
+      ariaLabel: 'Bronze tier pricing'
+    },
+    {
+      badge: <SilverBadge />,
+      title: 'Silver Tier',
+      sessions: '5-15 Sessions',
+      price: '₹6,000 - ₹10,000',
+      color: '#c0c0c0',
+      bgColor: '#f5f5f5',
+      borderColor: '#c0c0c0',
+      benefits: ['Senior Management from top companies', '10-15 yrs experienced', 'Best for: Senior level interviews'],
+      ariaLabel: 'Silver tier pricing'
+    },
+    {
+      badge: <GoldBadge />,
+      title: 'Gold Tier',
+      sessions: '15+ Sessions',
+      price: '₹10,000 - ₹15,000',
+      color: '#fbbf24',
+      bgColor: '#fffbeb',
+      borderColor: '#fbbf24',
+      benefits: ['Leadership / Directors', '15-20 yrs experienced', 'Best for: Hiring manager or CXO rounds'],
+      ariaLabel: 'Gold tier pricing'
+    },
+  ];
+
   return (
-    <View style={styles.section}>
-      <Text style={styles.kicker}>MARKETPLACE RATES</Text>
-      <Text style={[styles.h2, { marginBottom: 8 }]}>Find Your Range</Text>
-      
-      <Text style={[styles.sub, { marginBottom: 32, fontSize: 15, maxWidth: 500, alignSelf: 'center' }]}>
-        Mentors set their own prices based on experience.
+    <View style={styles.section} nativeID="pricing" accessibilityRole="region" accessibilityLabel="Pricing tiers">
+      <Text style={styles.kicker} accessibilityRole="header">PRICING</Text>
+      <Text style={[styles.h2, isSmall && styles.h2Mobile]} accessibilityRole="header" accessibilityLevel={2}>
+        Choose Your Mentor Tier
       </Text>
-      
-      {/* Pricing Grid */}
-      <View style={[styles.pricingGrid, isSmall && styles.pricingGridMobile]}>
-        {/* Bronze Tier */}
-        <View style={[styles.priceCard, { backgroundColor: BG_BRONZE, borderColor: COLOR_BRONZE }]}>
-          <Text style={[styles.priceTier, { color: COLOR_BRONZE }]}>BRONZE</Text>
-          <Text style={styles.priceAmount}>₹3.5k - ₹6k</Text>
-          <Text style={styles.perSession}>per session</Text>
-          <View style={[styles.divider, { backgroundColor: COLOR_BRONZE, opacity: 0.2 }]} />
-          <Text style={styles.priceDesc}>• Mid-Level Managers</Text>
-          <Text style={styles.priceDesc}>• less than 10 yrs experienced</Text>
-          <Text style={styles.priceDesc}>• Best for: Entry level experience</Text>
-          <Button 
-            title="Browse Bronze" 
-            onPress={() => onBook('bronze')} 
-            variant="outline" 
-            color={COLOR_BRONZE}
-            style={{ marginTop: 24, width: '100%' }} 
-          />
-        </View>
-
-        {/* Silver Tier */}
-        <View style={[styles.priceCard, { backgroundColor: BG_SILVER, borderColor: COLOR_SILVER }]}>
-          <Text style={[styles.priceTier, { color: COLOR_SILVER }]}>SILVER</Text>
-          <Text style={styles.priceAmount}>₹6k - 10k</Text>
-          <Text style={styles.perSession}>per session</Text>
-          <View style={[styles.divider, { backgroundColor: COLOR_SILVER, opacity: 0.2 }]} />
-          <Text style={styles.priceDesc}>• Senior Management</Text>
-          <Text style={styles.priceDesc}>• 10-15 yrs experience</Text>
-          <Text style={styles.priceDesc}>• Best for: Mid level experience </Text>
-          <Button 
-            title="Browse Silver" 
-            onPress={() => onBook('silver')} 
-            variant="outline"
-            color={COLOR_SILVER} 
-            style={{ marginTop: 24, width: '100%' }} 
-          />
-        </View>
-
-        {/* Gold Tier */}
-        <View style={[styles.priceCard, { backgroundColor: BG_GOLD, borderColor: COLOR_GOLD }]}>
-          <Text style={[styles.priceTier, { color: COLOR_GOLD }]}>GOLD</Text>
-          <Text style={styles.priceAmount}>₹10k - ₹15k</Text>
-          <Text style={styles.perSession}>per session</Text>
-          <View style={[styles.divider, { backgroundColor: COLOR_GOLD, opacity: 0.2 }]} />
-          <Text style={styles.priceDesc}>• Leadership / Directors</Text>
-          <Text style={styles.priceDesc}>• Hiring Managers</Text>
-          <Text style={styles.priceDesc}>• Best for: Senior level experience</Text>
-          <Button 
-            title="Browse Gold" 
-            onPress={() => onBook('gold')} 
-            variant="outline" 
-            color={COLOR_GOLD}
-            style={{ marginTop: 24, width: '100%' }} 
-          />
-        </View>
+      <View style={[styles.tiersGrid, isSmall && styles.tiersGridMobile]}>
+        {TIERS.map((tier, i) => (
+          <View key={i} style={[styles.tierCard, { backgroundColor: tier.bgColor, borderColor: tier.borderColor }]} accessibilityRole="article" accessibilityLabel={tier.ariaLabel}>
+            <View style={styles.tierBadgeContainer}>{tier.badge}</View>
+            <Text style={[styles.tierTitle, { color: tier.color }]}>{tier.title}</Text>
+            <Text style={[styles.tierTitle, { fontSize: 24, marginBottom: 24, color: tier.color }]}>{tier.price}</Text>
+            <View style={styles.tierBenefits}>
+              {tier.benefits.map((benefit, j) => (
+                <View key={j} style={styles.tierBenefitRow}>
+                  <Text style={[styles.tierBenefitBullet, { color: tier.color }]}>✓</Text>
+                  <Text style={[styles.tierBenefitText, { color: TEXT_DARK }]}>{benefit}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        ))}
       </View>
     </View>
   );
@@ -439,7 +437,7 @@ const GuaranteeSection = memo(() => {
         {/* Assurance Box */}
         <View style={styles.assuranceBox}>
           <Text style={styles.assuranceText}>
-            <Text style={{ fontWeight: '800', color: TEXT_DARK }}>Still unsure?</Text> Our support team is available 24/7 to answer any questions. Email us at support@crackjobs.com
+            <Text style={{ fontWeight: '800', color: TEXT_DARK }}>Still unsure?</Text> Our support team is available 24/7 to answer any questions. Email us at crackjobshelpdesk@gmail.com
           </Text>
         </View>
       </View>
@@ -551,7 +549,7 @@ export default function CampaignLanding() {
 
         <HowItWorks isSmall={isSmall} />
         <TestimonialsSection />
-        <PricingCards isSmall={isSmall} onBook={handleBookClick} />
+        <CandidateTiers />
         <GuaranteeSection />
         <FAQ isSmall={isSmall} />
 
@@ -748,56 +746,66 @@ const styles = StyleSheet.create({
   },
 
   // ===== Pricing Section =====
-  pricingGrid: {
+  tiersGrid: {
     flexDirection: 'row',
-    gap: 16,
+    gap: 24,
     justifyContent: 'center',
-    width: '100%',
+    alignItems: 'stretch',
+    maxWidth: 1200,
+    alignSelf: 'center',
   },
-  pricingGridMobile: {
+  tiersGridMobile: {
     flexDirection: 'column',
+    maxWidth: 800,
+    gap: 20,
   },
-  priceCard: {
+  tierCard: {
     flex: 1,
-    padding: 24,
+    maxWidth: 360,
+    padding: 28,
     borderRadius: 16,
-    borderWidth: 1,
     alignItems: 'center',
-    shadowColor: "#000",
-    shadowOpacity: 0.02,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 5 },
+    borderWidth: 2,
   },
-  priceTier: {
-    fontFamily: SYSTEM_FONT,
-    fontSize: 12,
-    fontWeight: '800',
-    letterSpacing: 1,
-    marginBottom: 8,
-  },
-  priceAmount: {
-    fontFamily: SYSTEM_FONT,
-    fontSize: 24,
-    fontWeight: '800',
-    color: TEXT_DARK,
-  },
-  perSession: {
-    fontSize: 13,
-    color: '#999',
-    fontWeight: '500',
+  tierBadgeContainer: {
     marginBottom: 16,
   },
-  divider: {
-    height: 1,
-    width: '100%',
-    marginBottom: 16,
+  tierTitle: {
+    fontFamily: SYSTEM_FONT,
+    fontWeight: '700',
+    fontSize: 20,
+    marginBottom: 4,
+    textAlign: 'center',
   },
-  priceDesc: {
+  tierSessions: {
     fontFamily: SYSTEM_FONT,
     fontSize: 14,
-    color: TEXT_GRAY,
-    marginVertical: 4,
-    width: '100%',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  tierBenefits: {
+    gap: 8,
+    alignSelf: 'stretch',
+  },
+  tierBenefitRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+  },
+  tierBenefitBullet: {
+    fontFamily: SYSTEM_FONT,
+    fontSize: 15,
+    lineHeight: 24,
+    fontWeight: '700',
+  },
+  tierBenefitText: {
+    fontFamily: SYSTEM_FONT,
+    fontSize: 15,
+    lineHeight: 24,
+    flex: 1,
+  },
+  h2Mobile: {
+    fontSize: 28,
   },
 
   // ===== FAQ Section =====

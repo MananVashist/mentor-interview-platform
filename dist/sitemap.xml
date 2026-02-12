@@ -3,20 +3,20 @@
 
 	<url>
 		<loc>https://crackjobs.com/</loc>
-		<lastmod>2026-02-04</lastmod>
+		<lastmod>2026-02-12</lastmod>
 		<changefreq>weekly</changefreq>
 		<priority>1.0</priority>
 	</url>
 
 	<url>
 		<loc>https://crackjobs.com/auth/sign-up</loc>
-		<lastmod>2026-02-04</lastmod>
+		<lastmod>2026-02-12</lastmod>
 		<changefreq>monthly</changefreq>
 		<priority>0.9</priority>
 	</url>
 	<url>
 		<loc>https://crackjobs.com/auth/sign-in</loc>
-		<lastmod>2026-02-04</lastmod>
+		<lastmod>2026-02-12</lastmod>
 		<changefreq>monthly</changefreq>
 		<priority>0.8</priority>
 	</url>
@@ -24,25 +24,25 @@
 	<!-- 🔥 INTERVIEW PAGES - HIGH PRIORITY SEO PAGES -->
 	<url>
 		<loc>https://crackjobs.com/interviews/product-management</loc>
-		<lastmod>2026-02-04</lastmod>
+		<lastmod>2026-02-12</lastmod>
 		<changefreq>weekly</changefreq>
 		<priority>0.95</priority>
 	</url>
 	<url>
 		<loc>https://crackjobs.com/interviews/data-analytics</loc>
-		<lastmod>2026-02-04</lastmod>
+		<lastmod>2026-02-12</lastmod>
 		<changefreq>weekly</changefreq>
 		<priority>0.95</priority>
 	</url>
 	<url>
 		<loc>https://crackjobs.com/interviews/data-science</loc>
-		<lastmod>2026-02-04</lastmod>
+		<lastmod>2026-02-12</lastmod>
 		<changefreq>weekly</changefreq>
 		<priority>0.95</priority>
 	</url>
 	<url>
 		<loc>https://crackjobs.com/interviews/hr</loc>
-		<lastmod>2026-02-04</lastmod>
+		<lastmod>2026-02-12</lastmod>
 		<changefreq>weekly</changefreq>
 		<priority>0.95</priority>
 	</url>
@@ -50,37 +50,37 @@
 	<!-- BLOG PAGES -->
 	<url>
 		<loc>https://crackjobs.com/blog</loc>
-		<lastmod>2026-02-04</lastmod>
+		<lastmod>2026-02-12</lastmod>
 		<changefreq>weekly</changefreq>
 		<priority>0.8</priority>
 	</url>
 	<url>
 		<loc>https://crackjobs.com/blog/sql-interview-mistakes-data-analysts</loc>
-		<lastmod>2026-02-04</lastmod>
+		<lastmod>2026-02-12</lastmod>
 		<changefreq>monthly</changefreq>
 		<priority>0.7</priority>
 	</url>
 	<url>
 		<loc>https://crackjobs.com/blog/machine-learning-interview-mistakes-data-scientists</loc>
-		<lastmod>2026-02-04</lastmod>
+		<lastmod>2026-02-12</lastmod>
 		<changefreq>monthly</changefreq>
 		<priority>0.7</priority>
 	</url>
 	<url>
 		<loc>https://crackjobs.com/blog/hr-interview-mistakes-talent-acquisition</loc>
-		<lastmod>2026-02-04</lastmod>
+		<lastmod>2026-02-12</lastmod>
 		<changefreq>monthly</changefreq>
 		<priority>0.7</priority>
 	</url>
 	<url>
 		<loc>https://crackjobs.com/blog/product-manager-interview-execution-mistakes</loc>
-		<lastmod>2026-02-04</lastmod>
+		<lastmod>2026-02-12</lastmod>
 		<changefreq>monthly</changefreq>
 		<priority>0.7</priority>
 	</url>
 	<url>
 		<loc>https://crackjobs.com/blog/product-manager-interview-product-sense-mistakes</loc>
-		<lastmod>2026-02-04</lastmod>
+		<lastmod>2026-02-12</lastmod>
 		<changefreq>monthly</changefreq>
 		<priority>0.7</priority>
 	</url>
@@ -88,31 +88,31 @@
 	<!-- INFO PAGES -->
 	<url>
 		<loc>https://crackjobs.com/how-it-works</loc>
-		<lastmod>2026-02-04</lastmod>
+		<lastmod>2026-02-12</lastmod>
 		<changefreq>monthly</changefreq>
 		<priority>0.7</priority>
 	</url>
 	<url>
 		<loc>https://crackjobs.com/about</loc>
-		<lastmod>2026-02-04</lastmod>
+		<lastmod>2026-02-12</lastmod>
 		<changefreq>monthly</changefreq>
 		<priority>0.6</priority>
 	</url>
 	<url>
 		<loc>https://crackjobs.com/contact</loc>
-		<lastmod>2026-02-04</lastmod>
+		<lastmod>2026-02-12</lastmod>
 		<changefreq>monthly</changefreq>
 		<priority>0.5</priority>
 	</url>
 	<url>
 		<loc>https://crackjobs.com/faq</loc>
-		<lastmod>2026-02-04</lastmod>
+		<lastmod>2026-02-12</lastmod>
 		<changefreq>monthly</changefreq>
 		<priority>0.6</priority>
 	</url>
 	<url>
 		<loc>https://crackjobs.com/cancellation-policy</loc>
-		<lastmod>2026-02-04</lastmod>
+		<lastmod>2026-02-12</lastmod>
 		<changefreq>monthly</changefreq>
 		<priority>0.5</priority>
 	</url>
@@ -120,7 +120,7 @@
 	<!-- LEGAL PAGES -->
 	<url>
 		<loc>https://crackjobs.com/privacy</loc>
-		<lastmod>2026-02-04</lastmod>
+		<lastmod>2026-02-12</lastmod>
 		<changefreq>yearly</changefreq>
 		<priority>0.4</priority>
 	</url>

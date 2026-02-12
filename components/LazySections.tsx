@@ -281,7 +281,7 @@ const CandidateTiers = memo(() => {
       color: '#cd7f32',
       bgColor: '#fff5e6',
       borderColor: '#cd7f32',
-      benefits: [ '5-10 yrs Experienced interviewer', 'Top performers','Good for strengthening basics' ],
+      benefits: [ 'Top performing mid-Level Managers', '5 - 10 yrs experienced','Best for: Strengthening basics' ],
       ariaLabel: 'Bronze tier pricing'
     },
     {
@@ -292,7 +292,7 @@ const CandidateTiers = memo(() => {
       color: '#c0c0c0',
       bgColor: '#f5f5f5',
       borderColor: '#c0c0c0',
-      benefits: ['10-15 yrs of experience', 'Senior managers from top companies', 'Good for senior level interviews'],
+      benefits: ['Senior Management from top companies', '10-15 yrs experienced', 'Best for: Senior level interviews'],
       ariaLabel: 'Silver tier pricing'
     },
     {
@@ -303,7 +303,7 @@ const CandidateTiers = memo(() => {
       color: '#fbbf24',
       bgColor: '#fffbeb',
       borderColor: '#fbbf24',
-      benefits: ['15-20 yrs of experience', 'Expert-level mentors', 'Good for hiring manager interviews'],
+      benefits: ['Leadership / Directors', '15-20 yrs experienced', 'Best for: Hiring manager or CXO rounds'],
       ariaLabel: 'Gold tier pricing'
     },
   ];
