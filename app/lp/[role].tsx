@@ -106,19 +106,16 @@ const GUARANTEES = [
 ];
 
 // --- Valid Roles Config ---
-const VALID_ROLES = ["pm", "hr", "ds", "da"];
+// NOTE: PM route removed - now handled by Next.js at /lp/pm
+const VALID_ROLES = ["hr", "ds", "da"];
 
 // Role-Specific Content
+// NOTE: PM content removed - now handled by Next.js
 const ROLE_CONTENT: Record<string, { title: string; highlight: string; sub: string }> = {
   default: {
     title: "Mock Interviews",
     highlight: "with expert mentors",
     sub: "Get realistic feedback from industry experts. Anonymous & Unbiased.",
-  },
-  pm: {
-    title: "Product Management mock interviews",
-    highlight: "with expert PMs",
-    sub: "Test yourself on Product Strategy, Product Sense, Leadership, Execution or Technical PM skills against top hiring managers",
   },
   hr: {
     title: "HR mock interviews with ",
@@ -482,14 +479,15 @@ export default function CampaignLanding() {
   // 2. DETERMINE ROLE
   const activeRole = typeof role === "string" && VALID_ROLES.includes(role) ? role : "default";
 
+  // Track analytics for valid roles only
   React.useEffect(() => {
-    if (activeRole !== "default") {
+    if (activeRole !== "default" && role !== "pm") {
       trackEvent("lp_visit", {
         role: activeRole,
         page_title: ROLE_CONTENT[activeRole].title,
       });
     }
-  }, [activeRole]);
+  }, [activeRole, role]);
 
   // Capture UTM
   const utm = useMemo(() => {
@@ -504,7 +502,6 @@ export default function CampaignLanding() {
   const content = ROLE_CONTENT[activeRole];
 
   const CTA_LABEL: Record<string, string> = {
-    pm: "Book a PM Mock Interview",
     da: "Book a Data Analytics Mock Interview",
     ds: "Book a Data Science Mock Interview",
     hr: "Book an HR Mock Interview",
@@ -529,6 +526,32 @@ export default function CampaignLanding() {
     }
     scrollRef.current?.scrollTo({ y: pricingY, animated: true });
   };
+
+  // Handle PM route - show development message
+  if (role === "pm") {
+    return (
+      <View style={styles.container}>
+        <Header />
+        <View style={{ padding: 40, alignItems: "center" }}>
+          <Text style={{ fontSize: 24, fontWeight: "800", color: TEXT_DARK, marginBottom: 20 }}>
+            PM Route Now Handled by Next.js
+          </Text>
+          <Text style={{ fontSize: 16, color: TEXT_GRAY, textAlign: "center", marginBottom: 20 }}>
+            In development: Run Next.js dev server
+          </Text>
+          <Text style={{ fontSize: 14, color: TEXT_GRAY, fontFamily: "monospace", marginBottom: 10 }}>
+            cd landing && npm run dev
+          </Text>
+          <Text style={{ fontSize: 14, color: TEXT_GRAY, marginBottom: 20 }}>
+            Then visit: http://localhost:3000/pm
+          </Text>
+          <Text style={{ fontSize: 14, color: TEXT_GRAY, textAlign: "center" }}>
+            In production, static Next.js files will serve /lp/pm automatically.
+          </Text>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <>
