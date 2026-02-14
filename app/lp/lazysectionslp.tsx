@@ -2,13 +2,13 @@
 import { View, Text, StyleSheet, useWindowDimensions } from "react-native";
 import { BronzeBadge, SilverBadge, GoldBadge } from "@/components/AppIcons";
 
-// --- Constants & Data (Preserved Exactly) ---
+// --- Constants & Data ---
 const CTA_TEAL = "#18a7a7";
 const BG_CREAM = "#f8f5f0";
 const TEXT_DARK = "#222";
 const TEXT_GRAY = "#555";
 const BORDER_LIGHT = "rgba(0,0,0,0.05)";
-const SYSTEM_FONT = "System"; // Simplified for brevity, matches logic
+const SYSTEM_FONT = "System";
 
 const TESTIMONIALS = [
   { name: "Priya S.", role: "Product Manager", company: "TATA", avatar: "👩‍💼", rating: 5, quote: "The mock interview was incredibly realistic. My mentor's feedback on my product sense helped me identify exact gaps." },
@@ -31,7 +31,8 @@ const FAQS = [
   { q: "What topic will the interview be on?", a: "You can choose the topic of your interview from a list of the commonly seen interview types in your domain" },
 ];
 
-export const TestimonialsSection = memo(() => (
+// --- Internal Components ---
+const TestimonialsSection = memo(() => (
   <View style={styles.testimonialsContainer} nativeID="testimonials">
     <Text style={styles.kicker}>SUCCESS STORIES</Text>
     <View style={styles.testimonialsGrid}>
@@ -50,7 +51,7 @@ export const TestimonialsSection = memo(() => (
   </View>
 ));
 
-export const CandidateTiers = memo(({ onPricingLayout }: { onPricingLayout?: (y: number) => void }) => {
+const CandidateTiers = memo(({ onPricingLayout }: { onPricingLayout?: (y: number) => void }) => {
   const { width } = useWindowDimensions();
   const isSmall = width < 900;
   const TIERS = [
@@ -76,7 +77,7 @@ export const CandidateTiers = memo(({ onPricingLayout }: { onPricingLayout?: (y:
   );
 });
 
-export const GuaranteeSection = memo(() => (
+const GuaranteeSection = memo(() => (
   <View style={styles.guaranteeContainer} nativeID="guarantee">
     <View style={styles.guaranteeBox}>
       <View style={{ alignItems: "center", marginBottom: 28 }}><View style={styles.guaranteeBadge}><Text style={{ fontSize: 18 }}>🛡️</Text><Text style={{ fontSize: 13, fontWeight: "800", color: CTA_TEAL, letterSpacing: 1.2 }}>RISK-FREE GUARANTEE</Text></View></View>
@@ -89,13 +90,25 @@ export const GuaranteeSection = memo(() => (
   </View>
 ));
 
-export const FAQ = memo(({ isSmall }: { isSmall: boolean }) => (
+const FAQ = memo(({ isSmall }: { isSmall: boolean }) => (
   <View style={styles.section}>
     <Text style={styles.kicker}>FAQ</Text>
     <Text style={[styles.h2, isSmall && styles.h2Mobile]}>Common Questions</Text>
     <View style={{ gap: 12 }}>{FAQS.map((f, i) => <View key={i} style={styles.faqItem}><Text style={{ fontWeight: "700", fontSize: 16, color: TEXT_DARK, marginBottom: 6 }}>{f.q}</Text><Text style={{ fontSize: 14, color: TEXT_GRAY, lineHeight: 22 }}>{f.a}</Text></View>)}</View>
   </View>
 ));
+
+// --- SINGLE DEFAULT EXPORT (Wrapper Component for Lazy Loading) ---
+export default function LazySectionsLP({ onPricingLayout, isSmall }: { onPricingLayout?: (y: number) => void; isSmall: boolean }) {
+  return (
+    <>
+      <TestimonialsSection />
+      <CandidateTiers onPricingLayout={onPricingLayout} />
+      <GuaranteeSection />
+      <FAQ isSmall={isSmall} />
+    </>
+  );
+}
 
 const styles = StyleSheet.create({
   section: { maxWidth: 900, width: "100%", alignSelf: "center", paddingHorizontal: 24, paddingVertical: 40 },

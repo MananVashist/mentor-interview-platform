@@ -11,9 +11,8 @@
     "build:web": "expo export --platform web",
     "postbuild:web": "node scripts/copy-static-files.js && node scripts/prerender.js",
     "build:cloudflare": "expo export --platform web && node scripts/copy-static-files.js",
-    "landing:build": "cd landing && npm run build",
-    "landing:copy": "node -e \"const fs = require('fs'); const path = require('path'); const src = 'landing/out/pm'; const dest = 'dist/lp/pm'; function copyRecursiveSync(s, d) { if (fs.statSync(s).isDirectory()) { fs.mkdirSync(d, { recursive: true }); fs.readdirSync(s).forEach(child => copyRecursiveSync(path.join(s, child), path.join(d, child))); } else { fs.copyFileSync(s, d); } } if (fs.existsSync(src)) { copyRecursiveSync(src, dest); } if (fs.existsSync('landing/out/favicon.png')) { fs.copyFileSync('landing/out/favicon.png', 'dist/favicon.png'); }\"",
-    "build:production": "npm run landing:build && npm run build:web && npm run landing:copy",
+    "clean": "if exist dist rd /s /q dist",
+    "build:production": "npm run clean && npm run build:web",
     "setup-partytown": "powershell -ExecutionPolicy Bypass -File ./setup-partytown.ps1"
   },
   "dependencies": {
