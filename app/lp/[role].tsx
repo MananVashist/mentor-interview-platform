@@ -1,11 +1,11 @@
-﻿import React, { memo, useMemo, useRef, useState, useEffect, lazy, Suspense } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Platform, useWindowDimensions, ScrollView, ActivityIndicator } from "react-native";
+﻿import React, { memo, useMemo, useRef, useState, lazy, Suspense } from "react";
+import { View, Text, StyleSheet, TouchableOpacity, Platform, useWindowDimensions, ScrollView } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import Head from "expo-router/head";
 import { Header } from "@/components/Header";
 import { trackEvent } from "@/lib/analytics";
 
-// Lazy Load Heavy Sections (Single Default Export)
+// Lazy Load Heavy Sections - Load immediately, no delay
 const LazySectionsLP = lazy(() => import("./lazysectionslp"));
 
 const BRAND_ORANGE = "#f58742";
@@ -68,11 +68,30 @@ const CTA_LABEL: Record<string, string> = {
   default: "Book Your Mock Interview",
 };
 
-const Button = ({ title, onPress, variant = "primary", color = CTA_TEAL, style, textStyle, nativeID }: any) => (
-  <TouchableOpacity nativeID={nativeID} style={[styles.buttonBase, variant === "primary" && { backgroundColor: color }, variant === "primary" && styles.buttonShadow, variant === "outline" && styles.buttonOutline, variant === "outline" && { borderColor: color }, style]} onPress={onPress}>
-    <Text style={[styles.buttonText, variant === "primary" && { color: "#fff" }, variant === "outline" && { color: TEXT_DARK }, textStyle]}>{title}</Text>
+const Button = memo(({ title, onPress, variant = "primary", color = CTA_TEAL, style, textStyle, nativeID }: any) => (
+  <TouchableOpacity 
+    nativeID={nativeID} 
+    style={[
+      styles.buttonBase, 
+      variant === "primary" && { backgroundColor: color }, 
+      variant === "primary" && styles.buttonShadow, 
+      variant === "outline" && styles.buttonOutline, 
+      variant === "outline" && { borderColor: color }, 
+      style
+    ]} 
+    onPress={onPress}
+    activeOpacity={0.8}
+  >
+    <Text style={[
+      styles.buttonText, 
+      variant === "primary" && { color: "#fff" }, 
+      variant === "outline" && { color: TEXT_DARK }, 
+      textStyle
+    ]}>
+      {title}
+    </Text>
   </TouchableOpacity>
-);
+));
 
 const TrustFooter = memo(({ isSmall }: { isSmall: boolean }) => (
   <View style={[styles.trustRow, isSmall && { flexDirection: "column", gap: 8, alignItems: "center" }]}>
@@ -100,21 +119,22 @@ const HowItWorks = memo(({ isSmall }: { isSmall: boolean }) => (
   </View>
 ));
 
+// Lightweight fallback to prevent layout shift
+const SectionsFallback = memo(() => (
+  <View style={{ minHeight: 400, justifyContent: "center", alignItems: "center" }}>
+    <View style={{ width: 40, height: 40, borderRadius: 20, borderWidth: 3, borderColor: BRAND_ORANGE, borderTopColor: "transparent" }} />
+  </View>
+));
+
 export default function CampaignLanding() {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const isSmall = width < 900;
   const scrollRef = useRef<ScrollView>(null);
   const [pricingY, setPricingY] = useState<number>(0);
-  const [isReady, setIsReady] = useState(false);
   const params = useLocalSearchParams();
   const { role } = params;
   const activeRole = typeof role === "string" && VALID_ROLES.includes(role) ? role : "default";
-
-  // Enable lazy loading after mount
-  useEffect(() => {
-    setIsReady(true);
-  }, []);
 
   // Track analytics for valid roles only
   React.useEffect(() => {
@@ -124,7 +144,7 @@ export default function CampaignLanding() {
         page_title: ROLE_CONTENT[activeRole].title,
       });
     }
-  }, [activeRole, role]);
+  }, [activeRole]);
 
   // Capture UTM
   const utm = useMemo(() => ({
@@ -160,9 +180,35 @@ export default function CampaignLanding() {
         <title>{`CrackJobs | ${content.title} Interview Prep`}</title>
         <meta name="description" content={`Practice ${content.title} interviews with real experts. ${content.sub}`} />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <style>{`body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; background-color: ${BG_CREAM}; } * { box-sizing: border-box; }`}</style>
+        
+        {/* Resource Hints for Performance */}
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
+        
+        {/* Inline Critical CSS */}
+        <style>{`
+          body { 
+            margin: 0; 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif; 
+            background-color: ${BG_CREAM}; 
+          } 
+          * { 
+            box-sizing: border-box; 
+          }
+          /* Prevent flash of unstyled content */
+          #root { 
+            min-height: 100vh; 
+          }
+        `}</style>
       </Head>
-      <ScrollView ref={scrollRef} style={styles.container} contentContainerStyle={{ minHeight: "100%" }}>
+      <ScrollView 
+        ref={scrollRef} 
+        style={styles.container} 
+        contentContainerStyle={{ minHeight: "100%" }}
+        removeClippedSubviews={Platform.OS === 'android'}
+        maxToRenderPerBatch={10}
+        windowSize={10}
+      >
         <Header />
         <View style={styles.heroSection}>
           <View style={[styles.heroInner, isSmall && styles.heroInnerMobile]}>
@@ -193,12 +239,10 @@ export default function CampaignLanding() {
         </View>
         <HowItWorks isSmall={isSmall} />
         
-        {/* Lazy Loaded Sections */}
-        {isReady && (
-          <Suspense fallback={<ActivityIndicator size="large" color={BRAND_ORANGE} style={{ marginVertical: 40 }} />}>
-            <LazySectionsLP onPricingLayout={setPricingY} isSmall={isSmall} />
-          </Suspense>
-        )}
+        {/* Lazy Loaded Sections - No delay, immediate render */}
+        <Suspense fallback={<SectionsFallback />}>
+          <LazySectionsLP onPricingLayout={setPricingY} isSmall={isSmall} />
+        </Suspense>
         
         <View style={[styles.section, { paddingBottom: 60 }]}>
           <Text style={styles.footerText}>© {new Date().getFullYear()} CrackJobs</Text>
