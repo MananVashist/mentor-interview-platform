@@ -97,6 +97,10 @@ export default function CampaignLanding() {
   );
 }
 
+export function generateStaticParams() {
+  return VALID_ROLES.map((role) => ({ role }));
+}
+
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: BG_CREAM },
   buttonBase: { borderRadius: 8, alignItems: "center", justifyContent: "center", paddingVertical: 14, paddingHorizontal: 28 },
