@@ -264,6 +264,10 @@ export default function CampaignLanding() {
   );
 }
 
+export function generateStaticParams() {
+  return VALID_ROLES.map((role) => ({ role }));
+}
+
 const styles = StyleSheet.create({
   // ===== Base Styles =====
   container: {
