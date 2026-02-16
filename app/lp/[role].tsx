@@ -166,12 +166,12 @@ export default function CampaignLanding() {
   };
 
   const handlePricingClick = () => {
-    if (Platform.OS === "web") {
-      const el = document.getElementById("pricing");
-      el?.scrollIntoView({ behavior: "smooth", block: "start" });
-      return;
-    }
-    scrollRef.current?.scrollTo({ y: pricingY, animated: true });
+    console.log("[Analytics] Interest Captured:", {
+      role: activeRole,
+      source: utm.source,
+    });
+
+    router.push("/mentors");
   };
 
   return (
@@ -227,7 +227,7 @@ export default function CampaignLanding() {
               />
               <Button
                 nativeID="btn-lp-hero-pricing"
-                title="View pricing"
+                title="View mentors"
                 variant="outline"
                 color={CTA_TEAL}
                 onPress={handlePricingClick}

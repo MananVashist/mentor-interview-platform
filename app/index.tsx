@@ -588,7 +588,7 @@ export default function LandingPage() {
               />
               <Button
                 title="Browse Mentors"
-                onPress={() => router.push('/auth/sign-up')}
+                onPress={() => router.push('/mentors')}
                 variant="outline"
                 style={styles.secondaryCTA}
               />
