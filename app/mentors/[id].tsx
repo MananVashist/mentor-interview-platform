@@ -245,6 +245,8 @@ const TierBadge = ({ tier }: { tier?: string | null }) => {
 export default function PublicMentorDetail() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const isMobile = width < 768;
 
   const [loading, setLoading] = useState(true);
   const [mentor, setMentor] = useState<MentorDetail | null>(null);
@@ -371,15 +373,15 @@ export default function PublicMentorDetail() {
     <View style={styles.pageContainer}>
       <Header />
 
-      <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
+      <ScrollView style={styles.container} contentContainerStyle={[styles.scrollContent, isMobile && styles.scrollContentMobile]}>
         {/* BIO CARD */}
-        <Card style={styles.card}>
-          <View style={styles.bioHeader}>
+        <Card style={[styles.card, isMobile && styles.cardMobile]}>
+          <View style={[styles.bioHeader, isMobile && styles.bioHeaderMobile]}>
             <View style={styles.avatarPlaceholder}>
               <AppText style={styles.avatarText}>{avatarChar}</AppText>
             </View>
-            <View>
-              <Heading style={styles.headerTitle}>
+            <View style={{ flex: 1, flexShrink: 1, width: isMobile ? '70%' : 'auto' }}>
+              <Heading style={[styles.headerTitle, isMobile && styles.headerTitleMobile]} numberOfLines={isMobile ? 2 : 3}>
                 {mentor.professional_title || 'Interview Mentor'}
               </Heading>
               <View style={styles.badge}>
@@ -392,7 +394,7 @@ export default function PublicMentorDetail() {
             <TierBadge tier={mentor.tier} />
             {mentor.years_of_experience && (
               <View style={styles.statItem}>
-                <AppText style={styles.statText}>{mentor.years_of_experience} years experience</AppText>
+                <AppText style={styles.statText}>{isMobile ? `${mentor.years_of_experience}y exp` : `${mentor.years_of_experience} years experience`}</AppText>
               </View>
             )}
             {mentor.total_sessions && (
@@ -419,7 +421,7 @@ export default function PublicMentorDetail() {
         </Card>
 
         {/* INTERVIEW PROFILE SELECTION */}
-        <Card style={styles.card}>
+        <Card style={[styles.card, isMobile && styles.cardMobile]}>
           <View style={styles.sectionHeader}>
             <TargetIcon size={20} color="#6B7280" />
             <AppText style={styles.sectionTitle}>Select Interview Type</AppText>
@@ -500,7 +502,7 @@ export default function PublicMentorDetail() {
         </Card>
 
         {/* PRICING */}
-        <Card style={styles.card}>
+        <Card style={[styles.card, isMobile && styles.cardMobile]}>
           <View style={styles.sectionHeader}>
             <PricetagIcon size={20} color="#6B7280" />
             <AppText style={styles.sectionTitle}>Session Price</AppText>
@@ -508,18 +510,43 @@ export default function PublicMentorDetail() {
 
           <View style={styles.priceContainer}>
             <View style={styles.priceRow}>
-              <View>
+              <View style={{ flex: 1, width: '100%' }}>
                 <AppText style={styles.priceMain}>₹{totalPrice.toLocaleString()}</AppText>
                 <View style={styles.includesBadge}>
-                  <AppText style={styles.includesText}>📹 Includes 1 focused 55-minute session</AppText>
+                  <AppText style={styles.includesText} numberOfLines={2}>
+                    📹 Includes 1 focused 55-minute session
+                  </AppText>
                 </View>
-                <AppText style={styles.priceNote}>
+                <AppText style={[styles.priceNote, isMobile && styles.priceNoteMobile]} numberOfLines={3}>
                   Get personalized feedback and actionable insights to improve your interview skills
                 </AppText>
               </View>
             </View>
           </View>
         </Card>
+
+        {/* CTA SECTION - MOVED ABOVE SEO CONTENT */}
+        <View style={[styles.ctaSection, isMobile && styles.ctaSectionMobile]}>
+          <TouchableOpacity
+            style={[
+              styles.scheduleButton,
+              (!selectedProfileId || !selectedSkill) && styles.scheduleButtonDisabled
+            ]}
+            activeOpacity={0.9}
+            onPress={handleSchedule}
+            disabled={!selectedProfileId || !selectedSkill}
+          >
+            <AppText
+              style={[
+                styles.scheduleButtonText,
+                (!selectedProfileId || !selectedSkill) && styles.scheduleButtonTextDisabled,
+                isMobile && { fontSize: 15 }
+              ]}
+            >
+              {!selectedProfileId || !selectedSkill ? 'Select Profile & Skill Above' : 'Sign Up to Book Session'}
+            </AppText>
+          </TouchableOpacity>
+        </View>
 
         {/* SEO CONTENT */}
         <View style={styles.seoSection}>
@@ -534,28 +561,6 @@ export default function PublicMentorDetail() {
           </AppText>
         </View>
 
-        {/* FOOTER CTA - Fixed at bottom */}
-        <View style={styles.ctaSection}>
-          <TouchableOpacity
-            style={[
-              styles.scheduleButton,
-              (!selectedProfileId || !selectedSkill) && styles.scheduleButtonDisabled
-            ]}
-            activeOpacity={0.9}
-            onPress={handleSchedule}
-            disabled={!selectedProfileId || !selectedSkill}
-          >
-            <AppText
-              style={[
-                styles.scheduleButtonText,
-                (!selectedProfileId || !selectedSkill) && styles.scheduleButtonTextDisabled
-              ]}
-            >
-              {!selectedProfileId || !selectedSkill ? 'Select Profile & Skill Above' : 'Sign Up to Book Session'}
-            </AppText>
-          </TouchableOpacity>
-        </View>
-
         {/* FOOTER */}
         <Footer />
       </ScrollView>
@@ -567,6 +572,7 @@ const styles = StyleSheet.create({
   pageContainer: { flex: 1, backgroundColor: "#f8f5f0" },
   container: { flex: 1 },
   scrollContent: { padding: 20, gap: 16, paddingBottom: 40 },
+  scrollContentMobile: { padding: 12, gap: 12 },
   loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center", padding: 40 },
 
   // Cards
@@ -581,11 +587,14 @@ const styles = StyleSheet.create({
       android: { elevation: 2 }
     }),
   },
+  cardMobile: { padding: 16, borderRadius: 12 },
 
   bioHeader: { flexDirection: "row", alignItems: "center", gap: 16, marginBottom: 16 },
-  avatarPlaceholder: { width: 56, height: 56, borderRadius: 28, backgroundColor: theme.colors.primary, alignItems: "center", justifyContent: "center" },
+  bioHeaderMobile: { alignItems: "flex-start", gap: 12 },
+  avatarPlaceholder: { width: 56, height: 56, borderRadius: 28, backgroundColor: theme.colors.primary, alignItems: "center", justifyContent: "center", flexShrink: 0 },
   avatarText: { fontSize: 24, fontWeight: "700", color: "#FFF" },
-  headerTitle: { fontSize: 20, fontWeight: "800", color: theme.colors.text.main },
+  headerTitle: { fontSize: 20, fontWeight: "800", color: theme.colors.text.main, flexShrink: 1 },
+  headerTitleMobile: { fontSize: 17, lineHeight: 22, flexShrink: 1, flexWrap: 'wrap' },
   badge: { flexDirection: "row", alignItems: "center", backgroundColor: theme.colors.gray[100], borderWidth: 0, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, alignSelf: "flex-start", marginTop: 4 },
   badgeText: { fontSize: 11, fontWeight: "700", color: theme.colors.text.body, letterSpacing: 0.5 },
 
@@ -614,9 +623,21 @@ const styles = StyleSheet.create({
   priceContainer: { marginTop: 4 },
   priceRow: { flexDirection: "row", alignItems: "center" },
   priceMain: { fontSize: 32, fontWeight: "800", color: theme.colors.text.main, marginBottom: 8 },
-  includesBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.colors.pricing.greenBg, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6, alignSelf: 'flex-start', marginBottom: 8 },
-  includesText: { fontSize: 13, fontWeight: "600", color: theme.colors.primary },
-  priceNote: { fontSize: 13, color: theme.colors.text.light, lineHeight: 20, maxWidth: 400 },
+  includesBadge: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    backgroundColor: theme.colors.pricing.greenBg, 
+    paddingHorizontal: 10, 
+    paddingVertical: 6, 
+    borderRadius: 6, 
+    alignSelf: 'flex-start', 
+    marginBottom: 8,
+    flexShrink: 1,
+    maxWidth: '100%'
+  },
+  includesText: { fontSize: 13, fontWeight: "600", color: theme.colors.primary, flexShrink: 1, flexWrap: 'wrap' },
+  priceNote: { fontSize: 13, color: theme.colors.text.light, lineHeight: 20, flexShrink: 1, flexWrap: 'wrap' },
+  priceNoteMobile: { maxWidth: '100%', width: '100%' },
 
   // SEO Section
   seoSection: { paddingVertical: 24, paddingHorizontal: 0 },
@@ -624,8 +645,9 @@ const styles = StyleSheet.create({
   seoSubtitle: { fontSize: 16, fontWeight: '600', color: theme.colors.text.main, marginTop: 20, marginBottom: 8 },
   seoText: { fontSize: 15, color: theme.colors.text.body, lineHeight: 24, marginBottom: 12 },
 
-  // CTA Section (inside ScrollView, not fixed)
+  // CTA Section (inside ScrollView)
   ctaSection: { paddingVertical: 24, paddingHorizontal: 20, backgroundColor: '#FFF', borderTopWidth: 1, borderTopColor: theme.colors.border, borderRadius: 12, marginTop: 16 },
+  ctaSectionMobile: { paddingHorizontal: 16, paddingVertical: 20 },
   scheduleButton: { backgroundColor: theme.colors.primary, paddingVertical: 16, borderRadius: 12, alignItems: "center", justifyContent: "center", shadowColor: theme.colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 4 },
   scheduleButtonDisabled: { backgroundColor: '#D1D5DB', shadowOpacity: 0, elevation: 0 },
   scheduleButtonText: { fontSize: 16, fontWeight: "700", color: "#FFF" },

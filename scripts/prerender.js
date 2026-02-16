@@ -5,10 +5,6 @@ const fs = require('fs');
 const http = require('http');
 const handler = require('serve-handler');
 
-// --- SUPABASE CONFIG (Taken from mentors.tsx) ---
-const SUPABASE_URL = "https://rcbaaiiawrglvyzmawvr.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJjYmFhaWlhd3JnbHZ5em1hd3ZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjExNTA1NjAsImV4cCI6MjA3NjcyNjU2MH0.V3qRHGXBMlspRS7XFJlXdo4qIcCms60Nepp7dYMEjLA";
-
 console.log('🚀 Starting pre-rendering with Puppeteer...\n');
 
 const distPath = path.join(__dirname, '..', 'dist');
@@ -22,7 +18,7 @@ if (!fs.existsSync(distPath)) {
   process.exit(1);
 }
 
-// 1. Static Routes
+// Static Routes ONLY - No dynamic mentor routes
 const staticRoutes = [
   '/',
   '/how-it-works',
@@ -74,39 +70,8 @@ async function launchBrowser() {
   });
 }
 
-// --- HELPER: Fetch Mentor IDs ---
-async function fetchMentorRoutes() {
-  try {
-    console.log('⏳ Fetching mentor IDs from Supabase...');
-    // Note: Fetch is available natively in Node 18+. If on older Node, use node-fetch.
-    const response = await fetch(
-      `${SUPABASE_URL}/rest/v1/mentors?select=id&status=eq.approved`,
-      { 
-        headers: { 
-          apikey: SUPABASE_ANON_KEY, 
-          Authorization: `Bearer ${SUPABASE_ANON_KEY}` 
-        } 
-      }
-    );
-    
-    if (!response.ok) {
-        throw new Error(`Supabase error: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    const mentorRoutes = data.map(m => `/mentors/${m.id}`);
-    console.log(`✅ Found ${mentorRoutes.length} approved mentors.`);
-    return mentorRoutes;
-  } catch (error) {
-    console.error('⚠️ Failed to fetch mentors:', error.message);
-    return []; // Return empty if fetch fails so build doesn't crash completely
-  }
-}
-
 (async () => {
-  // 2. Fetch Dynamic Routes before starting server
-  const mentorRoutes = await fetchMentorRoutes();
-  const routes = [...staticRoutes, ...mentorRoutes];
+  const routes = staticRoutes;
 
   // Start local server
   const server = http.createServer((request, response) =>

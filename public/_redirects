@@ -1,0 +1,16 @@
+# Cloudflare Pages _redirects for CrackJobs
+# Handles SPA routing for client-side navigation
+
+# ================================================
+# STATIC FILES - Serve directly if they exist
+# ================================================
+/robots.txt  /robots.txt  200
+/sitemap.xml /sitemap.xml 200
+/_headers    /_headers    200
+
+# ================================================
+# SPA FALLBACK - Must be LAST
+# ================================================
+# Catches all unmatched routes and serves index.html for client-side routing
+# The 200 status preserves the URL so React Router can handle it
+/*  /index.html  200
