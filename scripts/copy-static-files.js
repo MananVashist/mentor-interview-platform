@@ -16,6 +16,7 @@ const filesToCopy = [
   'sitemap.xml',
   'hero.webp',
   '_headers', // Cloudflare Pages headers file
+  '_redirects', // Cloudflare Pages redirects for SPA routing (CRITICAL!)
   '_routes.json' // Cloudflare Pages routing configuration
 ];
 
