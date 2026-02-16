@@ -17,6 +17,7 @@ import { Svg, Path, Circle } from "react-native-svg";
 import { AppText, Card, Heading, Button } from "@/lib/ui";
 import { theme } from "@/lib/theme";
 import { Header } from "@/components/Header";
+import { availabilityService } from "@/services/availability.service";
 import { Footer } from "@/components/Footer";
 
 
@@ -323,6 +324,7 @@ export default function PublicBrowseMentors() {
   const [showTierInfo, setShowTierInfo] = useState(false);
 
   const [tierMap, setTierMap] = useState<Record<string, number>>({});
+  const [mentorAvailability, setMentorAvailability] = useState<Record<string, string>>({});
 
   // --- 1. Fetch Profiles ---
   useEffect(() => {
@@ -373,7 +375,7 @@ export default function PublicBrowseMentors() {
     })();
   }, []);
 
-  // --- 2. Fetch Mentors ---
+  // --- 2. Fetch Mentors & Availability ---
   const fetchMentorsForProfile = useCallback(async (profileId: number | null) => {
     if (!profileId) return;
     setMentorsLoading(true);
@@ -390,6 +392,19 @@ export default function PublicBrowseMentors() {
         );
 
         setMentors(filtered);
+
+        // Fetch Actual Availability
+        const availabilityPromises = filtered.map(async (m: Mentor) => {
+          const slot = await availabilityService.findNextAvailableSlot(m.id);
+          return { id: m.id, slot };
+        });
+
+        const availabilityResults = await Promise.all(availabilityPromises);
+        const availabilityMap: Record<string, string> = {};
+        availabilityResults.forEach(({ id, slot }) => {
+          availabilityMap[id] = slot;
+        });
+        setMentorAvailability(availabilityMap);
       }
     } catch (err) {
       console.log("Error fetching mentors", err);
@@ -529,6 +544,11 @@ export default function PublicBrowseMentors() {
               const averageRating = m.average_rating || 0;
               const showRating = averageRating > 0;
 
+              // Get availability slot
+              const nextSlot = mentorAvailability[m.id] || "Loading...";
+              const hasSlots = nextSlot !== "No slots available" && nextSlot !== "Loading...";
+              const displaySlot = hasSlots ? nextSlot : "No slots available";
+
               return (
                 <Card key={m.id} style={styles.card}>
                   <View style={styles.cardContent}>
@@ -571,9 +591,11 @@ export default function PublicBrowseMentors() {
 
                       {showRating && <StarRating rating={averageRating} />}
 
-                      <View style={styles.availabilityBadge}>
-                        <AppText style={styles.availabilityIcon}>🟢</AppText>
-                        <AppText style={styles.availabilityText}>Available</AppText>
+                      <View style={[styles.availabilityBadge, !hasSlots && styles.availabilityBadgeUnavailable]}>
+                        <AppText style={styles.availabilityIcon}>{hasSlots ? '🟢' : '⏰'}</AppText>
+                        <AppText style={[styles.availabilityText, !hasSlots && styles.availabilityTextUnavailable]}>
+                          {hasSlots ? `Next slot: ${displaySlot}` : displaySlot}
+                        </AppText>
                       </View>
                     </View>
 
@@ -661,7 +683,7 @@ export default function PublicBrowseMentors() {
               <MedalIcon size={18} color="#CD7F32" />
               <View style={{ flex: 1 }}>
                 <AppText style={styles.tierInfoTitle}>Bronze</AppText>
-                <AppText style={styles.tierInfoDesc}>New mentors building their profile</AppText>
+                <AppText style={styles.tierInfoDesc}>Top performing mid level managers</AppText>
               </View>
             </View>
                 
@@ -669,7 +691,7 @@ export default function PublicBrowseMentors() {
               <MedalIcon size={18} color="#9CA3AF" />
               <View style={{ flex: 1 }}>
                 <AppText style={styles.tierInfoTitle}>Silver</AppText>
-                <AppText style={styles.tierInfoDesc}>Experienced mentors with proven track record</AppText>
+                <AppText style={styles.tierInfoDesc}>Senior management from top companies</AppText>
               </View>
             </View>
 
@@ -677,7 +699,7 @@ export default function PublicBrowseMentors() {
               <MedalIcon size={18} color="#F59E0B" />
               <View style={{ flex: 1 }}>
                 <AppText style={styles.tierInfoTitle}>Gold</AppText>
-                <AppText style={styles.tierInfoDesc}>Top-rated mentors from leading companies</AppText>
+                <AppText style={styles.tierInfoDesc}>Leadership/Directors/CXOs</AppText>
               </View>
             </View>
           </Pressable>
@@ -834,8 +856,10 @@ const styles = StyleSheet.create({
 
   // Availability
   availabilityBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#ECFDF5', borderWidth: 1, borderColor: '#D1FAE5', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 },
+  availabilityBadgeUnavailable: { backgroundColor: '#FEF2F2', borderColor: '#FECACA' },
   availabilityIcon: { fontSize: 12 },
   availabilityText: { ...FONTS.caption, fontWeight: '500', color: '#047857' },
+  availabilityTextUnavailable: { color: '#DC2626' },
 
   dividerLine: { height: 1, backgroundColor: '#F3F4F6', width: '100%' },
 
