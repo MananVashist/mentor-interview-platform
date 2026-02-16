@@ -75,8 +75,8 @@ export const Footer = () => {
           <Link href="/how-it-works" style={styles.link}>How It Works</Link>
           <Link href="/blog" style={styles.link}>Blog & Guides</Link>
           <Link href="/contact" style={styles.link}>Contact Support</Link>
-          <Link href="/auth/sign-up" style={[styles.link, { color: '#18a7a7', fontWeight: '700' }]}>
-            Become a Mentor
+          <Link href="/mentors" style={[styles.link, { color: '#18a7a7', fontWeight: '700' }]}>
+            Mentors
           </Link>
         </View>
       </View>

@@ -5,11 +5,15 @@ const fs = require('fs');
 const http = require('http');
 const handler = require('serve-handler');
 
+// --- SUPABASE CONFIG (Taken from mentors.tsx) ---
+const SUPABASE_URL = "https://rcbaaiiawrglvyzmawvr.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJjYmFhaWlhd3JnbHZ5em1hd3ZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjExNTA1NjAsImV4cCI6MjA3NjcyNjU2MH0.V3qRHGXBMlspRS7XFJlXdo4qIcCms60Nepp7dYMEjLA";
+
 console.log('🚀 Starting pre-rendering with Puppeteer...\n');
 
 const distPath = path.join(__dirname, '..', 'dist');
 
-// Sleep helper (compatible with all Puppeteer versions)
+// Sleep helper
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // Check if dist exists
@@ -18,8 +22,8 @@ if (!fs.existsSync(distPath)) {
   process.exit(1);
 }
 
-// Routes to pre-render
-const routes = [
+// 1. Static Routes
+const staticRoutes = [
   '/',
   '/how-it-works',
   '/about',
@@ -30,6 +34,7 @@ const routes = [
   '/cancellation-policy',
   '/auth/sign-up',
   '/auth/sign-in',
+  '/mentors', // The main list page
   '/interviews/hr',
   '/interviews/product-management',
   '/interviews/data-analytics',
@@ -69,7 +74,40 @@ async function launchBrowser() {
   });
 }
 
+// --- HELPER: Fetch Mentor IDs ---
+async function fetchMentorRoutes() {
+  try {
+    console.log('⏳ Fetching mentor IDs from Supabase...');
+    // Note: Fetch is available natively in Node 18+. If on older Node, use node-fetch.
+    const response = await fetch(
+      `${SUPABASE_URL}/rest/v1/mentors?select=id&status=eq.approved`,
+      { 
+        headers: { 
+          apikey: SUPABASE_ANON_KEY, 
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}` 
+        } 
+      }
+    );
+    
+    if (!response.ok) {
+        throw new Error(`Supabase error: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    const mentorRoutes = data.map(m => `/mentors/${m.id}`);
+    console.log(`✅ Found ${mentorRoutes.length} approved mentors.`);
+    return mentorRoutes;
+  } catch (error) {
+    console.error('⚠️ Failed to fetch mentors:', error.message);
+    return []; // Return empty if fetch fails so build doesn't crash completely
+  }
+}
+
 (async () => {
+  // 2. Fetch Dynamic Routes before starting server
+  const mentorRoutes = await fetchMentorRoutes();
+  const routes = [...staticRoutes, ...mentorRoutes];
+
   // Start local server
   const server = http.createServer((request, response) =>
     handler(request, response, {
@@ -101,7 +139,7 @@ async function launchBrowser() {
 
         await page.setViewport({ width: 1366, height: 768 });
 
-        // Block heavy assets to prevent Chromium crashes
+        // Block heavy assets
         await page.setRequestInterception(true);
         page.on('request', (req) => {
           const type = req.resourceType();
@@ -116,6 +154,7 @@ async function launchBrowser() {
           timeout: 120000,
         });
 
+        // Small delay to ensure data loading completes
         await sleep(4000);
 
         const html = await page.content();
@@ -124,7 +163,10 @@ async function launchBrowser() {
         if (route === '/') {
           outputPath = path.join(distPath, 'index.html');
         } else {
-          const routePath = path.join(distPath, route);
+          // Remove leading slash for path.join
+          const relativeRoute = route.startsWith('/') ? route.slice(1) : route;
+          const routePath = path.join(distPath, relativeRoute);
+          
           if (!fs.existsSync(routePath)) {
             fs.mkdirSync(routePath, { recursive: true });
           }
