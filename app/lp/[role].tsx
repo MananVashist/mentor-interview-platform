@@ -95,7 +95,7 @@ const Button = memo(({ title, onPress, variant = "primary", color = CTA_TEAL, st
 
 const TrustFooter = memo(({ isSmall }: { isSmall: boolean }) => (
   <View style={[styles.trustRow, isSmall && { flexDirection: "column", gap: 8, alignItems: "center" }]}>
-    <Text style={styles.trustItem}>✓ Starts at ₹3,500</Text>
+    
     <Text style={styles.trustItem}>✓ 1:1 call</Text>
     <Text style={styles.trustItem}>✓ Recording + scorecard</Text>
   </View>
@@ -162,7 +162,7 @@ export default function CampaignLanding() {
       source: utm.source,
     });
 
-    router.push("/auth/sign-up");
+    router.push("/mentors");
   };
 
   const handlePricingClick = () => {
@@ -225,14 +225,7 @@ export default function CampaignLanding() {
                 style={[styles.ctaBig, isSmall && { width: "100%" }]}
                 textStyle={{ fontSize: 16 }}
               />
-              <Button
-                nativeID="btn-lp-hero-pricing"
-                title="View mentors"
-                variant="outline"
-                color={CTA_TEAL}
-                onPress={handlePricingClick}
-                style={[styles.ctaBig, isSmall && { width: "100%" }]}
-              />
+              
             </View>
             <TrustFooter isSmall={isSmall} />
           </View>
