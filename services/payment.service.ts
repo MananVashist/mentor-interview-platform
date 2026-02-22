@@ -368,9 +368,11 @@ export const paymentService = {
       const sessions  = sessionsRes.data || [];
 
       // Build skill name string (deduplicated for display)
-      const skillName = sessions.length > 0
-        ? [...new Set(sessions.map(s => s.skill?.name).filter(Boolean))].join(', ')
-        : 'N/A';
+      const skillName = sessionType === 'intro'
+        ? 'Intro Call'
+        : sessions.length > 0
+          ? [...new Set(sessions.map(s => s.skill?.name).filter(Boolean))].join(', ')
+          : 'N/A';
 
       // Build datetime string — one line per session
       const dateTime = sessions.length > 0
@@ -457,9 +459,11 @@ export const paymentService = {
       const profile   = profileRes.data;
       const sessions  = sessionsRes.data || [];
 
-      const skillName = sessions.length > 0
-        ? [...new Set(sessions.map(s => s.skill?.name).filter(Boolean))].join(', ')
-        : 'N/A';
+      const skillName = sessionType === 'intro'
+        ? 'Intro Call'
+        : sessions.length > 0
+          ? [...new Set(sessions.map(s => s.skill?.name).filter(Boolean))].join(', ')
+          : 'N/A';
 
       const dateTime = sessions.length > 0
         ? sessions.map((s, i) => {
