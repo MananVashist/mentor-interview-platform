@@ -1,4 +1,5 @@
-﻿import React, { useState, useEffect, useRef } from 'react';
+﻿// app/candidate/pgscreen.tsx
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,23 +10,31 @@ import {
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { paymentService } from '../../services/payment.service';
-import { trackEvent } from '@/lib/analytics'; 
+import { trackEvent } from '@/lib/analytics';
 import { authService } from '../../services/auth.service';
 import { supabase } from '../../lib/supabase/client';
+
+type SessionType = 'intro' | 'mock' | 'bundle';
+
+const SESSION_DESCRIPTIONS: Record<SessionType, string> = {
+  intro: 'Intro Call — Discovery & Planning',
+  mock:  'Mock Interview Session',
+  bundle: 'Interview Bundle — 3 Sessions',
+};
 
 export default function PGScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
-  const { 
-    orderId, 
-    packageId, 
-    keyId, 
+  const {
+    orderId,
+    packageId,
+    keyId,
     amount,
-    // Params for navigation back on cancellation
     mentorId,
     profileId,
     skillId,
-    skillName
+    skillName,
+    sessionType: sessionTypeParam,
   } = params as {
     orderId?: string;
     packageId?: string;
@@ -35,34 +44,43 @@ export default function PGScreen() {
     profileId?: string;
     skillId?: string;
     skillName?: string;
+    sessionType?: string;
   };
+
+  const sessionType: SessionType = (sessionTypeParam as SessionType) || 'mock';
+  const sessionDescription = SESSION_DESCRIPTIONS[sessionType];
 
   const [sdkReady, setSdkReady] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const hasRun = useRef(false);
+
+  // Build the "back to schedule" URL including sessionType
+  const scheduleBackUrl = (mentorId && profileId && skillId && skillName)
+    ? {
+        pathname: '/candidate/schedule' as const,
+        params: { mentorId, profileId, skillId, skillName, sessionType },
+      }
+    : null;
+
+  const navigateBack = () => {
+    if (scheduleBackUrl) {
+      router.replace(scheduleBackUrl);
+    } else {
+      router.replace('/candidate/bookings');
+    }
+  };
 
   useEffect(() => {
     console.log('[PGScreen] 🔍 Received Params:', {
       orderId,
       packageId,
       keyId,
+      sessionType,
       amount: amount ? `₹${Number(amount) / 100}` : 'missing'
     });
 
     if (!packageId || !keyId || !amount || !orderId) {
       console.error('[PGScreen] ❌ Missing required params');
-      
-      const navigateBack = () => {
-        if (mentorId && profileId && skillId && skillName) {
-          router.replace({
-            pathname: '/candidate/schedule',
-            params: { mentorId, profileId, skillId, skillName }
-          });
-        } else {
-          router.replace('/candidate/bookings');
-        }
-      };
-
       Alert.alert('Error', 'Missing payment details.', [
         { text: 'OK', onPress: navigateBack }
       ]);
@@ -88,36 +106,19 @@ export default function PGScreen() {
     const amountPaise = Number(amount);
 
     if (Platform.OS === 'web') {
-      // WEB CONFIGURATION
       const options: any = {
         key: keyId,
         order_id: orderId,
-        
         name: 'CrackJobs',
-        description: 'Mock Interview Session',
+        description: sessionDescription,
         theme: { color: '#0E9384' },
-
         handler: handleSuccess,
         modal: {
-            ondismiss: () => {
-                console.log('[PGScreen] ⚠️ Checkout dismissed by user');
-                hasRun.current = false;
-                
-                // Navigate back to schedule screen
-                if (mentorId && profileId && skillId && skillName) {
-                  router.replace({
-                    pathname: '/candidate/schedule',
-                    params: {
-                      mentorId,
-                      profileId,
-                      skillId,
-                      skillName
-                    }
-                  });
-                } else {
-                  router.replace('/candidate/bookings');
-                }
-            }
+          ondismiss: () => {
+            console.log('[PGScreen] ⚠️ Checkout dismissed by user');
+            hasRun.current = false;
+            navigateBack();
+          }
         },
         retry: { enabled: false }
       };
@@ -125,27 +126,16 @@ export default function PGScreen() {
       console.log('[PGScreen][WEB] 📋 Razorpay Options:', {
         key: keyId,
         order_id: orderId,
-        amount: `₹${amountPaise / 100}`
+        amount: `₹${amountPaise / 100}`,
+        description: sessionDescription,
       });
 
       const rzp = new (window as any).Razorpay(options);
 
       rzp.on('payment.failed', (resp: any) => {
         console.error('[PGScreen][WEB] ❌ payment.failed:', resp);
-        
-        const navigateBack = () => {
-          if (mentorId && profileId && skillId && skillName) {
-            router.replace({
-              pathname: '/candidate/schedule',
-              params: { mentorId, profileId, skillId, skillName }
-            });
-          } else {
-            router.replace('/candidate/bookings');
-          }
-        };
-
         Alert.alert(
-          'Payment Failed', 
+          'Payment Failed',
           resp.error?.description || 'Payment failed. Please try again.',
           [{ text: 'OK', onPress: navigateBack }]
         );
@@ -155,16 +145,16 @@ export default function PGScreen() {
       return;
     }
 
-    // NATIVE CONFIGURATION
+    // NATIVE
     const RazorpayCheckout = require('react-native-razorpay').default;
-    
+
     const rnOptions: any = {
       key: keyId,
       order_id: orderId,
-      amount: amountPaise, 
+      amount: amountPaise,
       currency: 'INR',
       name: 'CrackJobs',
-      description: 'Mock Interview Session',
+      description: sessionDescription,
       theme: { color: '#0E9384' },
       retry: { enabled: false },
     };
@@ -172,32 +162,20 @@ export default function PGScreen() {
     console.log('[PGScreen][RN] 📋 Razorpay Options:', {
       key: keyId,
       order_id: orderId,
-      amount: `₹${amountPaise / 100}`
+      amount: `₹${amountPaise / 100}`,
+      description: sessionDescription,
     });
 
     RazorpayCheckout.open(rnOptions)
       .then(handleSuccess)
       .catch((err: any) => {
         console.log('[PGScreen][RN] ⚠️ Checkout Error:', err);
-        
-        const navigateBack = () => {
-          if (mentorId && profileId && skillId && skillName) {
-            router.replace({
-              pathname: '/candidate/schedule',
-              params: { mentorId, profileId, skillId, skillName }
-            });
-          } else {
-            router.replace('/candidate/bookings');
-          }
-        };
-
         if (err.code === 0 || err.code === 2) {
-            // User cancelled payment
-            console.log('[PGScreen][RN] User cancelled payment');
-            navigateBack();
+          console.log('[PGScreen][RN] User cancelled payment');
+          navigateBack();
         } else {
           Alert.alert(
-            'Payment Error', 
+            'Payment Error',
             err.description || 'Something went wrong',
             [{ text: 'OK', onPress: navigateBack }]
           );
@@ -214,7 +192,6 @@ export default function PGScreen() {
 
     setVerifying(true);
 
-    // ✅ FIXED: Get email directly from auth session (guaranteed to be available)
     let userEmail: string | undefined;
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -226,86 +203,65 @@ export default function PGScreen() {
 
     try {
       console.log('[PGScreen] 🔐 Starting verification...');
-      
+
       const result = await paymentService.verifyPayment(
-        packageId as string,          
-        data.razorpay_payment_id,     
+        packageId as string,
+        data.razorpay_payment_id,
         data.razorpay_signature,
-        orderId as string 
+        orderId as string,
       );
 
       console.log('[PGScreen] ✅ Verification successful!', result);
 
       trackEvent('purchase', {
         transaction_id: data.razorpay_payment_id,
-        value: Number(amount) / 100, // Convert paise to Rupees
+        value: Number(amount) / 100,
         currency: 'INR',
-        package_id: packageId
+        package_id: packageId,
+        session_type: sessionType,
       });
 
-      // ✅ FIXED: Custom event 'payment_success' with email for Enhanced Conversions
-      console.log('[PGScreen] 📊 Tracking payment_success event with email:', userEmail);
       trackEvent('payment_success', {
         value: Number(amount) / 100,
         currency: 'INR',
         transaction_id: data.razorpay_payment_id,
-        email: userEmail // ✅ Now guaranteed to have value
+        session_type: sessionType,
+        email: userEmail,
       });
 
-      // ✅ AUTO-REDIRECT: Navigate immediately after success
       setTimeout(() => {
         router.replace('/candidate/bookings');
-      }, 1500); 
+      }, 1500);
 
     } catch (err: any) {
       console.error('[PGScreen] ❌ Verification failed:', {
         error: err,
         message: err?.message,
-        details: err?.details
+        details: err?.details,
       });
 
       setVerifying(false);
 
       const errorMessage = err?.message || 'Verification failed';
       const errorDetails = err?.details ? `\n\nDetails: ${err.details}` : '';
-      
+
       Alert.alert(
-        'Verification Failed', 
+        'Verification Failed',
         `${errorMessage}${errorDetails}\n\nOrder ID: ${orderId}\n\nPlease contact support if payment was deducted.`,
-        [
-          { 
-            text: 'Go Back', 
-            onPress: () => router.replace('/candidate/bookings') 
-          }
-        ]
+        [{ text: 'Go Back', onPress: () => router.replace('/candidate/bookings') }]
       );
     }
   };
 
   return (
-    <SafeAreaView style={{ 
-      flex: 1, 
-      justifyContent: 'center', 
-      alignItems: 'center', 
-      backgroundColor: '#FFF' 
-    }}>
+    <SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFF' }}>
       <ActivityIndicator size="large" color="#0E9384" />
-      <Text style={{ 
-        marginTop: 16, 
-        fontSize: 16, 
-        color: '#374151',
-        fontWeight: '500'
-      }}>
+      <Text style={{ marginTop: 16, fontSize: 16, color: '#374151', fontWeight: '500' }}>
         {verifying ? '✓ Payment successful! Redirecting...' : 'Securely connecting to Razorpay...'}
       </Text>
       {verifying && (
-        <Text style={{ 
-          marginTop: 8, 
-          fontSize: 13, 
-          color: '#10B981',
-          fontWeight: '600' 
-        }}>
-          Booking confirmed
+        <Text style={{ marginTop: 8, fontSize: 13, color: '#10B981', fontWeight: '600' }}>
+          {sessionType === 'bundle' ? 'Bundle of 3 sessions confirmed' : 'Booking confirmed'}
         </Text>
       )}
     </SafeAreaView>

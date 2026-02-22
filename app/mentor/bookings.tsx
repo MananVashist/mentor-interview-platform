@@ -95,7 +95,7 @@ const BookingCard = ({ session, onAccept, onReschedule, onJoin, onEvaluate, onVi
   const resumeUrl = getResumeUrl(session);
   const hasResume = !!resumeUrl;
 
-  const skillName = session.skill_name || 'Interview Session';
+  const skillName = session.session_type === 'intro' ? 'Intro Call' : (session.skill_name || 'Interview Session');
 
   // Helper to check if it's my turn
   const isMyTurn = details.rescheduledBy === 'candidate';
