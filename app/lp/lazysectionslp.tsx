@@ -40,7 +40,7 @@ const TIERS = [
   { 
     badge: BronzeBadge, 
     title: "Bronze Tier", 
-    price: "₹3,500 - ₹6,000", 
+    price: "₹500 - ₹2,000", 
     color: "#cd7f32", 
     bgColor: "#fff5e6", 
     borderColor: "#cd7f32", 
@@ -49,7 +49,7 @@ const TIERS = [
   { 
     badge: SilverBadge, 
     title: "Silver Tier", 
-    price: "₹6,000 - ₹10,000", 
+    price: "₹2,000 - ₹4,500", 
     color: "#706F6D", 
     bgColor: "#f5f5f5", 
     borderColor: "#c0c0c0", 
@@ -58,7 +58,7 @@ const TIERS = [
   { 
     badge: GoldBadge, 
     title: "Gold Tier", 
-    price: "₹10,000 - ₹15,000", 
+    price: "₹5,000 - ₹7,500", 
     color: "#B8860B", 
     bgColor: "#fffbeb", 
     borderColor: "#fbbf24", 

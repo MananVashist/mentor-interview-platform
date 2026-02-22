@@ -353,7 +353,7 @@ export default function MentorBookingsScreen() {
       const { data, error } = await supabase
         .from('interview_sessions')
         .select(`
-          id, scheduled_at, status, skill_id, pending_reschedule_approval, rescheduled_by,
+          id, scheduled_at, status, skill_id, session_type,pending_reschedule_approval, rescheduled_by,
           meetings:session_meetings ( recording_url ),
           package:interview_packages ( id, mentor_payout_inr, interview_profile_id, payment_status ),
           candidate:candidates ( professional_title, resume_url )
