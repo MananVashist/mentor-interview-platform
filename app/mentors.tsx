@@ -305,6 +305,174 @@ const TierBadge = ({ tier }: { tier?: string | null }) => {
 };
 
 // ============================================
+// SESSION DESCRIPTIONS
+// ============================================
+
+const SESSION_INFO: Record<string, { label: string; color: string; bg: string; border: string; description: string }> = {
+  intro: {
+    label: 'Intro Call',
+    color: '#7C3AED',
+    bg: '#F5F3FF',
+    border: '#DDD6FE',
+    description: 'A 25-minute discovery call. Your mentor will understand your goals, assess your current level, and recommend exactly what to practise. Great for first-timers.',
+  },
+  mock: {
+    label: 'Mock Interview',
+    color: '#0E9384',
+    bg: '#F0FDFA',
+    border: '#5EEAD4',
+    description: 'A full 55-minute simulation. Your mentor conducts a realistic interview, evaluates your responses, and gives a detailed scorecard with actionable feedback.',
+  },
+  bundle: {
+    label: 'Bundle ×3',
+    color: '#D97706',
+    bg: '#FFFBEB',
+    border: '#FDE68A',
+    description: 'Three 55-minute mock interviews at a discounted rate. Best for structured prep — pick 3 skills and track your improvement across sessions.',
+  },
+};
+
+// ============================================
+// MENTOR CARD COMPONENT
+// ============================================
+
+type MentorCardProps = {
+  m: Mentor;
+  displayPrice: number;
+  totalSessions: number;
+  isNewMentor: boolean;
+  averageRating: number;
+  showRating: boolean;
+  hasSlots: boolean;
+  displaySlot: string;
+  onView: () => void;
+};
+
+const MentorCard = ({
+  m, displayPrice, totalSessions, isNewMentor, averageRating,
+  showRating, hasSlots, displaySlot, onView,
+}: MentorCardProps) => {
+  const [selectedType, setSelectedType] = React.useState<string | null>(null);
+  const info = selectedType ? SESSION_INFO[selectedType] : null;
+
+  const introPrice  = Math.round(displayPrice * 0.20);
+  const bundlePrice = Math.round(displayPrice * 2.5);
+
+  return (
+    <Card style={styles.card}>
+      <View style={styles.cardContent}>
+        <View style={styles.topRow}>
+          <View style={styles.identityGroup}>
+            <AppText style={styles.mentorName}>
+              {m.professional_title || 'Interview Mentor'}
+            </AppText>
+            <View style={styles.verifiedBadge}>
+              <CheckmarkCircleIcon size={16} color="#3B82F6" />
+              <AppText style={styles.verifiedText}>Verified</AppText>
+            </View>
+          </View>
+          {m.years_of_experience && (
+            <View style={styles.expBadge}>
+              <BriefcaseIcon size={12} color="#111827" />
+              <AppText style={styles.expText}>{m.years_of_experience} yrs</AppText>
+            </View>
+          )}
+        </View>
+
+        <View style={styles.statsRow}>
+          <TierBadge tier={m.tier} />
+
+          {isNewMentor ? (
+            <View style={styles.statItem}>
+              <SparklesIcon size={14} color="#1E40AF" />
+              <View style={styles.newBadge}>
+                <AppText style={styles.newBadgeText}>New</AppText>
+              </View>
+            </View>
+          ) : (
+            <View style={styles.statItem}>
+              <CheckmarkDoneIcon size={14} color="#6B7280" />
+              <AppText style={styles.statText}>
+                <AppText style={styles.statValue}>{totalSessions}</AppText> sessions
+              </AppText>
+            </View>
+          )}
+
+          {showRating && <StarRating rating={averageRating} />}
+
+          <View style={[styles.availabilityBadge, !hasSlots && styles.availabilityBadgeUnavailable]}>
+            <AppText style={styles.availabilityIcon}>{hasSlots ? '🟢' : '⏰'}</AppText>
+            <AppText style={[styles.availabilityText, !hasSlots && styles.availabilityTextUnavailable]}>
+              {hasSlots ? `Next slot: ${displaySlot}` : displaySlot}
+            </AppText>
+          </View>
+        </View>
+
+        <View style={styles.dividerLine} />
+
+        {/* PRICING ROW */}
+        <View style={styles.pricingRow}>
+
+          {/* INTRO */}
+          <TouchableOpacity
+            style={[styles.priceCell, selectedType === 'intro' && styles.priceCellSelected]}
+            onPress={() => setSelectedType(prev => prev === 'intro' ? null : 'intro')}
+            activeOpacity={0.75}
+          >
+            <AppText style={[styles.priceCellLabel, selectedType === 'intro' && { color: '#7C3AED' }]}>Meet your mentor</AppText>
+            <AppText style={[styles.priceCellAmount, selectedType === 'intro' && { color: '#7C3AED' }]}>₹{introPrice.toLocaleString()}</AppText>
+            <AppText style={styles.priceCellSub}>25 min</AppText>
+          </TouchableOpacity>
+
+          {/* MOCK — highlighted */}
+          <TouchableOpacity
+            style={[styles.priceCell, styles.priceCellMock, selectedType === 'mock' && styles.priceCellMockSelected]}
+            onPress={() => setSelectedType(prev => prev === 'mock' ? null : 'mock')}
+            activeOpacity={0.75}
+          >
+            <View style={styles.popularBadge}>
+              <AppText style={styles.popularBadgeText}>POPULAR</AppText>
+            </View>
+            <AppText style={[styles.priceCellLabel, { color: theme.colors.primary }]}>Mock</AppText>
+            <AppText style={[styles.priceCellAmount, styles.priceCellAmountMock]}>₹{displayPrice.toLocaleString()}</AppText>
+            <AppText style={styles.priceCellSub}>55 min</AppText>
+          </TouchableOpacity>
+
+          {/* BUNDLE */}
+          <TouchableOpacity
+            style={[styles.priceCell, selectedType === 'bundle' && styles.priceCellSelected]}
+            onPress={() => setSelectedType(prev => prev === 'bundle' ? null : 'bundle')}
+            activeOpacity={0.75}
+          >
+            <AppText style={[styles.priceCellLabel, selectedType === 'bundle' && { color: '#D97706' }]}>Bundle ×3</AppText>
+            <AppText style={[styles.priceCellAmount, selectedType === 'bundle' && { color: '#D97706' }]}>₹{bundlePrice.toLocaleString()}</AppText>
+            <AppText style={styles.priceCellSub}>3 × 55 min</AppText>
+          </TouchableOpacity>
+
+        </View>
+
+        <TouchableOpacity
+          style={styles.bookBtn}
+          onPress={onView}
+          activeOpacity={0.8}
+        >
+          <AppText style={styles.bookBtnText}>View Profile →</AppText>
+        </TouchableOpacity>
+
+        {/* SESSION DESCRIPTION — appears on tap */}
+        {info && (
+          <View style={[styles.sessionDesc, { backgroundColor: info.bg, borderColor: info.border }]}>
+            <AppText style={[styles.sessionDescLabel, { color: info.color }]}>{info.label}</AppText>
+            <AppText style={[styles.sessionDescText, { color: info.color }]}>{info.description}</AppText>
+          </View>
+        )}
+
+      </View>
+    </Card>
+  );
+};
+
+// ============================================
 // MAIN COMPONENT
 // ============================================
 
@@ -550,77 +718,18 @@ export default function PublicBrowseMentors() {
               const displaySlot = hasSlots ? nextSlot : "No slots available";
 
               return (
-                <Card key={m.id} style={styles.card}>
-                  <View style={styles.cardContent}>
-                    <View style={styles.topRow}>
-                      <View style={styles.identityGroup}>
-                        <AppText style={styles.mentorName}>
-                          {m.professional_title || 'Interview Mentor'}
-                        </AppText>
-                        <View style={styles.verifiedBadge}>
-                          <CheckmarkCircleIcon size={16} color="#3B82F6" />
-                          <AppText style={styles.verifiedText}>Verified</AppText>
-                        </View>
-                      </View>
-                      {m.years_of_experience && (
-                        <View style={styles.expBadge}>
-                          <BriefcaseIcon size={12} color="#111827" />
-                          <AppText style={styles.expText}>{m.years_of_experience} yrs</AppText>
-                        </View>
-                      )}
-                    </View>
-
-                    <View style={styles.statsRow}>
-                      <TierBadge tier={m.tier} />
-
-                      {isNewMentor ? (
-                        <View style={styles.statItem}>
-                          <SparklesIcon size={14} color="#1E40AF" />
-                          <View style={styles.newBadge}>
-                            <AppText style={styles.newBadgeText}>New</AppText>
-                          </View>
-                        </View>
-                      ) : (
-                        <View style={styles.statItem}>
-                          <CheckmarkDoneIcon size={14} color="#6B7280" />
-                          <AppText style={styles.statText}>
-                            <AppText style={styles.statValue}>{totalSessions}</AppText> sessions
-                          </AppText>
-                        </View>
-                      )}
-
-                      {showRating && <StarRating rating={averageRating} />}
-
-                      <View style={[styles.availabilityBadge, !hasSlots && styles.availabilityBadgeUnavailable]}>
-                        <AppText style={styles.availabilityIcon}>{hasSlots ? '🟢' : '⏰'}</AppText>
-                        <AppText style={[styles.availabilityText, !hasSlots && styles.availabilityTextUnavailable]}>
-                          {hasSlots ? `Next slot: ${displaySlot}` : displaySlot}
-                        </AppText>
-                      </View>
-                    </View>
-
-                    <View style={styles.dividerLine} />
-
-                    <View style={styles.detailsRow}>
-                      <View>
-                        <AppText style={styles.priceText}>₹{displayPrice.toLocaleString()}</AppText>
-                        <AppText style={styles.perBookingText}>per session</AppText>
-                        <View style={styles.includesRow}>
-                          <AppText style={styles.includesIcon}>✓</AppText>
-                          <AppText style={styles.includesText}>1 focused mock interview</AppText>
-                        </View>
-                      </View>
-
-                      <TouchableOpacity
-                        style={styles.bookBtn}
-                        onPress={() => handleViewMentor(m.id)}
-                        activeOpacity={0.8}
-                      >
-                        <AppText style={styles.bookBtnText}>View Profile</AppText>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                </Card>
+                <MentorCard
+                  key={m.id}
+                  m={m}
+                  displayPrice={displayPrice}
+                  totalSessions={totalSessions}
+                  isNewMentor={isNewMentor}
+                  averageRating={averageRating}
+                  showRating={showRating}
+                  hasSlots={hasSlots}
+                  displaySlot={displaySlot}
+                  onView={() => handleViewMentor(m.id)}
+                />
               );
             })
           )}
@@ -863,15 +972,45 @@ const styles = StyleSheet.create({
 
   dividerLine: { height: 1, backgroundColor: '#F3F4F6', width: '100%' },
 
-  detailsRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 },
-  priceText: { ...FONTS.heading, fontSize: 20, color: theme.colors.text.main },
-  perBookingText: { ...FONTS.caption, color: "#9CA3AF" },
-  includesRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4, gap: 4 },
-  includesIcon: { fontSize: 14, color: theme.colors.primary },
-  includesText: { ...FONTS.caption, color: theme.colors.text.light, fontWeight: '500' },
+  // Pricing row — 3 prices + CTA
+  pricingRow: { flexDirection: 'row', alignItems: 'stretch', gap: 6, marginTop: 8 },
+  priceCell: { flex: 1, alignItems: 'center', paddingVertical: 12, paddingHorizontal: 4, borderRadius: 10, backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#F3F4F6' },
+  priceCellMock: {
+    backgroundColor: '#F0FDFA',
+    borderRadius: 10,
+    paddingHorizontal: 4,
+    paddingVertical: 12,
+    borderWidth: 1.5,
+    borderColor: '#5EEAD4',
+    position: 'relative',
+    flex: 1,
+    alignItems: 'center',
+  },
+  popularBadge: {
+    position: 'absolute',
+    top: -10,
+    alignSelf: 'center',
+    backgroundColor: theme.colors.primary,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 20,
+  },
+  popularBadgeText: { fontSize: 8, fontWeight: '800', color: '#FFF', letterSpacing: 0.6 },
+  priceCellLabel: { fontSize: 11, fontWeight: '700', color: '#6B7280', marginBottom: 6, textAlign: 'center', textTransform: 'uppercase' as const, letterSpacing: 0.4 },
+  priceCellAmount: { fontSize: 17, fontWeight: '800', color: '#111827', textAlign: 'center' },
+  priceCellAmountMock: { fontSize: 20, color: theme.colors.primary },
+  priceCellSub: { fontSize: 11, color: '#9CA3AF', marginTop: 3, textAlign: 'center', fontWeight: '500' },
+  priceDivider: { width: 0 }, // Replaced by card borders
 
-  bookBtn: { backgroundColor: theme.colors.primary, paddingVertical: 10, paddingHorizontal: 24, borderRadius: 8 },
-  bookBtnText: { ...FONTS.bodyBold, color: '#FFF' },
+  priceCellSelected: { borderColor: '#7C3AED', borderWidth: 1.5, backgroundColor: '#F5F3FF' },
+  priceCellMockSelected: { borderColor: theme.colors.primary, borderWidth: 2, backgroundColor: '#CCFBF1' },
+
+  sessionDesc: { marginTop: 10, borderRadius: 10, borderWidth: 1, padding: 12 },
+  sessionDescLabel: { fontSize: 12, fontWeight: '700', textTransform: 'uppercase' as const, letterSpacing: 0.5, marginBottom: 4 },
+  sessionDescText: { fontSize: 13, lineHeight: 20, fontWeight: '400' },
+
+  bookBtn: { backgroundColor: theme.colors.primary, paddingVertical: 12, paddingHorizontal: 16, borderRadius: 10, marginTop: 10, alignItems: 'center' },
+  bookBtnText: { color: '#FFF', fontSize: 13, fontWeight: '700', letterSpacing: 0.2 },
 
   // Empty
   emptyState: { alignItems: 'center', padding: 40 },

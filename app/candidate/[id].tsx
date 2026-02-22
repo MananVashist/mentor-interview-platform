@@ -16,6 +16,8 @@ import { AppText } from "@/lib/ui";
 import { supabase } from "@/lib/supabase/client";
 import { theme } from "@/lib/theme";
 
+type SessionType = 'intro' | 'mock' | 'bundle';
+
 export default function MentorDetailsScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
@@ -27,10 +29,14 @@ export default function MentorDetailsScreen() {
   const [profiles, setProfiles] = useState<any[]>([]);
   const [selectedProfileId, setSelectedProfileId] = useState<number | null>(null);
   
+  // Session Type State
+  const [sessionType, setSessionType] = useState<SessionType>('mock');
+
   // Skills State
   const [skills, setSkills] = useState<any[]>([]);
   const [loadingSkills, setLoadingSkills] = useState(false);
-  const [selectedSkill, setSelectedSkill] = useState<any>(null);
+  const [selectedSkill, setSelectedSkill] = useState<any>(null); // For mock
+  const [bundleSkills, setBundleSkills] = useState<any[]>([]); // For bundle
 
   // 1. Fetch Mentor Details & Profiles
   useEffect(() => {
@@ -50,7 +56,7 @@ export default function MentorDetailsScreen() {
             const basePrice = data.session_price_inr || 1000;
             const tier = data.tier || 'bronze';
             
-            // ✅ NEW: Fetch Tier Cut from DB
+            // Fetch Tier Cut from DB
             const { data: tierData } = await supabase
                 .from('mentor_tiers')
                 .select('percentage_cut')
@@ -61,10 +67,7 @@ export default function MentorDetailsScreen() {
             // Formula: Final = Base / (1 - Cut%)
             const totalPrice = Math.round(basePrice / (1 - (percentageCut / 100)));
             
-            console.log('💰 Pricing Details:', { tier, basePrice, percentageCut, totalPrice });
-            
             const profileIds = data.profile_ids || [];
-            console.log('📊 Mentor Profile IDs:', profileIds);
 
             // Fetch profile details from interview_profiles_admin
             if (profileIds.length > 0) {
@@ -75,10 +78,8 @@ export default function MentorDetailsScreen() {
                 .order('name');
 
               if (!profilesError && profilesData) {
-                console.log('✅ Fetched profiles:', profilesData);
                 setProfiles(profilesData);
               } else {
-                console.error('❌ Error fetching profiles:', profilesError);
                 setProfiles([]);
               }
             }
@@ -116,10 +117,6 @@ export default function MentorDetailsScreen() {
           return;
         }
 
-        // NOTE: We don't set loading(true) here because we did it in the onPress.
-        // Doing it here causes the "flicker" because useEffect runs after the render.
-        console.log('🔍 Fetching skills for profile_id:', selectedProfileId);
-
         try {
             const { data, error } = await supabase
                 .from('interview_skills_admin')
@@ -128,42 +125,92 @@ export default function MentorDetailsScreen() {
                 .order('name');
 
             if (error) {
-                console.error('❌ Error fetching skills:', error);
                 setSkills([]);
             } else {
-                console.log(`✅ Fetched ${data?.length || 0} skills`);
                 setSkills(data || []);
             }
         } finally {
-            setLoadingSkills(false); // Stop loading when done
+            setLoadingSkills(false);
         }
     }
 
     fetchSkills();
   }, [selectedProfileId]);
 
-  const handleSchedule = () => {
-    if (!selectedProfileId || !selectedSkill) {
-      Alert.alert("Selection Required", "Please select both a profile and a skill.");
-      return;
-    }
+  // Reset skill selections when session type changes
+  useEffect(() => {
+    setSelectedSkill(null);
+    setBundleSkills([]);
+  }, [sessionType]);
 
-    console.log('🎯 Navigating to schedule with:', {
-      mentorId: id,
-      profileId: selectedProfileId,
-      skillId: selectedSkill.id,
-      totalPrice: mentor.totalPrice
-    });
-    
-    router.push({
-      pathname: "/candidate/schedule",
-      params: { 
-        mentorId: id, 
-        profileId: selectedProfileId,
-        skillId: selectedSkill.id,
-        totalPrice: mentor.totalPrice 
-      }
-    });
+  // Bundle skill handlers
+  const handleBundleSkillPress = (skill: any) => {
+    if (bundleSkills.length >= 3) return;
+    setBundleSkills(prev => [...prev, skill]);
+  };
+
+  const handleBundleSkillRemove = (index: number) => {
+    setBundleSkills(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // Pricing Derivations
+  const mockPrice = mentor?.totalPrice || 0;
+  const introPrice = Math.round(mockPrice * 0.20);
+  const bundlePrice = Math.round(mockPrice * 2.5);
+
+  // CTA logic
+  const ctaEnabled = (() => {
+    if (!selectedProfileId) return false;
+    if (sessionType === 'intro') return true;
+    if (sessionType === 'mock') return !!selectedSkill;
+    if (sessionType === 'bundle') return bundleSkills.length === 3;
+    return false;
+  })();
+
+  const handleSchedule = () => {
+    if (!ctaEnabled) return;
+
+    let finalPrice = mockPrice;
+
+    if (sessionType === 'intro') {
+      finalPrice = introPrice;
+      router.push({
+        pathname: "/candidate/schedule",
+        params: {
+          mentorId: id,
+          profileId: selectedProfileId,
+          sessionType: 'intro',
+          totalPrice: finalPrice,
+        }
+      });
+    } else if (sessionType === 'mock') {
+      finalPrice = mockPrice;
+      router.push({
+        pathname: "/candidate/schedule",
+        params: {
+          mentorId: id,
+          profileId: selectedProfileId,
+          skillId: selectedSkill?.id || '',
+          skillName: selectedSkill?.name || '',
+          sessionType: 'mock',
+          totalPrice: finalPrice,
+        }
+      });
+    } else if (sessionType === 'bundle') {
+      finalPrice = bundlePrice;
+      // Use plural param names (skillIds / skillNames) so schedule.tsx can parse them
+      router.push({
+        pathname: "/candidate/schedule",
+        params: {
+          mentorId: id,
+          profileId: selectedProfileId,
+          skillIds: bundleSkills.map(s => s.id).join(','),
+          skillNames: bundleSkills.map(s => encodeURIComponent(s.name)).join('|'),
+          sessionType: 'bundle',
+          totalPrice: finalPrice,
+        }
+      });
+    }
   };
 
   if (loading) {
@@ -255,12 +302,85 @@ export default function MentorDetailsScreen() {
         {/* SELECTION CARD */}
         <View style={styles.card}>
           <View style={styles.sectionHeader}>
-            <Ionicons name="create-outline" size={20} color={theme.colors.text.light} style={{ marginRight: 8 }} />
-            <AppText style={styles.sectionTitle}>Please select the domain and topic you want to practice</AppText>
+            <Ionicons name="calendar-outline" size={20} color={theme.colors.text.light} style={{ marginRight: 8 }} />
+            <AppText style={styles.sectionTitle}>Book a Session</AppText>
           </View>
+
+          {/* ── SESSION TYPE + PRICING SELECTOR ── */}
+          <AppText style={styles.subLabel}>Choose a session type:</AppText>
+          
+          <View style={styles.pricingRow}>
+            {/* INTRO */}
+            <TouchableOpacity
+              style={[styles.priceCell, sessionType === 'intro' && styles.priceCellActive]}
+              onPress={() => setSessionType('intro')}
+              activeOpacity={0.8}
+            >
+              <AppText style={[styles.priceCellLabel, sessionType === 'intro' && { color: '#7C3AED' }]}>Intro</AppText>
+              <AppText style={[styles.priceCellAmount, sessionType === 'intro' && { color: '#7C3AED' }]}>₹{introPrice.toLocaleString()}</AppText>
+              <AppText style={styles.priceCellSub}>25 min</AppText>
+            </TouchableOpacity>
+
+            {/* MOCK */}
+            <TouchableOpacity
+              style={[styles.priceCell, styles.priceCellMock, sessionType === 'mock' && styles.priceCellMockActive]}
+              onPress={() => setSessionType('mock')}
+              activeOpacity={0.8}
+            >
+              <View style={styles.popularBadge}>
+                <AppText style={styles.popularBadgeText}>POPULAR</AppText>
+              </View>
+              <AppText style={[styles.priceCellLabel, { color: theme.colors.primary }]}>Mock</AppText>
+              <AppText style={[styles.priceCellAmount, styles.priceCellAmountMock]}>₹{mockPrice.toLocaleString()}</AppText>
+              <AppText style={styles.priceCellSub}>55 min</AppText>
+            </TouchableOpacity>
+
+            {/* BUNDLE */}
+            <TouchableOpacity
+              style={[styles.priceCell, sessionType === 'bundle' && styles.priceCellActive]}
+              onPress={() => setSessionType('bundle')}
+              activeOpacity={0.8}
+            >
+              <AppText style={[styles.priceCellLabel, sessionType === 'bundle' && { color: '#D97706' }]}>Bundle ×3</AppText>
+              <AppText style={[styles.priceCellAmount, sessionType === 'bundle' && { color: '#D97706' }]}>₹{bundlePrice.toLocaleString()}</AppText>
+              <AppText style={styles.priceCellSub}>3 × 55 min</AppText>
+            </TouchableOpacity>
+          </View>
+
+          {/* ── EXPLANATION NOTICES ── */}
+          {sessionType === 'intro' && (
+            <View style={[styles.infoNotice, { backgroundColor: '#F5F3FF', borderColor: '#DDD6FE' }]}>
+              <AppText style={[styles.infoNoticeLabel, { color: '#7C3AED' }]}>Intro Call</AppText>
+              <AppText style={[styles.infoNoticeText, { color: '#5B21B6' }]}>
+                A 25-minute discovery call. Your mentor will understand your goals, assess your level, and recommend topics to practise. <AppText style={{ fontWeight: '700' }}>Not a mock interview.</AppText>
+              </AppText>
+            </View>
+          )}
+
+          {sessionType === 'mock' && (
+            <View style={[styles.infoNotice, { backgroundColor: '#F0FDFA', borderColor: '#5EEAD4' }]}>
+              <AppText style={[styles.infoNoticeLabel, { color: '#0E9384' }]}>Mock Interview</AppText>
+              <AppText style={[styles.infoNoticeText, { color: '#0F766E' }]}>
+                A full 55-minute simulation. Your mentor conducts a realistic interview, evaluates your responses, and gives a detailed scorecard with actionable feedback.
+              </AppText>
+            </View>
+          )}
+
+          {sessionType === 'bundle' && (
+            <View style={[styles.infoNotice, { backgroundColor: '#FFFBEB', borderColor: '#FDE68A' }]}>
+              <AppText style={[styles.infoNoticeLabel, { color: '#D97706' }]}>Bundle ×3</AppText>
+              <AppText style={[styles.infoNoticeText, { color: '#92400E' }]}>
+                Three 55-minute mock interviews at a discounted rate. Best for structured prep — pick 3 skills and track your improvement across sessions.
+              </AppText>
+            </View>
+          )}
+
+          <View style={styles.profileDivider} />
           
           {/* 1. Profile Pills */}
-          <AppText style={styles.subLabel}>Role Profile:</AppText>
+          <AppText style={styles.subLabel}>
+            {sessionType === 'intro' ? 'Which track are you preparing for?' : 'Role Profile:'}
+          </AppText>
           <View style={styles.tagsContainer}>
             {profiles.length === 0 ? (
               <AppText style={styles.emptyText}>No profiles available</AppText>
@@ -272,13 +392,11 @@ export default function MentorDetailsScreen() {
                       key={profile.id} 
                       style={[styles.tag, isSelected && styles.tagActive]}
                       onPress={() => {
-                        console.log('🎯 Selected profile:', profile.name, 'ID:', profile.id);
-                        
-                        // FIX: Set loading state immediately to prevent flicker
                         setLoadingSkills(true);
-                        setSkills([]); // Clear old skills instantly
+                        setSkills([]); 
                         setSelectedProfileId(profile.id);
                         setSelectedSkill(null); 
+                        setBundleSkills([]);
                       }}
                       activeOpacity={0.7}
                   >
@@ -290,71 +408,133 @@ export default function MentorDetailsScreen() {
             )}
           </View>
 
-          {/* 2. Skill Pills (Dynamic based on Profile) */}
-          {selectedProfileId && (
+          {/* 2. Skill Pills (Dynamic based on Profile and Session Type) */}
+          {sessionType !== 'intro' && selectedProfileId && (
              <View style={{ marginTop: 20, paddingTop: 20, borderTopWidth: 1, borderTopColor: '#f0f0f0', minHeight: 100 }}>
-                <AppText style={styles.subLabel}>Specific Skill to Evaluate:</AppText>
                 
-                {loadingSkills ? (
-                    <View style={{ padding: 20, alignItems: 'center' }}>
-                        <ActivityIndicator size="small" color={theme.colors.primary} />
-                        <AppText style={{ fontSize: 12, color: theme.colors.text.light, marginTop: 8 }}>Loading skills...</AppText>
-                    </View>
-                ) : skills.length > 0 ? (
-                    <>
-                        <View style={styles.tagsContainer}>
-                            {skills.map((skill) => {
-                                const isSelected = selectedSkill?.id === skill.id;
-                                return (
-                                <TouchableOpacity 
-                                    key={skill.id} 
-                                    style={[styles.tag, isSelected && styles.skillTagActive]}
-                                    onPress={() => {
-                                      console.log('🎯 Selected skill:', skill.name, 'ID:', skill.id);
-                                      setSelectedSkill(skill);
-                                    }}
-                                >
-                                    <AppText style={[styles.tagText, isSelected && styles.tagTextActive]}>
-                                        {skill.name}
-                                    </AppText>
-                                </TouchableOpacity>
-                                );
-                            })}
+                {/* MOCK — single skill picker */}
+                {sessionType === 'mock' && (
+                  <>
+                    <AppText style={styles.subLabel}>Specific Skill to Evaluate:</AppText>
+                    {loadingSkills ? (
+                        <View style={{ padding: 20, alignItems: 'center' }}>
+                            <ActivityIndicator size="small" color={theme.colors.primary} />
+                            <AppText style={{ fontSize: 12, color: theme.colors.text.light, marginTop: 8 }}>Loading skills...</AppText>
                         </View>
-                        {selectedSkill?.description && (
-                            <AppText style={styles.skillDesc}>{selectedSkill.description}</AppText>
-                        )}
-                    </>
-                ) : (
-                    <View style={{ padding: 16, backgroundColor: '#FEF2F2', borderRadius: 8, marginTop: 8 }}>
-                        <AppText style={{ color: '#DC2626', fontSize: 14, textAlign: 'center' }}>
-                          No skills available for this profile. Please contact support.
-                        </AppText>
-                    </View>
+                    ) : skills.length > 0 ? (
+                        <>
+                            <View style={styles.tagsContainer}>
+                                {skills.map((skill) => {
+                                    const isSelected = selectedSkill?.id === skill.id;
+                                    return (
+                                    <TouchableOpacity 
+                                        key={skill.id} 
+                                        style={[styles.tag, isSelected && styles.skillTagActive]}
+                                        onPress={() => setSelectedSkill(skill)}
+                                    >
+                                        <AppText style={[styles.tagText, isSelected && styles.tagTextActive]}>
+                                            {skill.name}
+                                        </AppText>
+                                    </TouchableOpacity>
+                                    );
+                                })}
+                            </View>
+                            {selectedSkill?.description && (
+                                <AppText style={styles.skillDesc}>{selectedSkill.description}</AppText>
+                            )}
+                        </>
+                    ) : (
+                        <View style={styles.noSkills}>
+                            <AppText style={styles.noSkillsText}>No skills available. Please contact support.</AppText>
+                        </View>
+                    )}
+                  </>
                 )}
+
+                {/* BUNDLE — 3-skill tracker */}
+                {sessionType === 'bundle' && (
+                  <>
+                    <AppText style={styles.subLabel}>Choose 3 skills to practise ({bundleSkills.length}/3):</AppText>
+                    
+                    {/* Tracker */}
+                    <View style={styles.bundleTracker}>
+                      {[0, 1, 2].map((i) => {
+                        const skill = bundleSkills[i];
+                        return (
+                          <View
+                            key={i}
+                            style={[
+                              styles.bundleSlot,
+                              skill ? styles.bundleSlotFilled : styles.bundleSlotEmpty,
+                            ]}
+                          >
+                            <AppText style={styles.bundleSlotLabel}>Session {i + 1}</AppText>
+                            {skill ? (
+                              <View style={styles.bundleSlotContent}>
+                                <AppText style={styles.bundleSlotName} numberOfLines={1}>
+                                  {skill.name}
+                                </AppText>
+                                <TouchableOpacity
+                                  onPress={() => handleBundleSkillRemove(i)}
+                                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                                >
+                                  <Ionicons name="close" size={14} color={theme.colors.primary} />
+                                </TouchableOpacity>
+                              </View>
+                            ) : (
+                              <AppText style={styles.bundleSlotPlaceholder}>Tap below</AppText>
+                            )}
+                          </View>
+                        );
+                      })}
+                    </View>
+
+                    {/* Skill Picker */}
+                    {loadingSkills ? (
+                      <View style={{ padding: 20, alignItems: 'center' }}>
+                          <ActivityIndicator size="small" color={theme.colors.primary} />
+                          <AppText style={{ fontSize: 12, color: theme.colors.text.light, marginTop: 8 }}>Loading skills...</AppText>
+                      </View>
+                    ) : skills.length > 0 ? (
+                      <View style={styles.tagsContainer}>
+                        {skills.map((skill) => {
+                          const countInBundle = bundleSkills.filter(s => s.id === skill.id).length;
+                          const isFull = bundleSkills.length >= 3;
+                          return (
+                            <TouchableOpacity
+                              key={skill.id}
+                              style={[
+                                styles.tag,
+                                countInBundle > 0 && styles.skillTagActive,
+                                isFull && countInBundle === 0 && styles.tagDisabled,
+                              ]}
+                              onPress={() => !isFull && handleBundleSkillPress(skill)}
+                              disabled={isFull && countInBundle === 0}
+                              activeOpacity={0.7}
+                            >
+                              <AppText style={[styles.tagText, countInBundle > 0 && styles.tagTextActive]}>
+                                {skill.name}
+                              </AppText>
+                              {countInBundle > 0 && (
+                                <View style={styles.skillCountBadge}>
+                                  <AppText style={styles.skillCountText}>×{countInBundle}</AppText>
+                                </View>
+                              )}
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+                    ) : (
+                      <View style={styles.noSkills}>
+                        <AppText style={styles.noSkillsText}>No skills available. Please contact support.</AppText>
+                      </View>
+                    )}
+                  </>
+                )}
+
              </View>
           )}
 
-        </View>
-
-        {/* PRICING */}
-        <View style={styles.card}>
-          <View style={styles.sectionHeader}>
-             <Ionicons name="pricetag-outline" size={20} color={theme.colors.text.light} style={{ marginRight: 8 }} />
-             <AppText style={styles.sectionTitle}>Total Booking Price</AppText>
-          </View>
-          
-          <View style={styles.priceContainer}>
-            <View style={styles.priceRow}>
-                <View>
-                    <AppText style={styles.priceMain}>₹{mentor.totalPrice.toLocaleString()}</AppText>
-                    <View style={styles.includesBadge}>
-                        <Ionicons name="videocam-outline" size={12} color={theme.colors.primary} style={{ marginRight: 4 }} />
-                        <AppText style={styles.includesText}>Includes 1 focused session</AppText>
-                    </View>
-                </View>
-            </View>
-          </View>
         </View>
 
       </ScrollView>
@@ -366,17 +546,25 @@ export default function MentorDetailsScreen() {
           nativeID="btn-proceed-to-schedule" 
             style={[
               styles.scheduleButton,
-              (!selectedProfileId || !selectedSkill) && styles.scheduleButtonDisabled
+              !ctaEnabled && styles.scheduleButtonDisabled
             ]}
             activeOpacity={0.9}
             onPress={handleSchedule}
-            disabled={!selectedProfileId || !selectedSkill}
+            disabled={!ctaEnabled}
           >
-            <AppText style={[
-              styles.scheduleButtonText,
-              (!selectedProfileId || !selectedSkill) && styles.scheduleButtonTextDisabled
-            ]}>
-              Select Time Slot
+            <AppText style={[styles.scheduleButtonText, !ctaEnabled && styles.scheduleButtonTextDisabled]}>
+              {!ctaEnabled
+                ? sessionType === 'intro'
+                  ? 'Select a Profile Above'
+                  : sessionType === 'bundle'
+                    ? bundleSkills.length < 3
+                      ? `Choose ${3 - bundleSkills.length} more skill${3 - bundleSkills.length > 1 ? 's' : ''}`
+                      : 'Select a Profile Above'
+                    : !selectedProfileId
+                      ? 'Select a Profile Above'
+                      : 'Select a Skill Above'
+                : 'Select Time Slot'
+              }
             </AppText>
           </TouchableOpacity>
         </View>
@@ -418,20 +606,54 @@ const styles = StyleSheet.create({
   sectionHeader: { flexDirection: "row", alignItems: "center", marginBottom: 12 },
   sectionTitle: { fontSize: 16, fontWeight: "700", color: theme.colors.text.main },
   sectionBody: { fontSize: 15, color: theme.colors.text.body, lineHeight: 24 },
-  subLabel: { fontSize: 14, color: theme.colors.text.light, marginBottom: 8 },
+  
+  // Session type + pricing selector
+  subLabel: { fontSize: 14, color: theme.colors.text.light, marginBottom: 10 },
+  pricingRow: { flexDirection: 'row', alignItems: 'stretch', gap: 6, marginTop: 4, marginBottom: 16 },
+  priceCell: { flex: 1, alignItems: 'center', paddingVertical: 12, paddingHorizontal: 4, borderRadius: 10, borderWidth: 1, borderColor: '#F3F4F6', backgroundColor: '#F9FAFB' },
+  priceCellActive: { borderColor: '#D1D5DB', borderWidth: 1.5 },
+  priceCellMock: { backgroundColor: '#F0FDFA', borderRadius: 10, paddingHorizontal: 4, paddingVertical: 12, borderWidth: 1.5, borderColor: '#5EEAD4', position: 'relative', flex: 1, alignItems: 'center' },
+  priceCellMockActive: { borderColor: theme.colors.primary, borderWidth: 2, backgroundColor: '#CCFBF1' },
+  popularBadge: { position: 'absolute', top: -10, alignSelf: 'center', backgroundColor: theme.colors.primary, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 20 },
+  popularBadgeText: { fontSize: 8, fontWeight: '800', color: '#FFF', letterSpacing: 0.6 },
+  priceCellLabel: { fontSize: 11, fontWeight: '700', color: '#6B7280', marginBottom: 6, textAlign: 'center', textTransform: 'uppercase' as const, letterSpacing: 0.4 },
+  priceCellAmount: { fontSize: 18, fontWeight: '800', color: '#111827', textAlign: 'center' },
+  priceCellAmountMock: { fontSize: 22, color: theme.colors.primary },
+  priceCellSub: { fontSize: 11, color: '#9CA3AF', marginTop: 3, textAlign: 'center', fontWeight: '500' },
+  priceDivider: { width: 0 },
+
+  // Unified Notices
+  infoNotice: { borderRadius: 10, padding: 14, marginBottom: 12, borderWidth: 1 },
+  infoNoticeLabel: { fontSize: 12, fontWeight: '700', textTransform: 'uppercase' as const, letterSpacing: 0.5, marginBottom: 5 },
+  infoNoticeText: { fontSize: 13, lineHeight: 20, fontWeight: '400' },
+  profileDivider: { height: 1, backgroundColor: '#F3F4F6', marginVertical: 16 },
+
+  // Tags
   tagsContainer: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
   tag: { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: theme.colors.border, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 999 },
   tagActive: { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary },
   skillTagActive: { backgroundColor: '#059669', borderColor: '#059669' },
+  tagDisabled: { opacity: 0.4 },
   tagText: { fontSize: 14, color: theme.colors.text.body, fontWeight: "500" },
   tagTextActive: { color: "#FFF", fontWeight: "600" },
+  skillCountBadge: { backgroundColor: 'rgba(255,255,255,0.3)', paddingHorizontal: 5, paddingVertical: 1, borderRadius: 8, marginLeft: 6 },
+  skillCountText: { fontSize: 11, color: '#FFF', fontWeight: '700' },
+  
   skillDesc: { fontSize: 14, color: '#666', marginTop: 8, fontStyle: 'italic' },
   emptyText: { fontSize: 14, color: theme.colors.text.light, fontStyle: 'italic' },
-  priceContainer: { marginTop: 4 },
-  priceRow: { flexDirection: "row", alignItems: "center" },
-  priceMain: { fontSize: 32, fontWeight: "800", color: theme.colors.text.main, marginBottom: 8 },
-  includesBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.colors.pricing.greenBg, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6, alignSelf: 'flex-start' },
-  includesText: { fontSize: 13, fontWeight: "600", color: theme.colors.primary },
+  noSkills: { padding: 16, backgroundColor: '#FEF2F2', borderRadius: 8, marginTop: 8 },
+  noSkillsText: { color: '#DC2626', fontSize: 14, textAlign: 'center' },
+
+  // Bundle tracker
+  bundleTracker: { flexDirection: 'row', gap: 8, marginBottom: 14 },
+  bundleSlot: { flex: 1, borderRadius: 10, padding: 10, minHeight: 72 },
+  bundleSlotFilled: { backgroundColor: '#F0FDFA', borderWidth: 1.5, borderColor: theme.colors.primary },
+  bundleSlotEmpty: { backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB', borderStyle: 'dashed' as any },
+  bundleSlotLabel: { fontSize: 10, fontWeight: '700', color: '#9CA3AF', textTransform: 'uppercase', marginBottom: 6 },
+  bundleSlotContent: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  bundleSlotName: { fontSize: 12, fontWeight: '600', color: theme.colors.primary, flex: 1 },
+  bundleSlotPlaceholder: { fontSize: 11, color: '#D1D5DB', fontStyle: 'italic' },
+
   footerWrapper: { position: "absolute", bottom: 0, left: 0, right: 0, backgroundColor: "#f8f5f0", borderTopWidth: 1, borderTopColor: theme.colors.border },
   footerContent: { paddingHorizontal: 24, paddingVertical: 16 },
   scheduleButton: { backgroundColor: theme.colors.primary, paddingVertical: 16, borderRadius: 12, alignItems: "center", justifyContent: "center", shadowColor: theme.colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 4 },

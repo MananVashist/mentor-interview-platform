@@ -86,10 +86,13 @@ const BookingCard = ({
 }: any) => {
   const uiState = getBookingState(session);
   const details = getBookingDetails(session);
-  const isPaid = session.package?.payment_status === 'paid';
   const profileName = session.package?.interview_profile_name || 'Interview';
   const mentorTitle = session.mentor_professional_title || 'Mentor';
-  const skillName = session.skill_name || 'Interview Session';
+  
+  // ✅ STRICT CHECK: Only mark as intro if explicitly defined in session or package type
+  const isIntro = session.session_type === 'intro' || session.package?.booking_metadata?.session_type === 'intro';
+  const skillName = isIntro ? 'Intro Call' : (session.skill_name || 'Interview Session');
+  const duration = isIntro ? '25 mins' : '55 mins';
 
   // ✅ Helper to check if it's my turn to act
   const isMyTurn = details.rescheduledBy === 'mentor';
@@ -129,7 +132,7 @@ const BookingCard = ({
           </View>
           <View style={styles.infoRow}>
             <Ionicons name="time-outline" size={14} color="#6B7280" />
-            <AppText style={styles.infoText}>55 mins</AppText>
+            <AppText style={styles.infoText}>{duration}</AppText>
           </View>
         </View>
         <View style={styles.rightSection}>
@@ -140,11 +143,8 @@ const BookingCard = ({
       <View style={styles.cardDivider} />
 
       {/* 1. APPROVAL STATE (Candidate View) */}
-      {/* Payment is complete, waiting for mentor to accept or propose new time */}
       {uiState === 'APPROVAL' && (
         <View style={{ 
-          // ✅ FIXED: Always show Blue (Waiting for Mentor) since we're in 'pending' status
-          // Payment is already complete (moved from 'awaiting_payment' to 'pending')
           backgroundColor: '#EFF6FF', 
           padding: 12, 
           borderRadius: 8, 
@@ -152,11 +152,7 @@ const BookingCard = ({
           borderColor: '#BFDBFE'
         }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-            <Ionicons 
-              name="hourglass-outline" 
-              size={18} 
-              color="#1E40AF" 
-            />
+            <Ionicons name="hourglass-outline" size={18} color="#1E40AF" />
             <AppText style={{ fontSize: 14, fontWeight: '700', color: "#1E40AF" }}>
               Awaiting Mentor Approval
             </AppText>
@@ -174,9 +170,7 @@ const BookingCard = ({
             <View style={styles.bannerAction}>
               <View style={styles.bannerHeader}>
                 <Ionicons name="alert-circle-outline" size={18} color="#B45309" />
-                <AppText style={styles.bannerTitleAction}>
-                  Action Required
-                </AppText>
+                <AppText style={styles.bannerTitleAction}>Action Required</AppText>
               </View>
               <AppText style={styles.bannerTextAction}>
                 Mentor proposed: {details.dateLabel} at {details.timeLabel}
@@ -185,16 +179,10 @@ const BookingCard = ({
                 Please accept or propose a different time.
               </AppText>
               <View style={styles.actionRowFull}>
-                <TouchableOpacity
-                  style={[styles.btnFull, styles.btnOutline]}
-                  onPress={() => onReschedule(session)}
-                >
+                <TouchableOpacity style={[styles.btnFull, styles.btnOutline]} onPress={() => onReschedule(session)}>
                   <AppText style={styles.textPrimary}>Propose Different Time</AppText>
                 </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.btnFull, styles.btnPrimary]}
-                  onPress={() => onAcceptReschedule(session.id)}
-                >
+                <TouchableOpacity style={[styles.btnFull, styles.btnPrimary]} onPress={() => onAcceptReschedule(session.id)}>
                   <AppText style={styles.textWhite}>Accept New Time</AppText>
                 </TouchableOpacity>
               </View>
@@ -203,9 +191,7 @@ const BookingCard = ({
             <View style={styles.bannerWaiting}>
               <View style={styles.bannerHeader}>
                 <Ionicons name="hourglass-outline" size={18} color="#B45309" />
-                <AppText style={styles.bannerTitleWaiting}>
-                  Reschedule Request Sent
-                </AppText>
+                <AppText style={styles.bannerTitleWaiting}>Reschedule Request Sent</AppText>
               </View>
               <AppText style={styles.bannerTextWaiting}>
                 You proposed: {details.dateLabel} at {details.timeLabel}
@@ -225,10 +211,7 @@ const BookingCard = ({
             <Ionicons name="checkmark-circle-outline" size={16} color="#059669" style={{ marginRight: 6 }} />
             <AppText style={[styles.textGray, { color: '#059669' }]}>Confirmed</AppText>
           </View>
-          <TouchableOpacity
-            style={[styles.btnFull, styles.btnSecondary]}
-            onPress={() => onViewDetails(session)}
-          >
+          <TouchableOpacity style={[styles.btnFull, styles.btnSecondary]} onPress={() => onViewDetails(session)}>
             <AppText style={styles.textPrimary}>View Details</AppText>
           </TouchableOpacity>
         </View>
@@ -252,14 +235,11 @@ const BookingCard = ({
         </>
       )}
 
-      {/* 5. PAST (Ended, awaiting evaluation) - ✅ add recording if available */}
+      {/* 5. PAST (Ended, awaiting evaluation) */}
       {uiState === 'POST_PENDING' && (
         <View style={styles.actionRowFull}>
           {!!session.recording_url && (
-            <TouchableOpacity
-              style={[styles.btnFull, styles.btnOutline]}
-              onPress={handleOpenRecording}
-            >
+            <TouchableOpacity style={[styles.btnFull, styles.btnOutline]} onPress={handleOpenRecording}>
               <Ionicons name="play-circle-outline" size={16} color={theme.colors.primary} style={{ marginRight: 6 }} />
               <AppText style={styles.textPrimary}>View Recording</AppText>
             </TouchableOpacity>
@@ -271,32 +251,23 @@ const BookingCard = ({
         </View>
       )}
 
-      {/* 6. COMPLETED - With Rate Session - ✅ add recording button too */}
+      {/* 6. COMPLETED - With Rate Session */}
       {uiState === 'POST_COMPLETED' && (
         <>
           <View style={styles.actionRowFull}>
             {!!session.recording_url && (
-              <TouchableOpacity
-                style={[styles.btnFull, styles.btnOutline]}
-                onPress={handleOpenRecording}
-              >
+              <TouchableOpacity style={[styles.btnFull, styles.btnOutline]} onPress={handleOpenRecording}>
                 <Ionicons name="play-circle-outline" size={16} color={theme.colors.primary} style={{ marginRight: 6 }} />
                 <AppText style={styles.textPrimary}>View Recording</AppText>
               </TouchableOpacity>
             )}
 
-            <TouchableOpacity
-              style={[styles.btnFull, styles.btnSecondary]}
-              onPress={() => onRebook(session.mentor_id)}
-            >
+            <TouchableOpacity style={[styles.btnFull, styles.btnSecondary]} onPress={() => onRebook(session.mentor_id)}>
               <Ionicons name="refresh-outline" size={16} color={theme.colors.primary} style={{ marginRight: 6 }} />
               <AppText style={styles.textPrimary}>Rebook</AppText>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[styles.btnFull, styles.btnPrimary]}
-              onPress={() => onViewEvaluation(session.id)}
-            >
+            <TouchableOpacity style={[styles.btnFull, styles.btnPrimary]} onPress={() => onViewEvaluation(session.id)}>
               <AppText style={styles.textWhite}>View Feedback</AppText>
             </TouchableOpacity>
           </View>
@@ -314,10 +285,7 @@ const BookingCard = ({
               </View>
             </View>
           ) : (
-            <TouchableOpacity
-              style={styles.rateBtn}
-              onPress={() => onRateSession(session)}
-            >
+            <TouchableOpacity style={styles.rateBtn} onPress={() => onRateSession(session)}>
               <Ionicons name="star-outline" size={16} color={theme.colors.primary} />
               <AppText style={styles.rateText}>Rate this session</AppText>
             </TouchableOpacity>
@@ -384,18 +352,15 @@ export default function CandidateBookingsScreen() {
     }
 
     try {
-      // ✅ Pull recording_url from session_meetings
       const { data: sessionsData, error } = await supabase
         .from('interview_sessions')
         .select(`
-          id, scheduled_at, status, skill_id, mentor_id, package_id,
+          id, scheduled_at, status, skill_id, mentor_id, package_id, session_type,
           pending_reschedule_approval, rescheduled_by,
           meetings:session_meetings ( recording_url ),
-          package:interview_packages!package_id(id, payment_status, interview_profile_id)
+          package:interview_packages!package_id(*)
         `)
         .eq('candidate_id', currentUser.id)
-        // ✅ Only show sessions after payment is complete (pending, confirmed, completed)
-        // Sessions in 'awaiting_payment' are still in the payment flow and shouldn't appear here
         .in('status', ['pending', 'confirmed', 'completed'])
         .order('scheduled_at', { ascending: true });
             
@@ -407,6 +372,8 @@ export default function CandidateBookingsScreen() {
       }
 
       const packageIds = [...new Set(sessionsData.map(s => s.package_id).filter(Boolean))];
+      
+      // ✅ STRICT RESOLUTION: Only fetch skills that explicitly exist on the session rows
       const skillIds = [...new Set(sessionsData.map(s => s.skill_id).filter(Boolean))];
       const mentorIds = [...new Set(sessionsData.map(s => s.mentor_id).filter(Boolean))];
 
@@ -429,48 +396,37 @@ export default function CandidateBookingsScreen() {
       const [profilesRes, skillsRes, mentorsRes, reviewsRes] = await Promise.all([profilesPromise, skillsPromise, mentorsPromise, reviewsPromise]);
 
       const profilesMap: Record<number, string> = {};
-      (profilesRes.data || []).forEach((p: any) => {
-        profilesMap[p.id] = p.name;
-      });
+      (profilesRes.data || []).forEach((p: any) => { profilesMap[p.id] = p.name; });
 
       const skillsMap: Record<string, { name: string; description?: string }> = {};
-      (skillsRes.data || []).forEach((sk: any) => {
-        skillsMap[sk.id] = { name: sk.name, description: sk.description };
-      });
+      (skillsRes.data || []).forEach((sk: any) => { skillsMap[sk.id] = { name: sk.name, description: sk.description }; });
 
       const mentorsMap: Record<string, string> = {};
-      (mentorsRes.data || []).forEach((m: any) => {
-        mentorsMap[m.id] = m.professional_title || 'Mentor';
-      });
+      (mentorsRes.data || []).forEach((m: any) => { mentorsMap[m.id] = m.professional_title || 'Mentor'; });
 
       const reviewsMap: Record<string, number> = {};
-      (reviewsRes.data || []).forEach((r: any) => {
-        reviewsMap[r.package_id] = r.rating;
-      });
+      (reviewsRes.data || []).forEach((r: any) => { reviewsMap[r.package_id] = r.rating; });
 
       const enrichedSessions = sessionsData.map((s: any) => {
         const profileId = s.package?.interview_profile_id;
         const profileName = profileId ? profilesMap[profileId] || 'Interview' : 'Interview';
-        const skillData = skillsMap[s.skill_id] || { name: 'Interview Session' };
         
-        // ------------------------------------------------------------------
-        // 🛡️ CRASH-PROOF FIX FOR RECORDING URL
-        // 1. Ensure 'meetings' is treated as an array, even if Supabase returns a single object or null
-        const meetingsArray = Array.isArray(s.meetings) 
-          ? s.meetings 
-          : (s.meetings ? [s.meetings] : []);
-
-        // 2. Safely find the URL
+        // ✅ STRICT RESOLUTION: Directly use the skill attached to this specific session row
+        const activeSkillId = s.skill_id;
+        const skillData = activeSkillId ? skillsMap[activeSkillId] : null;
+        const finalSkillName = skillData?.name || 'Interview Session';
+        
+        const meetingsArray = Array.isArray(s.meetings) ? s.meetings : (s.meetings ? [s.meetings] : []);
         const recording_url = meetingsArray.find((m: any) => m.recording_url)?.recording_url || null;
-        // ------------------------------------------------------------------
 
         return {
           ...s,
           package: { ...s.package, interview_profile_name: profileName },
-          skill_name: skillData.name,
-          skill_description: skillData.description,
+          skill_id: activeSkillId, 
+          skill_name: finalSkillName,
+          skill_description: skillData?.description || null,
           mentor_professional_title: mentorsMap[s.mentor_id] || 'Mentor',
-          recording_url, // ✅ Now safe and populated
+          recording_url,
           review_rating: reviewsMap[s.package_id] || null,
         };
       });
@@ -550,12 +506,11 @@ export default function CandidateBookingsScreen() {
     setSelectedSession(session);
     setRatingModalVisible(true);
   };
-  // ✅ FIX: The actual function to save the rating to Supabase
+  
   const handleRatingSubmit = async (rating: number, review: string) => {
     if (!selectedSession) return;
 
     try {
-      // 1. Insert the review into 'candidate_reviews'
       const { error } = await supabase
         .from('candidate_reviews')
         .insert({
@@ -569,18 +524,17 @@ export default function CandidateBookingsScreen() {
 
       if (error) throw error;
 
-      // 2. Refresh the list to show the stars immediately
       Alert.alert('Success', 'Thank you for your feedback!');
       setRatingModalVisible(false);
       setSelectedSession(null);
-      fetchBookings(); // Reloads to show the new stars on the card
+      fetchBookings();
 
     } catch (err: any) {
       console.error('[Rating] Error:', err);
       Alert.alert('Error', 'Failed to submit review.');
     }
   };
-  // ✅ Accept Reschedule
+  
   const handleAcceptReschedule = async (sessionId: string) => {
     try {
       const { error } = await supabase
@@ -602,7 +556,6 @@ export default function CandidateBookingsScreen() {
     }
   };
 
-  // ✅ Reschedule Modal Handlers
   const handleRescheduleStart = (session: any) => {
     setSelectedSession(session);
     setSelectedDay(null);
@@ -616,7 +569,6 @@ export default function CandidateBookingsScreen() {
     }
   };
 
-  // ✅ OPTIMIZED: Use shared availability service
   const generateAvailability = async (mentorId: string, excludeSessionId?: string) => {
     setLoadingReschedule(true);
     try {
@@ -796,16 +748,15 @@ export default function CandidateBookingsScreen() {
       </Modal>
 
       {/* Rating Modal */}
-      {/* Rating Modal - ✅ FIXED PROPS */}
       {selectedSession && (
         <RatingModal
           visible={ratingModalVisible}
-          mentorName={selectedSession.mentor_professional_title || 'Mentor'} // Pass string, not object
+          mentorName={selectedSession.mentor_professional_title || 'Mentor'} 
           onClose={() => {
             setRatingModalVisible(false);
             setSelectedSession(null);
           }}
-          onSubmit={handleRatingSubmit} // Pass the function we just created
+          onSubmit={handleRatingSubmit} 
         />
       )}
 
@@ -989,7 +940,7 @@ const styles = StyleSheet.create({
   modalContainer: {
     backgroundColor: '#fff',
     borderRadius: 16,
-    width: '100%',        // Fix: Force container to fill the overlay padding width
+    width: '100%',        
     maxWidth: 500,
     maxHeight: '85%',
     overflow: 'hidden'
@@ -1022,7 +973,6 @@ const styles = StyleSheet.create({
   modalTitle: { fontSize: 20, fontWeight: '700', color: '#111', marginBottom: 16 },
   modalCloseBtn: { backgroundColor: theme.colors.primary, padding: 12, borderRadius: 8, alignItems: 'center', marginTop: 16 },
   
-  // Reschedule modal styles
   actionRow: { flexDirection: 'row', gap: 12, justifyContent: 'space-between' },
   btn: { paddingVertical: 12, paddingHorizontal: 16, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   rescheduleSlot: { 
@@ -1051,7 +1001,6 @@ const styles = StyleSheet.create({
     textDecorationLine: 'line-through' 
   },
 
-  // Banner Styles
   bannerAction: {
     backgroundColor: '#FFFBEB', padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#FEF3C7', marginBottom: 12
   },
