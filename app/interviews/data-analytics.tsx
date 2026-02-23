@@ -567,7 +567,7 @@ JOIN monthly_purchases b
               <View style={styles.stat}><Text style={styles.statValue}>3-5</Text><Text style={styles.statLabel}>Interview Rounds</Text></View>
               <View style={styles.stat}><Text style={styles.statValue}>6-8 weeks</Text><Text style={styles.statLabel}>Prep Timeline</Text></View>
             </View>
-            <TouchableOpacity style={styles.ctaBtn} onPress={() => router.push('/auth/sign-up')} accessibilityRole="button" accessibilityLabel="Browse Analyst Mentors">
+            <TouchableOpacity style={styles.ctaBtn} onPress={() => router.push('/mentors')} accessibilityRole="button" accessibilityLabel="Browse Analyst Mentors">
               <Text style={styles.ctaBtnText}>Browse Analyst Mentors →</Text>
             </TouchableOpacity>
           </View>

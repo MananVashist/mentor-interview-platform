@@ -1,9 +1,11 @@
 ﻿import React, { memo } from "react";
-import { View, Text, StyleSheet, Platform } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Platform } from "react-native";
+import { useRouter } from "expo-router";
 import { BronzeBadge, SilverBadge, GoldBadge } from "@/components/AppIcons";
 
 // --- Constants & Data ---
 const CTA_TEAL = "#18a7a7";
+const BRAND_ORANGE = "#f58742";
 const BG_CREAM = "#f8f5f0";
 const TEXT_DARK = "#222";
 const TEXT_GRAY = "#555";
@@ -37,34 +39,60 @@ const FAQS = [
 ];
 
 const TIERS = [
-  { 
-    badge: BronzeBadge, 
-    title: "Bronze Tier", 
-    price: "₹500 - ₹2,000", 
-    color: "#cd7f32", 
-    bgColor: "#fff5e6", 
-    borderColor: "#cd7f32", 
-    benefits: ["Top performing mid-Level Managers", "5 - 10 yrs experienced", "Best for: Strengthening basics"] 
+  {
+    badge: BronzeBadge,
+    title: "Bronze Tier",
+    price: "₹500 - ₹2,000",
+    color: "#cd7f32",
+    bgColor: "#fff5e6",
+    borderColor: "#cd7f32",
+    benefits: ["Top performing mid-Level Managers", "5 - 10 yrs experienced", "Best for: Strengthening basics"],
   },
-  { 
-    badge: SilverBadge, 
-    title: "Silver Tier", 
-    price: "₹2,000 - ₹4,500", 
-    color: "#706F6D", 
-    bgColor: "#f5f5f5", 
-    borderColor: "#c0c0c0", 
-    benefits: ["Senior Management from top companies", "10-15 yrs experienced", "Best for: Senior level interviews"] 
+  {
+    badge: SilverBadge,
+    title: "Silver Tier",
+    price: "₹2,000 - ₹4,500",
+    color: "#706F6D",
+    bgColor: "#f5f5f5",
+    borderColor: "#c0c0c0",
+    benefits: ["Senior Management from top companies", "10-15 yrs experienced", "Best for: Senior level interviews"],
   },
-  { 
-    badge: GoldBadge, 
-    title: "Gold Tier", 
-    price: "₹5,000 - ₹7,500", 
-    color: "#B8860B", 
-    bgColor: "#fffbeb", 
-    borderColor: "#fbbf24", 
-    benefits: ["Leadership / Directors", "15-20 yrs experienced", "Best for: Hiring manager or CXO rounds"] 
+  {
+    badge: GoldBadge,
+    title: "Gold Tier",
+    price: "₹5,000 - ₹7,500",
+    color: "#B8860B",
+    bgColor: "#fffbeb",
+    borderColor: "#fbbf24",
+    benefits: ["Leadership / Directors", "15-20 yrs experienced", "Best for: Hiring manager or CXO rounds"],
   },
 ];
+
+// --- Shared Button ---
+const Button = memo(({ title, onPress, variant = "primary", nativeID, style, textStyle }: any) => (
+  <TouchableOpacity
+    nativeID={nativeID}
+    style={[
+      styles.buttonBase,
+      variant === "primary" && styles.buttonPrimary,
+      variant === "outline" && styles.buttonOutline,
+      style,
+    ]}
+    onPress={onPress}
+    activeOpacity={0.8}
+  >
+    <Text
+      style={[
+        styles.buttonText,
+        variant === "primary" && { color: "#fff" },
+        variant === "outline" && { color: CTA_TEAL },
+        textStyle,
+      ]}
+    >
+      {title}
+    </Text>
+  </TouchableOpacity>
+));
 
 // --- Optimized Star Rating Component ---
 const StarRating = memo(({ count }: { count: number }) => (
@@ -93,7 +121,7 @@ const TestimonialCard = memo(({ testimonial }: { testimonial: typeof TESTIMONIAL
 ));
 
 // --- Testimonials Section ---
-const TestimonialsSection = memo(() => (
+const TestimonialsSection = memo(({ onViewMentors }: { onViewMentors: (source: string) => void }) => (
   <View style={styles.testimonialsContainer} nativeID="testimonials">
     <Text style={styles.kicker}>SUCCESS STORIES</Text>
     <View style={styles.testimonialsGrid}>
@@ -106,6 +134,18 @@ const TestimonialsSection = memo(() => (
       <Text style={styles.trustText}>✓ Real candidate outcomes</Text>
       <Text style={styles.trustText}>✓ Proven results</Text>
     </View>
+
+    {/* CTA strip after testimonials */}
+    <View style={styles.ctaStrip}>  
+      <Text style={styles.ctaStripHeading}>Ready to improve your interviewing skills?</Text>
+      <Button
+        nativeID="btn-lp-testimonials-view-mentors"
+        title="View Our Mentors →"
+        onPress={() => onViewMentors("after_testimonials")}
+        style={styles.ctaStripButton}
+        textStyle={{ fontSize: 16 }}
+      />
+    </View>
   </View>
 ));
 
@@ -113,19 +153,14 @@ const TestimonialsSection = memo(() => (
 const TierCard = memo(({ tier, index }: { tier: typeof TIERS[0]; index: number }) => {
   const BadgeComponent = tier.badge;
   return (
-    <View 
-      key={index} 
-      style={[
-        styles.tierCard, 
-        { backgroundColor: tier.bgColor, borderColor: tier.borderColor }
-      ]}
+    <View
+      key={index}
+      style={[styles.tierCard, { backgroundColor: tier.bgColor, borderColor: tier.borderColor }]}
     >
       <View style={{ marginBottom: 16 }}>
         <BadgeComponent />
       </View>
-      <Text style={[styles.tierTitle, { color: tier.color }]}>
-        {tier.title}
-      </Text>
+      <Text style={[styles.tierTitle, { color: tier.color }]}>{tier.title}</Text>
       <Text style={[styles.tierTitle, { fontSize: 24, marginBottom: 24, color: tier.color }]}>
         {tier.price}
       </Text>
@@ -142,11 +177,19 @@ const TierCard = memo(({ tier, index }: { tier: typeof TIERS[0]; index: number }
 });
 
 // --- Pricing Section ---
-const CandidateTiers = memo(({ onPricingLayout, isSmall }: { onPricingLayout?: (y: number) => void; isSmall: boolean }) => {
+const CandidateTiers = memo(({
+  onPricingLayout,
+  isSmall,
+  onViewMentors,
+}: {
+  onPricingLayout?: (y: number) => void;
+  isSmall: boolean;
+  onViewMentors: (source: string) => void;
+}) => {
   return (
-    <View 
-      style={styles.section} 
-      nativeID="pricing" 
+    <View
+      style={styles.section}
+      nativeID="pricing"
       onLayout={(e) => onPricingLayout?.(e.nativeEvent.layout.y)}
     >
       <Text style={styles.kicker}>PRICING</Text>
@@ -156,9 +199,61 @@ const CandidateTiers = memo(({ onPricingLayout, isSmall }: { onPricingLayout?: (
           <TierCard key={i} tier={tier} index={i} />
         ))}
       </View>
+
+      {/* CTA below pricing tiers */}
+      <View style={styles.pricingCta}>
+        <Text style={styles.pricingCtaText}>Browse mentors across all tiers and find your perfect match</Text>
+        <Button
+          nativeID="btn-lp-pricing-view-mentors"
+          title="View Our Mentors"
+          onPress={() => onViewMentors("after_pricing")}
+          style={styles.pricingCtaButton}
+          textStyle={{ fontSize: 15 }}
+        />
+      </View>
     </View>
   );
 });
+
+// --- Not Sure Yet Section ---
+const NotSureYet = memo(({ onViewMentors }: { onViewMentors: (source: string) => void }) => (
+  <View style={styles.notSureContainer}>
+    <View style={styles.notSureBox}>
+      <View style={styles.notSureIconRow}>
+        <Text style={styles.notSureIcon}>🤔</Text>
+      </View>
+      <Text style={styles.notSureKicker}>NOT READY TO COMMIT?</Text>
+      <Text style={styles.notSureHeading}>
+        Book an <Text style={{ color: BRAND_ORANGE }}>intro call</Text> with your mentor first
+      </Text>
+      <Text style={styles.notSureSub}>
+        Not sure which mentor is right for you, or what topic to focus on? Start with a short 30-minute intro call — no pressure, no mock interview. Just a conversation.
+      </Text>
+
+      <View style={styles.notSurePerks}>
+        {[
+          { icon: "🎯", text: "Understand your preparation gaps before committing" },
+          { icon: "🤝", text: "Get a feel for your mentor's style and approach" },
+          { icon: "📋", text: "Get a personalised prep plan for your target role" },
+        ].map((perk, i) => (
+          <View key={i} style={styles.notSurePerk}>
+            <Text style={styles.notSurePerkIcon}>{perk.icon}</Text>
+            <Text style={styles.notSurePerkText}>{perk.text}</Text>
+          </View>
+        ))}
+      </View>
+
+      <Button
+        nativeID="btn-lp-not-sure-intro-call"
+        title="Browse Mentors & Book an Intro Call"
+        onPress={() => onViewMentors("not_sure_intro_call")}
+        style={styles.notSureButton}
+        textStyle={{ fontSize: 15 }}
+      />
+      <Text style={styles.notSureNote}>Intro calls are available directly on the mentor's profile page</Text>
+    </View>
+  </View>
+));
 
 // --- Optimized Guarantee Card ---
 const GuaranteeCard = memo(({ guarantee }: { guarantee: typeof GUARANTEES[0] }) => (
@@ -235,245 +330,502 @@ const FAQ = memo(({ isSmall }: { isSmall: boolean }) => (
   </View>
 ));
 
+// --- Final CTA Banner (closing section before footer) ---
+const FinalCTABanner = memo(({ onViewMentors }: { onViewMentors: (source: string) => void }) => (
+  <View style={styles.finalCtaContainer}>
+    <View style={styles.finalCtaBox}>
+      <Text style={styles.finalCtaHeading}>
+        Your next interview is closer than you think{"\n"}
+      </Text>
+      <Text style={styles.finalCtaSub}>
+        Browse mentors, pick a topic, and book your session in minutes.
+      </Text>
+      <Button
+        nativeID="btn-lp-final-view-mentors"
+        title="View Our Mentors →"
+        onPress={() => onViewMentors("final_cta")}
+        style={styles.finalCtaButton}
+        textStyle={{color: '#000000', fontSize: 17 }}
+      />
+      <View style={styles.finalCtaTrust}>
+        <Text style={styles.finalCtaTrustItem}>✓ Anonymous</Text>
+        <Text style={styles.finalCtaTrustItem}>✓ Money-back guarantee</Text>
+        <Text style={styles.finalCtaTrustItem}>✓ Recording included</Text>
+      </View>
+    </View>
+  </View>
+));
+
 // --- SINGLE DEFAULT EXPORT (Wrapper Component for Lazy Loading) ---
-export default function LazySectionsLP({ 
-  onPricingLayout, 
-  isSmall 
-}: { 
-  onPricingLayout?: (y: number) => void; 
-  isSmall: boolean 
+export default function LazySectionsLP({
+  onPricingLayout,
+  isSmall,
+  onViewMentors,
+}: {
+  onPricingLayout?: (y: number) => void;
+  isSmall: boolean;
+  onViewMentors: (source: string) => void;
 }) {
   return (
     <>
-      <TestimonialsSection />
-      <CandidateTiers onPricingLayout={onPricingLayout} isSmall={isSmall} />
+      <TestimonialsSection onViewMentors={onViewMentors} />
+      <CandidateTiers onPricingLayout={onPricingLayout} isSmall={isSmall} onViewMentors={onViewMentors} />
+      <NotSureYet onViewMentors={onViewMentors} />
       <GuaranteeSection />
       <FAQ isSmall={isSmall} />
+      <FinalCTABanner onViewMentors={onViewMentors} />
     </>
   );
 }
 
 const styles = StyleSheet.create({
-  section: { 
-    maxWidth: 900, 
-    width: "100%", 
-    alignSelf: "center", 
-    paddingHorizontal: 24, 
-    paddingVertical: 40 
+  section: {
+    maxWidth: 900,
+    width: "100%",
+    alignSelf: "center",
+    paddingHorizontal: 24,
+    paddingVertical: 40,
   },
-  kicker: { 
-    fontFamily: SYSTEM_FONT, 
-    fontWeight: "800", 
-    fontSize: 12, 
-    color: CTA_TEAL, 
-    marginBottom: 10, 
-    textAlign: "center", 
-    letterSpacing: 1 
+  kicker: {
+    fontFamily: SYSTEM_FONT,
+    fontWeight: "800",
+    fontSize: 12,
+    color: CTA_TEAL,
+    marginBottom: 10,
+    textAlign: "center",
+    letterSpacing: 1,
   },
-  h2: { 
-    fontFamily: SYSTEM_FONT, 
-    fontWeight: "800", 
-    fontSize: 28, 
-    color: TEXT_DARK, 
-    marginBottom: 20, 
-    textAlign: "center" 
+  h2: {
+    fontFamily: SYSTEM_FONT,
+    fontWeight: "800",
+    fontSize: 28,
+    color: TEXT_DARK,
+    marginBottom: 20,
+    textAlign: "center",
   },
-  h2Mobile: { 
-    fontSize: 24 
+  h2Mobile: {
+    fontSize: 24,
   },
-  tiersGrid: { 
-    flexDirection: "row", 
-    gap: 24, 
-    justifyContent: "center" 
+
+  // ===== Button Styles =====
+  buttonBase: {
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 14,
+    paddingHorizontal: 28,
   },
-  tiersGridMobile: { 
-    flexDirection: "column", 
-    alignItems: "center", 
-    gap: 20 
+  buttonPrimary: {
+    backgroundColor: CTA_TEAL,
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
   },
-  tierCard: { 
-    flex: 1, 
-    maxWidth: 360, 
-    padding: 28, 
-    borderRadius: 16, 
-    borderWidth: 2, 
-    alignItems: "center" 
+  buttonOutline: {
+    backgroundColor: "transparent",
+    borderWidth: 2,
+    borderColor: CTA_TEAL,
   },
-  tierTitle: { 
-    fontFamily: SYSTEM_FONT, 
-    fontWeight: "700", 
-    fontSize: 20, 
-    marginBottom: 4, 
-    textAlign: "center" 
+  buttonText: {
+    fontFamily: SYSTEM_FONT,
+    fontSize: 15,
+    fontWeight: "700",
   },
-  testimonialsContainer: { 
-    paddingTop: 60, 
-    paddingBottom: 80, 
-    paddingHorizontal: 24, 
-    backgroundColor: BG_CREAM 
+
+  // ===== Tiers =====
+  tiersGrid: {
+    flexDirection: "row",
+    gap: 24,
+    justifyContent: "center",
   },
-  testimonialsGrid: { 
-    flexDirection: "row", 
-    flexWrap: "wrap", 
-    gap: 24, 
-    justifyContent: "center", 
-    maxWidth: 1200, 
-    alignSelf: "center" 
+  tiersGridMobile: {
+    flexDirection: "column",
+    alignItems: "center",
+    gap: 20,
   },
-  testimonialCard: { 
-    backgroundColor: "#fff", 
-    padding: 32, 
-    borderRadius: 16, 
-    borderWidth: 1, 
-    borderColor: "rgba(0,0,0,0.08)", 
-    width: Platform.OS === "web" ? "calc(50% - 12px)" : "100%", 
-    minWidth: 280, 
-    maxWidth: 550 
+  tierCard: {
+    flex: 1,
+    maxWidth: 360,
+    padding: 28,
+    borderRadius: 16,
+    borderWidth: 2,
+    alignItems: "center",
   },
-  testimonialHeader: { 
-    flexDirection: "row", 
-    alignItems: "center", 
-    marginBottom: 18, 
-    gap: 14 
+  tierTitle: {
+    fontFamily: SYSTEM_FONT,
+    fontWeight: "700",
+    fontSize: 20,
+    marginBottom: 4,
+    textAlign: "center",
   },
-  avatarContainer: { 
-    width: 52, 
-    height: 52, 
-    borderRadius: 26, 
-    backgroundColor: BG_CREAM, 
-    alignItems: "center", 
-    justifyContent: "center", 
-    borderWidth: 2, 
-    borderColor: BORDER_LIGHT 
+
+  // ===== Pricing CTA =====
+  pricingCta: {
+    marginTop: 32,
+    alignItems: "center",
+    gap: 14,
   },
-  avatar: { 
-    fontSize: 26 
+  pricingCtaText: {
+    fontFamily: SYSTEM_FONT,
+    fontSize: 15,
+    color: TEXT_GRAY,
+    textAlign: "center",
+    maxWidth: 420,
   },
-  testimonialMeta: { 
-    flex: 1 
+  pricingCtaButton: {
+    minWidth: 200,
   },
-  testimonialName: { 
-    fontSize: 17, 
-    fontWeight: "700", 
-    color: TEXT_DARK, 
-    marginBottom: 3 
+
+  // ===== Testimonials =====
+  testimonialsContainer: {
+    paddingTop: 60,
+    paddingBottom: 60,
+    paddingHorizontal: 24,
+    backgroundColor: BG_CREAM,
   },
-  testimonialRole: { 
-    fontSize: 14, 
-    fontWeight: "600", 
-    color: TEXT_GRAY 
+  testimonialsGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 24,
+    justifyContent: "center",
+    maxWidth: 1200,
+    alignSelf: "center",
   },
-  testimonialQuote: { 
-    fontFamily: SYSTEM_FONT, 
-    fontSize: 15, 
-    lineHeight: 25, 
-    color: TEXT_DARK, 
-    marginBottom: 18 
+  testimonialCard: {
+    backgroundColor: "#fff",
+    padding: 32,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "rgba(0,0,0,0.08)",
+    width: Platform.OS === "web" ? "calc(50% - 12px)" : "100%",
+    minWidth: 280,
+    maxWidth: 550,
   },
-  trustIndicators: { 
-    flexDirection: "row", 
-    justifyContent: "center", 
-    gap: 32, 
-    marginTop: 48, 
-    flexWrap: "wrap" 
+  testimonialHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 18,
+    gap: 14,
   },
-  trustText: { 
-    fontSize: 13, 
-    fontWeight: "600", 
-    color: TEXT_GRAY, 
-    opacity: 0.8 
+  avatarContainer: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: BG_CREAM,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: BORDER_LIGHT,
   },
-  guaranteeContainer: { 
-    paddingTop: 40, 
-    paddingBottom: 80, 
-    paddingHorizontal: 24, 
-    backgroundColor: BG_CREAM 
+  avatar: {
+    fontSize: 26,
   },
-  guaranteeBox: { 
-    backgroundColor: "#fff", 
-    padding: 56, 
-    borderRadius: 20, 
-    maxWidth: 1100, 
-    alignSelf: "center", 
-    width: "100%", 
-    borderWidth: 2, 
-    borderColor: "rgba(24, 167, 167, 0.3)" 
+  testimonialMeta: {
+    flex: 1,
   },
-  guaranteeBadge: { 
-    flexDirection: "row", 
-    alignItems: "center", 
-    backgroundColor: "#e8f9f9", 
-    paddingVertical: 11, 
-    paddingHorizontal: 22, 
-    borderRadius: 100, 
-    gap: 10, 
-    borderWidth: 1, 
-    borderColor: "rgba(24, 167, 167, 0.2)" 
+  testimonialName: {
+    fontSize: 17,
+    fontWeight: "700",
+    color: TEXT_DARK,
+    marginBottom: 3,
   },
-  guaranteeTitle: { 
-    fontSize: 38, 
-    fontWeight: "800", 
-    color: TEXT_DARK, 
-    textAlign: "center", 
-    lineHeight: 50, 
-    marginBottom: 18 
+  testimonialRole: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: TEXT_GRAY,
   },
-  guaranteeSubtitle: { 
-    fontSize: 18, 
-    fontWeight: "500", 
-    color: TEXT_GRAY, 
-    textAlign: "center", 
-    marginBottom: 52, 
-    maxWidth: 600, 
-    alignSelf: "center" 
+  testimonialQuote: {
+    fontFamily: SYSTEM_FONT,
+    fontSize: 15,
+    lineHeight: 25,
+    color: TEXT_DARK,
+    marginBottom: 18,
   },
-  guaranteesGrid: { 
-    flexDirection: "row", 
-    flexWrap: "wrap", 
-    gap: 24, 
-    marginBottom: 44, 
-    justifyContent: "center" 
+  trustIndicators: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 32,
+    marginTop: 48,
+    flexWrap: "wrap",
   },
-  guaranteeCard: { 
-    backgroundColor: BG_CREAM, 
-    padding: 28, 
-    borderRadius: 16, 
-    width: Platform.OS === "web" ? "calc(50% - 12px)" : "100%", 
-    minWidth: 240, 
-    maxWidth: 500, 
-    borderWidth: 1, 
-    borderColor: BORDER_LIGHT 
+  trustText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: TEXT_GRAY,
+    opacity: 0.8,
   },
-  trustSeal: { 
-    flexDirection: "row", 
-    justifyContent: "center", 
-    gap: 18, 
-    paddingVertical: 26, 
-    borderTopWidth: 1, 
-    borderTopColor: BORDER_LIGHT, 
-    flexWrap: "wrap" 
+
+  // ===== CTA Strip (after testimonials) =====
+  ctaStrip: {
+    marginTop: 48,
+    alignItems: "center",
+    gap: 16,
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    paddingVertical: 32,
+    paddingHorizontal: 24,
+    maxWidth: 600,
+    alignSelf: "center",
+    width: "100%",
+    borderWidth: 1,
+    borderColor: "rgba(24,167,167,0.2)",
   },
-  sealBadge: { 
-    backgroundColor: "#e8f9f9", 
-    paddingVertical: 9, 
-    paddingHorizontal: 18, 
-    borderRadius: 8, 
-    borderWidth: 1, 
-    borderColor: "rgba(24, 167, 167, 0.15)" 
+  ctaStripHeading: {
+    fontFamily: SYSTEM_FONT,
+    fontWeight: "700",
+    fontSize: 20,
+    color: TEXT_DARK,
+    textAlign: "center",
   },
-  assuranceBox: { 
-    backgroundColor: "#fff9f5", 
-    padding: 22, 
-    borderRadius: 12, 
-    borderWidth: 1, 
-    borderColor: "rgba(245, 135, 66, 0.25)", 
-    marginTop: 28 
+  ctaStripButton: {
+    minWidth: 220,
   },
-  faqItem: { 
-    backgroundColor: "#fff", 
-    padding: 20, 
-    borderRadius: 12, 
-    borderWidth: 1, 
-    borderColor: BORDER_LIGHT 
+
+  // ===== Not Sure Yet =====
+  notSureContainer: {
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    backgroundColor: BG_CREAM,
+  },
+  notSureBox: {
+    backgroundColor: "#fff9f5",
+    borderRadius: 20,
+    paddingVertical: 48,
+    paddingHorizontal: 40,
+    maxWidth: 900,
+    alignSelf: "center",
+    width: "100%",
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: "rgba(245, 135, 66, 0.25)",
+  },
+  notSureIconRow: {
+    marginBottom: 16,
+  },
+  notSureIcon: {
+    fontSize: 40,
+  },
+  notSureKicker: {
+    fontFamily: SYSTEM_FONT,
+    fontWeight: "800",
+    fontSize: 12,
+    color: BRAND_ORANGE,
+    letterSpacing: 1.2,
+    marginBottom: 12,
+    textAlign: "center",
+  },
+  notSureHeading: {
+    fontFamily: SYSTEM_FONT,
+    fontWeight: "800",
+    fontSize: 30,
+    color: TEXT_DARK,
+    textAlign: "center",
+    lineHeight: 40,
+    marginBottom: 16,
+  },
+  notSureSub: {
+    fontFamily: SYSTEM_FONT,
+    fontSize: 16,
+    color: TEXT_GRAY,
+    textAlign: "center",
+    lineHeight: 26,
+    maxWidth: 560,
+    marginBottom: 32,
+  },
+  notSurePerks: {
+    gap: 14,
+    alignSelf: "stretch",
+    maxWidth: 480,
+    marginBottom: 36,
+  },
+  notSurePerk: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 12,
+    backgroundColor: "#fff",
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "rgba(245, 135, 66, 0.15)",
+  },
+  notSurePerkIcon: {
+    fontSize: 20,
+  },
+  notSurePerkText: {
+    fontFamily: SYSTEM_FONT,
+    fontSize: 14,
+    color: TEXT_DARK,
+    flex: 1,
+    lineHeight: 22,
+    fontWeight: "500",
+  },
+  notSureButton: {
+    backgroundColor: BRAND_ORANGE,
+    minWidth: 280,
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+  },
+  notSureNote: {
+    fontFamily: SYSTEM_FONT,
+    fontSize: 12,
+    color: TEXT_GRAY,
+    marginTop: 14,
+    textAlign: "center",
+    opacity: 0.7,
+  },
+
+  // ===== Guarantee =====
+  guaranteeContainer: {
+    paddingTop: 40,
+    paddingBottom: 80,
+    paddingHorizontal: 24,
+    backgroundColor: BG_CREAM,
+  },
+  guaranteeBox: {
+    backgroundColor: "#fff",
+    padding: 56,
+    borderRadius: 20,
+    maxWidth: 1100,
+    alignSelf: "center",
+    width: "100%",
+    borderWidth: 2,
+    borderColor: "rgba(24, 167, 167, 0.3)",
+  },
+  guaranteeBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#e8f9f9",
+    paddingVertical: 11,
+    paddingHorizontal: 22,
+    borderRadius: 100,
+    gap: 10,
+    borderWidth: 1,
+    borderColor: "rgba(24, 167, 167, 0.2)",
+  },
+  guaranteeTitle: {
+    fontSize: 38,
+    fontWeight: "800",
+    color: TEXT_DARK,
+    textAlign: "center",
+    lineHeight: 50,
+    marginBottom: 18,
+  },
+  guaranteeSubtitle: {
+    fontSize: 18,
+    fontWeight: "500",
+    color: TEXT_GRAY,
+    textAlign: "center",
+    marginBottom: 52,
+    maxWidth: 600,
+    alignSelf: "center",
+  },
+  guaranteesGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 24,
+    marginBottom: 44,
+    justifyContent: "center",
+  },
+  guaranteeCard: {
+    backgroundColor: BG_CREAM,
+    padding: 28,
+    borderRadius: 16,
+    width: Platform.OS === "web" ? "calc(50% - 12px)" : "100%",
+    minWidth: 240,
+    maxWidth: 500,
+    borderWidth: 1,
+    borderColor: BORDER_LIGHT,
+  },
+  trustSeal: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 18,
+    paddingVertical: 26,
+    borderTopWidth: 1,
+    borderTopColor: BORDER_LIGHT,
+    flexWrap: "wrap",
+  },
+  sealBadge: {
+    backgroundColor: "#e8f9f9",
+    paddingVertical: 9,
+    paddingHorizontal: 18,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "rgba(24, 167, 167, 0.15)",
+  },
+  assuranceBox: {
+    backgroundColor: "#fff9f5",
+    padding: 22,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "rgba(245, 135, 66, 0.25)",
+    marginTop: 28,
+  },
+
+  // ===== FAQ =====
+  faqItem: {
+    backgroundColor: "#fff",
+    padding: 20,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: BORDER_LIGHT,
+  },
+
+  // ===== Final CTA Banner =====
+  finalCtaContainer: {
+    paddingHorizontal: 24,
+    paddingVertical: 60,
+    backgroundColor: BG_CREAM,
+  },
+  finalCtaBox: {
+    backgroundColor: CTA_TEAL,
+    borderRadius: 24,
+    paddingVertical: 56,
+    paddingHorizontal: 40,
+    maxWidth: 900,
+    alignSelf: "center",
+    width: "100%",
+    alignItems: "center",
+  },
+  finalCtaHeading: {
+    fontFamily: SYSTEM_FONT,
+    fontWeight: "800",
+    fontSize: 34,
+    color: "#fff",
+    textAlign: "center",
+    lineHeight: 44,
+    marginBottom: 16,
+  },
+  finalCtaSub: {
+    fontFamily: SYSTEM_FONT,
+    fontSize: 17,
+    color: "rgba(255,255,255,0.85)",
+    textAlign: "center",
+    marginBottom: 32,
+    maxWidth: 480,
+  },
+  finalCtaButton: {
+    backgroundColor: "#fff",
+    borderRadius: 8,
+    paddingVertical: 16,
+    paddingHorizontal: 36,
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    minWidth: 240,
+  },
+  finalCtaTrust: {
+    flexDirection: "row",
+    gap: 20,
+    marginTop: 24,
+    flexWrap: "wrap",
+    justifyContent: "center",
+  },
+  finalCtaTrustItem: {
+    fontFamily: SYSTEM_FONT,
+    fontSize: 13,
+    fontWeight: "600",
+    color: "rgba(255,255,255,0.9)",
   },
 });

@@ -113,7 +113,7 @@ export default function ProductManagementInterviews() {
     if (Platform.OS === 'web') {
       const breadcrumbSchema = createBreadcrumbSchema([
         { name: 'Home', url: 'https://crackjobs.com' },
-        { name: 'Interview Tracks', url: 'https://crackjobs.com/#interview-tracks' },
+        { name: 'Mentors', url: 'https://crackjobs.com/mentors' },
         { name: 'Product Management', url: 'https://crackjobs.com/interviews/product-management' }
       ]);
 
@@ -531,7 +531,7 @@ export default function ProductManagementInterviews() {
             </View>
             <TouchableOpacity 
               style={styles.ctaBtn} 
-              onPress={() => router.push('/auth/sign-up')} 
+              onPress={() => router.push('/mentors')} 
               accessibilityRole="button" 
               accessibilityLabel="Find Your PM Mentor"
               accessibilityHint="Browse available PM mentors and book a session"

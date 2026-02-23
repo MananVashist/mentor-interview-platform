@@ -69,25 +69,27 @@ const CTA_LABEL: Record<string, string> = {
 };
 
 const Button = memo(({ title, onPress, variant = "primary", color = CTA_TEAL, style, textStyle, nativeID }: any) => (
-  <TouchableOpacity 
-    nativeID={nativeID} 
+  <TouchableOpacity
+    nativeID={nativeID}
     style={[
-      styles.buttonBase, 
-      variant === "primary" && { backgroundColor: color }, 
-      variant === "primary" && styles.buttonShadow, 
-      variant === "outline" && styles.buttonOutline, 
-      variant === "outline" && { borderColor: color }, 
-      style
-    ]} 
+      styles.buttonBase,
+      variant === "primary" && { backgroundColor: color },
+      variant === "primary" && styles.buttonShadow,
+      variant === "outline" && styles.buttonOutline,
+      variant === "outline" && { borderColor: color },
+      style,
+    ]}
     onPress={onPress}
     activeOpacity={0.8}
   >
-    <Text style={[
-      styles.buttonText, 
-      variant === "primary" && { color: "#fff" }, 
-      variant === "outline" && { color: TEXT_DARK }, 
-      textStyle
-    ]}>
+    <Text
+      style={[
+        styles.buttonText,
+        variant === "primary" && { color: "#fff" },
+        variant === "outline" && { color },
+        textStyle,
+      ]}
+    >
       {title}
     </Text>
   </TouchableOpacity>
@@ -95,7 +97,6 @@ const Button = memo(({ title, onPress, variant = "primary", color = CTA_TEAL, st
 
 const TrustFooter = memo(({ isSmall }: { isSmall: boolean }) => (
   <View style={[styles.trustRow, isSmall && { flexDirection: "column", gap: 8, alignItems: "center" }]}>
-    
     <Text style={styles.trustItem}>✓ 1:1 call</Text>
     <Text style={styles.trustItem}>✓ Recording + scorecard</Text>
   </View>
@@ -161,7 +162,15 @@ export default function CampaignLanding() {
       tier_intent: tier,
       source: utm.source,
     });
+    router.push("/mentors");
+  };
 
+  const handleViewMentors = (source: string = "hero_secondary") => {
+    console.log("[Analytics] View Mentors Clicked:", {
+      role: activeRole,
+      source,
+      utm: utm.source,
+    });
     router.push("/mentors");
   };
 
@@ -170,7 +179,6 @@ export default function CampaignLanding() {
       role: activeRole,
       source: utm.source,
     });
-
     router.push("/mentors");
   };
 
@@ -180,11 +188,11 @@ export default function CampaignLanding() {
         <title>{`CrackJobs | ${content.title} Interview Prep`}</title>
         <meta name="description" content={`Practice ${content.title} interviews with real experts. ${content.sub}`} />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        
+
         {/* Resource Hints for Performance */}
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
-        
+
         {/* Inline Critical CSS */}
         <style>{`
           body { 
@@ -201,15 +209,17 @@ export default function CampaignLanding() {
           }
         `}</style>
       </Head>
-      <ScrollView 
-        ref={scrollRef} 
-        style={styles.container} 
+      <ScrollView
+        ref={scrollRef}
+        style={styles.container}
         contentContainerStyle={{ minHeight: "100%" }}
-        removeClippedSubviews={Platform.OS === 'android'}
+        removeClippedSubviews={Platform.OS === "android"}
         maxToRenderPerBatch={10}
         windowSize={10}
       >
         <Header />
+
+        {/* ===== HERO ===== */}
         <View style={styles.heroSection}>
           <View style={[styles.heroInner, isSmall && styles.heroInnerMobile]}>
             <Text style={[styles.h1, isSmall && styles.h1Mobile]}>
@@ -217,6 +227,8 @@ export default function CampaignLanding() {
               <Text style={{ color: CTA_TEAL }}>{content.highlight}</Text>
             </Text>
             <Text style={[styles.sub, isSmall && styles.subMobile]}>{content.sub}</Text>
+
+            {/* Primary + Secondary CTA row */}
             <View style={[styles.ctaRow, isSmall && { flexDirection: "column" }]}>
               <Button
                 nativeID="btn-lp-hero-cta"
@@ -225,18 +237,32 @@ export default function CampaignLanding() {
                 style={[styles.ctaBig, isSmall && { width: "100%" }]}
                 textStyle={{ fontSize: 16 }}
               />
-              
+              <Button
+                nativeID="btn-lp-hero-view-mentors"
+                title="View Our Mentors"
+                variant="outline"
+                color={CTA_TEAL}
+                onPress={() => handleViewMentors("hero_secondary")}
+                style={[styles.ctaBig, isSmall && { width: "100%" }]}
+                textStyle={{ fontSize: 16 }}
+              />
             </View>
+
             <TrustFooter isSmall={isSmall} />
           </View>
         </View>
+
         <HowItWorks isSmall={isSmall} />
-        
+
         {/* Lazy Loaded Sections - No delay, immediate render */}
         <Suspense fallback={<SectionsFallback />}>
-          <LazySectionsLP onPricingLayout={setPricingY} isSmall={isSmall} />
+          <LazySectionsLP
+            onPricingLayout={setPricingY}
+            isSmall={isSmall}
+            onViewMentors={handleViewMentors}
+          />
         </Suspense>
-        
+
         <View style={[styles.section, { paddingBottom: 60 }]}>
           <Text style={styles.footerText}>© {new Date().getFullYear()} CrackJobs</Text>
         </View>

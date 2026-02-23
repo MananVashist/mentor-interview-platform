@@ -699,7 +699,7 @@ export default function HRInterviews() {
               <View style={styles.stat}><Text style={styles.statValue}>3-5</Text><Text style={styles.statLabel}>Interview Rounds</Text></View>
               <View style={styles.stat}><Text style={styles.statValue}>6-8 weeks</Text><Text style={styles.statLabel}>Prep Timeline</Text></View>
             </View>
-            <TouchableOpacity style={styles.ctaBtn} onPress={() => router.push('/auth/sign-up')}>
+            <TouchableOpacity style={styles.ctaBtn} onPress={() => router.push('/mentors')}>
               <Text style={styles.ctaBtnText}>Find HR Mentors →</Text>
             </TouchableOpacity>
           </View>
