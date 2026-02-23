@@ -93,7 +93,7 @@ export default function DataScienceInterviews() {
     if (Platform.OS === 'web') {
       const breadcrumbSchema = createBreadcrumbSchema([
         { name: 'Home', url: 'https://crackjobs.com' },
-        { name: 'Interview Tracks', url: 'https://crackjobs.com/#interview-tracks' },
+        { name: 'Mentors', url: 'https://crackjobs.com/mentors' },
         { name: 'Data Science', url: 'https://crackjobs.com/interviews/data-science' }
       ]);
 
@@ -593,7 +593,7 @@ model = RandomForestClassifier(class_weight='balanced')`,
               <View style={styles.stat}><Text style={styles.statValue}>4-6</Text><Text style={styles.statLabel}>Interview Rounds</Text></View>
               <View style={styles.stat}><Text style={styles.statValue}>10-12 weeks</Text><Text style={styles.statLabel}>Prep Timeline</Text></View>
             </View>
-            <TouchableOpacity style={styles.ctaBtn} onPress={() => router.push('/auth/sign-up')}>
+            <TouchableOpacity style={styles.ctaBtn} onPress={() => router.push('/mentors')}>
               <Text style={styles.ctaBtnText}>Find ML Mentors →</Text>
             </TouchableOpacity>
           </View>

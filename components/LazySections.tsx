@@ -12,12 +12,12 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Asset } from 'expo-asset';
-import { Footer } from './Footer'; 
+import { Footer } from './Footer';
 
 // 🟢 NEW: Import Optimized Icons
-import { 
-  FeedbackIcon, VideoIcon, StarIcon, 
-  BronzeBadge, SilverBadge, GoldBadge 
+import {
+  FeedbackIcon, VideoIcon, StarIcon,
+  BronzeBadge, SilverBadge, GoldBadge
 } from './AppIcons';
 
 // 🟢 MOVED IMAGES HERE (Lazy Loaded)
@@ -26,7 +26,7 @@ import MetaImg from '../assets/companies/Meta.png';
 import AmazonImg from '../assets/companies/Amazon.webp';
 import MicrosoftImg from '../assets/companies/Microsoft.webp';
 import CapgeminiImg from '../assets/companies/Capgemini.png';
-import AdobeImg from '../assets/companies/Adobe.png';   
+import AdobeImg from '../assets/companies/Adobe.png';
 
 // --- CONSTANTS ---
 const BRAND_ORANGE = '#f58742';
@@ -43,13 +43,13 @@ const SYSTEM_FONT = Platform.select({
 }) as string;
 
 // --- DATA ---
-const COMPANIES = [ 
+const COMPANIES = [
   { name: 'Google', image: GoogleImg, width: 100 },
   { name: 'Meta', image: MetaImg, width: 110 },
   { name: 'Amazon', image: AmazonImg, width: 90 },
   { name: 'Microsoft', image: MicrosoftImg, width: 110 },
   { name: 'Capgemini', image: CapgeminiImg, width: 120 },
-  { name: 'Adobe', image: AdobeImg, width: 120 },   
+  { name: 'Adobe', image: AdobeImg, width: 120 },
 ];
 
 const STATS = [
@@ -78,8 +78,6 @@ const FAQ = [
   { q: 'Do you offer refunds?', a: 'Yes. If the mentor does not show up for the session, we provide a full refund. We record the session so its no problem' },
 ];
 
-// 🗑️ DELETED INLINE SVGs (Now imported from AppIcons.tsx)
-
 // --- COMPONENTS ---
 
 // Simple Image for Lazy Loading
@@ -87,7 +85,7 @@ const SimpleImage = ({ source, style, alt }: any) => {
   const isWeb = Platform.OS === 'web';
   if (isWeb) {
     let src = typeof source === 'string' ? source : (source?.uri || Asset.fromModule(source)?.uri || '');
-    if (src) return <img src={src} alt={alt} style={{...style, objectFit: 'contain'}} loading="lazy" decoding="async" />;
+    if (src) return <img src={src} alt={alt} style={{ ...style, objectFit: 'contain' }} loading="lazy" decoding="async" />;
   }
   return <RNImage source={source} style={style} resizeMode="contain" accessible={true} accessibilityLabel={alt} />;
 };
@@ -96,7 +94,7 @@ const LogoWall = memo(() => {
   const { width } = useWindowDimensions();
   const isSmall = width < 900;
   return (
-    <View 
+    <View
       style={styles.logoSection}
       nativeID="our-mentors"
       accessibilityRole="region"
@@ -107,9 +105,9 @@ const LogoWall = memo(() => {
       </Text>
       <View style={[styles.logoWall, isSmall && styles.logoWallMobile]}>
         {COMPANIES.map((company) => (
-           <View key={company.name} style={styles.logoWrapper} accessibilityRole="image" accessibilityLabel={`${company.name} logo`}>
-             <SimpleImage source={company.image} style={{ width: company.width, height: 35 }} alt={`${company.name} company logo`} />
-           </View>
+          <View key={company.name} style={styles.logoWrapper} accessibilityRole="image" accessibilityLabel={`${company.name} logo`}>
+            <SimpleImage source={company.image} style={{ width: company.width, height: 35 }} alt={`${company.name} company logo`} />
+          </View>
         ))}
       </View>
     </View>
@@ -164,7 +162,7 @@ const SocialProof = memo(() => {
           </View>
         ))}
       </View>
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.linkedinButton}
         onPress={() => Linking.openURL('https://www.linkedin.com/company/crackjobs')}
         activeOpacity={0.8}
@@ -180,6 +178,7 @@ const SocialProof = memo(() => {
 const Reviews = memo(() => {
   const { width } = useWindowDimensions();
   const isSmall = width < 900;
+  const router = useRouter();
 
   return (
     <View style={[styles.sectionContainer, styles.reviewsSection]} nativeID="reviews" accessibilityRole="region" accessibilityLabel="Customer testimonials">
@@ -205,6 +204,21 @@ const Reviews = memo(() => {
           </View>
         ))}
       </View>
+
+      {/* View Our Mentors CTA — after reviews */}
+      <View style={styles.reviewsCtaStrip}>
+        <Text style={styles.reviewsCtaHeading}>Ready to get feedback like this?</Text>
+        <TouchableOpacity
+          nativeID="btn-home-reviews-view-mentors"
+          style={styles.reviewsCtaButton}
+          onPress={() => router.push('/mentors')}
+          activeOpacity={0.85}
+          accessibilityRole="button"
+          accessibilityLabel="View our mentors"
+        >
+          <Text style={styles.reviewsCtaButtonText}>View Our Mentors →</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 });
@@ -214,21 +228,21 @@ const WhyChooseUs = memo(() => {
   const isSmall = width < 900;
 
   const BENEFITS = [
-    { 
-      icon: <FeedbackIcon />, 
-      title: 'Structured Feedback', 
+    {
+      icon: <FeedbackIcon />,
+      title: 'Structured Feedback',
       desc: 'Detailed evaluation covering strengths, gaps, and actionable improvement areas',
       ariaLabel: 'Structured feedback benefit'
     },
-    { 
-      icon: <VideoIcon />, 
-      title: 'Session Recording', 
+    {
+      icon: <VideoIcon />,
+      title: 'Session Recording',
       desc: 'Review your performance anytime with full session recordings',
       ariaLabel: 'Session recording benefit'
     },
-    { 
-      icon: <StarIcon />, 
-      title: 'Verified Mentors', 
+    {
+      icon: <StarIcon />,
+      title: 'Verified Mentors',
       desc: 'All mentors manually vetted and verified from top companies',
       ariaLabel: 'Verified mentors benefit'
     },
@@ -254,7 +268,7 @@ const WhyChooseUs = memo(() => {
         <Text style={[styles.sectionTitle, { fontSize: 28, marginTop: 40, marginBottom: 24 }]} accessibilityRole="header">
           Want to become a mentor?
         </Text>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.mentorCtaButton}
           onPress={() => Linking.openURL('https://crackjobs.com/auth/sign-up')}
           activeOpacity={0.9}
@@ -271,6 +285,7 @@ const WhyChooseUs = memo(() => {
 const CandidateTiers = memo(() => {
   const { width } = useWindowDimensions();
   const isSmall = width < 900;
+  const router = useRouter();
 
   const TIERS = [
     {
@@ -281,7 +296,7 @@ const CandidateTiers = memo(() => {
       color: '#cd7f32',
       bgColor: '#fff5e6',
       borderColor: '#cd7f32',
-      benefits: [ 'Top performing mid-Level Managers', '5 - 10 yrs experienced','Best for: Strengthening basics' ],
+      benefits: ['Top performing mid-Level Managers', '5 - 10 yrs experienced', 'Best for: Strengthening basics'],
       ariaLabel: 'Bronze tier pricing'
     },
     {
@@ -331,6 +346,70 @@ const CandidateTiers = memo(() => {
           </View>
         ))}
       </View>
+
+      {/* View Our Mentors CTA — after pricing tiers */}
+      <View style={styles.pricingCta}>
+        <Text style={styles.pricingCtaText}>Browse mentors across all tiers and find your perfect match</Text>
+        <TouchableOpacity
+          nativeID="btn-home-pricing-view-mentors"
+          style={styles.pricingCtaButton}
+          onPress={() => router.push('/mentors')}
+          activeOpacity={0.85}
+          accessibilityRole="button"
+          accessibilityLabel="View our mentors"
+        >
+          <Text style={styles.pricingCtaButtonText}>View Our Mentors</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+});
+
+// --- Not Sure Yet Section ---
+const NotSureYet = memo(() => {
+  const router = useRouter();
+
+  return (
+    <View style={styles.notSureContainer} nativeID="intro-call" accessibilityRole="region" accessibilityLabel="Book an intro call">
+      <View style={styles.notSureBox}>
+        <View style={styles.notSureIconRow}>
+          <Text style={styles.notSureIcon}>🤔</Text>
+        </View>
+        <Text style={styles.notSureKicker}>NOT READY TO COMMIT?</Text>
+        <Text style={styles.notSureHeading}>
+          Book an{' '}
+          <Text style={{ color: BRAND_ORANGE }}>intro call</Text>
+          {' '}with your mentor first
+        </Text>
+        <Text style={styles.notSureSub}>
+          Not sure which mentor is right for you, or what topic to focus on? Start with a short 30-minute intro call — no pressure, no mock interview. Just a conversation.
+        </Text>
+
+        <View style={styles.notSurePerks}>
+          {[
+            { icon: '🎯', text: 'Understand your preparation gaps before committing' },
+            { icon: '🤝', text: "Get a feel for your mentor's style and approach" },
+            { icon: '📋', text: 'Get a personalised prep plan for your target role' },
+          ].map((perk, i) => (
+            <View key={i} style={styles.notSurePerk}>
+              <Text style={styles.notSurePerkIcon}>{perk.icon}</Text>
+              <Text style={styles.notSurePerkText}>{perk.text}</Text>
+            </View>
+          ))}
+        </View>
+
+        <TouchableOpacity
+          nativeID="btn-home-not-sure-intro-call"
+          style={styles.notSureButton}
+          onPress={() => router.push('/mentors')}
+          activeOpacity={0.85}
+          accessibilityRole="button"
+          accessibilityLabel="Browse mentors and book an intro call"
+        >
+          <Text style={styles.notSureButtonText}>Browse Mentors & Book an Intro Call</Text>
+        </TouchableOpacity>
+        <Text style={styles.notSureNote}>Intro calls are available directly on the mentor's profile page</Text>
+      </View>
     </View>
   );
 });
@@ -371,15 +450,27 @@ const BottomCTA = memo(() => {
         <Text style={[styles.ctaSubtitle, isSmall && styles.ctaSubtitleMobile]}>
           Join hundreds of successful candidates who practiced with us
         </Text>
-        <TouchableOpacity 
-          style={styles.ctaButton}
-          onPress={() => router.push('/auth/sign-up')}
-          activeOpacity={0.9}
-          accessibilityRole="button"
-          accessibilityLabel="Get Started"
-        >
-          <Text style={styles.ctaButtonText}>GET STARTED</Text>
-        </TouchableOpacity>
+        <View style={[styles.ctaButtonRow, isSmall && styles.ctaButtonRowMobile]}>
+          <TouchableOpacity
+            style={styles.ctaButton}
+            onPress={() => router.push('/auth/sign-up')}
+            activeOpacity={0.9}
+            accessibilityRole="button"
+            accessibilityLabel="Get Started"
+          >
+            <Text style={styles.ctaButtonText}>GET STARTED</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            nativeID="btn-home-bottom-view-mentors"
+            style={[styles.ctaButton, styles.ctaButtonOutline]}
+            onPress={() => router.push('/mentors')}
+            activeOpacity={0.9}
+            accessibilityRole="button"
+            accessibilityLabel="View our mentors"
+          >
+            <Text style={[styles.ctaButtonText, { color: '#fff' }]}>VIEW OUR MENTORS</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );
@@ -394,6 +485,7 @@ export default function LazySections() {
       <Reviews />
       <WhyChooseUs />
       <CandidateTiers />
+      <NotSureYet />
       <FAQSection />
       <BottomCTA />
       <Footer />
@@ -422,7 +514,7 @@ const styles = StyleSheet.create({
   linkedinButtonText: { fontFamily: SYSTEM_FONT, fontSize: 15, fontWeight: '600', color: '#fff', letterSpacing: 0.3 },
   tracksSection: { backgroundColor: BG_CREAM },
   tracksGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 20, justifyContent: 'center' },
-  tracksGridMobile: { flexDirection: 'column',alignItems: 'center' },
+  tracksGridMobile: { flexDirection: 'column', alignItems: 'center' },
   trackCard: { flex: 1, minWidth: 260, maxWidth: 280, backgroundColor: '#fff', padding: 20, borderRadius: 16, borderWidth: 1, borderColor: '#f0f0f0' },
   trackEmoji: { fontSize: 32, marginBottom: 12 },
   trackTitle: { fontFamily: SYSTEM_FONT, fontWeight: '700', fontSize: 18, color: TEXT_DARK, marginBottom: 8 },
@@ -431,7 +523,7 @@ const styles = StyleSheet.create({
   trackArrowText: { color: '#fff', fontWeight: '700' },
   reviewsSection: { backgroundColor: '#fff', paddingVertical: 80 },
   reviewsGrid: { flexDirection: 'row', gap: 24, justifyContent: 'center', flexWrap: 'wrap' },
-  reviewsGridMobile: { flexDirection: 'column',alignItems: 'center' },
+  reviewsGridMobile: { flexDirection: 'column', alignItems: 'center' },
   reviewCard: { flex: 1, minWidth: 280, maxWidth: 360, backgroundColor: BG_CREAM, padding: 24, borderRadius: 16, borderWidth: 1, borderColor: '#f0f0f0' },
   reviewHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12, gap: 12 },
   reviewHeaderLeft: { flex: 1, flexShrink: 1, minWidth: 0 },
@@ -440,6 +532,13 @@ const styles = StyleSheet.create({
   reviewRole: { fontFamily: SYSTEM_FONT, fontSize: 13, color: TEXT_GRAY, marginTop: 2 },
   reviewStars: { fontSize: 16 },
   reviewText: { fontFamily: SYSTEM_FONT, fontSize: 15, color: TEXT_DARK, lineHeight: 22, fontStyle: 'italic' },
+
+  // ===== Reviews CTA Strip =====
+  reviewsCtaStrip: { marginTop: 48, alignItems: 'center', gap: 16, backgroundColor: BG_CREAM, borderRadius: 16, paddingVertical: 32, paddingHorizontal: 24, maxWidth: 600, alignSelf: 'center', width: '100%', borderWidth: 1, borderColor: 'rgba(24,167,167,0.2)' },
+  reviewsCtaHeading: { fontFamily: SYSTEM_FONT, fontWeight: '700', fontSize: 20, color: TEXT_DARK, textAlign: 'center' },
+  reviewsCtaButton: { backgroundColor: CTA_TEAL, paddingVertical: 14, paddingHorizontal: 28, borderRadius: 8, minWidth: 220, alignItems: 'center', shadowOpacity: 0.2, shadowRadius: 8, shadowOffset: { width: 0, height: 4 } },
+  reviewsCtaButtonText: { fontFamily: SYSTEM_FONT, fontWeight: '700', fontSize: 16, color: '#fff' },
+
   benefitsGrid: { flexDirection: 'row', gap: 32, justifyContent: 'center', alignItems: 'flex-start', maxWidth: 1200, alignSelf: 'center', marginBottom: 48 },
   benefitsGridMobile: { flexDirection: 'column', maxWidth: 600, gap: 16 },
   benefitCard: { flex: 1, maxWidth: 320, backgroundColor: '#fff', padding: 24, borderRadius: 16, alignItems: 'center', borderWidth: 1, borderColor: '#f0f0f0' },
@@ -459,10 +558,35 @@ const styles = StyleSheet.create({
   tierBenefitRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
   tierBenefitBullet: { fontFamily: SYSTEM_FONT, fontSize: 15, lineHeight: 24, fontWeight: '700' },
   tierBenefitText: { fontFamily: SYSTEM_FONT, fontSize: 15, lineHeight: 24, flex: 1 },
+
+  // ===== Pricing CTA =====
+  pricingCta: { marginTop: 40, alignItems: 'center', gap: 14 },
+  pricingCtaText: { fontFamily: SYSTEM_FONT, fontSize: 15, color: TEXT_GRAY, textAlign: 'center', maxWidth: 420 },
+  pricingCtaButton: { backgroundColor: CTA_TEAL, paddingVertical: 14, paddingHorizontal: 28, borderRadius: 8, minWidth: 200, alignItems: 'center', shadowOpacity: 0.2, shadowRadius: 8, shadowOffset: { width: 0, height: 4 } },
+  pricingCtaButtonText: { fontFamily: SYSTEM_FONT, fontWeight: '700', fontSize: 15, color: '#fff' },
+
+  // ===== Not Sure Yet =====
+  notSureContainer: { paddingHorizontal: 24, paddingVertical: 16, backgroundColor: BG_CREAM },
+  notSureBox: { backgroundColor: '#fff9f5', borderRadius: 20, paddingVertical: 48, paddingHorizontal: 40, maxWidth: 900, alignSelf: 'center', width: '100%', alignItems: 'center', borderWidth: 2, borderColor: 'rgba(245, 135, 66, 0.25)' },
+  notSureIconRow: { marginBottom: 16 },
+  notSureIcon: { fontSize: 40 },
+  notSureKicker: { fontFamily: SYSTEM_FONT, fontWeight: '800', fontSize: 12, color: BRAND_ORANGE, letterSpacing: 1.2, marginBottom: 12, textAlign: 'center' },
+  notSureHeading: { fontFamily: SYSTEM_FONT, fontWeight: '800', fontSize: 30, color: TEXT_DARK, textAlign: 'center', lineHeight: 40, marginBottom: 16 },
+  notSureSub: { fontFamily: SYSTEM_FONT, fontSize: 16, color: TEXT_GRAY, textAlign: 'center', lineHeight: 26, maxWidth: 560, marginBottom: 32 },
+  notSurePerks: { gap: 14, alignSelf: 'stretch', maxWidth: 480, marginBottom: 36 },
+  notSurePerk: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, backgroundColor: '#fff', padding: 16, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(245, 135, 66, 0.15)' },
+  notSurePerkIcon: { fontSize: 20 },
+  notSurePerkText: { fontFamily: SYSTEM_FONT, fontSize: 14, color: TEXT_DARK, flex: 1, lineHeight: 22, fontWeight: '500' },
+  notSureButton: { backgroundColor: BRAND_ORANGE, paddingVertical: 14, paddingHorizontal: 28, borderRadius: 8, minWidth: 280, alignItems: 'center', shadowOpacity: 0.2, shadowRadius: 8, shadowOffset: { width: 0, height: 4 } },
+  notSureButtonText: { fontFamily: SYSTEM_FONT, fontWeight: '700', fontSize: 15, color: '#fff' },
+  notSureNote: { fontFamily: SYSTEM_FONT, fontSize: 12, color: TEXT_GRAY, marginTop: 14, textAlign: 'center', opacity: 0.7 },
+
   faqContainer: { maxWidth: 800, alignSelf: 'center', width: '100%', gap: 24 },
   faqItem: { backgroundColor: '#fff', padding: 24, borderRadius: 12, borderWidth: 1, borderColor: '#f0f0f0' },
   faqQ: { fontFamily: SYSTEM_FONT, fontWeight: '700', fontSize: 16, color: TEXT_DARK, marginBottom: 8 },
   faqA: { fontFamily: SYSTEM_FONT, fontSize: 15, color: TEXT_GRAY, lineHeight: 22 },
+
+  // ===== Bottom CTA =====
   ctaSection: { backgroundColor: BRAND_ORANGE, paddingVertical: 80 },
   ctaInner: { maxWidth: 700, alignSelf: 'center', alignItems: 'center', paddingHorizontal: 24 },
   ctaInnerMobile: { paddingHorizontal: 32 },
@@ -470,6 +594,9 @@ const styles = StyleSheet.create({
   ctaTitleMobile: { fontSize: 28 },
   ctaSubtitle: { fontFamily: SYSTEM_FONT, fontSize: 18, color: '#fff', marginBottom: 32, textAlign: 'center', opacity: 0.95 },
   ctaSubtitleMobile: { fontSize: 16 },
+  ctaButtonRow: { flexDirection: 'row', gap: 16, flexWrap: 'wrap', justifyContent: 'center' },
+  ctaButtonRowMobile: { flexDirection: 'column', alignItems: 'center' },
   ctaButton: { backgroundColor: '#fff', paddingHorizontal: 40, paddingVertical: 16, borderRadius: 100 },
+  ctaButtonOutline: { backgroundColor: 'transparent', borderWidth: 2, borderColor: '#fff' },
   ctaButtonText: { fontFamily: SYSTEM_FONT, fontWeight: '700', fontSize: 16, color: BRAND_ORANGE },
 });
