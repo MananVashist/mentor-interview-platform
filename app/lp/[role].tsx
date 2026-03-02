@@ -81,7 +81,7 @@ const TrustFooter = memo(({ isSmall }: { isSmall: boolean }) => (
       <Text style={styles.trustPillText}>🎥 1:1 Video Call</Text>
     </View>
     <View style={styles.trustPill}>
-      <Text style={styles.trustPillText}>📝 Recording + Scorecard</Text>
+      <Text style={styles.trustPillText}>📝 Recording + Detailed Feedback</Text>
     </View>
     <View style={styles.trustPill}>
       <Text style={styles.trustPillText}>🕵️ 100% Anonymous</Text>
@@ -245,6 +245,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "800",
     letterSpacing: 0.5,
+    textAlign: "center",
   },
 
   // ===== Hero Section =====

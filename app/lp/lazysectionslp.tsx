@@ -87,15 +87,20 @@ const TierBadgeBlock = ({ tier }: { tier?: string | null }) => {
 };
 
 // ============================================
-// EXACT MENTOR CARD FROM MENTORS.TSX
+// RESPONSIVE MENTOR CARD
 // ============================================
-const MentorCard = ({ m, displayPrice, totalSessions, isNewMentor, averageRating, showRating, hasSlots, displaySlot, customPriceLabel, onView, isFullWidth }: any) => {
+const MentorCard = ({ m, displayPrice, totalSessions, isNewMentor, averageRating, showRating, hasSlots, displaySlot, customPriceLabel, onView, isSmall, isFounderCard }: any) => {
   const seed = m.id || m.profiles?.full_name || 'Mentor';
   const fallbackAvatar = `https://api.dicebear.com/9.x/micah/png?seed=${encodeURIComponent(seed)}&backgroundColor=e5e7eb,f3f4f6`;
   const introPrice = Math.round(displayPrice * 0.20);
 
+  // Dynamic responsive width logic to ensure it doesn't squish or scroll horizontally on mobile
+  const cardWidthStyle = isFounderCard 
+    ? { width: '100%' as const } 
+    : (isSmall ? { width: '100%' as const } : { width: Platform.OS === 'web' ? 'calc(50% - 8px)' as any : '100%' as const });
+
   return (
-    <View style={[styles.card, isFullWidth && styles.cardFullWidth]}>
+    <View style={[styles.card, cardWidthStyle]}>
       <View style={styles.cardContent}>
         <View style={styles.headerRow}>
           <Image source={{ uri: m.avatar_url || fallbackAvatar }} style={styles.avatarImage} />
@@ -116,7 +121,7 @@ const MentorCard = ({ m, displayPrice, totalSessions, isNewMentor, averageRating
         </View>
 
         {m.experience_description && (
-          <Text style={styles.bioText} numberOfLines={isFullWidth ? 3 : 2}>{m.experience_description}</Text>
+          <Text style={styles.bioText} numberOfLines={2}>{m.experience_description}</Text>
         )}
 
         <View style={styles.statsRow}>
@@ -260,7 +265,8 @@ const DynamicDomainMentors = ({ role, isSmall, onViewMentors }: { role: string, 
               displaySlot={founderSlot}
               customPriceLabel="Free"
               onView={() => router.push(`/mentors/${founderMentor.id}`)}
-              isFullWidth={true}
+              isSmall={isSmall}
+              isFounderCard={true}
             />
           </View>
         </View>
@@ -297,6 +303,8 @@ const DynamicDomainMentors = ({ role, isSmall, onViewMentors }: { role: string, 
                   hasSlots={hasSlots}
                   displaySlot={displaySlot}
                   onView={() => router.push(`/mentors/${m.id}`)}
+                  isSmall={isSmall}
+                  isFounderCard={false}
                 />
               );
             })}
@@ -603,12 +611,12 @@ const styles = StyleSheet.create({
   },
   founderCardWrapper: {
     width: '100%',
+    maxWidth: 500,
     marginTop: 16,
   },
 
   // Card Styles from mentors.tsx
-  card: { backgroundColor: "#fff", borderRadius: 12, padding: 20, borderWidth: 0.5, borderColor: "#F3F4F6", width: Platform.OS === "web" ? "calc(50% - 8px)" : "100%", minWidth: 300, maxWidth: 500, ...Platform.select({ ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4 }, android: { elevation: 2 } }) },
-  cardFullWidth: { width: '100%', maxWidth: '100%' },
+  card: { backgroundColor: "#fff", borderRadius: 12, padding: 20, borderWidth: 0.5, borderColor: "#F3F4F6", minWidth: 300, maxWidth: 500, ...Platform.select({ ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4 }, android: { elevation: 2 } }) },
   cardContent: { gap: 12 },
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   avatarImage: { width: 56, height: 56, borderRadius: 28, backgroundColor: '#F3F4F6' },

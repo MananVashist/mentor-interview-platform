@@ -121,7 +121,7 @@ function BookNowPanel({ sType, price, bundleSave, s1ok, s2ok, s3ok, allOk, tried
         ))}
       </View>
       <TouchableOpacity style={[g.bnBtn, { backgroundColor: allOk ? TEAL : "#374151" }]} onPress={onBook} activeOpacity={0.82}>
-         <Text style={[g.bnBtnTxt, { fontFamily: F }]}>Review Booking</Text>
+         <Text style={[g.bnBtnTxt, { fontFamily: F }]}>Confirm Booking</Text>
       </TouchableOpacity>
       {tried && !allOk && (
         <View style={g.bnWarn}>

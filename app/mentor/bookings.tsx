@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   View, ScrollView, StyleSheet, ActivityIndicator, TouchableOpacity,
-  RefreshControl, StatusBar, Modal, Platform, Alert, Linking
+  RefreshControl, StatusBar, Modal, Platform, Alert, Linking, Text
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -24,14 +24,11 @@ import { useNotification } from '@/lib/ui/NotificationBanner';
 // Bank Details Modal
 import { BankDetailsModal } from '@/components/mentor/BankDetailsModal';
 
-// ✅ OPTIMIZED: Shared Availability Service
+// Shared Availability Service
 import { availabilityService } from '@/services/availability.service';
 
 // DayCard Component for Reschedule Modal
 type DayAvailability = { dateStr: string; weekdayName: string; monthDay: string; slots: any[]; isFullDayOff: boolean };
-
-// Day mapping: Luxon weekday (1=Mon, 7=Sun) to day keys
-const DAY_KEY_MAP = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 
 const DayCard = ({ day, isSelected, onPress }: { day: DayAvailability, isSelected: boolean, onPress: () => void }) => {
   const availableCount = day.slots.filter((s: any) => s.isAvailable).length;
@@ -80,7 +77,7 @@ const rescheduleDayCardStyles = StyleSheet.create({
   statusDot: { width: 6, height: 6, borderRadius: 3 },
 });
 
-const BookingCard = ({ session, onAccept, onReschedule, onJoin, onEvaluate, onViewResume, onViewTemplate }: any) => {
+const BookingCard = ({ session, onAccept, onReschedule, onJoin, onEvaluate, onViewResume, onViewTemplate, onViewJD }: any) => {
   const uiState = getBookingState(session);
   const details = getBookingDetails(session);
   const counterpartName = details.getCounterpartName('mentor');
@@ -94,13 +91,12 @@ const BookingCard = ({ session, onAccept, onReschedule, onJoin, onEvaluate, onVi
   };
   const resumeUrl = getResumeUrl(session);
   const hasResume = !!resumeUrl;
+  
+  // Identify if it's a JD based session
+  const isJDBased = session.skill_name?.toLowerCase().includes('jd-based');
 
   const skillName = session.session_type === 'intro' ? 'Intro Call' : (session.skill_name || 'Interview Session');
-
-  // Helper to check if it's my turn
   const isMyTurn = details.rescheduledBy === 'candidate';
-
-  let displayDesc: string | string[] = session.skill_description || session.package?.interview_profile_description || "No details provided.";
 
   const handleOpenRecording = async () => {
     try {
@@ -168,85 +164,66 @@ const BookingCard = ({ session, onAccept, onReschedule, onJoin, onEvaluate, onVi
       {uiState === 'RESCHEDULE_PENDING' && (
         <>
           {isMyTurn ? (
-            // CASE A: Candidate Initiated -> I can Accept or Reschedule
             <>
               <View style={styles.bannerAction}>
                 <View style={styles.bannerHeader}>
                   <Ionicons name="time-outline" size={18} color="#B45309" />
-                  <AppText style={styles.bannerTitleAction}>
-                    Candidate Proposed New Time
-                  </AppText>
+                  <AppText style={styles.bannerTitleAction}>Candidate Proposed New Time</AppText>
                 </View>
-                <AppText style={styles.bannerTextAction}>
-                  {details.dateLabel} at {details.timeLabel}
-                </AppText>
-                <AppText style={styles.bannerSubTextAction}>
-                  Accept this time or propose a different one
-                </AppText>
+                <AppText style={styles.bannerTextAction}>{details.dateLabel} at {details.timeLabel}</AppText>
+                <AppText style={styles.bannerSubTextAction}>Accept this time or propose a different one</AppText>
               </View>
               <View style={styles.actionRowFull}>
-                <TouchableOpacity
-                  style={[styles.btnFull, styles.btnOutline]}
-                  onPress={() => onReschedule(session)}
-                >
+                <TouchableOpacity style={[styles.btnFull, styles.btnOutline]} onPress={() => onReschedule(session)}>
                   <AppText style={styles.textPrimary}>Reschedule</AppText>
                 </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.btnFull, styles.btnPrimary]}
-                  onPress={() => onAccept(session.id, true)}
-                >
+                <TouchableOpacity style={[styles.btnFull, styles.btnPrimary]} onPress={() => onAccept(session.id, true)}>
                   <AppText style={styles.textWhite}>Accept Time</AppText>
                 </TouchableOpacity>
               </View>
             </>
           ) : (
-            // CASE B: Mentor Initiated -> Waiting for Candidate
             <View style={styles.bannerWaiting}>
               <View style={styles.bannerHeader}>
                 <Ionicons name="hourglass-outline" size={16} color="#B45309" />
-                <AppText style={styles.bannerTitleWaiting}>
-                  Reschedule Requested
-                </AppText>
+                <AppText style={styles.bannerTitleWaiting}>Reschedule Requested</AppText>
               </View>
-              <AppText style={styles.bannerTextWaiting}>
-                You proposed: {details.dateLabel} at {details.timeLabel}
-              </AppText>
-              <AppText style={styles.bannerSubTextWaiting}>
-                Waiting for candidate to accept the new time
-              </AppText>
+              <AppText style={styles.bannerTextWaiting}>You proposed: {details.dateLabel} at {details.timeLabel}</AppText>
+              <AppText style={styles.bannerSubTextWaiting}>Waiting for candidate to accept the new time</AppText>
             </View>
           )}
         </>
       )}
 
-      {/* ACCEPTED STATE (SCHEDULED) - Resume & Template Buttons */}
+      {/* ACCEPTED STATE (SCHEDULED) */}
       {uiState === 'SCHEDULED' && (
         <View style={styles.actionRowFull}>
           {hasResume && (
-            <TouchableOpacity
-              style={[styles.btnFull, styles.btnOutline]}
-              onPress={() => onViewResume(resumeUrl)}
-            >
+            <TouchableOpacity style={[styles.btnFull, styles.btnOutline]} onPress={() => onViewResume(resumeUrl)}>
               <Ionicons name="document-text-outline" size={16} color={theme.colors.primary} style={{ marginRight: 4 }} />
               <AppText style={styles.textPrimary}>Resume</AppText>
             </TouchableOpacity>
           )}
-          <TouchableOpacity
-            style={[styles.btnFull, styles.btnOutline]}
-            onPress={() => onViewTemplate(session)}
-          >
+          {isJDBased && (
+            <TouchableOpacity style={[styles.btnFull, styles.btnOutline]} onPress={() => onViewJD(session.candidate_id)}>
+              <Ionicons name="briefcase-outline" size={16} color={theme.colors.primary} style={{ marginRight: 4 }} />
+              <AppText style={styles.textPrimary}>JD</AppText>
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity style={[styles.btnFull, styles.btnOutline]} onPress={() => onViewTemplate(session)}>
             <Ionicons name="clipboard-outline" size={16} color={theme.colors.primary} style={{ marginRight: 4 }} />
             <AppText style={styles.textPrimary}>Template</AppText>
           </TouchableOpacity>
         </View>
       )}
 
+      {/* LIVE NOW (JOIN) */}
       {uiState === 'JOIN' && (
         <>
           <View style={{ backgroundColor: '#F0FDFA', padding: 12, borderRadius: 8, marginBottom: 12, flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
             <Ionicons name="information-circle-outline" size={18} color="#14B8A6" style={{ marginTop: 2 }} />
             <AppText style={{ flex: 1, fontSize: 13, color: '#0F766E', lineHeight: 20 }}>
-              This meeting will be recorded. Please download the recording within 48 hrs after the session
+              This meeting will be recorded. Please download the recording within 48 hrs after the session.
             </AppText>
           </View>
           <View style={styles.actionRowFull}>
@@ -254,42 +231,41 @@ const BookingCard = ({ session, onAccept, onReschedule, onJoin, onEvaluate, onVi
               <Ionicons name="videocam" size={18} color="#fff" style={{ marginRight: 4 }} />
               <AppText style={styles.textWhite}>Join</AppText>
             </TouchableOpacity>
-
             <TouchableOpacity style={[styles.btnFull, styles.btnPrimary]} onPress={() => onEvaluate(session, 'edit')}>
               <AppText style={styles.textWhite}>Evaluate</AppText>
             </TouchableOpacity>
-
             {hasResume && (
-              <TouchableOpacity
-                style={[styles.btnIconOnly, styles.btnOutline]}
-                onPress={() => onViewResume(resumeUrl)}
-              >
+              <TouchableOpacity style={[styles.btnIconOnly, styles.btnOutline]} onPress={() => onViewResume(resumeUrl)}>
                 <Ionicons name="document-text-outline" size={20} color={theme.colors.primary} />
+              </TouchableOpacity>
+            )}
+            {isJDBased && (
+              <TouchableOpacity style={[styles.btnIconOnly, styles.btnOutline]} onPress={() => onViewJD(session.candidate_id)}>
+                <Ionicons name="briefcase-outline" size={20} color={theme.colors.primary} />
               </TouchableOpacity>
             )}
           </View>
         </>
       )}
 
-      {/* POST STATES: show recording + evaluation */}
+      {/* POST STATES: show recording + evaluation + JD */}
       {(uiState === 'POST_PENDING' || uiState === 'POST_COMPLETED') && (
         <View style={styles.actionRowFull}>
           {!!session.recording_url && (
-            <TouchableOpacity
-              style={[styles.btnFull, styles.btnOutline]}
-              onPress={handleOpenRecording}
-            >
-              <Ionicons name="play-circle-outline" size={16} color={theme.colors.primary} style={{ marginRight: 6 }} />
-              <AppText style={styles.textPrimary}>View Recording</AppText>
+            <TouchableOpacity style={[styles.btnFull, styles.btnOutline]} onPress={handleOpenRecording}>
+              <Ionicons name="play-circle-outline" size={16} color={theme.colors.primary} style={{ marginRight: 4 }} />
+              <AppText style={styles.textPrimary}>Recording</AppText>
             </TouchableOpacity>
           )}
-
-          <TouchableOpacity
-            style={[styles.btnFull, uiState === 'POST_COMPLETED' ? styles.btnSecondary : styles.btnPrimary]}
-            onPress={() => onEvaluate(session, uiState === 'POST_COMPLETED' ? 'read' : 'edit')}
-          >
+          {isJDBased && (
+            <TouchableOpacity style={[styles.btnFull, styles.btnOutline]} onPress={() => onViewJD(session.candidate_id)}>
+              <Ionicons name="briefcase-outline" size={16} color={theme.colors.primary} style={{ marginRight: 4 }} />
+              <AppText style={styles.textPrimary}>JD</AppText>
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity style={[styles.btnFull, uiState === 'POST_COMPLETED' ? styles.btnSecondary : styles.btnPrimary]} onPress={() => onEvaluate(session, uiState === 'POST_COMPLETED' ? 'read' : 'edit')}>
             <AppText style={uiState === 'POST_COMPLETED' ? styles.textPrimary : styles.textWhite}>
-              {uiState === 'POST_COMPLETED' ? 'View Evaluation' : 'Submit Evaluation'}
+              {uiState === 'POST_COMPLETED' ? 'View Eval' : 'Evaluate'}
             </AppText>
           </TouchableOpacity>
         </View>
@@ -326,12 +302,18 @@ export default function MentorBookingsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [stats, setStats] = useState({ upcoming: 0, completed: 0, earnings: 0 });
 
-  // Modals
+  // Evaluation Template Modal
   const [templateModalVisible, setTemplateModalVisible] = useState(false);
   const [templateContent, setTemplateContent] = useState({
     skillName: '',
     templates: [] as Array<{ title: string; examples: string[]; questions: any[] }>
   });
+  
+  // JD Modal
+  const [jdModalVisible, setJdModalVisible] = useState(false);
+  const [jdContent, setJdContent] = useState('');
+
+  // Reschedule Modal
   const [rescheduleModalVisible, setRescheduleModalVisible] = useState(false);
   const [selectedSession, setSelectedSession] = useState<any>(null);
 
@@ -350,10 +332,11 @@ export default function MentorBookingsScreen() {
   const fetchSessions = async () => {
     if (!user) return;
     try {
+      // ✅ Included candidate_id to fetch JD securely 
       const { data, error } = await supabase
         .from('interview_sessions')
         .select(`
-          id, scheduled_at, status, skill_id, session_type,pending_reschedule_approval, rescheduled_by,
+          id, candidate_id, scheduled_at, status, skill_id, session_type, pending_reschedule_approval, rescheduled_by,
           meetings:session_meetings ( recording_url ),
           package:interview_packages ( id, mentor_payout_inr, interview_profile_id, payment_status ),
           candidate:candidates ( professional_title, resume_url )
@@ -363,18 +346,11 @@ export default function MentorBookingsScreen() {
 
       if (error) throw error;
 
-      // ✅ FILTER: Exclude sessions with status = 'awaiting_payment'
-      // - 'awaiting_payment': Payment in progress, not yet confirmed
-      // - 'pending': Payment confirmed, awaiting mentor approval (SHOW THIS)
-      // - 'confirmed', 'completed', etc.: All other statuses (SHOW THESE)
-      const paidSessions = (data || []).filter((s: any) =>
-        s.status !== 'awaiting_payment'
-      );
-
-      const rawSessions = paidSessions;
+      // Filter out unpaid/processing sessions
+      const paidSessions = (data || []).filter((s: any) => s.status !== 'awaiting_payment');
 
       // 1. Fetch Profile Data
-      const profileIds = Array.from(new Set(rawSessions.map((s: any) => s.package?.interview_profile_id).filter((id: any) => id != null)));
+      const profileIds = Array.from(new Set(paidSessions.map((s: any) => s.package?.interview_profile_id).filter((id: any) => id != null)));
       let profileMap: Record<string, { name: string; description: string | null }> = {};
 
       if (profileIds.length > 0) {
@@ -385,7 +361,7 @@ export default function MentorBookingsScreen() {
       }
 
       // 2. Fetch Skills Data
-      const skillIds = [...new Set(rawSessions.map((s: any) => s.skill_id).filter(Boolean))];
+      const skillIds = [...new Set(paidSessions.map((s: any) => s.skill_id).filter(Boolean))];
       let skillMap: any = {};
 
       if (skillIds.length > 0) {
@@ -401,14 +377,12 @@ export default function MentorBookingsScreen() {
         }
       }
 
-      // 3. Merge Data + normalize recording_url from meetings
-      const enrichedSessions = rawSessions.map((s: any) => {
+      // 3. Merge Data
+      const enrichedSessions = paidSessions.map((s: any) => {
         const profileId = s.package?.interview_profile_id;
         const profileMeta = profileId != null ? profileMap[String(profileId)] ?? null : null;
         const skillMeta = s.skill_id ? skillMap[s.skill_id] : null;
-
-        const recordingUrl =
-          Array.isArray(s.meetings) ? (s.meetings?.[0]?.recording_url ?? null) : (s.meetings?.recording_url ?? null);
+        const recordingUrl = Array.isArray(s.meetings) ? (s.meetings?.[0]?.recording_url ?? null) : (s.meetings?.recording_url ?? null);
 
         return {
           ...s,
@@ -447,29 +421,17 @@ export default function MentorBookingsScreen() {
 
   const checkBankDetails = async () => {
     if (!user) return false;
-
     try {
-      const { data: mentor } = await supabase
-        .from('mentors')
-        .select('bank_details')
-        .eq('id', user.id)
-        .maybeSingle();
-
+      const { data: mentor } = await supabase.from('mentors').select('bank_details').eq('id', user.id).maybeSingle();
       if (mentor && mentor.bank_details) {
         const bd = mentor.bank_details as any;
-        const hasAllDetails = !!(
-          bd.holder_name?.trim() &&
-          bd.account_number?.trim() &&
-          bd.ifsc_code?.trim()
-        );
+        const hasAllDetails = !!(bd.holder_name?.trim() && bd.account_number?.trim() && bd.ifsc_code?.trim());
         setHasBankDetails(hasAllDetails);
         return hasAllDetails;
       }
-
       setHasBankDetails(false);
       return false;
     } catch (e) {
-      console.error('Error checking bank details:', e);
       setHasBankDetails(false);
       return false;
     }
@@ -494,28 +456,18 @@ export default function MentorBookingsScreen() {
     }
 
     try {
-      const newMeetingLink = `https://meet.jit.si/crackjobs-${id}`;
-
-      const updateData: any = {
-        status: 'confirmed',
-      };
-
+      const updateData: any = { status: 'confirmed' };
       if (isRescheduleAcceptance) {
         updateData.pending_reschedule_approval = false;
         updateData.rescheduled_by = null;
       }
 
-      const { error } = await supabase
-        .from('interview_sessions')
-        .update(updateData)
-        .eq('id', id);
-
+      const { error } = await supabase.from('interview_sessions').update(updateData).eq('id', id);
       if (error) throw error;
 
       showNotification('Interview accepted! Meeting link generated.', 'success');
       fetchSessions();
     } catch (e: any) {
-      console.error("Accept Error:", e);
       Alert.alert('Error', e?.message || 'Could not accept this interview.');
     }
   };
@@ -534,33 +486,26 @@ export default function MentorBookingsScreen() {
 
     if (user?.id) {
       generateAvailability(user.id, session.id);
-    } else {
-      Alert.alert('Error', 'User not found');
     }
   };
 
-  // ✅ OPTIMIZED: Use shared availability service
   const generateAvailability = async (mentorId: string, excludeSessionId?: string) => {
     setLoadingReschedule(true);
     try {
       const days = await availabilityService.generateAvailability(mentorId, excludeSessionId);
       setAvailabilityData(days);
     } catch (err) {
-      console.error('[Reschedule] Error generating availability:', err);
       setAvailabilityData([]);
     } finally {
       setLoadingReschedule(false);
     }
   };
 
-
-
   const handleRescheduleConfirm = async () => {
     if (!selectedSession || !selectedDay || !selectedSlot) {
       Alert.alert('Error', 'Please select a date and time slot');
       return;
     }
-
     try {
       const slot = selectedDay.slots.find((s: any) => s.time === selectedSlot);
       if (!slot) throw new Error('Invalid slot selected');
@@ -587,60 +532,65 @@ export default function MentorBookingsScreen() {
 
   const handleJoin = (session: any) => {
     const mentorTitle = session.candidate?.professional_title || 'Mentor';
-
     router.push({
       pathname: '/video-call',
-      params: {
-        sessionId: session.id,
-        defaultName: mentorTitle,
-        role: 'host',
-      },
+      params: { sessionId: session.id, defaultName: mentorTitle, role: 'host' },
     });
   };
 
+  const handleViewJD = async (candidateId: string) => {
+    if (!candidateId) return;
+    try {
+      const { data, error } = await supabase
+        .from('job_descriptions')
+        .select('jd_text')
+        .eq('candidate_id', candidateId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (error || !data) {
+        Alert.alert('No JD Found', 'The candidate did not provide a job description for this session.');
+        return;
+      }
+      setJdContent(data.jd_text);
+      setJdModalVisible(true);
+    } catch (e) {
+      Alert.alert('Error', 'Could not load job description.');
+    }
+  };
+
   const handleViewTemplate = (session: any) => {
-    // ── Intro call: use domain-specific INTRO_CALL_TEMPLATES ──────────────
     if (session.session_type === 'intro') {
       const profileId = Number(session.package?.interview_profile_id);
       const introTemplates = (profileId && INTRO_CALL_TEMPLATES[profileId])
         ? INTRO_CALL_TEMPLATES[profileId]
         : INTRO_CALL_TEMPLATE_FALLBACK;
       const templates = introTemplates.map(template => ({
-        title: template.title,
-        examples: template.example || [],
-        questions: template.questions || []
+        title: template.title, examples: template.example || [], questions: template.questions || []
       }));
       setTemplateContent({ skillName: 'Intro Call', templates });
       setTemplateModalVisible(true);
       return;
     }
 
-    // ── Mock / bundle: existing MASTER_TEMPLATES lookup ───────────────────
     const profileId = Number(session.package?.interview_profile_id);
     const skillId = session.skill_id;
-
     let skillName = session.skill_name || 'Evaluation Template';
     let templates: Array<{ title: string; examples: string[]; questions: any[] }> = [];
 
     if (profileId && skillId && MASTER_TEMPLATES[profileId]?.skills[skillId]) {
       const skillData = MASTER_TEMPLATES[profileId].skills[skillId];
       skillName = skillData.skill_name || session.skill_name;
-
       if (skillData.templates && skillData.templates.length > 0) {
         templates = skillData.templates.map(template => ({
-          title: template.title,
-          examples: template.example || [],
-          questions: template.questions || []
+          title: template.title, examples: template.example || [], questions: template.questions || []
         }));
       }
     }
 
     if (templates.length === 0 && session.skill_description) {
-      templates = [{
-        title: 'Description',
-        examples: [session.skill_description],
-        questions: []
-      }];
+      templates = [{ title: 'Description', examples: [session.skill_description], questions: [] }];
     }
 
     setTemplateContent({ skillName, templates });
@@ -648,27 +598,19 @@ export default function MentorBookingsScreen() {
   };
 
   const handleViewResume = async (urlOrPath: string) => {
-    if (!urlOrPath) {
-      Alert.alert('No Resume', 'No resume available for this candidate.');
-      return;
-    }
+    if (!urlOrPath) { Alert.alert('No Resume', 'No resume available for this candidate.'); return; }
     try {
       let path = urlOrPath;
-
       if (urlOrPath.startsWith('http')) {
         if (urlOrPath.includes('/resumes/')) {
           const parts = urlOrPath.split('/resumes/');
-          if (parts.length > 1) {
-            path = parts[1];
-          }
+          if (parts.length > 1) path = parts[1];
         } else {
           const match = urlOrPath.match(/public\/.+\/(.+)$/);
           if (match) path = match[1];
         }
       }
-
       path = decodeURIComponent(path);
-
       const { data, error } = await supabase.storage.from('resumes').createSignedUrl(path, 3600);
 
       if (error || !data?.signedUrl) {
@@ -678,15 +620,10 @@ export default function MentorBookingsScreen() {
         }
         throw error || new Error('Could not sign URL');
       }
-
       Linking.openURL(data.signedUrl).catch(() => Alert.alert('Error', 'Could not open resume link.'));
     } catch (e) {
-      console.error('Resume view error:', e);
-      if (urlOrPath.startsWith('http')) {
-        Linking.openURL(urlOrPath).catch(() => { });
-      } else {
-        Alert.alert('Error', 'Could not load resume.');
-      }
+      if (urlOrPath.startsWith('http')) Linking.openURL(urlOrPath).catch(() => { });
+      else Alert.alert('Error', 'Could not load resume.');
     }
   };
 
@@ -695,33 +632,22 @@ export default function MentorBookingsScreen() {
       let templateTitle = '';
       let templateContent = '';
 
-      // ── Intro call: use domain-specific INTRO_CALL_TEMPLATES ─────────────
       if (session.session_type === 'intro') {
         const profileId = Number(session.package?.interview_profile_id);
-        const introTemplates = (profileId && INTRO_CALL_TEMPLATES[profileId])
-          ? INTRO_CALL_TEMPLATES[profileId]
-          : INTRO_CALL_TEMPLATE_FALLBACK;
+        const introTemplates = (profileId && INTRO_CALL_TEMPLATES[profileId]) ? INTRO_CALL_TEMPLATES[profileId] : INTRO_CALL_TEMPLATE_FALLBACK;
         const tmpl = introTemplates[0];
         templateTitle = tmpl.title;
         templateContent = JSON.stringify(tmpl);
 
         router.push({
           pathname: `/mentor/session/${session.id}`,
-          params: {
-            mode,
-            templateTitle,
-            templateContent,
-            profileName: 'Intro Call',
-            round: 'Intro Call'
-          }
+          params: { mode, templateTitle, templateContent, profileName: 'Intro Call', round: 'Intro Call' }
         });
         return;
       }
 
-      // ── Mock / bundle: existing MASTER_TEMPLATES lookup ──────────────────
       const profileIdNum = Number(session.package?.interview_profile_id);
       const skillId = session.skill_id;
-
       let foundRealTimeTemplate = false;
 
       if (profileIdNum && skillId && MASTER_TEMPLATES[profileIdNum]) {
@@ -735,7 +661,6 @@ export default function MentorBookingsScreen() {
       }
 
       if (!foundRealTimeTemplate) {
-        console.log("Using legacy template fallback for session:", session.id);
         const legacyTemplate = getEvaluationTemplate(session);
         templateTitle = legacyTemplate.title;
         templateContent = legacyTemplate.content;
@@ -743,16 +668,9 @@ export default function MentorBookingsScreen() {
 
       router.push({
         pathname: `/mentor/session/${session.id}`,
-        params: {
-          mode,
-          templateTitle: templateTitle,
-          templateContent: templateContent,
-          profileName: session.package?.interview_profile_name || '',
-          round: session.skill_name || 'Interview'
-        }
+        params: { mode, templateTitle, templateContent, profileName: session.package?.interview_profile_name || '', round: session.skill_name || 'Interview' }
       });
     } catch (e) {
-      console.error('Template fetch error:', e);
       Alert.alert('Error', 'Could not load evaluation template.');
     }
   };
@@ -808,7 +726,7 @@ export default function MentorBookingsScreen() {
               <BookingCard
                 key={session.id} session={session}
                 onAccept={handleAccept} onReschedule={handleRescheduleStart}
-                onViewResume={handleViewResume}
+                onViewResume={handleViewResume} onViewJD={handleViewJD}
                 onJoin={handleJoin} onEvaluate={handleEvaluate}
                 onViewTemplate={handleViewTemplate}
               />
@@ -829,52 +747,32 @@ export default function MentorBookingsScreen() {
                   {templateContent.templates.length > 0 ? (
                     templateContent.templates.map((template, templateIdx) => (
                       <View key={templateIdx} style={{ marginBottom: templateIdx < templateContent.templates.length - 1 ? 24 : 0 }}>
-                        <AppText style={{
-                          fontWeight: '700',
-                          color: theme.colors.primary,
-                          marginBottom: 12,
-                          fontSize: 16,
-                          borderBottomWidth: 1,
-                          borderBottomColor: '#E5E7EB',
-                          paddingBottom: 8
-                        }}>
+                        <AppText style={{ fontWeight: '700', color: theme.colors.primary, marginBottom: 12, fontSize: 16, borderBottomWidth: 1, borderBottomColor: '#E5E7EB', paddingBottom: 8 }}>
                           {template.title}
                         </AppText>
-
                         {template.examples.length > 0 && (
                           <View style={{ marginBottom: 16 }}>
-                            <AppText style={{ fontWeight: '600', color: theme.colors.text.main, marginBottom: 8, fontSize: 14 }}>
-                              Example Scenarios:
-                            </AppText>
+                            <AppText style={{ fontWeight: '600', color: theme.colors.text.main, marginBottom: 8, fontSize: 14 }}>Example Scenarios:</AppText>
                             {template.examples.map((example, idx) => (
                               <View key={idx} style={{ flexDirection: 'row', gap: 8, paddingRight: 10, marginBottom: 6 }}>
                                 <AppText style={{ color: theme.colors.primary, fontSize: 16 }}>•</AppText>
-                                <AppText style={{ flex: 1, color: '#374151', lineHeight: 22 }}>
-                                  {example}
-                                </AppText>
+                                <AppText style={{ flex: 1, color: '#374151', lineHeight: 22 }}>{example}</AppText>
                               </View>
                             ))}
                           </View>
                         )}
-
                         {template.questions.length > 0 && (
                           <View>
-                            <AppText style={{ fontWeight: '600', color: theme.colors.text.main, marginBottom: 8, fontSize: 14 }}>
-                              Evaluation Questions:
-                            </AppText>
+                            <AppText style={{ fontWeight: '600', color: theme.colors.text.main, marginBottom: 8, fontSize: 14 }}>Evaluation Questions:</AppText>
                             {template.questions.map((question, idx) => (
                               <View key={idx} style={{ marginBottom: 12 }}>
-                                <AppText style={{ fontWeight: '500', color: '#374151', marginBottom: 4 }}>
-                                  {idx + 1}. {question.text}
-                                </AppText>
+                                <AppText style={{ fontWeight: '500', color: '#374151', marginBottom: 4 }}>{idx + 1}. {question.text}</AppText>
                                 {question.title && Array.isArray(question.title) && question.title.length > 0 && (
                                   <View style={{ paddingLeft: 16, marginTop: 4 }}>
                                     {question.title.map((tip, tipIdx) => (
                                       <View key={tipIdx} style={{ flexDirection: 'row', gap: 6, marginBottom: 2 }}>
                                         <AppText style={{ color: '#6B7280', fontSize: 14 }}>?</AppText>
-                                        <AppText style={{ flex: 1, color: '#6B7280', fontSize: 14, lineHeight: 20 }}>
-                                          {tip}
-                                        </AppText>
+                                        <AppText style={{ flex: 1, color: '#6B7280', fontSize: 14, lineHeight: 20 }}>{tip}</AppText>
                                       </View>
                                     ))}
                                   </View>
@@ -886,15 +784,34 @@ export default function MentorBookingsScreen() {
                       </View>
                     ))
                   ) : (
-                    <AppText style={{ color: '#6B7280', fontStyle: 'italic' }}>
-                      No evaluation template available for this skill.
-                    </AppText>
+                    <AppText style={{ color: '#6B7280', fontStyle: 'italic' }}>No evaluation template available for this skill.</AppText>
                   )}
                 </ScrollView>
               </View>
 
               <View style={styles.modalFooter}>
                 <TouchableOpacity onPress={() => setTemplateModalVisible(false)} style={styles.btnFullPrimary}>
+                  <AppText style={styles.textWhite}>Close</AppText>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* JD Modal */}
+      <Modal visible={jdModalVisible} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalContent}>
+              <Heading level={3} style={{ marginBottom: 12 }}>Job Description</Heading>
+              <View style={{ maxHeight: 400, backgroundColor: '#fff' }}>
+                <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
+                  <AppText style={{ color: '#374151', lineHeight: 22 }}>{jdContent}</AppText>
+                </ScrollView>
+              </View>
+              <View style={styles.modalFooter}>
+                <TouchableOpacity onPress={() => setJdModalVisible(false)} style={styles.btnFullPrimary}>
                   <AppText style={styles.textWhite}>Close</AppText>
                 </TouchableOpacity>
               </View>
@@ -910,9 +827,7 @@ export default function MentorBookingsScreen() {
             <ScrollView contentContainerStyle={styles.modalScrollContent} style={{ flex: 1 }}>
               <View style={styles.modalContent}>
                 <Heading level={3} style={{ marginBottom: 8 }}>Reschedule Interview</Heading>
-                <AppText style={{ marginBottom: 16, color: '#6B7280' }}>
-                  Select a new date and time slot
-                </AppText>
+                <AppText style={{ marginBottom: 16, color: '#6B7280' }}>Select a new date and time slot</AppText>
 
                 {selectedSession && (
                   <View style={{ backgroundColor: '#F9FAFB', padding: 12, borderRadius: 8, marginBottom: 16 }}>
@@ -933,15 +848,7 @@ export default function MentorBookingsScreen() {
                       </AppText>
                       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 4 }}>
                         {availabilityData.map((day) => (
-                          <DayCard
-                            key={day.dateStr}
-                            day={day}
-                            isSelected={selectedDay?.dateStr === day.dateStr}
-                            onPress={() => {
-                              setSelectedDay(day);
-                              setSelectedSlot(null);
-                            }}
-                          />
+                          <DayCard key={day.dateStr} day={day} isSelected={selectedDay?.dateStr === day.dateStr} onPress={() => { setSelectedDay(day); setSelectedSlot(null); }} />
                         ))}
                       </ScrollView>
                     </View>
@@ -987,19 +894,11 @@ export default function MentorBookingsScreen() {
                             return (
                               <TouchableOpacity
                                 key={`${selectedDay.dateStr}-${slot.time}`}
-                                style={[
-                                  styles.rescheduleSlot,
-                                  !slot.isAvailable && styles.rescheduleSlotDisabled,
-                                  isSelected && styles.rescheduleSlotSelected
-                                ]}
+                                style={[styles.rescheduleSlot, !slot.isAvailable && styles.rescheduleSlotDisabled, isSelected && styles.rescheduleSlotSelected]}
                                 disabled={!slot.isAvailable}
                                 onPress={() => setSelectedSlot(slot.time)}
                               >
-                                <AppText style={[
-                                  styles.rescheduleSlotText,
-                                  !slot.isAvailable && styles.rescheduleSlotTextDisabled,
-                                  isSelected && { color: '#FFF', fontWeight: 'bold' }
-                                ]}>
+                                <AppText style={[styles.rescheduleSlotText, !slot.isAvailable && styles.rescheduleSlotTextDisabled, isSelected && { color: '#FFF', fontWeight: 'bold' }]}>
                                   {slot.time}
                                 </AppText>
                               </TouchableOpacity>
@@ -1016,12 +915,7 @@ export default function MentorBookingsScreen() {
             <View style={styles.modalFooter}>
               <View style={styles.actionRow}>
                 <TouchableOpacity
-                  onPress={() => {
-                    setRescheduleModalVisible(false);
-                    setSelectedDay(null);
-                    setSelectedSlot(null);
-                    setAvailabilityData([]);
-                  }}
+                  onPress={() => { setRescheduleModalVisible(false); setSelectedDay(null); setSelectedSlot(null); setAvailabilityData([]); }}
                   style={[styles.btn, styles.btnOutline, { flex: 1 }]}
                 >
                   <AppText style={styles.textPrimary}>Cancel</AppText>
@@ -1039,12 +933,7 @@ export default function MentorBookingsScreen() {
         </View>
       </Modal>
 
-      <BankDetailsModal
-        visible={bankDetailsModalVisible}
-        userId={user?.id || ''}
-        onClose={() => setBankDetailsModalVisible(false)}
-        onSuccess={handleBankDetailsSuccess}
-      />
+      <BankDetailsModal visible={bankDetailsModalVisible} userId={user?.id || ''} onClose={() => setBankDetailsModalVisible(false)} onSuccess={handleBankDetailsSuccess} />
     </ScreenBackground>
   );
 }
@@ -1090,65 +979,22 @@ const styles = StyleSheet.create({
   textWhite: { color: '#fff', fontWeight: '600', fontSize: 13 },
   textPrimary: { color: theme.colors.primary, fontWeight: '600', fontSize: 13 },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20 },
-  modalContainer: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    maxHeight: '85%',
-    overflow: 'hidden'
-  },
-  modalScrollContent: {
-    flexGrow: 0
-  },
-  modalContent: {
-    padding: 24,
-    paddingBottom: 0
-  },
-  modalFooter: {
-    backgroundColor: '#fff',
-    paddingTop: 16,
-    paddingBottom: 24,
-    borderTopWidth: 1,
-    borderTopColor: '#F3F4F6'
-  },
+  modalContainer: { backgroundColor: '#fff', borderRadius: 16, maxHeight: '85%', overflow: 'hidden' },
+  modalScrollContent: { flexGrow: 0 },
+  modalContent: { padding: 24, paddingBottom: 0 },
+  modalFooter: { backgroundColor: '#fff', paddingTop: 16, paddingBottom: 24, borderTopWidth: 1, borderTopColor: '#F3F4F6' },
   modalCloseBtn: { backgroundColor: theme.colors.primary, padding: 12, borderRadius: 8, alignItems: 'center', marginTop: 10 },
-
-  rescheduleSlot: {
-    width: '30%',
-    paddingVertical: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: theme.colors.primary,
-    backgroundColor: '#FFF',
-    alignItems: 'center'
-  },
-  rescheduleSlotDisabled: {
-    borderColor: '#EEE',
-    backgroundColor: '#F9FAFB'
-  },
-  rescheduleSlotSelected: {
-    backgroundColor: theme.colors.primary,
-    borderColor: theme.colors.primary
-  },
-  rescheduleSlotText: {
-    color: theme.colors.primary,
-    fontWeight: '600'
-  },
-  rescheduleSlotTextDisabled: {
-    color: '#CCC',
-    textDecorationLine: 'line-through'
-  },
-
-  bannerAction: {
-    backgroundColor: '#FFFBEB', padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#FEF3C7', marginBottom: 12
-  },
+  rescheduleSlot: { width: '30%', paddingVertical: 12, borderRadius: 8, borderWidth: 1, borderColor: theme.colors.primary, backgroundColor: '#FFF', alignItems: 'center' },
+  rescheduleSlotDisabled: { borderColor: '#EEE', backgroundColor: '#F9FAFB' },
+  rescheduleSlotSelected: { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary },
+  rescheduleSlotText: { color: theme.colors.primary, fontWeight: '600' },
+  rescheduleSlotTextDisabled: { color: '#CCC', textDecorationLine: 'line-through' },
+  bannerAction: { backgroundColor: '#FFFBEB', padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#FEF3C7', marginBottom: 12 },
   bannerHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
   bannerTitleAction: { fontSize: 14, fontWeight: '700', color: '#B45309' },
   bannerTextAction: { fontSize: 13, color: '#92400E', lineHeight: 20, marginBottom: 4 },
   bannerSubTextAction: { fontSize: 12, color: '#92400E', lineHeight: 18 },
-
-  bannerWaiting: {
-    backgroundColor: '#F3F4F6', padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#E5E7EB', marginBottom: 12
-  },
+  bannerWaiting: { backgroundColor: '#F3F4F6', padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#E5E7EB', marginBottom: 12 },
   bannerTitleWaiting: { fontSize: 14, fontWeight: '700', color: '#4B5563' },
   bannerTextWaiting: { fontSize: 13, color: '#374151', lineHeight: 20, marginBottom: 4 },
   bannerSubTextWaiting: { fontSize: 12, color: '#6B7280' },

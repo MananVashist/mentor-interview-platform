@@ -301,7 +301,7 @@ const MentorCard = ({
             onPress={onView}
             activeOpacity={0.8}
           >
-            <Text style={styles.bookBtnText}>View Profile</Text>
+            <Text style={styles.bookBtnText}>View Profile and Book</Text>
           </TouchableOpacity>
         </View>
 
@@ -474,7 +474,7 @@ export default function PublicBrowseMentors() {
               </View>
               <Text style={[styles.heroTitle, isMobile && styles.heroTitleMobile]}>
                 <Text style={{ color: BRAND_ORANGE }}>Choose from a list of </Text>
-                <Text style={{ color: CTA_TEAL }}>verified expert mentors</Text>
+                <Text style={{ color: CTA_TEAL }}>verified expert mentors and book</Text>
               </Text>
               <Text style={[styles.heroSubtitle, isMobile && styles.heroSubtitleMobile]}>
                 Anonymous 1:1 mock interviews. Vetted mentors from top companies for Product Management, Data / Business Analytics, Data Science and HR.
