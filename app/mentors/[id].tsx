@@ -19,9 +19,11 @@ import { theme } from "@/lib/theme";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { supabase } from "@/lib/supabase/client";
+import { paymentService } from "@/services/payment.service";
 import { useAuthStore } from "@/lib/store";
 import { availabilityService, type DayAvailability } from "@/services/availability.service";
 import { DateTime } from "luxon";
+import { trackEvent } from "@/lib/analytics";
 
 // ─────────────────────────────────────────────────────────
 // FONT
@@ -75,6 +77,7 @@ const IcoTarget    = ({ s = 20, c = TEAL }: { s?: number; c?: string }) => (<Svg
 const IcoChat      = ({ s = 20, c = "#7C3AED" }: { s?: number; c?: string }) => (<Svg width={s} height={s} viewBox="0 0 24 24" fill="none"><Path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></Svg>);
 const IcoLayers    = ({ s = 20, c = "#D97706" }: { s?: number; c?: string }) => (<Svg width={s} height={s} viewBox="0 0 24 24" fill="none"><Path d="M12 2L2 7l10 5 10-5-10-5z" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /><Path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></Svg>);
 const IcoChevron   = ({ s = 16, c = MUTED, up = false }: { s?: number; c?: string; up?: boolean }) => (<Svg width={s} height={s} viewBox="0 0 24 24" fill="none" style={up ? ({ transform: [{ rotate: "180deg" }] } as any) : undefined}><Path d="M6 9l6 6 6-6" stroke={c} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" /></Svg>);
+const IcoInfo      = ({ s = 16, c = TEAL }: { s?: number; c?: string }) => (<Svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><Circle cx="12" cy="12" r="10" /><Path d="M12 16v-4" /><Path d="M12 8h.01" /></Svg>);
 
 function TierBadge({ tier }: { tier?: string | null }) {
   let nm = "Bronze", tc = "#8B4513", bg = "#FFF8F0", bc = "#CD7F32", mc = "#CD7F32";
@@ -106,6 +109,27 @@ function DayCard({ day, isSel, onPress }: { day: DayAvailability; isSel: boolean
     </TouchableOpacity>
   );
 }
+
+const SEO: Record<SessionType, { title: string; expect: string; afterTitle: string; after: string }> = {
+  intro: {
+    title: "What Happens in an Intro Call?",
+    expect: "Your 25-minute intro call is a structured discovery conversation, not an interview. Your mentor will ask about your background, current skill level, and career goals. Together you'll map out exactly where you stand and identify the highest-impact areas to work on before your real interviews. Think of it as a personal coaching kickoff.",
+    afterTitle: "What You'll Walk Away With",
+    after: "You'll leave with a clear, personalised preparation roadmap. Your mentor will highlight which skills need the most work, suggest a practice sequence, and give you an honest assessment of your timeline. Many candidates use the intro call to decide whether a Mock Interview or the full Prep Course bundle is the right next step.",
+  },
+  mock: {
+    title: "What Happens in a Mock Interview?",
+    expect: "Your 55-minute mock interview is run exactly like a real panel interview — no hints, no pausing, no hand-holding. Your mentor opens with a brief warm-up, then moves straight into targeted questions based on the skill you selected. They'll evaluate your answers in real-time just as a hiring manager would, keeping detailed notes throughout the session.",
+    afterTitle: "The Feedback You'll Receive",
+    after: "After the interview your mentor delivers a structured verbal debrief covering every area assessed: communication clarity, technical depth, structured thinking, and overall interview readiness. You'll receive a scorecard with specific, actionable feedback and leave knowing the two or three improvements that will have the biggest impact on your next real interview.",
+  },
+  bundle: {
+    title: "What Happens Across a Prep Course?",
+    expect: "Your Prep Course is three full 55-minute mock interviews designed as a progressive programme. Session one establishes your baseline. Sessions two and three raise the difficulty and zero in on your weak spots. Your mentor tracks your improvement across all three and adjusts each session based on how the previous one went.",
+    afterTitle: "Your Progress Over Three Sessions",
+    after: "By the end of the bundle you'll see measurable, documented growth. After each session your mentor gives you targeted feedback. After the final session you receive a cumulative progress report comparing performance across all three. Most candidates who complete a Prep Course feel significantly more confident and perform at a noticeably higher level in their real interviews.",
+  },
+};
 
 function SessionRow({ selected, disabled, onPress, accentColor, icon, label, duration, description, price, badge, showUsed }: any) {
   return (
@@ -175,7 +199,7 @@ function BookNowPanel({ sType, price, bundleSave, s1ok, s2ok, s3ok, allOk, tried
       </View>
       <TouchableOpacity style={[g.bnBtn, { backgroundColor: allOk ? TEAL : "#374151" }]} onPress={onBook} activeOpacity={0.82}>
         <Text style={[g.bnBtnTxt, { fontFamily: F }]}>
-          {uid ? "Review Booking" : "Confirm and Pay"}
+          {uid ? "Review Booking" : "Sign In to Book"}
         </Text>
       </TouchableOpacity>
       {tried && !allOk && (
@@ -199,10 +223,10 @@ export default function MentorDetail() {
   const [loading, setLoading] = useState(true);
   const [mentor, setMentor] = useState<MentorDetail | null>(null);
   const [profiles, setProfiles] = useState<Profile[]>([]);
-  const [skills, setSkills] = useState<Skill[]>([]);
-  const [loadingSk, setLSk] = useState(false);
-  const [mockPrice, setMockP] = useState(0);
-  const [bioExp, setBioExp] = useState(false);
+  const [skills, setSkills]     = useState<Skill[]>([]);
+  const [loadingSk, setLSk]     = useState(false);
+  const [mockPrice, setMockP]   = useState(0);
+  const [bioExp, setBioExp]     = useState(false);
 
   const [sType, setSType] = useState<SessionType>("intro");
   const [profId, setProfId] = useState<number | null>(null);
@@ -321,7 +345,7 @@ export default function MentorDetail() {
     if (router.canGoBack()) {
       router.back();
     } else {
-      router.push("/mentors");
+      router.replace("/mentors");
     }
   };
 
@@ -339,24 +363,24 @@ export default function MentorDetail() {
     const seed = mentor?.id || mentorName;
     const fallbackAvatar = `https://api.dicebear.com/9.x/micah/png?seed=${encodeURIComponent(seed)}&backgroundColor=e5e7eb,f3f4f6`;
 
+    // URI Encode complex string/JSON payloads to survive router redirects unharmed
     const reviewParams = {
       mentorId: id,
-      profileId: effPID,
+      profileId: effPID ? effPID.toString() : '',
       skillId: skill?.id || '',
       skillName: skill?.name || '',
       sessionType: sType,
-      slotsIso: JSON.stringify(finalSlotsIso),
-      slotsDisplay: JSON.stringify(finalSlots),
-      jdText: isJD ? jdText.trim() : '',
+      slotsIso: encodeURIComponent(JSON.stringify(finalSlotsIso)),
+      slotsDisplay: encodeURIComponent(JSON.stringify(finalSlots)),
+      jdText: isJD && jdText ? encodeURIComponent(jdText.trim()) : '',
       price: price.toString(),
       bundleSave: bundleSave.toString(),
       mentorName: mentorName,
-      avatarUrl: mentor?.avatar_url || fallbackAvatar,
+      avatarUrl: encodeURIComponent(mentor?.avatar_url || fallbackAvatar),
       mentorTitle: mentor?.professional_title || ''
     };
 
     if (!uid) {
-      // Forward unauthenticated users to sign-in with all booking params
       router.push({
         pathname: "/auth/sign-in",
         params: { ...reviewParams, redirectTo: '/candidate/review' }
@@ -364,7 +388,6 @@ export default function MentorDetail() {
       return;
     }
 
-    // Forward authenticated users to the review page
     router.push({
       pathname: '/candidate/review',
       params: reviewParams
@@ -410,6 +433,21 @@ export default function MentorDetail() {
                 </View>
               </View>
             </View>
+            
+            {/* ABOUT ME SECTION */}
+            {mentor.experience_description ? (
+              <View style={g.bioWrap}>
+                <Text style={[g.bioLabel, { fontFamily: F }]}>ABOUT ME</Text>
+                <Text style={[g.bioTxt, { fontFamily: F }]} numberOfLines={bioExp ? undefined : 4}>
+                  {mentor.experience_description}
+                </Text>
+                {mentor.experience_description.length > 180 && (
+                  <TouchableOpacity onPress={() => setBioExp(e => !e)} style={{ marginTop: 8 }}>
+                    <Text style={[g.readMore, { fontFamily: F }]}>{bioExp ? "Read less ↑" : "Read more ↓"}</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            ) : null}
           </View>
 
           <View style={g.stepsHeaderRow}>
@@ -451,23 +489,54 @@ export default function MentorDetail() {
                           return (<TouchableOpacity key={p.id} style={[g.tag, on && g.tagOn]} onPress={() => { setLSk(true); setSkills([]); setProfId(p.id); setSkill(null); }}>{on && <IcoCheck s={13} />}<Text style={[g.tagTxt, on && g.tagTxtOn, { fontFamily: F }]}>{p.name}</Text></TouchableOpacity>);
                         })}
                       </View>
+                      
                       {profId && (
                         <View style={g.skillSec}>
                           {loadingSk ? <ActivityIndicator size="small" color={TEAL} /> : skills.length > 0 ? (
-                            <View style={g.tags}>
-                              {skills.map(sk => {
-                                const on = skill?.id === sk.id;
-                                const jd = sk.name.toLowerCase().includes("jd-based");
-                                return (<TouchableOpacity key={sk.id} style={[g.tag, on && (jd ? g.tagJDOn : g.tagSkOn), jd && !on && g.tagJD]} onPress={() => setSkill(sk)}><Text style={[g.tagTxt, on && g.tagTxtOn, { fontFamily: F }]}>{sk.name}</Text></TouchableOpacity>);
-                              })}
-                            </View>
+                            <>
+                              <Text style={[g.hint, { fontFamily: F }]}>Select a skill to practice</Text>
+                              <View style={g.tags}>
+                                {skills.map(sk => {
+                                  const on = skill?.id === sk.id;
+                                  const jd = sk.name.toLowerCase().includes("jd-based");
+                                  return (
+                                    <TouchableOpacity key={sk.id} style={[g.tag, on && (jd ? g.tagJDOn : g.tagSkOn), jd && !on && g.tagJD]} onPress={() => setSkill(sk)}>
+                                      {jd && <Text style={{ fontSize: 12 }}>📄</Text>}
+                                      <Text style={[g.tagTxt, on && g.tagTxtOn, { fontFamily: F }]}>{sk.name}</Text>
+                                    </TouchableOpacity>
+                                  );
+                                })}
+                              </View>
+                              
+                              {skill && (
+                                <View style={[g.skillDescBox, isJD && g.jdBox]}>
+                                  <View style={{flexDirection: 'row', alignItems: 'flex-start', gap: 8}}>
+                                    <IcoInfo s={18} c={isJD ? "#4C1D95" : TEAL} />
+                                    <Text style={[g.skillDescTxt, isJD && {color: "#4C1D95"}, { fontFamily: F, flex: 1 }]}>
+                                      {skill.description}
+                                    </Text>
+                                  </View>
+
+                                  {isJD && (
+                                    <View style={{marginTop: 16}}>
+                                      <Text style={[g.jdLabel, { fontFamily: F }]}>Paste the Job Description</Text>
+                                      <TextInput 
+                                        style={[g.jdInput, jdErr && g.jdInputErr]} 
+                                        multiline 
+                                        numberOfLines={4} 
+                                        placeholder="Paste the full job description here (min 50 chars)..." 
+                                        value={jdText} 
+                                        onChangeText={t => { setJdText(t); if (jdErr) setJdErr(""); }} 
+                                        textAlignVertical="top" 
+                                      />
+                                      {jdErr ? <Text style={[g.jdErr, { fontFamily: F }]}>{jdErr}</Text> : null}
+                                    </View>
+                                  )}
+                                </View>
+                              )}
+
+                            </>
                           ) : (<Text>No skills found.</Text>)}
-                          {isJD && (
-                            <View style={g.jdBox}>
-                              <TextInput style={[g.jdInput, jdErr && g.jdInputErr]} multiline numberOfLines={4} placeholder="Paste JD here (min 50 chars)..." value={jdText} onChangeText={t => { setJdText(t); if (jdErr) setJdErr(""); }} textAlignVertical="top" />
-                              {jdErr ? <Text style={[g.jdErr, { fontFamily: F }]}>{jdErr}</Text> : null}
-                            </View>
-                          )}
                         </View>
                       )}
                       {s2ok && <TouchableOpacity style={[g.nextBtn, { marginTop: 16 }]} onPress={() => setOpenStep(2)}><Text style={[g.nextBtnTxt, { fontFamily: F }]}>Continue →</Text></TouchableOpacity>}
@@ -535,6 +604,10 @@ const g = StyleSheet.create({
   statsRow: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
   stat: { flexDirection: "row", alignItems: "center", backgroundColor: "#F9FAFB", paddingHorizontal: 8, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: BORDER },
   statTxt: { fontSize: 11, fontWeight: "600", color: "#374151" },
+  bioWrap: { borderTopWidth: 1, borderTopColor: "#F3F4F6", paddingHorizontal: 20, paddingTop: 16, paddingBottom: 20 },
+  bioLabel: { fontSize: 11, fontWeight: "800", color: MUTED, letterSpacing: 0.5, marginBottom: 8 },
+  bioTxt: { fontSize: 14, color: "#4B5563", lineHeight: 22 },
+  readMore: { fontSize: 13, fontWeight: "700", color: TEAL },
   stepsHeaderRow: { marginTop: 12, marginBottom: 0 },
   sectionHeader: { fontSize: 20, fontWeight: "800", color: DARK },
   stepsContainer: { marginTop: 8 },
@@ -580,10 +653,15 @@ const g = StyleSheet.create({
   tagTxt: { fontSize: 14, color: "#374151", fontWeight: "600" },
   tagTxtOn: { color: WHITE, fontWeight: "700" },
   skillSec: { paddingTop: 16, borderTopWidth: 1, borderTopColor: BORDER, marginTop: 12 },
-  jdBox: { backgroundColor: "#F5F3FF", borderRadius: 12, padding: 16, borderWidth: 1, borderColor: "#DDD6FE", marginTop: 12 },
-  jdInput: { backgroundColor: WHITE, borderWidth: 1, borderColor: "#DDD6FE", borderRadius: 8, padding: 14, fontSize: 14, color: DARK, minHeight: 100 },
+  
+  skillDescBox: { backgroundColor: "#F0FDFA", borderRadius: 12, padding: 16, borderWidth: 1, borderColor: "#CCFBF1", marginTop: 16 },
+  skillDescTxt: { fontSize: 14, color: "#0F766E", lineHeight: 22, fontWeight: "500" },
+  jdBox: { backgroundColor: "#F5F3FF", borderColor: "#DDD6FE" },
+  jdLabel: { fontSize: 14, fontWeight: "800", color: "#4C1D95", marginBottom: 8 },
+  jdInput: { backgroundColor: WHITE, borderWidth: 1, borderColor: "#DDD6FE", borderRadius: 8, padding: 14, fontSize: 14, color: DARK, minHeight: 120 },
   jdInputErr: { borderColor: "#EF4444" },
   jdErr: { fontSize: 13, color: "#EF4444", marginTop: 6 },
+
   dayCard: { width: 68, height: 86, backgroundColor: WHITE, borderRadius: 12, borderWidth: 1, borderColor: BORDER, alignItems: "center", justifyContent: "center", padding: 4 },
   dayCardSel: { borderColor: TEAL, backgroundColor: TEAL_LT, borderWidth: 2 },
   dayCardOff: { backgroundColor: "#FEF2F2", borderColor: "#FECACA" },

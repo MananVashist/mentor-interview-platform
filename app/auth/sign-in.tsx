@@ -10,6 +10,7 @@ import {
   Platform,
   StyleSheet,
   useWindowDimensions,
+  Keyboard
 } from 'react-native';
 import { Link, useRouter, useLocalSearchParams } from 'expo-router';
 import Head from 'expo-router/head';
@@ -86,7 +87,6 @@ export default function SignInScreen() {
         setCandidateProfile(c ?? null);
         showNotification('Welcome back!', 'success');
         
-        // Handle Booking Redirect
         const { redirectTo, ...bookingParams } = params;
         if (redirectTo) {
           router.replace({ pathname: redirectTo as any, params: bookingParams });
@@ -95,12 +95,10 @@ export default function SignInScreen() {
         }
 
       } else {
-        // No explicit profile found
         setUser(user);
         setSession(session);
         showNotification('Welcome!', 'success');
         
-        // Handle Booking Redirect
         const { redirectTo, ...bookingParams } = params;
         if (redirectTo) {
           router.replace({ pathname: redirectTo as any, params: bookingParams });
@@ -115,24 +113,40 @@ export default function SignInScreen() {
   };
 
   const handleSignIn = async () => {
-    if (!email || !password) {
+    Keyboard.dismiss(); // Protect against UI shift aborts
+
+    const safeEmail = email.trim().toLowerCase();
+    
+    if (!safeEmail || !password) {
       showNotification('Please enter both email and password', 'error');
       return;
     }
+    
+    if (loading) return;
+    
     setLoading(true);
     try {
-      const { user, session, error } = await authService.signIn(email, password);
+      const { user, session, error } = await authService.signIn(safeEmail, password);
       
       if (error || !user || !session) {
-        showNotification(error?.message || 'Invalid credentials', 'error');
+        if (error?.message?.toLowerCase().includes('aborted') || error?.message?.toLowerCase().includes('network')) {
+           showNotification('Network connection timed out. Please check your connection and try again.', 'error');
+        } else {
+           showNotification(error?.message || 'Invalid credentials', 'error');
+        }
         setLoading(false);
         return;
       }
+      
       await handlePostAuth(user, session);
 
     } catch (err: any) {
       console.error('[SignIn] handleSignIn error:', err);
-      showNotification(err.message, 'error');
+      if (err?.message?.toLowerCase().includes('aborted') || err?.message?.toLowerCase().includes('network')) {
+         showNotification('Network connection timed out. Please check your connection and try again.', 'error');
+      } else {
+         showNotification(err?.message || 'Sign in failed', 'error');
+      }
     } finally {
       setLoading(false);
     }
@@ -153,6 +167,7 @@ export default function SignInScreen() {
         <ScrollView 
           contentContainerStyle={styles.scrollContent} 
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled" 
         >
           <View style={styles.formWrapper}>
             <View 

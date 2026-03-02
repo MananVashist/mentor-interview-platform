@@ -1,5 +1,5 @@
 ﻿// components/LazySections.tsx
-import React, { memo } from 'react';
+import React, { memo, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -9,18 +9,21 @@ import {
   useWindowDimensions,
   Image as RNImage,
   Linking,
+  ActivityIndicator
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Asset } from 'expo-asset';
 import { Footer } from './Footer';
+import { Svg, Path, Circle } from "react-native-svg";
+import { availabilityService } from "@/services/availability.service";
 
-// 🟢 NEW: Import Optimized Icons
+// 🟢 Optimized Icons
 import {
   FeedbackIcon, VideoIcon, StarIcon,
   BronzeBadge, SilverBadge, GoldBadge
 } from './AppIcons';
 
-// 🟢 MOVED IMAGES HERE (Lazy Loaded)
+// 🟢 Lazy Loaded Images
 import GoogleImg from '../assets/companies/Google.png';
 import MetaImg from '../assets/companies/Meta.png';
 import AmazonImg from '../assets/companies/Amazon.webp';
@@ -29,11 +32,15 @@ import CapgeminiImg from '../assets/companies/Capgemini.png';
 import AdobeImg from '../assets/companies/Adobe.png';
 
 // --- CONSTANTS ---
+const SUPABASE_URL = "https://rcbaaiiawrglvyzmawvr.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJjYmFhaWlhd3JnbHZ5em1hd3ZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjExNTA1NjAsImV4cCI6MjA3NjcyNjU2MH0.V3qRHGXBMlspRS7XFJlXdo4qIcCms60Nepp7dYMEjLA";
+
 const BRAND_ORANGE = '#f58742';
 const CTA_TEAL = '#18a7a7';
 const BG_CREAM = '#f8f5f0';
 const TEXT_DARK = '#222';
 const TEXT_GRAY = '#555';
+const BORDER_LIGHT = "rgba(0,0,0,0.05)";
 
 const SYSTEM_FONT = Platform.select({
   web: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif",
@@ -78,7 +85,276 @@ const FAQ = [
   { q: 'Do you offer refunds?', a: 'Yes. If the mentor does not show up for the session, we provide a full refund. We record the session so its no problem' },
 ];
 
-// --- COMPONENTS ---
+// ============================================
+// DYNAMIC MENTORS ICONS & COMPONENTS
+// ============================================
+const CheckmarkCircleIcon = ({ size = 16, color = "#3B82F6" }) => (<Svg width={size} height={size} viewBox="0 0 24 24" fill="none"><Circle cx="12" cy="12" r="10" stroke={color} strokeWidth="2" fill="none" /><Path d="M8 12.5L10.5 15L16 9.5" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></Svg>);
+const BriefcaseIcon = ({ size = 12, color = "#111827" }) => (<Svg width={size} height={size} viewBox="0 0 24 24" fill="none"><Path d="M20 7H4C2.89543 7 2 7.89543 2 9V19C2 20.1046 2.89543 21 4 21H20C21.1046 21 22 20.1046 22 19V9C22 7.89543 21.1046 7 20 7Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /><Path d="M16 7V5C16 3.89543 15.1046 3 14 3H10C8.89543 3 8 3.89543 8 5V7" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></Svg>);
+const SparklesIcon = ({ size = 14, color = "#1E40AF" }) => (<Svg width={size} height={size} viewBox="0 0 24 24" fill="none"><Path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 14.5L2 12L9.5 9.5L12 2Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /><Path d="M6 3L6.5 5.5L9 6L6.5 6.5L6 9L5.5 6.5L3 6L5.5 5.5L6 3Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></Svg>);
+const CheckmarkDoneIcon = ({ size = 14, color = "#6B7280" }) => (<Svg width={size} height={size} viewBox="0 0 24 24" fill="none"><Path d="M5 12L10 17L20 7" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /><Path d="M2 12L7 17" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></Svg>);
+const MedalIcon = ({ size = 14, color = "#CD7F32" }) => (<Svg width={size} height={size} viewBox="0 0 24 24" fill="none"><Circle cx="12" cy="15" r="6" fill={color} stroke={color} strokeWidth="1.5" /><Path d="M9 9L7 3L12 6L17 3L15 9" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" /></Svg>);
+
+const SharedButton = memo(({ title, onPress, variant = "primary", nativeID, style, textStyle }: any) => (
+  <TouchableOpacity nativeID={nativeID} style={[styles.sharedButtonBase, variant === "primary" && styles.sharedButtonPrimary, variant === "outline" && styles.sharedButtonOutline, style]} onPress={onPress} activeOpacity={0.8}>
+    <Text style={[styles.sharedButtonText, variant === "primary" && { color: "#fff" }, variant === "outline" && { color: CTA_TEAL }, textStyle]}>{title}</Text>
+  </TouchableOpacity>
+));
+
+const StarRatingBlock = memo(({ rating }: { rating: number }) => {
+  const stars = [];
+  const fullStars = Math.floor(rating);
+  const hasHalfStar = rating % 1 >= 0.5;
+  for (let i = 0; i < 5; i++) {
+    if (i < fullStars) stars.push(<Text key={i} style={styles.starFilled}>★</Text>);
+    else if (i === fullStars && hasHalfStar) stars.push(<View key={i} style={{ position: 'relative' }}><Text style={styles.starEmpty}>★</Text><Text style={[styles.starFilled, { position: 'absolute', width: '50%', overflow: 'hidden' }]}>★</Text></View>);
+    else stars.push(<Text key={i} style={styles.starEmpty}>★</Text>);
+  }
+  return <View style={styles.ratingSection}><View style={styles.starsContainer}>{stars}</View><Text style={styles.ratingText}>{rating.toFixed(1)}</Text></View>;
+});
+
+const TierBadgeBlock = ({ tier }: { tier?: string | null }) => {
+  let tierName = 'Bronze', tierColor = '#8B4513', bgColor = '#FFF8F0', borderColor = '#CD7F32', medalColor = '#CD7F32';
+  const t = tier?.toLowerCase();
+  if (t === 'gold') { tierName = 'Gold'; tierColor = '#B8860B'; bgColor = '#FFFEF5'; borderColor = '#FFD700'; medalColor = '#FFD700'; } 
+  else if (t === 'silver') { tierName = 'Silver'; tierColor = '#505050'; bgColor = '#F8F9FA'; borderColor = '#A8A8A8'; medalColor = '#C0C0C0'; }
+  return (
+    <View style={[styles.tierBadge, { backgroundColor: bgColor, borderColor: borderColor }]}>
+      <MedalIcon size={14} color={medalColor} />
+      <Text style={[styles.tierText, { color: tierColor }]}>{tierName.toUpperCase()}</Text>
+    </View>
+  );
+};
+
+const MentorCard = ({ m, displayPrice, totalSessions, isNewMentor, averageRating, showRating, hasSlots, displaySlot, customPriceLabel, onView, isSmall, isFounderCard }: any) => {
+  const seed = m.id || m.profiles?.full_name || 'Mentor';
+  const fallbackAvatar = `https://api.dicebear.com/9.x/micah/png?seed=${encodeURIComponent(seed)}&backgroundColor=e5e7eb,f3f4f6`;
+  const introPrice = Math.round(displayPrice * 0.20);
+
+  const cardWidthStyle = isFounderCard 
+    ? { width: '100%' as const } 
+    : (isSmall ? { width: '100%' as const } : { width: Platform.OS === 'web' ? 'calc(50% - 8px)' as any : '100%' as const });
+
+  return (
+    <View style={[styles.card, cardWidthStyle]}>
+      <View style={styles.cardContent}>
+        <View style={styles.headerRow}>
+          <RNImage source={{ uri: m.avatar_url || fallbackAvatar }} style={styles.avatarImage} />
+          <View style={styles.headerInfo}>
+            <View style={styles.identityGroup}>
+              <Text style={styles.mentorName} numberOfLines={1}>{m.professional_title || 'Interview Mentor'}</Text>
+              <View style={styles.verifiedBadge}><CheckmarkCircleIcon size={14} color="#3B82F6" /></View>
+            </View>
+            {m.years_of_experience && (
+              <View style={{ alignSelf: 'flex-start', marginTop: 4 }}>
+                <View style={styles.expBadge}>
+                  <BriefcaseIcon size={12} color="#111827" />
+                  <Text style={styles.expText}>{m.years_of_experience} yrs</Text>
+                </View>
+              </View>
+            )}
+          </View>
+        </View>
+
+        {m.experience_description && (
+          <Text style={styles.bioText} numberOfLines={2}>{m.experience_description}</Text>
+        )}
+
+        <View style={styles.statsRow}>
+          <TierBadgeBlock tier={m.tier} />
+          {isNewMentor ? (
+            <View style={styles.statItem}><SparklesIcon size={14} color="#1E40AF" /><View style={styles.newBadge}><Text style={styles.newBadgeText}>New</Text></View></View>
+          ) : (
+            <View style={styles.statItem}><CheckmarkDoneIcon size={14} color="#6B7280" /><Text style={styles.statText}><Text style={styles.statValue}>{totalSessions}</Text> sessions</Text></View>
+          )}
+          {showRating && <StarRatingBlock rating={averageRating} />}
+          <View style={[styles.availabilityBadge, !hasSlots && styles.availabilityBadgeUnavailable]}>
+            <Text style={styles.availabilityIcon}>{hasSlots ? '🟢' : '⏰'}</Text>
+            <Text style={[styles.availabilityText, !hasSlots && styles.availabilityTextUnavailable]}>{hasSlots ? `Next slot: ${displaySlot}` : displaySlot}</Text>
+          </View>
+        </View>
+
+        <View style={styles.dividerLine} />
+
+        <View style={styles.actionRow}>
+          <View style={styles.priceContainer}>
+             <Text style={styles.startingAt}>{customPriceLabel ? 'Intro call' : 'Intro calls from'}</Text>
+             <Text style={styles.basePrice}>{customPriceLabel || `₹${introPrice.toLocaleString()}`}</Text>
+          </View>
+          <TouchableOpacity style={styles.bookBtn} onPress={onView} activeOpacity={0.8}>
+            <Text style={styles.bookBtnText}>View Profile & Book</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  );
+};
+
+const DynamicDomainMentors = ({ role, isSmall, onViewMentors }: { role: string, isSmall: boolean, onViewMentors: () => void }) => {
+  const router = useRouter();
+  const [mentors, setMentors] = useState<any[]>([]);
+  const [founderMentor, setFounderMentor] = useState<any>(null);
+  const [founderSlot, setFounderSlot] = useState<string>("Loading...");
+  const [loading, setLoading] = useState(true);
+  const [tierMap, setTierMap] = useState<Record<string, number>>({});
+  const [mentorAvailability, setMentorAvailability] = useState<Record<string, string>>({});
+
+  const FOUNDER_ID = 'e251486e-c21a-49f4-8ab7-ce808785638a';
+
+  useEffect(() => {
+    let isMounted = true;
+    (async () => {
+      setLoading(true);
+      try {
+        const tiersRes = await fetch(`${SUPABASE_URL}/rest/v1/mentor_tiers?select=tier,percentage_cut`, { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } });
+        const tiersData = await tiersRes.json();
+        const tMap: Record<string, number> = {};
+        tiersData?.forEach((t: any) => (tMap[t.tier] = t.percentage_cut));
+        if (isMounted) setTierMap(tMap);
+
+        const profilesRes = await fetch(`${SUPABASE_URL}/rest/v1/interview_profiles_admin?select=*`, { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } });
+        const profilesData = await profilesRes.json();
+
+        const r = role.toLowerCase();
+        let matchedProfileId = null;
+        if (r !== 'default') {
+           const matched = profilesData.find((p: any) => {
+              const n = p.name.toLowerCase();
+              if (r === 'pm' && n.includes('product')) return true;
+              if (r === 'da' && n.includes('analytics')) return true;
+              if (r === 'ds' && n.includes('science')) return true;
+              if (r === 'hr' && (n.includes('hr') || n.includes('human'))) return true;
+              return false;
+           });
+           matchedProfileId = matched?.id;
+        }
+
+        const mentorsRes = await fetch(`${SUPABASE_URL}/rest/v1/mentors?select=*,tier,profiles(full_name)&status=eq.approved`, { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } });
+        const allMentors = await mentorsRes.json();
+
+        const fMentor = allMentors.find((m: any) => m.id === FOUNDER_ID);
+        if (fMentor) {
+          if (isMounted) setFounderMentor(fMentor);
+          const fSlot = await availabilityService.findNextAvailableSlot(fMentor.id);
+          if (isMounted) setFounderSlot(fSlot);
+        }
+
+        let filtered = allMentors.filter((m: any) => m.id !== FOUNDER_ID) || [];
+        if (matchedProfileId) {
+           filtered = filtered.filter((m: any) => Array.isArray(m.profile_ids) && m.profile_ids.includes(matchedProfileId));
+        }
+
+        filtered = filtered.slice(0, 6);
+        if (isMounted) setMentors(filtered);
+
+        const availabilityPromises = filtered.map(async (m: any) => {
+          const slot = await availabilityService.findNextAvailableSlot(m.id);
+          return { id: m.id, slot };
+        });
+        const availabilityResults = await Promise.all(availabilityPromises);
+        const availabilityMap: Record<string, string> = {};
+        availabilityResults.forEach(({ id, slot }) => { availabilityMap[id] = slot; });
+        if (isMounted) setMentorAvailability(availabilityMap);
+
+      } catch (e) {
+        console.error(e);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    })();
+    return () => { isMounted = false; };
+  }, [role]);
+
+  if (loading) {
+    return (
+      <View style={{ paddingVertical: 60, alignItems: 'center' }}>
+        <ActivityIndicator size="large" color={CTA_TEAL} />
+      </View>
+    );
+  }
+
+  if (mentors.length === 0 && !founderMentor) return null;
+
+  return (
+    <View style={styles.listContainerWrapper}>
+      {/* FOUNDER BLOCK */}
+      {founderMentor && (
+        <View style={styles.founderSection}>
+          <Text style={styles.kicker}>MEET THE FOUNDER</Text>
+          <Text style={[styles.h2, isSmall && styles.h2Mobile]}>Free session with the founder</Text>
+          <Text style={styles.subtext}>Book a complimentary discovery call to discuss your career goals and preparation strategy.</Text>
+          <View style={styles.founderCardWrapper}>
+            <MentorCard
+              m={founderMentor}
+              displayPrice={0}
+              totalSessions={founderMentor.total_sessions || 0}
+              isNewMentor={false}
+              averageRating={founderMentor.average_rating || 5.0}
+              showRating={true}
+              hasSlots={founderSlot !== "No slots available" && founderSlot !== "Loading..."}
+              displaySlot={founderSlot}
+              customPriceLabel="Free"
+              onView={() => router.push(`/mentors/${founderMentor.id}`)}
+              isSmall={isSmall}
+              isFounderCard={true}
+            />
+          </View>
+        </View>
+      )}
+
+      {/* GENERAL MENTORS BLOCK */}
+      {mentors.length > 0 && (
+        <>
+          <Text style={styles.kicker}>YOUR INTERVIEWERS</Text>
+          <Text style={[styles.h2, isSmall && styles.h2Mobile]}>Practice with top industry experts</Text>
+          
+          <View style={styles.listContainer}>
+            {mentors.map((m) => {
+              const basePrice = m.session_price_inr ?? m.session_price ?? 0;
+              const cut = tierMap[m.tier || 'bronze'] || 50;
+              const displayPrice = basePrice ? Math.round(basePrice / (1 - cut / 100)) : 0;
+              const totalSessions = m.total_sessions || 0;
+              const isNewMentor = totalSessions < 5;
+              const averageRating = m.average_rating || 0;
+              const showRating = averageRating > 0;
+              const nextSlot = mentorAvailability[m.id] || "Loading...";
+              const hasSlots = nextSlot !== "No slots available" && nextSlot !== "Loading...";
+              const displaySlot = hasSlots ? nextSlot : "No slots available";
+
+              return (
+                <MentorCard
+                  key={m.id}
+                  m={m}
+                  displayPrice={displayPrice}
+                  totalSessions={totalSessions}
+                  isNewMentor={isNewMentor}
+                  averageRating={averageRating}
+                  showRating={showRating}
+                  hasSlots={hasSlots}
+                  displaySlot={displaySlot}
+                  onView={() => router.push(`/mentors/${m.id}`)}
+                  isSmall={isSmall}
+                  isFounderCard={false}
+                />
+              );
+            })}
+          </View>
+
+          <View style={{ alignItems: "center", marginTop: 32 }}>
+            <SharedButton
+              title="View All Mentors"
+              variant="outline"
+              onPress={onViewMentors}
+              style={{ minWidth: 200 }}
+            />
+          </View>
+        </>
+      )}
+    </View>
+  );
+};
+
+
+// --- EXISTING LAZY COMPONENTS ---
 
 // Simple Image for Lazy Loading
 const SimpleImage = ({ source, style, alt }: any) => {
@@ -94,12 +370,7 @@ const LogoWall = memo(() => {
   const { width } = useWindowDimensions();
   const isSmall = width < 900;
   return (
-    <View
-      style={styles.logoSection}
-      nativeID="our-mentors"
-      accessibilityRole="region"
-      accessibilityLabel="Companies where our mentors work"
-    >
+    <View style={styles.logoSection} nativeID="our-mentors" accessibilityRole="region" accessibilityLabel="Companies where our mentors work">
       <Text style={styles.logoTitle} accessibilityRole="header" accessibilityLevel={2}>
         OUR MENTORS HAVE WORKED IN
       </Text>
@@ -205,7 +476,6 @@ const Reviews = memo(() => {
         ))}
       </View>
 
-      {/* View Our Mentors CTA — after reviews */}
       <View style={styles.reviewsCtaStrip}>
         <Text style={styles.reviewsCtaHeading}>Ready to get feedback like this?</Text>
         <TouchableOpacity
@@ -228,24 +498,9 @@ const WhyChooseUs = memo(() => {
   const isSmall = width < 900;
 
   const BENEFITS = [
-    {
-      icon: <FeedbackIcon />,
-      title: 'Structured Feedback',
-      desc: 'Detailed evaluation covering strengths, gaps, and actionable improvement areas',
-      ariaLabel: 'Structured feedback benefit'
-    },
-    {
-      icon: <VideoIcon />,
-      title: 'Session Recording',
-      desc: 'Review your performance anytime with full session recordings',
-      ariaLabel: 'Session recording benefit'
-    },
-    {
-      icon: <StarIcon />,
-      title: 'Verified Mentors',
-      desc: 'All mentors manually vetted and verified from top companies',
-      ariaLabel: 'Verified mentors benefit'
-    },
+    { icon: <FeedbackIcon />, title: 'Structured Feedback', desc: 'Detailed evaluation covering strengths, gaps, and actionable improvement areas', ariaLabel: 'Structured feedback benefit' },
+    { icon: <VideoIcon />, title: 'Session Recording', desc: 'Review your performance anytime with full session recordings', ariaLabel: 'Session recording benefit' },
+    { icon: <StarIcon />, title: 'Verified Mentors', desc: 'All mentors manually vetted and verified from top companies', ariaLabel: 'Verified mentors benefit' },
   ];
 
   return (
@@ -288,39 +543,9 @@ const CandidateTiers = memo(() => {
   const router = useRouter();
 
   const TIERS = [
-    {
-      badge: <BronzeBadge />,
-      title: 'Bronze Tier',
-      sessions: '0-5 Sessions',
-      price: '₹500 - ₹2,000',
-      color: '#cd7f32',
-      bgColor: '#fff5e6',
-      borderColor: '#cd7f32',
-      benefits: ['Top performing mid-Level Managers', '5 - 10 yrs experienced', 'Best for: Strengthening basics'],
-      ariaLabel: 'Bronze tier pricing'
-    },
-    {
-      badge: <SilverBadge />,
-      title: 'Silver Tier',
-      sessions: '5-15 Sessions',
-      price: '₹2,000 - ₹4,500',
-      color: '#c0c0c0',
-      bgColor: '#f5f5f5',
-      borderColor: '#c0c0c0',
-      benefits: ['Senior Management from top companies', '10-15 yrs experienced', 'Best for: Senior level interviews'],
-      ariaLabel: 'Silver tier pricing'
-    },
-    {
-      badge: <GoldBadge />,
-      title: 'Gold Tier',
-      sessions: '15+ Sessions',
-      price: '₹5,000 - ₹7,500',
-      color: '#fbbf24',
-      bgColor: '#fffbeb',
-      borderColor: '#fbbf24',
-      benefits: ['Leadership / Directors', '15-20 yrs experienced', 'Best for: Hiring manager or CXO rounds'],
-      ariaLabel: 'Gold tier pricing'
-    },
+    { badge: <BronzeBadge />, title: 'Bronze Tier', sessions: '0-5 Sessions', color: '#cd7f32', bgColor: '#fff5e6', borderColor: '#cd7f32', benefits: ['Top performing mid-Level Managers', '5 - 10 yrs experienced', 'Best for: Strengthening basics'], ariaLabel: 'Bronze tier pricing' },
+    { badge: <SilverBadge />, title: 'Silver Tier', sessions: '5-15 Sessions',  color: '#c0c0c0', bgColor: '#f5f5f5', borderColor: '#c0c0c0', benefits: ['Senior Management from top companies', '10-15 yrs experienced', 'Best for: Senior level interviews'], ariaLabel: 'Silver tier pricing' },
+    { badge: <GoldBadge />, title: 'Gold Tier', sessions: '15+ Sessions', color: '#fbbf24', bgColor: '#fffbeb', borderColor: '#fbbf24', benefits: ['Leadership / Directors', '15-20 yrs experienced', 'Best for: Hiring manager or CXO rounds'], ariaLabel: 'Gold tier pricing' },
   ];
 
   return (
@@ -347,7 +572,6 @@ const CandidateTiers = memo(() => {
         ))}
       </View>
 
-      {/* View Our Mentors CTA — after pricing tiers */}
       <View style={styles.pricingCta}>
         <Text style={styles.pricingCtaText}>Browse mentors across all tiers and find your perfect match</Text>
         <TouchableOpacity
@@ -365,7 +589,6 @@ const CandidateTiers = memo(() => {
   );
 });
 
-// --- Not Sure Yet Section ---
 const NotSureYet = memo(() => {
   const router = useRouter();
 
@@ -377,9 +600,7 @@ const NotSureYet = memo(() => {
         </View>
         <Text style={styles.notSureKicker}>NOT READY TO COMMIT?</Text>
         <Text style={styles.notSureHeading}>
-          Book an{' '}
-          <Text style={{ color: BRAND_ORANGE }}>intro call</Text>
-          {' '}with your mentor first
+          Book an <Text style={{ color: BRAND_ORANGE }}>intro call</Text> with your mentor first
         </Text>
         <Text style={styles.notSureSub}>
           Not sure which mentor is right for you, or what topic to focus on? Start with a short 30-minute intro call — no pressure, no mock interview. Just a conversation.
@@ -477,8 +698,13 @@ const BottomCTA = memo(() => {
 });
 
 export default function LazySections() {
+  const { width } = useWindowDimensions();
+  const isSmall = width < 900;
+  const router = useRouter();
+
   return (
     <>
+      <DynamicDomainMentors role="default" isSmall={isSmall} onViewMentors={() => router.push('/mentors')} />
       <LogoWall />
       <InterviewTracks />
       <SocialProof />
@@ -495,6 +721,66 @@ export default function LazySections() {
 
 // --- STYLES ---
 const styles = StyleSheet.create({
+  // ===== New Standardized Headings =====
+  kicker: { fontFamily: SYSTEM_FONT, fontWeight: "800", fontSize: 13, color: CTA_TEAL, marginBottom: 12, textAlign: "center", letterSpacing: 1.5, textTransform: "uppercase" },
+  h2: { fontFamily: SYSTEM_FONT, fontWeight: "800", fontSize: 36, color: TEXT_DARK, marginBottom: 32, textAlign: "center", lineHeight: 44 },
+  h2Mobile: { fontSize: 28, lineHeight: 36, marginBottom: 24 },
+  subtext: { fontFamily: SYSTEM_FONT, fontSize: 17, color: TEXT_GRAY, textAlign: "center", lineHeight: 26, maxWidth: 600, alignSelf: "center", marginBottom: 32 },
+
+  // ===== Shared Button =====
+  sharedButtonBase: { borderRadius: 8, alignItems: "center", justifyContent: "center", paddingVertical: 14, paddingHorizontal: 28 },
+  sharedButtonPrimary: { backgroundColor: CTA_TEAL, shadowOpacity: 0.2, shadowRadius: 8, shadowOffset: { width: 0, height: 4 } },
+  sharedButtonOutline: { backgroundColor: "transparent", borderWidth: 2, borderColor: CTA_TEAL },
+  sharedButtonText: { fontFamily: SYSTEM_FONT, fontSize: 15, fontWeight: "700" },
+
+  // ===== Dynamic Mentors List =====
+  listContainerWrapper: { paddingTop: 60, paddingBottom: 20, maxWidth: 1200, width: "100%", alignSelf: "center", paddingHorizontal: 24 },
+  listContainer: { flexDirection: "row", flexWrap: "wrap", gap: 16, justifyContent: "center" },
+  
+  // Founder Block
+  founderSection: { marginBottom: 64, alignItems: 'center', width: '100%', maxWidth: 900, alignSelf: 'center' },
+  founderCardWrapper: { width: '100%', maxWidth: 500, marginTop: 16 },
+
+  // Mentor Card
+  card: { backgroundColor: "#fff", borderRadius: 12, padding: 20, borderWidth: 0.5, borderColor: "#F3F4F6", minWidth: 300, maxWidth: 500, ...Platform.select({ ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4 }, android: { elevation: 2 } }) },
+  cardFullWidth: { width: '100%', maxWidth: '100%' },
+  cardContent: { gap: 12 },
+  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  avatarImage: { width: 56, height: 56, borderRadius: 28, backgroundColor: '#F3F4F6' },
+  headerInfo: { flex: 1, justifyContent: 'center' },
+  identityGroup: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
+  mentorName: { fontFamily: SYSTEM_FONT, fontSize: 18, fontWeight: "700", color: "#111827", flexShrink: 1 },
+  verifiedBadge: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  expBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: "#F3F4F6", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, gap: 4 },
+  expText: { fontFamily: SYSTEM_FONT, fontSize: 12, fontWeight: "600", color: "#374151" },
+  bioText: { fontFamily: SYSTEM_FONT, fontSize: 14, color: '#4B5563', lineHeight: 20, marginTop: 4 },
+  statsRow: { flexDirection: 'row', gap: 16, alignItems: 'center', flexWrap: 'wrap', marginTop: 4 },
+  statItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  statText: { fontFamily: SYSTEM_FONT, fontSize: 13, color: '#4B5563' },
+  statValue: { fontWeight: '600', color: '#111827' },
+  newBadge: { backgroundColor: '#DBEAFE', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 },
+  newBadgeText: { fontFamily: SYSTEM_FONT, fontSize: 12, fontWeight: "600", color: '#1E40AF' },
+  tierBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, borderWidth: 1 },
+  tierText: { fontFamily: SYSTEM_FONT, fontSize: 12, fontWeight: "600" },
+  ratingSection: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  starsContainer: { flexDirection: 'row', gap: 2 },
+  starFilled: { fontFamily: SYSTEM_FONT, fontSize: 14, color: '#FBBF24' },
+  starEmpty: { fontFamily: SYSTEM_FONT, fontSize: 14, color: '#D1D5DB' },
+  ratingText: { fontFamily: SYSTEM_FONT, fontSize: 13, fontWeight: "600", color: '#111827' },
+  availabilityBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#ECFDF5', borderWidth: 1, borderColor: '#D1FAE5', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 },
+  availabilityBadgeUnavailable: { backgroundColor: '#FEF2F2', borderColor: '#FECACA' },
+  availabilityIcon: { fontFamily: SYSTEM_FONT, fontSize: 12 },
+  availabilityText: { fontFamily: SYSTEM_FONT, fontSize: 12, fontWeight: '500', color: '#047857' },
+  availabilityTextUnavailable: { color: '#DC2626' },
+  dividerLine: { height: 1, backgroundColor: '#F3F4F6', width: '100%', marginVertical: 4 },
+  actionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 },
+  priceContainer: { flexDirection: 'column' },
+  startingAt: { fontFamily: SYSTEM_FONT, fontSize: 12, color: '#6B7280', marginBottom: 2 },
+  basePrice: { fontFamily: SYSTEM_FONT, fontSize: 16, fontWeight: "600", color: '#111827' },
+  bookBtn: { backgroundColor: CTA_TEAL, paddingVertical: 10, paddingHorizontal: 16, borderRadius: 8, alignItems: 'center' },
+  bookBtnText: { fontFamily: SYSTEM_FONT, color: '#FFF', fontSize: 13, fontWeight: '700', letterSpacing: 0.2 },
+
+  // Existing Sections
   sectionContainer: { maxWidth: 1200, width: '100%', alignSelf: 'center', paddingHorizontal: 24, paddingVertical: 60 },
   sectionKicker: { fontFamily: SYSTEM_FONT, fontWeight: '700', fontSize: 13, textTransform: 'uppercase', letterSpacing: 1.5, color: CTA_TEAL, marginBottom: 12, textAlign: 'center' },
   sectionTitle: { fontFamily: SYSTEM_FONT, fontWeight: '800', fontSize: 36, color: TEXT_DARK, marginBottom: 48, textAlign: 'center' },
@@ -533,7 +819,6 @@ const styles = StyleSheet.create({
   reviewStars: { fontSize: 16 },
   reviewText: { fontFamily: SYSTEM_FONT, fontSize: 15, color: TEXT_DARK, lineHeight: 22, fontStyle: 'italic' },
 
-  // ===== Reviews CTA Strip =====
   reviewsCtaStrip: { marginTop: 48, alignItems: 'center', gap: 16, backgroundColor: BG_CREAM, borderRadius: 16, paddingVertical: 32, paddingHorizontal: 24, maxWidth: 600, alignSelf: 'center', width: '100%', borderWidth: 1, borderColor: 'rgba(24,167,167,0.2)' },
   reviewsCtaHeading: { fontFamily: SYSTEM_FONT, fontWeight: '700', fontSize: 20, color: TEXT_DARK, textAlign: 'center' },
   reviewsCtaButton: { backgroundColor: CTA_TEAL, paddingVertical: 14, paddingHorizontal: 28, borderRadius: 8, minWidth: 220, alignItems: 'center', shadowOpacity: 0.2, shadowRadius: 8, shadowOffset: { width: 0, height: 4 } },
@@ -559,13 +844,11 @@ const styles = StyleSheet.create({
   tierBenefitBullet: { fontFamily: SYSTEM_FONT, fontSize: 15, lineHeight: 24, fontWeight: '700' },
   tierBenefitText: { fontFamily: SYSTEM_FONT, fontSize: 15, lineHeight: 24, flex: 1 },
 
-  // ===== Pricing CTA =====
   pricingCta: { marginTop: 40, alignItems: 'center', gap: 14 },
   pricingCtaText: { fontFamily: SYSTEM_FONT, fontSize: 15, color: TEXT_GRAY, textAlign: 'center', maxWidth: 420 },
   pricingCtaButton: { backgroundColor: CTA_TEAL, paddingVertical: 14, paddingHorizontal: 28, borderRadius: 8, minWidth: 200, alignItems: 'center', shadowOpacity: 0.2, shadowRadius: 8, shadowOffset: { width: 0, height: 4 } },
   pricingCtaButtonText: { fontFamily: SYSTEM_FONT, fontWeight: '700', fontSize: 15, color: '#fff' },
 
-  // ===== Not Sure Yet =====
   notSureContainer: { paddingHorizontal: 24, paddingVertical: 16, backgroundColor: BG_CREAM },
   notSureBox: { backgroundColor: '#fff9f5', borderRadius: 20, paddingVertical: 48, paddingHorizontal: 40, maxWidth: 900, alignSelf: 'center', width: '100%', alignItems: 'center', borderWidth: 2, borderColor: 'rgba(245, 135, 66, 0.25)' },
   notSureIconRow: { marginBottom: 16 },
@@ -586,7 +869,6 @@ const styles = StyleSheet.create({
   faqQ: { fontFamily: SYSTEM_FONT, fontWeight: '700', fontSize: 16, color: TEXT_DARK, marginBottom: 8 },
   faqA: { fontFamily: SYSTEM_FONT, fontSize: 15, color: TEXT_GRAY, lineHeight: 22 },
 
-  // ===== Bottom CTA =====
   ctaSection: { backgroundColor: BRAND_ORANGE, paddingVertical: 80 },
   ctaInner: { maxWidth: 700, alignSelf: 'center', alignItems: 'center', paddingHorizontal: 24 },
   ctaInnerMobile: { paddingHorizontal: 32 },

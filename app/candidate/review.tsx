@@ -1,13 +1,12 @@
 ﻿// app/candidate/review.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, Platform, Image } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Svg, Path, Circle, Rect } from 'react-native-svg';
+import { Svg, Path, Rect } from 'react-native-svg';
 import { theme } from '@/lib/theme';
 import { paymentService } from '@/services/payment.service';
 import { useAuthStore } from '@/lib/store';
 import { supabase } from '@/lib/supabase/client';
-import { trackEvent } from '@/lib/analytics';
 
 const SYSTEM_FONT = Platform.select({
   web: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif",
@@ -23,37 +22,73 @@ export default function ReviewBookingScreen() {
   const authStore = useAuthStore();
   const [processing, setProcessing] = useState(false);
 
-  // Extract Params
   const {
     mentorId, profileId, skillId, skillName, sessionType,
     slotsIso, slotsDisplay, jdText, price, bundleSave, mentorName, avatarUrl, mentorTitle
   } = params as any;
 
-  const parsedSlotsIso = slotsIso ? JSON.parse(slotsIso) : [];
-  const parsedSlotsDisplay = slotsDisplay ? JSON.parse(slotsDisplay) : [];
+  // Extremely safe query parameter parsing to protect against Expo Router splitting strings with commas
+  const safeString = (val: any) => {
+    if (!val) return '';
+    const str = Array.isArray(val) ? val[0] : val;
+    try { return decodeURIComponent(str); } catch { return str; }
+  };
+
+  const decodedSlotsIso = safeString(slotsIso);
+  let parsedSlotsIso: string[] = [];
+  if (decodedSlotsIso) {
+      try { parsedSlotsIso = JSON.parse(decodedSlotsIso); } catch(e) {}
+  }
+  
+  const decodedSlotsDisplay = safeString(slotsDisplay);
+  let parsedSlotsDisplay: any[] = [];
+  if (decodedSlotsDisplay) {
+      try { parsedSlotsDisplay = JSON.parse(decodedSlotsDisplay); } catch(e) {}
+  }
+
+  const safeJdText = safeString(jdText);
+  const decodedAvatarUrl = safeString(avatarUrl);
+  const safeSkillName = safeString(skillName);
+  const safeMentorName = safeString(mentorName);
+  const safeMentorTitle = safeString(mentorTitle);
+
   const isBundle = sessionType === 'bundle';
   const displayType = sessionType === 'intro' ? 'Intro Call (25 min)' : sessionType === 'mock' ? 'Mock Interview (55 min)' : 'Prep Course (3 × 55 min)';
+  
+  const safeProfileId = (profileId && profileId !== 'null' && profileId !== 'undefined') ? Number(profileId) : null;
+  const safeSkillId = (skillId && skillId !== 'null' && skillId !== 'undefined') ? skillId : null;
 
   const handleConfirmAndPay = async () => {
+    if (!parsedSlotsIso || parsedSlotsIso.length === 0) {
+        Alert.alert("Error", "Session slots are missing. Please go back and select a time slot.");
+        return;
+    }
+
     setProcessing(true);
     try {
       const uid = authStore.user?.id;
       if (!uid) throw new Error("User not authenticated.");
 
-      // Ensure candidate record exists
       const { data: cand } = await supabase.from("candidates").select("id").eq("id", uid).maybeSingle();
       if (!cand) await supabase.from("candidates").insert([{ id: uid }]);
 
-      // Package creation mapping
-      const skIds = isBundle ? Array(3).fill(skillId || '') : (sessionType === 'mock' && skillId ? [skillId] : []);
+      // Log JD context to db
+      if (safeJdText && safeJdText.trim().length > 0) {
+        const { error: jdError } = await supabase.from('job_descriptions').insert({
+          candidate_id: uid,
+          jd_text: safeJdText.trim(),
+        });
+        if (jdError) console.error("Failed to save Job Description:", jdError);
+      }
+
+      const skIds = isBundle ? Array(3).fill(safeSkillId || '') : (sessionType === 'mock' && safeSkillId ? [safeSkillId] : []);
       
       const { package: pkg, amount, orderId, keyId, error } = await paymentService.createPackage(
-        uid, mentorId, Number(profileId), skIds, parsedSlotsIso, sessionType, jdText || undefined
+        uid, mentorId as string, safeProfileId, skIds, parsedSlotsIso, sessionType as any, safeJdText || undefined
       );
 
       if (error || !pkg) throw new Error(error?.message || "Failed to initialize payment.");
 
-      // Forward to existing Razorpay screen
       if (pkg.payment_status === "pending") {
         router.replace({
           pathname: '/candidate/pgscreen',
@@ -63,9 +98,9 @@ export default function ReviewBookingScreen() {
             orderId,
             keyId,
             mentorId,
-            profileId,
-            skillId,
-            skillName,
+            profileId: safeProfileId?.toString() || '',
+            skillId: safeSkillId || '',
+            skillName: safeSkillName,
             sessionType,
           }
         });
@@ -75,6 +110,7 @@ export default function ReviewBookingScreen() {
       }
     } catch (err: any) {
       Alert.alert("Booking Error", err.message);
+    } finally {
       setProcessing(false);
     }
   };
@@ -83,7 +119,11 @@ export default function ReviewBookingScreen() {
     <View style={styles.container}>
       <View style={styles.content}>
         
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()} activeOpacity={0.7}>
+        <TouchableOpacity 
+          style={styles.backBtn} 
+          onPress={() => router.replace({ pathname: '/mentors/[id]', params: { id: mentorId } })} 
+          activeOpacity={0.7}
+        >
           <IcoArrowLeft s={15} />
           <Text style={styles.backTxt}>Edit booking</Text>
         </TouchableOpacity>
@@ -93,9 +133,10 @@ export default function ReviewBookingScreen() {
         <View style={styles.card}>
           <Text style={styles.cardSectionTitle}>MENTOR</Text>
           <View style={styles.mentorRow}>
-             <Image source={{ uri: avatarUrl }} style={styles.avatar} />
+             <Image source={{ uri: decodedAvatarUrl || `https://api.dicebear.com/9.x/micah/png?seed=Mentor&backgroundColor=e5e7eb,f3f4f6` }} style={styles.avatar} />
              <View>
-                <Text style={styles.mentorName}>{mentorTitle}</Text>
+                <Text style={styles.mentorName}>{safeMentorName || 'Mentor'}</Text>
+                <Text style={styles.mentorTitle}>{safeMentorTitle}</Text>
              </View>
           </View>
 
@@ -107,10 +148,10 @@ export default function ReviewBookingScreen() {
             <Text style={styles.detailValue}>{displayType}</Text>
           </View>
           
-          {sessionType === 'mock' && skillName && (
+          {sessionType === 'mock' && safeSkillId && (
             <View style={styles.detailRow}>
               <Text style={styles.detailLabel}>Focus</Text>
-              <Text style={styles.detailValue}>{skillName}</Text>
+              <Text style={styles.detailValue}>{safeSkillName}</Text>
             </View>
           )}
 
@@ -120,6 +161,13 @@ export default function ReviewBookingScreen() {
               <Text style={styles.detailValue}>{s.time}, {s.displayDate}</Text>
             </View>
           ))}
+
+          {safeJdText && safeJdText.trim().length > 0 && (
+             <View style={styles.jdContextRow}>
+                <Text style={styles.detailLabel}>Role Context</Text>
+                <Text style={styles.jdContextValue} numberOfLines={1}>Job Description Attached</Text>
+             </View>
+          )}
 
           <View style={styles.divider} />
 
@@ -180,6 +228,9 @@ const styles = StyleSheet.create({
   detailLabel: { fontFamily: SYSTEM_FONT, fontSize: 14, color: '#6B7280', fontWeight: '500' },
   detailValue: { fontFamily: SYSTEM_FONT, fontSize: 14, color: '#111827', fontWeight: '600' },
   
+  jdContextRow: { marginTop: 4, padding: 12, backgroundColor: '#F5F3FF', borderRadius: 8, borderWidth: 1, borderColor: '#DDD6FE' },
+  jdContextValue: { fontFamily: SYSTEM_FONT, fontSize: 13, color: '#4C1D95', fontWeight: '600', marginTop: 4 },
+
   totalRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 },
   totalLabel: { fontFamily: SYSTEM_FONT, fontSize: 16, fontWeight: '800', color: '#111827' },
   totalValue: { fontFamily: SYSTEM_FONT, fontSize: 24, fontWeight: '800', color: theme.colors.primary },

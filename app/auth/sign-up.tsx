@@ -180,7 +180,7 @@ export default function SignUpScreen() {
       });
       showNotification('Account created successfully!', 'success');
 
-      // Forwarding to proper destination with preserved params
+      // Forwarding to proper destination with preserved params safely
       setTimeout(() => {
         const { redirectTo, ...bookingParams } = params;
         if (role === 'candidate') {
