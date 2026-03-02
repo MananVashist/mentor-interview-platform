@@ -11,7 +11,7 @@ import {
   StyleSheet,
   useWindowDimensions,
 } from 'react-native';
-import { Link, useRouter } from 'expo-router';
+import { Link, useRouter, useLocalSearchParams } from 'expo-router';
 import Head from 'expo-router/head';
 
 import { authService } from '@/services/auth.service';
@@ -24,6 +24,7 @@ import { useNotification } from '@/lib/ui/NotificationBanner';
 
 export default function SignInScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams();
   const { width } = useWindowDimensions();
   const isWeb = Platform.OS === 'web';
   const { showNotification } = useNotification();
@@ -77,18 +78,35 @@ export default function SignInScreen() {
           return;
         }
 
+        // Candidate Flow
         const c = await candidateService.getCandidateById(user.id);
         setUser(user);
         setSession(session);
         setProfile(profile as any);
         setCandidateProfile(c ?? null);
         showNotification('Welcome back!', 'success');
-        router.replace('/candidate');
+        
+        // Handle Booking Redirect
+        const { redirectTo, ...bookingParams } = params;
+        if (redirectTo) {
+          router.replace({ pathname: redirectTo as any, params: bookingParams });
+        } else {
+          router.replace('/candidate');
+        }
+
       } else {
+        // No explicit profile found
         setUser(user);
         setSession(session);
         showNotification('Welcome!', 'success');
-        router.replace('/candidate');
+        
+        // Handle Booking Redirect
+        const { redirectTo, ...bookingParams } = params;
+        if (redirectTo) {
+          router.replace({ pathname: redirectTo as any, params: bookingParams });
+        } else {
+          router.replace('/candidate');
+        }
       }
     } catch (err: any) {
       console.error('[SignIn] handlePostAuth error:', err);
@@ -209,7 +227,7 @@ export default function SignInScreen() {
 
               <View style={styles.authFooter}>
                 <Text style={styles.authFooterText}>Don't have an account? </Text>
-                <Link href="/auth/sign-up" asChild>
+                <Link href={{ pathname: "/auth/sign-up", params }} asChild>
                   <TouchableOpacity
                     accessibilityRole="button"
                     accessibilityLabel="Sign up"

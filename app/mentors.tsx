@@ -11,6 +11,7 @@ import {
   Modal,
   Pressable,
   Text,
+  Image,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Svg, Path, Circle } from "react-native-svg";
@@ -19,7 +20,6 @@ import { theme } from "@/lib/theme";
 import { Header } from "@/components/Header";
 import { availabilityService } from "@/services/availability.service";
 import { Footer } from "@/components/Footer";
-
 
 const SUPABASE_URL = "https://rcbaaiiawrglvyzmawvr.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJjYmFhaWlhd3JnbHZ5em1hd3ZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjExNTA1NjAsImV4cCI6MjA3NjcyNjU2MH0.V3qRHGXBMlspRS7XFJlXdo4qIcCms60Nepp7dYMEjLA";
@@ -34,124 +34,15 @@ const SYSTEM_FONT = Platform.select({
   android: "Roboto",
   default: "System"
 }) as string;
-// ============================================
-// FOOTER COMPONENT (Inline)
-// ============================================
-
-const PublicFooter = () => {
-  const router = useRouter();
-
-  const handleNavigation = (path: string) => {
-    if (Platform.OS === 'web') {
-      window.location.href = path;
-    } else {
-      router.push(path as any);
-    }
-  };
-
-  return (
-    <View style={footerStyles.container}>
-      <View style={footerStyles.content}>
-        {/* Column 1: Brand */}
-        <View style={footerStyles.column}>
-          <AppText style={footerStyles.brandTitle}>CrackJobs</AppText>
-          <AppText style={footerStyles.brandDesc}>
-            Anonymous mock interviews with verified experts from top companies.
-          </AppText>
-          <TouchableOpacity onPress={() => handleNavigation('https://linkedin.com')} style={footerStyles.socialIcon}>
-            <AppText style={footerStyles.linkedInIcon}>in</AppText>
-          </TouchableOpacity>
-        </View>
-
-        {/* Column 2: Interview Tracks */}
-        <View style={footerStyles.column}>
-          <AppText style={footerStyles.columnTitle}>INTERVIEW TRACKS</AppText>
-          <TouchableOpacity onPress={() => handleNavigation('/interviews/product-management')}>
-            <AppText style={footerStyles.link}>Product Management</AppText>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => handleNavigation('/interviews/data-analytics')}>
-            <AppText style={footerStyles.link}>Data Analytics</AppText>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => handleNavigation('/interviews/data-science')}>
-            <AppText style={footerStyles.link}>Data Science / ML</AppText>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => handleNavigation('/interviews/hr')}>
-            <AppText style={footerStyles.link}>HR & Behavioral</AppText>
-          </TouchableOpacity>
-        </View>
-
-        {/* Column 3: Company */}
-        <View style={footerStyles.column}>
-          <AppText style={footerStyles.columnTitle}>COMPANY</AppText>
-          <TouchableOpacity onPress={() => handleNavigation('/')}>
-            <AppText style={footerStyles.link}>Home</AppText>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => handleNavigation('/about')}>
-            <AppText style={footerStyles.link}>About Us</AppText>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => handleNavigation('/how-it-works')}>
-            <AppText style={footerStyles.link}>How It Works</AppText>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => handleNavigation('/blog')}>
-            <AppText style={footerStyles.link}>Blog & Guides</AppText>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => handleNavigation('/contact')}>
-            <AppText style={footerStyles.link}>Contact Support</AppText>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => handleNavigation('/auth/sign-up')}>
-            <AppText style={[footerStyles.link, footerStyles.mentorLink]}>Become a Mentor</AppText>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* Bottom Bar */}
-      <View style={footerStyles.divider} />
-      <View style={footerStyles.bottom}>
-        <AppText style={footerStyles.copyright}>© 2025 CrackJobs. All rights reserved.</AppText>
-        <View style={footerStyles.bottomLinks}>
-          <TouchableOpacity onPress={() => handleNavigation('/faq')}>
-            <AppText style={footerStyles.bottomLink}>FAQ</AppText>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => handleNavigation('/privacy')}>
-            <AppText style={footerStyles.bottomLink}>Privacy</AppText>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => handleNavigation('/terms')}>
-            <AppText style={footerStyles.bottomLink}>Terms</AppText>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => handleNavigation('/cancellation-policy')}>
-            <AppText style={footerStyles.bottomLink}>Cancellation Policy</AppText>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </View>
-  );
-};
-
-const footerStyles = StyleSheet.create({
-  container: { backgroundColor: '#333', paddingVertical: 48, paddingHorizontal: 32 },
-  content: { flexDirection: 'row', justifyContent: 'space-between', maxWidth: 1200, marginHorizontal: 'auto', width: '100%', flexWrap: 'wrap', gap: 40 },
-  column: { flex: 1, minWidth: 200 },
-  brandTitle: { fontSize: 20, fontWeight: '700', color: '#FFF', marginBottom: 12 },
-  brandDesc: { fontSize: 14, color: '#9CA3AF', lineHeight: 20, marginBottom: 16 },
-  socialIcon: { width: 36, height: 36, borderRadius: 4, backgroundColor: '#18A7A7', alignItems: 'center', justifyContent: 'center' },
-  linkedInIcon: { fontSize: 18, fontWeight: '700', color: '#FFF' },
-  columnTitle: { fontSize: 12, fontWeight: '700', color: '#9CA3AF', marginBottom: 16, letterSpacing: 0.5 },
-  link: { fontSize: 15, color: '#D1D5DB', marginBottom: 12 },
-  mentorLink: { color: '#18A7A7', fontWeight: '600' },
-  divider: { height: 1, backgroundColor: '#555', maxWidth: 1200, marginHorizontal: 'auto', width: '100%', marginTop: 32, marginBottom: 24 },
-  bottom: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', maxWidth: 1200, marginHorizontal: 'auto', width: '100%', flexWrap: 'wrap', gap: 16 },
-  copyright: { fontSize: 13, color: '#9CA3AF' },
-  bottomLinks: { flexDirection: 'row', gap: 20, flexWrap: 'wrap' },
-  bottomLink: { fontSize: 13, color: '#9CA3AF' },
-});
 
 // --- TYPOGRAPHY SYSTEM ---
+// Adding SYSTEM_FONT strictly to all base definitions
 const FONTS = {
-  heading: { fontSize: 20, fontWeight: "700" as const, lineHeight: 28 },
-  body: { fontSize: 14, fontWeight: "400" as const, lineHeight: 20 },
-  bodyBold: { fontSize: 14, fontWeight: "600" as const, lineHeight: 20 },
-  caption: { fontSize: 12, fontWeight: "400" as const, lineHeight: 16 },
-  captionBold: { fontSize: 12, fontWeight: "600" as const, lineHeight: 16 },
+  heading: { fontFamily: SYSTEM_FONT, fontSize: 20, fontWeight: "700" as const, lineHeight: 28 },
+  body: { fontFamily: SYSTEM_FONT, fontSize: 14, fontWeight: "400" as const, lineHeight: 20 },
+  bodyBold: { fontFamily: SYSTEM_FONT, fontSize: 14, fontWeight: "600" as const, lineHeight: 20 },
+  caption: { fontFamily: SYSTEM_FONT, fontSize: 12, fontWeight: "400" as const, lineHeight: 16 },
+  captionBold: { fontFamily: SYSTEM_FONT, fontSize: 12, fontWeight: "600" as const, lineHeight: 16 },
 };
 
 const TIER_RANK: Record<string, number> = {
@@ -181,6 +72,8 @@ type Mentor = {
   years_of_experience?: number | null;
   average_rating?: number | null;
   tier?: string | null;
+  avatar_url?: string | null;
+  profiles?: { full_name?: string } | null;
 };
 
 // ============================================
@@ -248,23 +141,23 @@ const StarRating = ({ rating }: { rating: number }) => {
 
   for (let i = 0; i < 5; i++) {
     if (i < fullStars) {
-      stars.push(<AppText key={i} style={styles.starFilled}>★</AppText>);
+      stars.push(<Text key={i} style={styles.starFilled}>★</Text>);
     } else if (i === fullStars && hasHalfStar) {
       stars.push(
         <View key={i} style={{ position: 'relative' }}>
-          <AppText style={styles.starEmpty}>★</AppText>
-          <AppText style={[styles.starFilled, { position: 'absolute', width: '50%', overflow: 'hidden' }]}>★</AppText>
+          <Text style={styles.starEmpty}>★</Text>
+          <Text style={[styles.starFilled, { position: 'absolute', width: '50%', overflow: 'hidden' }]}>★</Text>
         </View>
       );
     } else {
-      stars.push(<AppText key={i} style={styles.starEmpty}>★</AppText>);
+      stars.push(<Text key={i} style={styles.starEmpty}>★</Text>);
     }
   }
 
   return (
     <View style={styles.ratingSection}>
       <View style={styles.starsContainer}>{stars}</View>
-      <AppText style={styles.ratingText}>{rating.toFixed(1)}</AppText>
+      <Text style={styles.ratingText}>{rating.toFixed(1)}</Text>
     </View>
   );
 };
@@ -299,37 +192,9 @@ const TierBadge = ({ tier }: { tier?: string | null }) => {
   return (
     <View style={[styles.tierBadge, { backgroundColor: bgColor, borderColor }]}>
       <MedalIcon size={14} color={medalColor} />
-      <AppText style={[styles.tierText, { color: tierColor }]}>{tierName.toUpperCase()}</AppText>
+      <Text style={[styles.tierText, { color: tierColor }]}>{tierName.toUpperCase()}</Text>
     </View>
   );
-};
-
-// ============================================
-// SESSION DESCRIPTIONS
-// ============================================
-
-const SESSION_INFO: Record<string, { label: string; color: string; bg: string; border: string; description: string }> = {
-  intro: {
-    label: 'Intro Call',
-    color: '#7C3AED',
-    bg: '#F5F3FF',
-    border: '#DDD6FE',
-    description: 'A 25-minute discovery call. Your mentor will understand your goals, assess your current level, and recommend exactly what to practise. Great for first-timers.',
-  },
-  mock: {
-    label: 'Mock Interview',
-    color: '#0E9384',
-    bg: '#F0FDFA',
-    border: '#5EEAD4',
-    description: 'A full 55-minute simulation. Your mentor conducts a realistic interview, evaluates your responses, and gives a detailed scorecard with actionable feedback.',
-  },
-  bundle: {
-    label: 'Bundle ×3',
-    color: '#D97706',
-    bg: '#FFFBEB',
-    border: '#FDE68A',
-    description: 'Three 55-minute mock interviews at a discounted rate. Best for structured prep — pick 3 skills and track your improvement across sessions.',
-  },
 };
 
 // ============================================
@@ -352,32 +217,47 @@ const MentorCard = ({
   m, displayPrice, totalSessions, isNewMentor, averageRating,
   showRating, hasSlots, displaySlot, onView,
 }: MentorCardProps) => {
-  const [selectedType, setSelectedType] = React.useState<string | null>(null);
-  const info = selectedType ? SESSION_INFO[selectedType] : null;
 
-  const introPrice  = Math.round(displayPrice * 0.20);
-  const bundlePrice = Math.round(displayPrice * 2.5);
+  const seed = m.id || m.profiles?.full_name || 'Mentor';
+  const fallbackAvatar = `https://api.dicebear.com/9.x/micah/png?seed=${encodeURIComponent(seed)}&backgroundColor=e5e7eb,f3f4f6`;
+
+  const introPrice = Math.round(displayPrice * 0.20);
 
   return (
     <Card style={styles.card}>
       <View style={styles.cardContent}>
-        <View style={styles.topRow}>
-          <View style={styles.identityGroup}>
-            <AppText style={styles.mentorName}>
-              {m.professional_title || 'Interview Mentor'}
-            </AppText>
-            <View style={styles.verifiedBadge}>
-              <CheckmarkCircleIcon size={16} color="#3B82F6" />
-              <AppText style={styles.verifiedText}>Verified</AppText>
+        
+        <View style={styles.headerRow}>
+          <Image 
+            source={{ uri: m.avatar_url || fallbackAvatar }} 
+            style={styles.avatarImage} 
+          />
+          <View style={styles.headerInfo}>
+            <View style={styles.identityGroup}>
+              <Text style={styles.mentorName} numberOfLines={1}>
+                {m.professional_title || 'Interview Mentor'}
+              </Text>
+              <View style={styles.verifiedBadge}>
+                <CheckmarkCircleIcon size={14} color="#3B82F6" />
+              </View>
             </View>
+
+            {m.years_of_experience && (
+              <View style={{ alignSelf: 'flex-start', marginTop: 4 }}>
+                <View style={styles.expBadge}>
+                  <BriefcaseIcon size={12} color="#111827" />
+                  <Text style={styles.expText}>{m.years_of_experience} yrs</Text>
+                </View>
+              </View>
+            )}
           </View>
-          {m.years_of_experience && (
-            <View style={styles.expBadge}>
-              <BriefcaseIcon size={12} color="#111827" />
-              <AppText style={styles.expText}>{m.years_of_experience} yrs</AppText>
-            </View>
-          )}
         </View>
+
+        {m.experience_description && (
+          <Text style={styles.bioText} numberOfLines={2}>
+            {m.experience_description}
+          </Text>
+        )}
 
         <View style={styles.statsRow}>
           <TierBadge tier={m.tier} />
@@ -386,86 +266,44 @@ const MentorCard = ({
             <View style={styles.statItem}>
               <SparklesIcon size={14} color="#1E40AF" />
               <View style={styles.newBadge}>
-                <AppText style={styles.newBadgeText}>New</AppText>
+                <Text style={styles.newBadgeText}>New</Text>
               </View>
             </View>
           ) : (
             <View style={styles.statItem}>
               <CheckmarkDoneIcon size={14} color="#6B7280" />
-              <AppText style={styles.statText}>
-                <AppText style={styles.statValue}>{totalSessions}</AppText> sessions
-              </AppText>
+              <Text style={styles.statText}>
+                <Text style={styles.statValue}>{totalSessions}</Text> sessions
+              </Text>
             </View>
           )}
 
           {showRating && <StarRating rating={averageRating} />}
 
           <View style={[styles.availabilityBadge, !hasSlots && styles.availabilityBadgeUnavailable]}>
-            <AppText style={styles.availabilityIcon}>{hasSlots ? '🟢' : '⏰'}</AppText>
-            <AppText style={[styles.availabilityText, !hasSlots && styles.availabilityTextUnavailable]}>
+            <Text style={styles.availabilityIcon}>{hasSlots ? '🟢' : '⏰'}</Text>
+            <Text style={[styles.availabilityText, !hasSlots && styles.availabilityTextUnavailable]}>
               {hasSlots ? `Next slot: ${displaySlot}` : displaySlot}
-            </AppText>
+            </Text>
           </View>
         </View>
 
         <View style={styles.dividerLine} />
 
-        {/* PRICING ROW */}
-        <View style={styles.pricingRow}>
-
-          {/* INTRO */}
-          <TouchableOpacity
-            style={[styles.priceCell, selectedType === 'intro' && styles.priceCellSelected]}
-            onPress={() => setSelectedType(prev => prev === 'intro' ? null : 'intro')}
-            activeOpacity={0.75}
-          >
-            <AppText style={[styles.priceCellLabel, selectedType === 'intro' && { color: '#7C3AED' }]}>Meet your mentor</AppText>
-            <AppText style={[styles.priceCellAmount, selectedType === 'intro' && { color: '#7C3AED' }]}>₹{introPrice.toLocaleString()}</AppText>
-            <AppText style={styles.priceCellSub}>25 min</AppText>
-          </TouchableOpacity>
-
-          {/* MOCK — highlighted */}
-          <TouchableOpacity
-            style={[styles.priceCell, styles.priceCellMock, selectedType === 'mock' && styles.priceCellMockSelected]}
-            onPress={() => setSelectedType(prev => prev === 'mock' ? null : 'mock')}
-            activeOpacity={0.75}
-          >
-            <View style={styles.popularBadge}>
-              <AppText style={styles.popularBadgeText}>POPULAR</AppText>
-            </View>
-            <AppText style={[styles.priceCellLabel, { color: theme.colors.primary }]}>Mock</AppText>
-            <AppText style={[styles.priceCellAmount, styles.priceCellAmountMock]}>₹{displayPrice.toLocaleString()}</AppText>
-            <AppText style={styles.priceCellSub}>55 min</AppText>
-          </TouchableOpacity>
-
-          {/* BUNDLE */}
-          <TouchableOpacity
-            style={[styles.priceCell, selectedType === 'bundle' && styles.priceCellSelected]}
-            onPress={() => setSelectedType(prev => prev === 'bundle' ? null : 'bundle')}
-            activeOpacity={0.75}
-          >
-            <AppText style={[styles.priceCellLabel, selectedType === 'bundle' && { color: '#D97706' }]}>Bundle ×3</AppText>
-            <AppText style={[styles.priceCellAmount, selectedType === 'bundle' && { color: '#D97706' }]}>₹{bundlePrice.toLocaleString()}</AppText>
-            <AppText style={styles.priceCellSub}>3 × 55 min</AppText>
-          </TouchableOpacity>
-
-        </View>
-
-        <TouchableOpacity
-          style={styles.bookBtn}
-          onPress={onView}
-          activeOpacity={0.8}
-        >
-          <AppText style={styles.bookBtnText}>View Profile →</AppText>
-        </TouchableOpacity>
-
-        {/* SESSION DESCRIPTION — appears on tap */}
-        {info && (
-          <View style={[styles.sessionDesc, { backgroundColor: info.bg, borderColor: info.border }]}>
-            <AppText style={[styles.sessionDescLabel, { color: info.color }]}>{info.label}</AppText>
-            <AppText style={[styles.sessionDescText, { color: info.color }]}>{info.description}</AppText>
+        <View style={styles.actionRow}>
+          <View style={styles.priceContainer}>
+             <Text style={styles.startingAt}>Intro calls from</Text>
+             <Text style={styles.basePrice}>₹{introPrice.toLocaleString()}</Text>
           </View>
-        )}
+
+          <TouchableOpacity
+            style={styles.bookBtn}
+            onPress={onView}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.bookBtnText}>View Profile</Text>
+          </TouchableOpacity>
+        </View>
 
       </View>
     </Card>
@@ -494,12 +332,10 @@ export default function PublicBrowseMentors() {
   const [tierMap, setTierMap] = useState<Record<string, number>>({});
   const [mentorAvailability, setMentorAvailability] = useState<Record<string, string>>({});
 
-  // --- 1. Fetch Profiles ---
   useEffect(() => {
     (async () => {
       setProfilesLoading(true);
       try {
-        // Fetch Tiers First
         const tiersRes = await fetch(
           `${SUPABASE_URL}/rest/v1/mentor_tiers?select=tier,percentage_cut`,
           { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
@@ -516,7 +352,7 @@ export default function PublicBrowseMentors() {
         const profilesData = await profilesRes.json();
 
         const mentorsRes = await fetch(
-          `${SUPABASE_URL}/rest/v1/mentors?select=*,tier&status=eq.approved`,
+          `${SUPABASE_URL}/rest/v1/mentors?select=*,tier,profiles(full_name)&status=eq.approved`,
           { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
         );
         const allMentors = await mentorsRes.json();
@@ -543,13 +379,12 @@ export default function PublicBrowseMentors() {
     })();
   }, []);
 
-  // --- 2. Fetch Mentors & Availability ---
   const fetchMentorsForProfile = useCallback(async (profileId: number | null) => {
     if (!profileId) return;
     setMentorsLoading(true);
     try {
       const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/mentors?select=*,tier&status=eq.approved`,
+        `${SUPABASE_URL}/rest/v1/mentors?select=*,tier,profiles(full_name)&status=eq.approved`,
         { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
       );
       const data = await res.json();
@@ -561,7 +396,6 @@ export default function PublicBrowseMentors() {
 
         setMentors(filtered);
 
-        // Fetch Actual Availability
         const availabilityPromises = filtered.map(async (m: Mentor) => {
           const slot = await availabilityService.findNextAvailableSlot(m.id);
           return { id: m.id, slot };
@@ -585,7 +419,6 @@ export default function PublicBrowseMentors() {
     if (selectedProfileId) fetchMentorsForProfile(selectedProfileId);
   }, [selectedProfileId, fetchMentorsForProfile]);
 
-  // --- 3. Sorting Logic ---
   const sortedMentors = useMemo(() => {
     let sorted = [...mentors];
 
@@ -620,9 +453,9 @@ export default function PublicBrowseMentors() {
     }
   };
 
-  const SortButton = ({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) => (
-    <TouchableOpacity style={[styles.sortBtn, active && styles.sortBtnActive]} onPress={onPress}>
-      <AppText style={[styles.sortBtnText, active && styles.sortBtnTextActive]}>{label}</AppText>
+  const ChipBtn = ({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) => (
+    <TouchableOpacity style={[styles.chip, active && styles.chipActive]} onPress={onPress}>
+      <Text style={[styles.chipText, active && styles.chipTextActive]}>{label}</Text>
     </TouchableOpacity>
   );
 
@@ -637,7 +470,7 @@ export default function PublicBrowseMentors() {
           <View style={styles.heroCentered}>
             <View style={styles.heroTextContainer}>
               <View style={styles.pillBadge}>
-                <Text style={styles.pillText}>🎯 Find Your Perfect Mentor</Text>
+                <Text style={styles.pillBadgeText}>🎯 Find Your Perfect Mentor</Text>
               </View>
               <Text style={[styles.heroTitle, isMobile && styles.heroTitleMobile]}>
                 <Text style={{ color: BRAND_ORANGE }}>Choose from a list of </Text>
@@ -647,49 +480,49 @@ export default function PublicBrowseMentors() {
                 Anonymous 1:1 mock interviews. Vetted mentors from top companies for Product Management, Data / Business Analytics, Data Science and HR.
               </Text>
             </View>
-            
           </View>
         </View>
 
-        {/* FILTERS */}
-        <View style={styles.filtersContainer}>
-          <AppText style={styles.filterLabel}>Select Interview Type:</AppText>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pillsScroll}>
-            {adminProfiles.map((profile) => {
-              const isActive = selectedProfileId === profile.id;
-              return (
-                <TouchableOpacity
-                  key={profile.id}
-                  style={[styles.pill, isActive ? styles.pillActive : styles.pillInactive]}
-                  onPress={() => setSelectedProfileId(profile.id)}
-                >
-                  <AppText style={[styles.pillText, isActive ? styles.pillTextActive : styles.pillTextInactive]}>
-                    {profile.name}
-                  </AppText>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-
-          {/* SORTING */}
-          <View style={styles.sortContainer}>
-            <AppText style={styles.sortLabel}>Sort by:</AppText>
-            <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-              <SortButton label="Price (Low)" active={sortBy === 'price_low'} onPress={() => setSortBy('price_low')} />
-              <SortButton label="Most Sessions" active={sortBy === 'sessions'} onPress={() => setSortBy('sessions')} />
-              <SortButton label="Highest Rated" active={sortBy === 'rating'} onPress={() => setSortBy('rating')} />
-              <SortButton label="Experience" active={sortBy === 'experience'} onPress={() => setSortBy('experience')} />
-            </View>
-            
-            <TouchableOpacity style={styles.infoBtn} onPress={() => setShowTierInfo(true)}>
-              <InfoIcon size={14} color="#3B82F6" />
-              <AppText style={styles.infoBtnText}>About Mentor Tiers</AppText>
-            </TouchableOpacity>
+        {/* UNIFIED CONTROLS SECTION */}
+        <View style={styles.controlsWrapper}>
+          
+          {/* Filters Row */}
+          <View style={styles.controlRow}>
+            <Text style={styles.controlLabel}>Role</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipScroll}>
+              {adminProfiles.map((profile) => (
+                <ChipBtn 
+                  key={profile.id} 
+                  label={profile.name} 
+                  active={selectedProfileId === profile.id} 
+                  onPress={() => setSelectedProfileId(profile.id)} 
+                />
+              ))}
+            </ScrollView>
           </View>
 
-          <AppText style={styles.resultsCount}>
-            {sortedMentors.length} {sortedMentors.length === 1 ? 'mentor' : 'mentors'} available
-          </AppText>
+          {/* Sort Row */}
+          <View style={styles.controlRow}>
+             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Text style={styles.controlLabel}>Sort</Text>
+                <TouchableOpacity onPress={() => setShowTierInfo(true)} style={{ padding: 4 }}>
+                  <InfoIcon size={14} color="#9CA3AF" />
+                </TouchableOpacity>
+             </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipScroll}>
+              <ChipBtn label="Price (Low)" active={sortBy === 'price_low'} onPress={() => setSortBy('price_low')} />
+              <ChipBtn label="Most Sessions" active={sortBy === 'sessions'} onPress={() => setSortBy('sessions')} />
+              <ChipBtn label="Highest Rated" active={sortBy === 'rating'} onPress={() => setSortBy('rating')} />
+              <ChipBtn label="Experience" active={sortBy === 'experience'} onPress={() => setSortBy('experience')} />
+            </ScrollView>
+          </View>
+
+          <View style={styles.resultsCountWrapper}>
+             <Text style={styles.resultsCount}>
+              Showing {sortedMentors.length} {sortedMentors.length === 1 ? 'mentor' : 'mentors'}
+            </Text>
+          </View>
+
         </View>
 
         {/* MENTOR LIST */}
@@ -699,7 +532,7 @@ export default function PublicBrowseMentors() {
           ) : sortedMentors.length === 0 ? (
             <View style={styles.emptyState}>
               <SearchIcon size={48} color="#9CA3AF" />
-              <AppText style={styles.emptyText}>No mentors found for this profile</AppText>
+              <Text style={styles.emptyText}>No mentors found for this profile</Text>
             </View>
           ) : (
             sortedMentors.map((m) => {
@@ -738,25 +571,23 @@ export default function PublicBrowseMentors() {
         {/* SEO CONTENT */}
         <View style={styles.seoSection}>
           <Heading level={2} style={styles.seoTitle}>Why Practice Mock Interviews?</Heading>
-          <AppText style={styles.seoText}>
+          <Text style={styles.seoText}>
             Mock interviews simulate real world interviews and help you identify weaknesses apparent to the interviewer. Our platform connects you with experienced interviewers from top companies who provide realistic interview practice and actionable feedback.
-          </AppText>
+          </Text>
           
           <Heading level={3} style={styles.seoSubtitle}>What You Get</Heading>
-          {/* UPDATED: Added color: '#fff' to the bold text spans */}
-          <AppText style={styles.seoText}>
-            • <AppText style={{ fontWeight: '600', color: '#fff' }}>Real Interview Experience:</AppText> Practice with mentors who conduct actual interviews everyday{'\n'}
-            • <AppText style={{ fontWeight: '600', color: '#fff' }}>Personalized Feedback:</AppText> Get detailed evaluation on your answers, communication style, and areas for improvement{'\n'}
-            • <AppText style={{ fontWeight: '600', color: '#fff' }}>Anonymous & Safe:</AppText> Practice without fear of judgment in a confidential environment{'\n'}
-            • <AppText style={{ fontWeight: '600', color: '#fff' }}>Flexible Scheduling:</AppText> Book sessions at times that work for you, with mentors across different time zones
-          </AppText>
+          <Text style={styles.seoText}>
+            • <Text style={{ fontWeight: '600', color: '#fff' }}>Real Interview Experience:</Text> Practice with mentors who conduct actual interviews everyday{'\n'}
+            • <Text style={{ fontWeight: '600', color: '#fff' }}>Personalized Feedback:</Text> Get detailed evaluation on your answers, communication style, and areas for improvement{'\n'}
+            • <Text style={{ fontWeight: '600', color: '#fff' }}>Anonymous & Safe:</Text> Practice without fear of judgment in a confidential environment{'\n'}
+            • <Text style={{ fontWeight: '600', color: '#fff' }}>Flexible Scheduling:</Text> Book sessions at times that work for you, with mentors across different time zones
+          </Text>
 
           <Heading level={3} style={styles.seoSubtitle}>Interview Types We Cover</Heading>
-          <AppText style={styles.seoText}>
+          <Text style={styles.seoText}>
             Our mentors specialize in Product Management, Data Science, Data Analytics, and HR interviews. Whether you're preparing for FAANG companies or startups, we have experts who can help you succeed.
-          </AppText>
+          </Text>
           
-          {/* Button remains here, style updated below */}
            <TouchableOpacity 
             style={styles.ctaButton}
             onPress={() => router.push('/auth/sign-up')}
@@ -768,7 +599,6 @@ export default function PublicBrowseMentors() {
           </TouchableOpacity>
         </View>
 
-        {/* FOOTER */}
         <Footer />
       </ScrollView>
 
@@ -782,33 +612,33 @@ export default function PublicBrowseMentors() {
         <Pressable style={styles.modalOverlay} onPress={() => setShowTierInfo(false)}>
           <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
             <View style={styles.modalHeader}>
-              <AppText style={styles.modalTitle}>Mentor Tiers</AppText>
+              <Text style={styles.modalTitle}>Mentor Tiers</Text>
               <TouchableOpacity onPress={() => setShowTierInfo(false)}>
-                <AppText style={styles.modalClose}>×</AppText>
+                <Text style={styles.modalClose}>×</Text>
               </TouchableOpacity>
             </View>
 
             <View style={styles.tierInfoRow}>
               <MedalIcon size={18} color="#CD7F32" />
               <View style={{ flex: 1 }}>
-                <AppText style={styles.tierInfoTitle}>Bronze</AppText>
-                <AppText style={styles.tierInfoDesc}>Top performing mid level managers</AppText>
+                <Text style={styles.tierInfoTitle}>Bronze</Text>
+                <Text style={styles.tierInfoDesc}>Top performing mid level managers</Text>
               </View>
             </View>
                 
             <View style={styles.tierInfoRow}>
               <MedalIcon size={18} color="#9CA3AF" />
               <View style={{ flex: 1 }}>
-                <AppText style={styles.tierInfoTitle}>Silver</AppText>
-                <AppText style={styles.tierInfoDesc}>Senior management from top companies</AppText>
+                <Text style={styles.tierInfoTitle}>Silver</Text>
+                <Text style={styles.tierInfoDesc}>Senior management from top companies</Text>
               </View>
             </View>
 
             <View style={styles.tierInfoRow}>
               <MedalIcon size={18} color="#F59E0B" />
               <View style={{ flex: 1 }}>
-                <AppText style={styles.tierInfoTitle}>Gold</AppText>
-                <AppText style={styles.tierInfoDesc}>Leadership/Directors/CXOs</AppText>
+                <Text style={styles.tierInfoTitle}>Gold</Text>
+                <Text style={styles.tierInfoDesc}>Leadership/Directors/CXOs</Text>
               </View>
             </View>
           </Pressable>
@@ -826,109 +656,46 @@ const styles = StyleSheet.create({
   // Hero Section
   sectionContainer: {
     paddingHorizontal: 20,
-    paddingVertical: 60,
+    paddingVertical: 50,
     maxWidth: 1200,
     width: '100%',
     marginHorizontal: 'auto',
   },
   sectionContainerMobile: {
-    paddingVertical: 40,
+    paddingVertical: 30,
     paddingHorizontal: 16,
   },
-  heroCentered: {
-    alignItems: 'center',
-    gap: 32,
-  },
-  heroTextContainer: {
-    alignItems: 'center',
-    gap: 16,
-    maxWidth: 800,
-  },
-  pillBadge: {
-    backgroundColor: '#fff',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 100,
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.1)',
-  },
-  pillText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
-  },
-  heroTitle: {
-    fontSize: 48,
-    fontWeight: '700',
-    textAlign: 'center',
-    lineHeight: 56,
-    ...Platform.select({
-      web: {
-        fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif",
-      },
-    }),
-  },
-  heroTitleMobile: {
-    fontSize: 32,
-    lineHeight: 40,
-  },
-  heroSubtitle: {
-    fontSize: 18,
-    textAlign: 'center',
-    color: '#555',
-    lineHeight: 28,
-    maxWidth: 700,
-    ...Platform.select({
-      web: {
-        fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif",
-      },
-    }),
-  },
-  heroSubtitleMobile: {
-    fontSize: 16,
-    lineHeight: 24,
-  },
-  heroCTAContainer: {
-    flexDirection: 'row',
-    gap: 16,
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-  },
-  heroCTAContainerMobile: {
-    width: '100%',
-    gap: 12,
-  },
-  primaryCTA: {
-    minWidth: 180,
-  },
-  secondaryCTA: {
-    minWidth: 180,
-  },
+  heroCentered: { alignItems: 'center', gap: 32 },
+  heroTextContainer: { alignItems: 'center', gap: 16, maxWidth: 800 },
+  pillBadge: { backgroundColor: '#fff', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 100, borderWidth: 1, borderColor: 'rgba(0,0,0,0.1)' },
+  pillBadgeText: { fontFamily: SYSTEM_FONT, fontSize: 14, fontWeight: '600', color: '#333' },
+  heroTitle: { fontFamily: SYSTEM_FONT, fontSize: 48, fontWeight: '700', textAlign: 'center', lineHeight: 56 },
+  heroTitleMobile: { fontSize: 32, lineHeight: 40 },
+  heroSubtitle: { fontFamily: SYSTEM_FONT, fontSize: 18, textAlign: 'center', color: '#555', lineHeight: 28, maxWidth: 700 },
+  heroSubtitleMobile: { fontSize: 16, lineHeight: 24 },
 
-  // Filters
-  filtersContainer: { paddingHorizontal: 32, paddingTop: 24, marginBottom: 24 },
-  filterLabel: { ...FONTS.bodyBold, color: theme.colors.text.main, marginBottom: 16 },
-  pillsScroll: { gap: 12, paddingRight: 20 },
+  // Unified Controls Wrapper (Filters + Sort)
+  controlsWrapper: { 
+    marginHorizontal: 32, 
+    marginBottom: 24,
+    paddingVertical: 20, 
+    borderTopWidth: 1, 
+    borderBottomWidth: 1, 
+    borderColor: '#E5E7EB',
+    gap: 16 
+  },
+  controlRow: { flexDirection: 'row', alignItems: 'center', gap: 16 },
+  controlLabel: { fontFamily: SYSTEM_FONT, fontSize: 13, fontWeight: '700', color: '#6B7280', textTransform: 'uppercase', letterSpacing: 0.5, width: 45 },
+  chipScroll: { gap: 8, paddingRight: 20 },
+  
+  // Clean Dark-Pill UI
+  chip: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 100, backgroundColor: '#F3F4F6', borderWidth: 1, borderColor: 'transparent' },
+  chipActive: { backgroundColor: '#111827', borderColor: '#111827' },
+  chipText: { fontFamily: SYSTEM_FONT, fontSize: 14, fontWeight: '600', color: '#4B5563' },
+  chipTextActive: { color: '#FFFFFF' },
 
-  pill: { flexDirection: "row", alignItems: "center", paddingHorizontal: 20, paddingVertical: 10, borderRadius: 999, borderWidth: 1 },
-  pillActive: { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary },
-  pillInactive: { backgroundColor: "#FFF", borderColor: "#E5E7EB" },
-  pillText: { ...FONTS.bodyBold },
-  pillTextActive: { color: "#FFF" },
-  pillTextInactive: { color: "#4B5563" },
-
-  // Sorting
-  sortContainer: { marginTop: 16, flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8 },
-  sortLabel: { ...FONTS.caption, color: '#6B7280', fontWeight: '500' },
-  sortBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, backgroundColor: '#F3F4F6', borderWidth: 1, borderColor: '#E5E7EB' },
-  sortBtnActive: { backgroundColor: '#EEF2FF', borderColor: theme.colors.primary },
-  sortBtnText: { ...FONTS.caption, color: '#4B5563', fontWeight: '500' },
-  sortBtnTextActive: { color: theme.colors.primary, fontWeight: '600' },
-
-  infoBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, marginLeft: 12 },
-  infoBtnText: { ...FONTS.captionBold, color: '#3B82F6', textDecorationLine: 'underline' },
-
-  resultsCount: { ...FONTS.body, color: theme.colors.text.light, marginTop: 16 },
+  resultsCountWrapper: { marginTop: 4 },
+  resultsCount: { fontFamily: SYSTEM_FONT, fontSize: 14, color: '#6B7280' },
 
   // List
   listContainer: { paddingHorizontal: 32, gap: 16, paddingBottom: 24 },
@@ -937,15 +704,21 @@ const styles = StyleSheet.create({
   card: { backgroundColor: theme.white, borderRadius: 12, padding: 20, borderWidth: 0.5, borderColor: "#F3F4F6", ...Platform.select({ ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4 }, android: { elevation: 2, backgroundColor: '#FFF' } }) },
   cardContent: { gap: 12 },
 
-  topRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 8 },
-  identityGroup: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
+  // Card Header Layout
+  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  avatarImage: { width: 56, height: 56, borderRadius: 28, backgroundColor: '#F3F4F6' },
+  headerInfo: { flex: 1, justifyContent: 'center' },
+
+  identityGroup: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
   mentorName: { ...FONTS.heading, fontSize: 18, color: theme.colors.text.main, flexShrink: 1 },
   verifiedBadge: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  verifiedText: { ...FONTS.captionBold, color: '#3B82F6' },
   expBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.colors.gray[100], paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, gap: 4 },
   expText: { ...FONTS.captionBold, color: theme.colors.text.body },
 
-  statsRow: { flexDirection: 'row', gap: 16, alignItems: 'center', flexWrap: 'wrap' },
+  // Bio & Styles
+  bioText: { ...FONTS.body, color: '#4B5563', lineHeight: 20, marginTop: 4 },
+
+  statsRow: { flexDirection: 'row', gap: 16, alignItems: 'center', flexWrap: 'wrap', marginTop: 4 },
   statItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   statText: { ...FONTS.caption, fontSize: 13, color: '#4B5563' },
   statValue: { fontWeight: '600', color: '#111827' },
@@ -959,58 +732,28 @@ const styles = StyleSheet.create({
   // Rating
   ratingSection: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   starsContainer: { flexDirection: 'row', gap: 2 },
-  starFilled: { fontSize: 14, color: '#FBBF24' },
-  starEmpty: { fontSize: 14, color: '#D1D5DB' },
+  starFilled: { fontFamily: SYSTEM_FONT, fontSize: 14, color: '#FBBF24' },
+  starEmpty: { fontFamily: SYSTEM_FONT, fontSize: 14, color: '#D1D5DB' },
   ratingText: { ...FONTS.captionBold, fontSize: 13, color: '#111827' },
 
   // Availability
   availabilityBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#ECFDF5', borderWidth: 1, borderColor: '#D1FAE5', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 },
   availabilityBadgeUnavailable: { backgroundColor: '#FEF2F2', borderColor: '#FECACA' },
-  availabilityIcon: { fontSize: 12 },
+  availabilityIcon: { fontFamily: SYSTEM_FONT, fontSize: 12 },
   availabilityText: { ...FONTS.caption, fontWeight: '500', color: '#047857' },
   availabilityTextUnavailable: { color: '#DC2626' },
 
-  dividerLine: { height: 1, backgroundColor: '#F3F4F6', width: '100%' },
+  dividerLine: { height: 1, backgroundColor: '#F3F4F6', width: '100%', marginVertical: 4 },
 
-  // Pricing row — 3 prices + CTA
-  pricingRow: { flexDirection: 'row', alignItems: 'stretch', gap: 6, marginTop: 8 },
-  priceCell: { flex: 1, alignItems: 'center', paddingVertical: 12, paddingHorizontal: 4, borderRadius: 10, backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#F3F4F6' },
-  priceCellMock: {
-    backgroundColor: '#F0FDFA',
-    borderRadius: 10,
-    paddingHorizontal: 4,
-    paddingVertical: 12,
-    borderWidth: 1.5,
-    borderColor: '#5EEAD4',
-    position: 'relative',
-    flex: 1,
-    alignItems: 'center',
-  },
-  popularBadge: {
-    position: 'absolute',
-    top: -10,
-    alignSelf: 'center',
-    backgroundColor: theme.colors.primary,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 20,
-  },
-  popularBadgeText: { fontSize: 8, fontWeight: '800', color: '#FFF', letterSpacing: 0.6 },
-  priceCellLabel: { fontSize: 11, fontWeight: '700', color: '#6B7280', marginBottom: 6, textAlign: 'center', textTransform: 'uppercase' as const, letterSpacing: 0.4 },
-  priceCellAmount: { fontSize: 17, fontWeight: '800', color: '#111827', textAlign: 'center' },
-  priceCellAmountMock: { fontSize: 20, color: theme.colors.primary },
-  priceCellSub: { fontSize: 11, color: '#9CA3AF', marginTop: 3, textAlign: 'center', fontWeight: '500' },
-  priceDivider: { width: 0 }, // Replaced by card borders
-
-  priceCellSelected: { borderColor: '#7C3AED', borderWidth: 1.5, backgroundColor: '#F5F3FF' },
-  priceCellMockSelected: { borderColor: theme.colors.primary, borderWidth: 2, backgroundColor: '#CCFBF1' },
-
-  sessionDesc: { marginTop: 10, borderRadius: 10, borderWidth: 1, padding: 12 },
-  sessionDescLabel: { fontSize: 12, fontWeight: '700', textTransform: 'uppercase' as const, letterSpacing: 0.5, marginBottom: 4 },
-  sessionDescText: { fontSize: 13, lineHeight: 20, fontWeight: '400' },
-
-  bookBtn: { backgroundColor: theme.colors.primary, paddingVertical: 12, paddingHorizontal: 16, borderRadius: 10, marginTop: 10, alignItems: 'center' },
-  bookBtnText: { color: '#FFF', fontSize: 13, fontWeight: '700', letterSpacing: 0.2 },
+  // Action Row
+  actionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 },
+  priceContainer: { flexDirection: 'column' },
+  startingAt: { ...FONTS.caption, color: '#6B7280', marginBottom: 2 },
+  basePrice: { ...FONTS.bodyBold, fontSize: 16, color: '#111827' },
+  
+  // Book Button
+  bookBtn: { backgroundColor: theme.colors.primary, paddingVertical: 10, paddingHorizontal: 16, borderRadius: 8, alignItems: 'center' },
+  bookBtnText: { fontFamily: SYSTEM_FONT, color: '#FFF', fontSize: 13, fontWeight: '700', letterSpacing: 0.2 },
 
   // Empty
   emptyState: { alignItems: 'center', padding: 40 },
@@ -1018,45 +761,33 @@ const styles = StyleSheet.create({
 
   // SEO Section
   seoSection: { paddingHorizontal: 32, paddingVertical: 40, backgroundColor: '#f58742', marginTop: 24, borderTopWidth: 1, borderTopColor: '#E5E7EB' },
-  seoTitle: { fontSize: 24, fontWeight: '700', color: '#fff', marginBottom: 16 },
-  seoSubtitle: { fontSize: 18, fontWeight: '600', color: '#fff', marginTop: 24, marginBottom: 12 },
-  seoText: { fontSize: 15, color: '#fff', lineHeight: 24, marginBottom: 12 },
-
+  seoTitle: { fontFamily: SYSTEM_FONT, fontSize: 24, fontWeight: '700', color: '#fff', marginBottom: 16 },
+  seoSubtitle: { fontFamily: SYSTEM_FONT, fontSize: 18, fontWeight: '600', color: '#fff', marginTop: 24, marginBottom: 12 },
+  seoText: { fontFamily: SYSTEM_FONT, fontSize: 15, color: '#fff', lineHeight: 24, marginBottom: 12 },
 
   // Modal
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 },
   modalContent: { backgroundColor: 'white', borderRadius: 12, padding: 20, width: '100%', maxWidth: 400 },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 },
   modalTitle: { ...FONTS.heading, fontSize: 18 },
-  modalClose: { fontSize: 20, color: '#6B7280' },
+  modalClose: { fontFamily: SYSTEM_FONT, fontSize: 20, color: '#6B7280' },
   tierInfoRow: { flexDirection: 'row', gap: 12, marginBottom: 16, alignItems: 'center' },
   tierInfoTitle: { ...FONTS.bodyBold },
   tierInfoDesc: { ...FONTS.caption, color: '#4B5563' },
 
-  ctaSection: { backgroundColor: BRAND_ORANGE, paddingVertical: 80 },
-  ctaInner: { maxWidth: 700, alignSelf: 'center', alignItems: 'center', paddingHorizontal: 24 },
-  ctaInnerMobile: { paddingHorizontal: 32 },
-  ctaTitle: { fontFamily: SYSTEM_FONT, fontWeight: '800', fontSize: 40, color: '#fff', marginBottom: 16, textAlign: 'center' },
-  ctaTitleMobile: { fontSize: 28 },
-  ctaSubtitle: { fontFamily: SYSTEM_FONT, fontSize: 18, color: '#fff', marginBottom: 32, textAlign: 'center', opacity: 0.95 },
-  ctaSubtitleMobile: { fontSize: 16 },
-  // ... existing styles ...
-
   ctaButton: { 
     backgroundColor: '#fff', 
-    paddingHorizontal: 24, // Reduced from 40
-    paddingVertical: 10,   // Reduced from 16
+    paddingHorizontal: 24, 
+    paddingVertical: 10,   
     borderRadius: 100, 
-    alignSelf: 'center',   // Centers the button
-    marginTop: 32          // Adds spacing from the text above
+    alignSelf: 'flex-start',   
+    marginTop: 24          
   },
   ctaButtonText: { 
     alignItems: "center",
     fontFamily: SYSTEM_FONT, 
     fontWeight: '700', 
-    fontSize: 14,          // Reduced from 16
+    fontSize: 14,          
     color: BRAND_ORANGE 
   },
-  
-  // ... rest of styles
 });

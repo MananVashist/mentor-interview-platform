@@ -84,14 +84,33 @@ export function getBookingDetails(session: any) {
 
 /**
  * 3. Centralized Template Lookup
+ *
+ * For intro calls (session_type === 'intro'):
+ *   - Returns a fixed title + description so the legacy fallback path in
+ *     handleEvaluate shows a meaningful label while the real structured
+ *     questions come from INTRO_CALL_TEMPLATE in evaluation-templates.ts.
+ *
+ * For all other sessions the original skill/profile content is returned.
  */
 export function getEvaluationTemplate(session: any) {
+  // ── Intro call: dedicated path ───────────────────────────────────────────
+  if (session.session_type === 'intro') {
+    return {
+      title: 'Intro Call Evaluation',
+      content:
+        'Assess the candidate\'s goals, preparation gaps, ' +
+        'communication clarity, and fit for your expertise. ' +
+        'Use this to agree on a personalised prep plan.',
+    };
+  }
+
+  // ── Mock / bundle: existing behaviour ───────────────────────────────────
   const title = session.skill_name || session.package?.interview_profile_name || 'Evaluation Details';
 
-  const content = session.skill_description 
+  const content = session.skill_description
     ? `GUIDELINES & EXAMPLES:\n\n${session.skill_description}`
-    : session.package?.interview_profile_description 
-    || "No specific guidelines available for this session.";
+    : session.package?.interview_profile_description
+    || 'No specific guidelines available for this session.';
 
   return { title, content };
 }
