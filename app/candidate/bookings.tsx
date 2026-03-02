@@ -21,7 +21,7 @@ import RatingModal from '@/components/RatingModal';
 import { getBookingState, getBookingDetails, BookingUIState } from '@/lib/booking-logic';
 
 // Master Templates for Evaluation Display
-import { MASTER_TEMPLATES } from '@/lib/evaluation-templates';
+import { MASTER_TEMPLATES, INTRO_CALL_TEMPLATES, INTRO_CALL_TEMPLATE_FALLBACK } from '@/lib/evaluation-templates';
 
 // ✅ OPTIMIZED: Shared Availability Service
 import { availabilityService, type DayAvailability } from '@/services/availability.service';
@@ -463,6 +463,23 @@ export default function CandidateBookingsScreen() {
   };
 
   const handleViewDetails = (session: any) => {
+    // ── Intro call: use domain-specific INTRO_CALL_TEMPLATES ──────────────
+    if (session.session_type === 'intro') {
+      const profileId = Number(session.package?.interview_profile_id);
+      const introTemplates = (profileId && INTRO_CALL_TEMPLATES[profileId])
+        ? INTRO_CALL_TEMPLATES[profileId]
+        : INTRO_CALL_TEMPLATE_FALLBACK;
+      const templates = introTemplates.map(template => ({
+        title: template.title,
+        examples: template.example || [],
+        questions: template.questions || []
+      }));
+      setDetailContent({ skillName: 'Intro Call', templates });
+      setDetailModalVisible(true);
+      return;
+    }
+
+    // ── Mock / bundle: existing MASTER_TEMPLATES lookup ───────────────────
     const profileId = Number(session.package?.interview_profile_id);
     const skillId = session.skill_id;
 

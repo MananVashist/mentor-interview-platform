@@ -11,7 +11,7 @@ import {
   ActivityIndicator,
   Modal,
 } from 'react-native';
-import { Link, useRouter } from 'expo-router';
+import { Link, useRouter, useLocalSearchParams } from 'expo-router';
 import Head from 'expo-router/head';
 import { Ionicons } from '@expo/vector-icons';
 import { authService } from '@/services/auth.service';
@@ -27,6 +27,7 @@ type InterviewProfile = { id: number; name: string };
 
 export default function SignUpScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams();
   const { setUser, setProfile } = useAuthStore();
   const { showNotification } = useNotification();
   const isWeb = Platform.OS === 'web';
@@ -69,80 +70,34 @@ export default function SignUpScreen() {
 
   // --- Validation Function ---
   const validateForm = (): string | null => {
-    // Common validations
-    if (!name.trim()) {
-      return 'Please enter your full name';
-    }
-
-    if (!email.trim()) {
-      return 'Please enter your email address';
-    }
-
-    // Basic email format validation
+    if (!name.trim()) return 'Please enter your full name';
+    if (!email.trim()) return 'Please enter your email address';
+    
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email.trim())) {
-      return 'Please enter a valid email address';
-    }
+    if (!emailRegex.test(email.trim())) return 'Please enter a valid email address';
+    if (!password) return 'Please enter a password';
+    if (password.length < 6) return 'Password must be at least 6 characters long';
+    if (!confirmPassword) return 'Please confirm your password';
+    if (password !== confirmPassword) return 'Passwords do not match';
 
-    if (!password) {
-      return 'Please enter a password';
-    }
-
-    if (password.length < 6) {
-      return 'Password must be at least 6 characters long';
-    }
-
-    if (!confirmPassword) {
-      return 'Please confirm your password';
-    }
-
-    if (password !== confirmPassword) {
-      return 'Passwords do not match';
-    }
-
-    // Role-specific validations
     if (role === 'candidate') {
-      if (!candidateTitle.trim()) {
-        return 'Please enter your professional title';
-      }
+      if (!candidateTitle.trim()) return 'Please enter your professional title';
     }
 
     if (role === 'mentor') {
-      if (!phone.trim()) {
-        return 'Please enter your phone number';
-      }
-
-      if (phone.trim().length < 10) {
-        return 'Please enter a valid phone number (minimum 10 digits)';
-      }
-
-      if (!linkedinUrl.trim()) {
-        return 'Please enter your LinkedIn profile URL';
-      }
-
-      if (!linkedinUrl.trim().includes('linkedin.com')) {
-        return 'Please enter a valid LinkedIn URL (must contain linkedin.com)';
-      }
-
-      if (!professionalTitle.trim()) {
-        return 'Please enter your professional title';
-      }
-
-      if (!yearsOfExp.trim()) {
-        return 'Please enter your years of experience';
-      }
-
+      if (!phone.trim()) return 'Please enter your phone number';
+      if (phone.trim().length < 10) return 'Please enter a valid phone number (minimum 10 digits)';
+      if (!linkedinUrl.trim()) return 'Please enter your LinkedIn profile URL';
+      if (!linkedinUrl.trim().includes('linkedin.com')) return 'Please enter a valid LinkedIn URL';
+      if (!professionalTitle.trim()) return 'Please enter your professional title';
+      if (!yearsOfExp.trim()) return 'Please enter your years of experience';
+      
       const yearsNum = parseInt(yearsOfExp);
-      if (isNaN(yearsNum) || yearsNum < 0) {
-        return 'Please enter a valid number for years of experience';
-      }
-
-      if (selectedProfiles.length === 0) {
-        return 'Please select at least one interview profile';
-      }
+      if (isNaN(yearsNum) || yearsNum < 0) return 'Please enter a valid number for years of experience';
+      if (selectedProfiles.length === 0) return 'Please select at least one interview profile';
     }
 
-    return null; // No errors
+    return null;
   };
 
   // --- Handlers ---
@@ -155,7 +110,6 @@ export default function SignUpScreen() {
   };
 
   const handleSignUp = async () => {
-    // Validate form
     const validationError = validateForm();
     if (validationError) {
       showNotification(validationError, 'error');
@@ -208,12 +162,10 @@ export default function SignUpScreen() {
       // 3. Success State
       setUser(user);
       
-      // ✅ FIXED: Added email parameter for Google Enhanced Conversions
-      console.log('[SignUp] 📊 Tracking sign_up event with email:', email.trim());
       trackEvent('sign_up', {
         method: 'email',
-        role: role, // 'candidate' or 'mentor'
-        email: email.trim() // ✅ Added for Enhanced Conversions
+        role: role,
+        email: email.trim()
       });
       
       setProfile({
@@ -228,10 +180,20 @@ export default function SignUpScreen() {
       });
       showNotification('Account created successfully!', 'success');
 
+      // Forwarding to proper destination with preserved params
       setTimeout(() => {
-        if (role === 'candidate') router.replace('/candidate');
-        else router.replace('/mentor/under-review');
+        const { redirectTo, ...bookingParams } = params;
+        if (role === 'candidate') {
+          if (redirectTo) {
+            router.replace({ pathname: redirectTo as any, params: bookingParams });
+          } else {
+            router.replace('/candidate');
+          }
+        } else {
+          router.replace('/mentor/under-review');
+        }
       }, 1000);
+      
     } catch (err: any) {
       if (err.message?.includes('already registered')) {
         showNotification('This email is already registered. Please login.', 'error');
@@ -448,7 +410,7 @@ export default function SignUpScreen() {
               {/* --- FOOTER LINK TO SIGN IN --- */}
               <View style={styles.authFooter}>
                 <Text style={styles.authFooterText}>Already have an account? </Text>
-                <Link href="/auth/sign-in" asChild>
+                <Link href={{ pathname: "/auth/sign-in", params }} asChild>
                   <TouchableOpacity>
                     <Text style={styles.authFooterLink}>Sign In</Text>
                   </TouchableOpacity>

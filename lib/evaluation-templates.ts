@@ -1908,3 +1908,586 @@ export const MASTER_TEMPLATES: Record<number, InterviewProfile> = {
     }
   }
 };
+
+// =========================================================
+
+
+// =========================================================
+// INTRO CALL TEMPLATES
+// Keyed by interview_profile_id
+// One template per domain — skill ratings + recommendations
+// =========================================================
+export const INTRO_CALL_TEMPLATES: Record<number, EvaluationTemplate[]> = {
+
+  // ── 8: Product Manager ────────────────────────────────
+  8: [
+    {
+      title: "Skill Level Assessment",
+      example: [
+        "Walk me through a product you've built or managed end to end.",
+        "How do you typically approach a product design problem?",
+        "Tell me about a time you used data to make a product decision.",
+        "How would you prioritise a roadmap with competing stakeholder demands?",
+        "What is your experience with A/B testing or experimentation?"
+      ],
+      questions: [
+        {
+          id: "intro_pm_ps",
+          text: "Product Sense / Product Design — ability to identify user problems, define goals, and design solutions",
+          type: "rating",
+          title: [
+            "Can they articulate user pain points clearly?",
+            "Do they think in terms of user segments?",
+            "Do they jump to solutions or define the problem first?",
+            "Can they prioritise features with logical reasoning?",
+            "Do they think about metrics and success criteria?"
+          ]
+        },
+        {
+          id: "intro_pm_exec",
+          text: "Execution & Analytics — ability to diagnose metric drops, define KPIs, and drive data-informed decisions",
+          type: "rating",
+          title: [
+            "Can they structure an RCA (Root Cause Analysis)?",
+            "Do they know the difference between input and output metrics?",
+            "Can they define a North Star metric for a product?",
+            "Do they understand funnels and cohort analysis?",
+            "Can they translate data into a decision?"
+          ]
+        },
+        {
+          id: "intro_pm_strat",
+          text: "Strategy & Market Understanding — ability to assess competition, market positioning, and strategic trade-offs",
+          type: "rating",
+          title: [
+            "Do they understand competitive moats?",
+            "Can they size a market opportunity?",
+            "Do they think about long-term vs short-term trade-offs?",
+            "Can they build a business case?",
+            "Do they understand GTM strategy?"
+          ]
+        },
+        {
+          id: "intro_pm_tech",
+          text: "Technical & Architecture Basics — comfort level discussing technical constraints with engineering teams",
+          type: "rating",
+          title: [
+            "Do they understand APIs and system dependencies?",
+            "Can they explain technical trade-offs in plain language?",
+            "Do they know what is feasible vs complex to build?",
+            "Are they comfortable in engineering discussions?",
+            "Do they understand scalability at a high level?"
+          ]
+        },
+        {
+          id: "intro_pm_beh",
+          text: "Behavioral & Leadership — ability to influence, resolve conflict, demonstrate ownership and resilience",
+          type: "rating",
+          title: [
+            "Do they use a clear STAR structure?",
+            "Do they show ownership without blame?",
+            "Do they demonstrate cross-functional influence?",
+            "Do they show learning from failures?",
+            "Are their stories specific and credible?"
+          ]
+        }
+      ]
+    },
+    {
+      title: "Recommended Focus & Next Steps",
+      example: [
+        "Based on the conversation, identify the 1-2 skill areas to tackle first in mock sessions.",
+        "Be specific — e.g. 'Focus on structuring RCA before jumping to hypotheses' not just 'Execution'.",
+        "Consider both what will move the needle most AND what the candidate's target role demands.",
+        "Recommend session sequence if relevant — e.g. Product Sense first, then Execution.",
+        "Note any mindset or communication habit that needs addressing early."
+      ],
+      questions: [
+        {
+          id: "intro_pm_priority",
+          text: "Which skill areas should this candidate prioritise in their first 2-3 mock sessions? (Be specific)",
+          type: "text",
+          title: [
+            "What is the biggest gap relative to their target role?",
+            "Which skill, if improved, would most unlock the others?",
+            "What foundation needs to be in place before anything else?",
+            "What did they struggle most to articulate during this call?",
+            "What would a hiring manager notice first?"
+          ]
+        },
+        {
+          id: "intro_pm_ready",
+          text: "Is this candidate ready to begin structured mock interview sessions now?",
+          type: "boolean",
+          title: [
+            "Do they have enough foundation to benefit from feedback?",
+            "Are they aware enough of the format to not waste a session?",
+            "Is their communication clear enough to start?",
+            "Are they motivated and coachable?",
+            "Would a mock session be productive right now?"
+          ]
+        },
+        {
+          id: "intro_pm_overall",
+          text: "Overall feedback for the candidate — what they did well, what to work on, and your honest assessment",
+          type: "text",
+          title: [
+            "What was the strongest signal from this conversation?",
+            "What habit or gap needs the most attention?",
+            "How does their profile compare to what target companies expect?",
+            "What is the one thing they should do before the next session?",
+            "What is your honest read on their readiness?"
+          ]
+        }
+      ]
+    }
+  ],
+
+  // ── 7: Data Analyst / Business Analyst ───────────────
+  7: [
+    {
+      title: "Skill Level Assessment",
+      example: [
+        "Walk me through an analysis you did that led to a business decision.",
+        "How do you approach a dashboard or reporting request?",
+        "Write a SQL query to find the top 5 customers by revenue in the last 30 days.",
+        "How would you design an A/B test to measure the impact of a new feature?",
+        "Tell me about a time you communicated a complex analysis to a non-technical stakeholder."
+      ],
+      questions: [
+        {
+          id: "intro_da_sql",
+          text: "SQL & Querying — ability to write, optimise, and debug SQL queries for real analytical tasks",
+          type: "rating",
+          title: [
+            "Can they write JOINs and subqueries confidently?",
+            "Do they understand window functions?",
+            "Can they optimise a slow query?",
+            "Do they know GROUP BY, HAVING, CTEs?",
+            "Can they translate a business question into SQL?"
+          ]
+        },
+        {
+          id: "intro_da_case",
+          text: "Case Studies (Data → Insight) — ability to take raw data, identify patterns, and produce actionable insight",
+          type: "rating",
+          title: [
+            "Do they structure their analysis before diving in?",
+            "Can they identify the right metric to answer the question?",
+            "Do they check for data quality issues?",
+            "Can they tell a story with numbers?",
+            "Do they distinguish correlation from causation?"
+          ]
+        },
+        {
+          id: "intro_da_metrics",
+          text: "Product Metrics & Experimentation — ability to define KPIs, design experiments, and interpret results",
+          type: "rating",
+          title: [
+            "Can they define a North Star metric for a product?",
+            "Do they understand statistical significance?",
+            "Can they design a clean A/B test?",
+            "Do they know common pitfalls like novelty effect?",
+            "Can they interpret p-values and confidence intervals?"
+          ]
+        },
+        {
+          id: "intro_da_viz",
+          text: "Excel / Visualization / Dashboarding — ability to build clear, useful dashboards and visual reports",
+          type: "rating",
+          title: [
+            "Are they comfortable with pivot tables and Excel formulas?",
+            "Can they choose the right chart type for the data?",
+            "Do they know Tableau, Looker, or Power BI?",
+            "Can they design a dashboard for a business audience?",
+            "Do they think about the consumer of the dashboard?"
+          ]
+        },
+        {
+          id: "intro_da_comm",
+          text: "Behavioral / Communication — ability to present findings, manage stakeholders, and influence with data",
+          type: "rating",
+          title: [
+            "Can they explain technical findings simply?",
+            "Do they proactively surface insights or wait to be asked?",
+            "Can they handle pushback on their analysis?",
+            "Do they understand their stakeholders' priorities?",
+            "Are they structured and concise in communication?"
+          ]
+        }
+      ]
+    },
+    {
+      title: "Recommended Focus & Next Steps",
+      example: [
+        "Identify the 1-2 skill areas that will most impact their interview performance.",
+        "SQL is often the quickest win — note if they need structured practice there first.",
+        "Case studies require a thinking framework — note if they jump to answers without structuring.",
+        "Metrics and experimentation are commonly tested at product-led companies — flag if weak.",
+        "Note any communication pattern that would hurt them in a real interview."
+      ],
+      questions: [
+        {
+          id: "intro_da_priority",
+          text: "Which skill areas should this candidate prioritise in their first 2-3 mock sessions? (Be specific)",
+          type: "text",
+          title: [
+            "What gap will cost them the most in interviews?",
+            "Is their SQL strong enough to move on to case studies?",
+            "Do they need to work on structuring before anything else?",
+            "What did they visibly struggle with during this call?",
+            "What skill is closest to being interview-ready?"
+          ]
+        },
+        {
+          id: "intro_da_ready",
+          text: "Is this candidate ready to begin structured mock interview sessions now?",
+          type: "boolean",
+          title: [
+            "Is their SQL baseline sufficient to get value from a mock?",
+            "Do they understand what DA interviews look like?",
+            "Are they coachable and receptive to structured feedback?",
+            "Do they have enough context to not waste a session?",
+            "Would a mock session be productive right now?"
+          ]
+        },
+        {
+          id: "intro_da_overall",
+          text: "Overall feedback for the candidate — what they did well, what to work on, and your honest assessment",
+          type: "text",
+          title: [
+            "What was the strongest signal from this conversation?",
+            "What habit or gap needs the most attention?",
+            "How does their profile compare to what target companies expect?",
+            "What is the one thing they should do before the next session?",
+            "What is your honest read on their readiness?"
+          ]
+        }
+      ]
+    }
+  ],
+
+  // ── 9: Data Scientist / ML Engineer ──────────────────
+  9: [
+    {
+      title: "Skill Level Assessment",
+      example: [
+        "Walk me through an ML project you built end to end.",
+        "How would you debug a model whose accuracy dropped in production?",
+        "Write a Python function to compute the rolling 7-day average of a time series.",
+        "Explain the bias-variance trade-off in plain language.",
+        "How would you design an ML system to detect fraudulent transactions at scale?"
+      ],
+      questions: [
+        {
+          id: "intro_ds_theory",
+          text: "ML Theory & Algorithms — depth of understanding of core ML concepts, models, and when to use them",
+          type: "rating",
+          title: [
+            "Can they explain bias-variance trade-off?",
+            "Do they know when to use classification vs regression?",
+            "Can they explain gradient descent intuitively?",
+            "Do they understand overfitting and regularisation?",
+            "Can they compare tree-based models vs linear models?"
+          ]
+        },
+        {
+          id: "intro_ds_practical",
+          text: "Practical ML / Model Debugging — ability to build, evaluate, and debug ML models in real scenarios",
+          type: "rating",
+          title: [
+            "Can they walk through a full ML pipeline?",
+            "Do they understand train/val/test splits correctly?",
+            "Can they diagnose a model that is underperforming?",
+            "Do they know how to handle class imbalance?",
+            "Can they evaluate a model beyond just accuracy?"
+          ]
+        },
+        {
+          id: "intro_ds_coding",
+          text: "Coding (Python / Pandas / Algo) — ability to write clean, efficient Python for data manipulation and algorithms",
+          type: "rating",
+          title: [
+            "Are they comfortable with Pandas and NumPy?",
+            "Can they solve basic DSA problems in Python?",
+            "Do they write readable, structured code?",
+            "Can they implement a model from scratch if asked?",
+            "Are they familiar with vectorisation over loops?"
+          ]
+        },
+        {
+          id: "intro_ds_stats",
+          text: "Statistics & Experimentation — ability to design experiments, interpret results, and apply statistical thinking",
+          type: "rating",
+          title: [
+            "Do they understand p-values and confidence intervals?",
+            "Can they design a valid A/B test?",
+            "Do they know common statistical pitfalls?",
+            "Can they explain CLT and when it applies?",
+            "Do they understand Bayesian vs frequentist thinking?"
+          ]
+        },
+        {
+          id: "intro_ds_sysdesign",
+          text: "System Design (ML Systems) — ability to design scalable, production-ready ML systems and pipelines",
+          type: "rating",
+          title: [
+            "Can they design a feature store?",
+            "Do they understand model serving and latency trade-offs?",
+            "Can they design a retraining pipeline?",
+            "Do they think about data drift and monitoring?",
+            "Can they explain online vs batch inference trade-offs?"
+          ]
+        }
+      ]
+    },
+    {
+      title: "Recommended Focus & Next Steps",
+      example: [
+        "Identify the 1-2 areas that will most directly impact their interview performance.",
+        "Coding is often a blocker — flag if they need practice before anything else.",
+        "ML theory questions are common in screening rounds — note if foundations are weak.",
+        "System design is expected at senior levels — calibrate based on their target role.",
+        "Note whether they can communicate technical concepts clearly to a non-technical audience."
+      ],
+      questions: [
+        {
+          id: "intro_ds_priority",
+          text: "Which skill areas should this candidate prioritise in their first 2-3 mock sessions? (Be specific)",
+          type: "text",
+          title: [
+            "What gap will cost them the most in screening rounds?",
+            "Is their coding strong enough to not be a distraction in system design rounds?",
+            "Do they need to strengthen theory before practical ML?",
+            "What did they visibly struggle to explain during this call?",
+            "What is closest to being interview-ready?"
+          ]
+        },
+        {
+          id: "intro_ds_ready",
+          text: "Is this candidate ready to begin structured mock interview sessions now?",
+          type: "boolean",
+          title: [
+            "Is their Python/coding baseline sufficient?",
+            "Do they understand what DS/ML interviews look like at their target companies?",
+            "Are they at a level where structured feedback will land?",
+            "Are they coachable and self-aware about their gaps?",
+            "Would a mock session be productive right now?"
+          ]
+        },
+        {
+          id: "intro_ds_overall",
+          text: "Overall feedback for the candidate — what they did well, what to work on, and your honest assessment",
+          type: "text",
+          title: [
+            "What was the strongest signal from this conversation?",
+            "What habit or gap needs the most attention?",
+            "How does their profile compare to what target companies expect?",
+            "What is the one thing they should do before the next session?",
+            "What is your honest read on their readiness?"
+          ]
+        }
+      ]
+    }
+  ],
+
+  // ── 10: HR / Talent Acquisition ──────────────────────
+  10: [
+    {
+      title: "Skill Level Assessment",
+      example: [
+        "Walk me through how you handled a difficult employee relations case.",
+        "How do you structure a full-cycle recruitment process for a senior role?",
+        "Tell me about a time you influenced a business leader on a people decision.",
+        "How would you design a performance management framework from scratch?",
+        "How do you measure the effectiveness of a talent acquisition strategy?"
+      ],
+      questions: [
+        {
+          id: "intro_hr_generalist",
+          text: "HR Generalist — breadth across core HR functions including ER, compliance, onboarding, and policy",
+          type: "rating",
+          title: [
+            "Can they handle employee relations cases confidently?",
+            "Do they understand HR compliance and labour law basics?",
+            "Can they manage onboarding and offboarding end to end?",
+            "Do they know how to write and enforce HR policy?",
+            "Are they comfortable across the full HR lifecycle?"
+          ]
+        },
+        {
+          id: "intro_hr_ops",
+          text: "HR Operations — ability to manage HRIS, payroll coordination, data integrity, and process efficiency",
+          type: "rating",
+          title: [
+            "Are they familiar with HRIS tools (Workday, SAP, Darwinbox)?",
+            "Can they manage payroll inputs and audit processes?",
+            "Do they think about process automation and efficiency?",
+            "Can they generate and interpret HR reports and dashboards?",
+            "Do they maintain data accuracy and audit readiness?"
+          ]
+        },
+        {
+          id: "intro_hr_bp",
+          text: "HR Business Partner — ability to act as a strategic people partner to business leaders",
+          type: "rating",
+          title: [
+            "Do they understand the business they are supporting?",
+            "Can they translate business challenges into people solutions?",
+            "Do they proactively surface workforce risks?",
+            "Can they influence senior stakeholders with data?",
+            "Are they seen as a trusted advisor, not just a process owner?"
+          ]
+        },
+        {
+          id: "intro_hr_coe",
+          text: "COE – HR Functions — depth in specialist areas like L&D, C&B, performance management, or DEI",
+          type: "rating",
+          title: [
+            "Do they have depth in at least one COE area?",
+            "Can they design and implement a program from scratch?",
+            "Do they use benchmarks and frameworks, not just intuition?",
+            "Can they measure the ROI of a people program?",
+            "Do they anticipate failure modes in program design?"
+          ]
+        },
+        {
+          id: "intro_hr_ta",
+          text: "Talent Acquisition — ability to source, assess, and close candidates across levels and functions",
+          type: "rating",
+          title: [
+            "Can they design a sourcing strategy for a hard-to-fill role?",
+            "Do they structure interviews with clear evaluation criteria?",
+            "Can they manage candidate experience end to end?",
+            "Do they use data to improve hiring pipeline metrics?",
+            "Can they partner with hiring managers effectively?"
+          ]
+        }
+      ]
+    },
+    {
+      title: "Recommended Focus & Next Steps",
+      example: [
+        "Identify the 1-2 areas most relevant to their target role and biggest current gap.",
+        "TA candidates often need help structuring case-based answers — flag if they're too process-focused.",
+        "HRBP roles require commercial acumen — note if they lack business context.",
+        "COE roles need specialist depth — flag if answers are too generic.",
+        "Note any tendency to speak in HR jargon rather than business impact language."
+      ],
+      questions: [
+        {
+          id: "intro_hr_priority",
+          text: "Which skill areas should this candidate prioritise in their first 2-3 mock sessions? (Be specific)",
+          type: "text",
+          title: [
+            "What gap is most likely to cost them in interviews?",
+            "Is their target role generalist or specialist — does their prep reflect that?",
+            "Do they need to shift from process-speak to business-impact language?",
+            "What did they struggle to answer with confidence during this call?",
+            "What is closest to being interview-ready?"
+          ]
+        },
+        {
+          id: "intro_hr_ready",
+          text: "Is this candidate ready to begin structured mock interview sessions now?",
+          type: "boolean",
+          title: [
+            "Do they have enough domain knowledge to benefit from feedback?",
+            "Are they aware of what HR interviews look like at their target companies?",
+            "Are they coachable and open to structured critique?",
+            "Is their communication clear enough to start?",
+            "Would a mock session be productive right now?"
+          ]
+        },
+        {
+          id: "intro_hr_overall",
+          text: "Overall feedback for the candidate — what they did well, what to work on, and your honest assessment",
+          type: "text",
+          title: [
+            "What was the strongest signal from this conversation?",
+            "What habit or gap needs the most attention?",
+            "How does their profile compare to what target companies expect?",
+            "What is the one thing they should do before the next session?",
+            "What is your honest read on their readiness?"
+          ]
+        }
+      ]
+    }
+  ]
+};
+
+// Fallback for domains without a specific intro template
+export const INTRO_CALL_TEMPLATE_FALLBACK: EvaluationTemplate[] = [
+  {
+    title: "Skill Level Assessment",
+    example: [
+      "Walk me through your most relevant experience for the role you are targeting.",
+      "What does your preparation look like so far?",
+      "What do you find most challenging about this type of interview?",
+      "What is your timeline and target company type?",
+      "What feedback have you received from past interviews?"
+    ],
+    questions: [
+      {
+        id: "intro_fb_foundation",
+        text: "Domain Foundation — overall depth of knowledge relevant to the target role",
+        type: "rating",
+        title: [
+          "Do they understand the core concepts of the role?",
+          "Is their knowledge current and applied?",
+          "Can they discuss their domain with confidence?",
+          "Are there obvious foundational gaps?",
+          "Is their experience level matched to their target role?"
+        ]
+      },
+      {
+        id: "intro_fb_comm",
+        text: "Communication Clarity — ability to explain their background and thinking concisely",
+        type: "rating",
+        title: [
+          "Are they structured and concise?",
+          "Do they use relevant examples?",
+          "Can they adapt their language to the audience?",
+          "Do they ramble or stay focused?",
+          "Is their narrative compelling?"
+        ]
+      },
+      {
+        id: "intro_fb_coachable",
+        text: "Coachability — openness to feedback and willingness to adapt",
+        type: "rating",
+        title: [
+          "Do they receive pushback well?",
+          "Do they ask good follow-up questions?",
+          "Are they self-aware about their gaps?",
+          "Are they committed to improving?",
+          "Do they take notes and reflect?"
+        ]
+      }
+    ]
+  },
+  {
+    title: "Recommended Focus & Next Steps",
+    example: [],
+    questions: [
+      {
+        id: "intro_fb_priority",
+        text: "Which areas should this candidate prioritise in their first mock sessions?",
+        type: "text",
+        title: []
+      },
+      {
+        id: "intro_fb_ready",
+        text: "Is this candidate ready to begin structured mock interview sessions now?",
+        type: "boolean",
+        title: []
+      },
+      {
+        id: "intro_fb_overall",
+        text: "Overall feedback for the candidate — what they did well, what to work on, and your honest assessment",
+        type: "text",
+        title: []
+      }
+    ]
+  }
+];

@@ -14,7 +14,7 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/lib/supabase/client';
-import { MASTER_TEMPLATES } from '@/lib/evaluation-templates';
+import { MASTER_TEMPLATES, INTRO_CALL_TEMPLATES, INTRO_CALL_TEMPLATE_FALLBACK } from '@/lib/evaluation-templates';
 import { useNotification } from '@/lib/ui/NotificationBanner'; // Make sure path matches your project structure
 
 export default function MentorEvaluationScreen() {
@@ -95,34 +95,45 @@ export default function MentorEvaluationScreen() {
       let displayProfile = 'Interview Evaluation';
       let displaySkill = 'General Skill';
 
-      if (session.package?.interview_profile_id) {
-        const { data: profileData } = await supabase
-          .from('interview_profiles_admin')
-          .select('name')
-          .eq('id', session.package.interview_profile_id)
-          .single();
-        if (profileData?.name) displayProfile = profileData.name;
-      }
+      if (session.session_type === 'intro') {
+        displayProfile = 'Intro Call';
+        displaySkill = 'Intro Call';
+      } else {
+        if (session.package?.interview_profile_id) {
+          const { data: profileData } = await supabase
+            .from('interview_profiles_admin')
+            .select('name')
+            .eq('id', session.package.interview_profile_id)
+            .single();
+          if (profileData?.name) displayProfile = profileData.name;
+        }
 
-      if (session.skill?.name) {
-        displaySkill = session.skill.name;
-      } else if (session.skill_id) {
-        const { data: skillData } = await supabase
-          .from('interview_skills_admin')
-          .select('name')
-          .eq('id', session.skill_id)
-          .single();
-        if (skillData?.name) displaySkill = skillData.name;
+        if (session.skill?.name) {
+          displaySkill = session.skill.name;
+        } else if (session.skill_id) {
+          const { data: skillData } = await supabase
+            .from('interview_skills_admin')
+            .select('name')
+            .eq('id', session.skill_id)
+            .single();
+          if (skillData?.name) displaySkill = skillData.name;
+        }
       }
 
       // 5. LOAD TEMPLATE
       let selectedTemplate: any[] = [];
 
       if (isCompleted && existingTemplate) {
-        // VIEW MODE: Use stored questions
+        // VIEW MODE: Use stored questions (works for all session types)
         selectedTemplate = existingTemplate;
+      } else if (session.session_type === 'intro') {
+        // INTRO CALL: Use domain-specific intro template keyed by profile_id
+        const profileId = session.package?.interview_profile_id;
+        selectedTemplate = (profileId && INTRO_CALL_TEMPLATES[profileId])
+          ? INTRO_CALL_TEMPLATES[profileId]
+          : INTRO_CALL_TEMPLATE_FALLBACK;
       } else {
-        // EDIT MODE: Use current template from file
+        // EDIT MODE (mock/bundle): Use current template from MASTER_TEMPLATES
         const profileId = session.package?.interview_profile_id;
         const skillId = session.skill_id;
 

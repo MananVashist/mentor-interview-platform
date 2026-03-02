@@ -26,39 +26,28 @@ const SYSTEM_FONT = Platform.select({
 const VALID_ROLES = ["hr", "ds", "da", "pm"];
 
 // Role-Specific Content
-const ROLE_CONTENT: Record<string, { title: string; highlight: string; sub: string }> = {
+const ROLE_CONTENT: Record<string, { title: string; highlight: string }> = {
   default: {
     title: "Mock Interviews",
     highlight: "with expert mentors",
-    sub: "Get realistic feedback from industry experts. Anonymous & Unbiased.",
   },
   hr: {
     title: "HR mock interviews with ",
     highlight: "real HR leaders",
-    sub: "Talent Acquisition, HRBP, COE, Generalist and Operations. Practice with veterans from the industry.",
   },
   ds: {
     title: "Data Science mock interviews",
     highlight: "with real experts",
-    sub: "ML Theory/Practical, Coding, Statistics and System Design. Practice with veterans from the industry",
   },
   da: {
     title: "Data Analytics mock interviews",
     highlight: "with domain experts",
-    sub: "Case studies, SQL, Excel, Product Metrics and Behavioral. Practice with vetted mentors.",
   },
   pm: {
     title: "Product Management mock interviews",
     highlight: "with expert PMs",
-    sub: "Test yourself on Product sense, strategy, execution, leadership or technical interview rounds against top hiring managers.",
   },
 };
-
-const STEPS = [
-  { emoji: "📝", title: "1. Browse mentors", desc: "Choose from a list of expert mentors in your domain and the topic you want to practice " },
-  { emoji: "🎥", title: "2. The Session", desc: "1:1 Video Call. Completely anonymous. Recording will be provided." },
-  { emoji: "📊", title: "3. The Feedback", desc: "Detailed written scorecard & actionable tips." },
-];
 
 const CTA_LABEL: Record<string, string> = {
   pm: "Book a PM Mock Interview",
@@ -75,47 +64,27 @@ const Button = memo(({ title, onPress, variant = "primary", color = CTA_TEAL, st
       styles.buttonBase,
       variant === "primary" && { backgroundColor: color },
       variant === "primary" && styles.buttonShadow,
-      variant === "outline" && styles.buttonOutline,
-      variant === "outline" && { borderColor: color },
       style,
     ]}
     onPress={onPress}
     activeOpacity={0.8}
   >
-    <Text
-      style={[
-        styles.buttonText,
-        variant === "primary" && { color: "#fff" },
-        variant === "outline" && { color },
-        textStyle,
-      ]}
-    >
+    <Text style={[styles.buttonText, variant === "primary" && { color: "#fff" }, textStyle]}>
       {title}
     </Text>
   </TouchableOpacity>
 ));
 
 const TrustFooter = memo(({ isSmall }: { isSmall: boolean }) => (
-  <View style={[styles.trustRow, isSmall && { flexDirection: "column", gap: 8, alignItems: "center" }]}>
-    <Text style={styles.trustItem}>✓ 1:1 call</Text>
-    <Text style={styles.trustItem}>✓ Recording + scorecard</Text>
-  </View>
-));
-
-const HowItWorks = memo(({ isSmall }: { isSmall: boolean }) => (
-  <View style={styles.section}>
-    <Text style={styles.kicker}>THE PROCESS</Text>
-    <Text style={[styles.h2, isSmall && styles.h2Mobile]}>Simple.</Text>
-    <View style={[styles.stepsGrid, isSmall && { gap: 16 }]}>
-      {STEPS.map((s, i) => (
-        <View key={i} style={styles.stepCard}>
-          <Text style={styles.stepEmoji}>{s.emoji}</Text>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.stepTitle}>{s.title}</Text>
-            <Text style={styles.stepDesc}>{s.desc}</Text>
-          </View>
-        </View>
-      ))}
+  <View style={[styles.trustRow, isSmall && styles.trustRowMobile]}>
+    <View style={styles.trustPill}>
+      <Text style={styles.trustPillText}>🎥 1:1 Video Call</Text>
+    </View>
+    <View style={styles.trustPill}>
+      <Text style={styles.trustPillText}>📝 Recording + Scorecard</Text>
+    </View>
+    <View style={styles.trustPill}>
+      <Text style={styles.trustPillText}>🕵️ 100% Anonymous</Text>
     </View>
   </View>
 ));
@@ -174,19 +143,11 @@ export default function CampaignLanding() {
     router.push("/mentors");
   };
 
-  const handlePricingClick = () => {
-    console.log("[Analytics] Interest Captured:", {
-      role: activeRole,
-      source: utm.source,
-    });
-    router.push("/mentors");
-  };
-
   return (
     <>
       <Head>
         <title>{`CrackJobs | ${content.title} Interview Prep`}</title>
-        <meta name="description" content={`Practice ${content.title} interviews with real experts. ${content.sub}`} />
+        <meta name="description" content={`Practice ${content.title} interviews with real experts.`} />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
 
         {/* Resource Hints for Performance */}
@@ -200,13 +161,8 @@ export default function CampaignLanding() {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif; 
             background-color: ${BG_CREAM}; 
           } 
-          * { 
-            box-sizing: border-box; 
-          }
-          /* Prevent flash of unstyled content */
-          #root { 
-            min-height: 100vh; 
-          }
+          * { box-sizing: border-box; }
+          #root { min-height: 100vh; }
         `}</style>
       </Head>
       <ScrollView
@@ -226,25 +182,15 @@ export default function CampaignLanding() {
               {content.title}{"\n"}
               <Text style={{ color: CTA_TEAL }}>{content.highlight}</Text>
             </Text>
-            <Text style={[styles.sub, isSmall && styles.subMobile]}>{content.sub}</Text>
 
-            {/* Primary + Secondary CTA row */}
+            {/* Single CTA */}
             <View style={[styles.ctaRow, isSmall && { flexDirection: "column" }]}>
               <Button
                 nativeID="btn-lp-hero-cta"
                 title={CTA_LABEL[activeRole] ?? CTA_LABEL.default}
                 onPress={() => handleBookClick("hero_cta")}
                 style={[styles.ctaBig, isSmall && { width: "100%" }]}
-                textStyle={{ fontSize: 16 }}
-              />
-              <Button
-                nativeID="btn-lp-hero-view-mentors"
-                title="View Our Mentors"
-                variant="outline"
-                color={CTA_TEAL}
-                onPress={() => handleViewMentors("hero_secondary")}
-                style={[styles.ctaBig, isSmall && { width: "100%" }]}
-                textStyle={{ fontSize: 16 }}
+                textStyle={{ fontSize: 18 }}
               />
             </View>
 
@@ -252,11 +198,10 @@ export default function CampaignLanding() {
           </View>
         </View>
 
-        <HowItWorks isSmall={isSmall} />
-
-        {/* Lazy Loaded Sections - No delay, immediate render */}
+        {/* Lazy Loaded Sections - Passes role to fetch real mentors */}
         <Suspense fallback={<SectionsFallback />}>
           <LazySectionsLP
+            role={activeRole}
             onPricingLayout={setPricingY}
             isSmall={isSmall}
             onViewMentors={handleViewMentors}
@@ -276,7 +221,6 @@ export function generateStaticParams() {
 }
 
 const styles = StyleSheet.create({
-  // ===== Base Styles =====
   container: {
     flex: 1,
     backgroundColor: BG_CREAM,
@@ -284,25 +228,23 @@ const styles = StyleSheet.create({
 
   // ===== Button Styles =====
   buttonBase: {
-    borderRadius: 8,
+    borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 14,
-    paddingHorizontal: 28,
+    paddingVertical: 18,
+    paddingHorizontal: 36,
   },
   buttonShadow: {
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    shadowColor: CTA_TEAL,
     shadowOffset: { width: 0, height: 4 },
-  },
-  buttonOutline: {
-    backgroundColor: "transparent",
-    borderWidth: 2,
   },
   buttonText: {
     fontFamily: SYSTEM_FONT,
-    fontSize: 15,
-    fontWeight: "700",
+    fontSize: 16,
+    fontWeight: "800",
+    letterSpacing: 0.5,
   },
 
   // ===== Hero Section =====
@@ -311,13 +253,13 @@ const styles = StyleSheet.create({
     width: "100%",
     alignSelf: "center",
     paddingHorizontal: 24,
-    paddingTop: 20,
+    paddingTop: 40,
     paddingBottom: 30,
   },
   heroInner: {
     backgroundColor: "#fff",
     borderRadius: 24,
-    padding: 40,
+    padding: 48,
     paddingBottom: 48,
     shadowColor: "#000",
     shadowOpacity: 0.05,
@@ -334,49 +276,55 @@ const styles = StyleSheet.create({
   h1: {
     fontFamily: SYSTEM_FONT,
     fontWeight: "800",
-    fontSize: 42,
+    fontSize: 46,
     color: BRAND_ORANGE,
-    lineHeight: 48,
-    marginBottom: 12,
+    lineHeight: 54,
+    marginBottom: 32,
     textAlign: "center",
   },
   h1Mobile: {
-    fontSize: 32,
-    lineHeight: 38,
-  },
-  sub: {
-    fontFamily: SYSTEM_FONT,
-    fontSize: 17,
-    color: TEXT_GRAY,
-    lineHeight: 26,
-    textAlign: "center",
-    maxWidth: 600,
-    marginBottom: 30,
-  },
-  subMobile: {
-    fontSize: 16,
+    fontSize: 34,
+    lineHeight: 42,
+    marginBottom: 24,
   },
   ctaRow: {
     flexDirection: "row",
     gap: 12,
     width: "100%",
     justifyContent: "center",
-    marginBottom: 24,
-    marginTop: 12,
+    marginBottom: 32,
   },
   ctaBig: {
-    minWidth: 160,
+    minWidth: 280,
   },
+  
+  // Trust Highlight Footer
   trustRow: {
     flexDirection: "row",
-    gap: 24,
-    opacity: 0.8,
+    gap: 16,
+    justifyContent: "center",
+    flexWrap: "wrap",
   },
-  trustItem: {
+  trustRowMobile: {
+    flexDirection: "column",
+    gap: 10,
+    alignItems: "stretch",
+    width: "100%",
+  },
+  trustPill: {
+    backgroundColor: "#F0FDFA",
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 100,
+    borderWidth: 1,
+    borderColor: "#CCFBF1",
+    alignItems: "center",
+  },
+  trustPillText: {
     fontFamily: SYSTEM_FONT,
-    fontSize: 13,
-    fontWeight: "500",
-    color: TEXT_GRAY,
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#0F766E",
   },
 
   // ===== Section Styles =====
@@ -387,62 +335,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 40,
   },
-  kicker: {
-    fontFamily: SYSTEM_FONT,
-    fontWeight: "800",
-    fontSize: 12,
-    color: CTA_TEAL,
-    marginBottom: 10,
-    textAlign: "center",
-    letterSpacing: 1,
-  },
-  h2: {
-    fontFamily: SYSTEM_FONT,
-    fontWeight: "800",
-    fontSize: 28,
-    color: TEXT_DARK,
-    marginBottom: 20,
-    textAlign: "center",
-  },
-  h2Mobile: {
-    fontSize: 24,
-  },
-
-  // ===== How It Works Section =====
-  stepsGrid: {
-    gap: 16,
-  },
-  stepCard: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    backgroundColor: "#fff",
-    padding: 20,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: BORDER_LIGHT,
-    gap: 16,
-  },
-  stepEmoji: {
-    fontSize: 28,
-  },
-  stepTitle: {
-    fontFamily: SYSTEM_FONT,
-    fontWeight: "700",
-    fontSize: 16,
-    color: TEXT_DARK,
-    marginBottom: 2,
-  },
-  stepDesc: {
-    fontFamily: SYSTEM_FONT,
-    fontWeight: "500",
-    fontSize: 14,
-    color: TEXT_GRAY,
-  },
-
   footerText: {
     textAlign: "center",
     fontFamily: SYSTEM_FONT,
-    color: "#999",
+    color: "#9CA3AF",
     fontSize: 13,
   },
 });

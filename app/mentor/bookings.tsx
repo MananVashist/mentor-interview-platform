@@ -16,7 +16,7 @@ import { useAuthStore } from '@/lib/store';
 import { getBookingState, getBookingDetails, getEvaluationTemplate, BookingUIState } from '@/lib/booking-logic';
 
 // Master Templates for Real-Time Lookup
-import { MASTER_TEMPLATES } from '@/lib/evaluation-templates';
+import { MASTER_TEMPLATES, INTRO_CALL_TEMPLATES, INTRO_CALL_TEMPLATE_FALLBACK } from '@/lib/evaluation-templates';
 
 // Notification Hook
 import { useNotification } from '@/lib/ui/NotificationBanner';
@@ -599,6 +599,23 @@ export default function MentorBookingsScreen() {
   };
 
   const handleViewTemplate = (session: any) => {
+    // ── Intro call: use domain-specific INTRO_CALL_TEMPLATES ──────────────
+    if (session.session_type === 'intro') {
+      const profileId = Number(session.package?.interview_profile_id);
+      const introTemplates = (profileId && INTRO_CALL_TEMPLATES[profileId])
+        ? INTRO_CALL_TEMPLATES[profileId]
+        : INTRO_CALL_TEMPLATE_FALLBACK;
+      const templates = introTemplates.map(template => ({
+        title: template.title,
+        examples: template.example || [],
+        questions: template.questions || []
+      }));
+      setTemplateContent({ skillName: 'Intro Call', templates });
+      setTemplateModalVisible(true);
+      return;
+    }
+
+    // ── Mock / bundle: existing MASTER_TEMPLATES lookup ───────────────────
     const profileId = Number(session.package?.interview_profile_id);
     const skillId = session.skill_id;
 
@@ -678,6 +695,30 @@ export default function MentorBookingsScreen() {
       let templateTitle = '';
       let templateContent = '';
 
+      // ── Intro call: use domain-specific INTRO_CALL_TEMPLATES ─────────────
+      if (session.session_type === 'intro') {
+        const profileId = Number(session.package?.interview_profile_id);
+        const introTemplates = (profileId && INTRO_CALL_TEMPLATES[profileId])
+          ? INTRO_CALL_TEMPLATES[profileId]
+          : INTRO_CALL_TEMPLATE_FALLBACK;
+        const tmpl = introTemplates[0];
+        templateTitle = tmpl.title;
+        templateContent = JSON.stringify(tmpl);
+
+        router.push({
+          pathname: `/mentor/session/${session.id}`,
+          params: {
+            mode,
+            templateTitle,
+            templateContent,
+            profileName: 'Intro Call',
+            round: 'Intro Call'
+          }
+        });
+        return;
+      }
+
+      // ── Mock / bundle: existing MASTER_TEMPLATES lookup ──────────────────
       const profileIdNum = Number(session.package?.interview_profile_id);
       const skillId = session.skill_id;
 
