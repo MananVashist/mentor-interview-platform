@@ -25,35 +25,40 @@ const SYSTEM_FONT = Platform.select({
 // --- Valid Roles Config ---
 const VALID_ROLES = ["hr", "ds", "da", "pm"];
 
-// Role-Specific Content
-const ROLE_CONTENT: Record<string, { title: string; highlight: string }> = {
+// Role-Specific Content - Shifted to Outcomes
+const ROLE_CONTENT: Record<string, { title: string; highlight: string; roleName: string }> = {
   default: {
-    title: "Mock Interviews",
-    highlight: "with expert mentors",
+    title: "Land your dream job",
+    highlight: "with realistic interview practice",
+    roleName: "role"
   },
   hr: {
-    title: "HR mock interviews with ",
-    highlight: "real HR leaders",
+    title: "Land your dream HR job",
+    highlight: "with realistic interview practice",
+    roleName: "HR"
   },
   ds: {
-    title: "Data Science mock interviews",
-    highlight: "with real experts",
+    title: "Land your dream Data Science job",
+    highlight: "with realistic interview practice",
+    roleName: "Data Science"
   },
   da: {
-    title: "Data Analytics mock interviews",
-    highlight: "with domain experts",
+    title: "Land your dream Data Analytics job",
+    highlight: "with realistic interview practice",
+    roleName: "Data Analytics"
   },
   pm: {
-    title: "Product Management mock interviews",
-    highlight: "with expert PMs",
+    title: "Land your dream Product Management job",
+    highlight: "with realistic interview practice",
+    roleName: "PM"
   },
 };
 
 const CTA_LABEL: Record<string, string> = {
-  pm: "Book a PM Mock Interview",
-  da: "Book a Data Analytics Mock Interview",
-  ds: "Book a Data Science Mock Interview",
-  hr: "Book an HR Mock Interview",
+  pm: "Book Your PM Mock Interview",
+  da: "Book Your Analytics Interview",
+  ds: "Book Your Data Science Interview",
+  hr: "Book Your HR Mock Interview",
   default: "Book Your Mock Interview",
 };
 
@@ -78,13 +83,13 @@ const Button = memo(({ title, onPress, variant = "primary", color = CTA_TEAL, st
 const TrustFooter = memo(({ isSmall }: { isSmall: boolean }) => (
   <View style={[styles.trustRow, isSmall && styles.trustRowMobile]}>
     <View style={styles.trustPill}>
-      <Text style={styles.trustPillText}>🎥 1:1 Video Call</Text>
+      <Text style={styles.trustPillText}>🧑‍💻 Real industry experts, not AI</Text>
     </View>
     <View style={styles.trustPill}>
-      <Text style={styles.trustPillText}>📝 Recording + Detailed Feedback</Text>
+      <Text style={styles.trustPillText}>🎯 Practice with your target JD</Text>
     </View>
     <View style={styles.trustPill}>
-      <Text style={styles.trustPillText}>🕵️ 100% Anonymous</Text>
+      <Text style={styles.trustPillText}>📝 Actionable human feedback</Text>
     </View>
   </View>
 ));
@@ -116,7 +121,6 @@ export default function CampaignLanding() {
     }
   }, [activeRole]);
 
-  // Capture UTM
   const utm = useMemo(() => ({
     source: typeof params.utm_source === "string" ? params.utm_source : "",
     campaign: typeof params.utm_campaign === "string" ? params.utm_campaign : "",
@@ -126,35 +130,21 @@ export default function CampaignLanding() {
   const content = ROLE_CONTENT[activeRole];
 
   const handleBookClick = (tier: string = "general") => {
-    console.log("[Analytics] Interest Captured:", {
-      role: activeRole,
-      tier_intent: tier,
-      source: utm.source,
-    });
     router.push("/mentors");
   };
 
   const handleViewMentors = (source: string = "hero_secondary") => {
-    console.log("[Analytics] View Mentors Clicked:", {
-      role: activeRole,
-      source,
-      utm: utm.source,
-    });
     router.push("/mentors");
   };
 
   return (
     <>
       <Head>
-        <title>{`CrackJobs | ${content.title} Interview Prep`}</title>
-        <meta name="description" content={`Practice ${content.title} interviews with real experts.`} />
+        <title>{`CrackJobs | ${content.title}`}</title>
+        <meta name="description" content={`Practice ${content.roleName} interviews with real industry insiders and eliminate interview anxiety.`} />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-        {/* Resource Hints for Performance */}
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
-
-        {/* Inline Critical CSS */}
         <style>{`
           body { 
             margin: 0; 
@@ -182,8 +172,11 @@ export default function CampaignLanding() {
               {content.title}{"\n"}
               <Text style={{ color: CTA_TEAL }}>{content.highlight}</Text>
             </Text>
+            
+            <Text style={[styles.subheadline, isSmall && styles.subheadlineMobile]}>
+              Book a live mock interview based on your actual job description or target specific weaknesses. Get structured feedback from real human hiring managers, eliminate your blind spots, and ace the real thing.
+            </Text>
 
-            {/* Single CTA */}
             <View style={[styles.ctaRow, isSmall && { flexDirection: "column" }]}>
               <Button
                 nativeID="btn-lp-hero-cta"
@@ -198,7 +191,6 @@ export default function CampaignLanding() {
           </View>
         </View>
 
-        {/* Lazy Loaded Sections - Passes role to fetch real mentors */}
         <Suspense fallback={<SectionsFallback />}>
           <LazySectionsLP
             role={activeRole}
@@ -221,125 +213,23 @@ export function generateStaticParams() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: BG_CREAM,
-  },
-
-  // ===== Button Styles =====
-  buttonBase: {
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 18,
-    paddingHorizontal: 36,
-  },
-  buttonShadow: {
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    shadowColor: CTA_TEAL,
-    shadowOffset: { width: 0, height: 4 },
-  },
-  buttonText: {
-    fontFamily: SYSTEM_FONT,
-    fontSize: 16,
-    fontWeight: "800",
-    letterSpacing: 0.5,
-    textAlign: "center",
-  },
-
-  // ===== Hero Section =====
-  heroSection: {
-    maxWidth: 1000,
-    width: "100%",
-    alignSelf: "center",
-    paddingHorizontal: 24,
-    paddingTop: 40,
-    paddingBottom: 30,
-  },
-  heroInner: {
-    backgroundColor: "#fff",
-    borderRadius: 24,
-    padding: 48,
-    paddingBottom: 48,
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 10 },
-    borderWidth: 1,
-    borderColor: BORDER_LIGHT,
-    alignItems: "center",
-  },
-  heroInnerMobile: {
-    padding: 24,
-    paddingBottom: 32,
-  },
-  h1: {
-    fontFamily: SYSTEM_FONT,
-    fontWeight: "800",
-    fontSize: 46,
-    color: BRAND_ORANGE,
-    lineHeight: 54,
-    marginBottom: 32,
-    textAlign: "center",
-  },
-  h1Mobile: {
-    fontSize: 34,
-    lineHeight: 42,
-    marginBottom: 24,
-  },
-  ctaRow: {
-    flexDirection: "row",
-    gap: 12,
-    width: "100%",
-    justifyContent: "center",
-    marginBottom: 32,
-  },
-  ctaBig: {
-    minWidth: 280,
-  },
-  
-  // Trust Highlight Footer
-  trustRow: {
-    flexDirection: "row",
-    gap: 16,
-    justifyContent: "center",
-    flexWrap: "wrap",
-  },
-  trustRowMobile: {
-    flexDirection: "column",
-    gap: 10,
-    alignItems: "stretch",
-    width: "100%",
-  },
-  trustPill: {
-    backgroundColor: "#F0FDFA",
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 100,
-    borderWidth: 1,
-    borderColor: "#CCFBF1",
-    alignItems: "center",
-  },
-  trustPillText: {
-    fontFamily: SYSTEM_FONT,
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#0F766E",
-  },
-
-  // ===== Section Styles =====
-  section: {
-    maxWidth: 900,
-    width: "100%",
-    alignSelf: "center",
-    paddingHorizontal: 24,
-    paddingVertical: 40,
-  },
-  footerText: {
-    textAlign: "center",
-    fontFamily: SYSTEM_FONT,
-    color: "#9CA3AF",
-    fontSize: 13,
-  },
+  container: { flex: 1, backgroundColor: BG_CREAM },
+  buttonBase: { borderRadius: 12, alignItems: "center", justifyContent: "center", paddingVertical: 18, paddingHorizontal: 36 },
+  buttonShadow: { shadowOpacity: 0.3, shadowRadius: 10, shadowColor: CTA_TEAL, shadowOffset: { width: 0, height: 4 } },
+  buttonText: { fontFamily: SYSTEM_FONT, fontSize: 16, fontWeight: "800", letterSpacing: 0.5, textAlign: "center" },
+  heroSection: { maxWidth: 1000, width: "100%", alignSelf: "center", paddingHorizontal: 24, paddingTop: 40, paddingBottom: 30 },
+  heroInner: { backgroundColor: "#fff", borderRadius: 24, padding: 48, paddingBottom: 48, shadowColor: "#000", shadowOpacity: 0.05, shadowRadius: 20, shadowOffset: { width: 0, height: 10 }, borderWidth: 1, borderColor: BORDER_LIGHT, alignItems: "center" },
+  heroInnerMobile: { padding: 24, paddingBottom: 32 },
+  h1: { fontFamily: SYSTEM_FONT, fontWeight: "800", fontSize: 46, color: BRAND_ORANGE, lineHeight: 54, marginBottom: 16, textAlign: "center" },
+  h1Mobile: { fontSize: 34, lineHeight: 42, marginBottom: 12 },
+  subheadline: { fontFamily: SYSTEM_FONT, fontSize: 18, color: TEXT_GRAY, textAlign: "center", maxWidth: 700, lineHeight: 28, marginBottom: 32 },
+  subheadlineMobile: { fontSize: 16, lineHeight: 24, marginBottom: 24 },
+  ctaRow: { flexDirection: "row", gap: 12, width: "100%", justifyContent: "center", marginBottom: 32 },
+  ctaBig: { minWidth: 280 },
+  trustRow: { flexDirection: "row", gap: 16, justifyContent: "center", flexWrap: "wrap" },
+  trustRowMobile: { flexDirection: "column", gap: 10, alignItems: "stretch", width: "100%" },
+  trustPill: { backgroundColor: "#F0FDFA", paddingVertical: 10, paddingHorizontal: 16, borderRadius: 100, borderWidth: 1, borderColor: "#CCFBF1", alignItems: "center" },
+  trustPillText: { fontFamily: SYSTEM_FONT, fontSize: 14, fontWeight: "700", color: "#0F766E" },
+  section: { maxWidth: 900, width: "100%", alignSelf: "center", paddingHorizontal: 24, paddingVertical: 40 },
+  footerText: { textAlign: "center", fontFamily: SYSTEM_FONT, color: "#9CA3AF", fontSize: 13 },
 });

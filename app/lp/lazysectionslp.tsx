@@ -25,8 +25,8 @@ const SYSTEM_FONT = Platform.select({
 const TESTIMONIALS = [
   { name: "Priya S.", role: "Product Manager", company: "TATA", avatar: "👩‍💼", rating: 5, quote: "The mock interview was incredibly realistic. My mentor's feedback on my product sense helped me identify exact gaps." },
   { name: "Rahul V.", role: "Data Analyst", company: "Bigbasket", avatar: "👨‍💻", rating: 5, quote: "I practiced SQL and case studies with a senior analyst. The detailed scorecard showed me exactly what to improve. Worth every rupee!" },
-  { name: "Sneha P.", role: "Data Scientist", company: "Musigma", avatar: "👩‍🔬", rating: 5, quote: "Anonymous format removed all pressure. My mentor's ML system design feedback was gold. Recording helped me review and improve 2x faster." },
-  { name: "Amit K.", role: "HR Manager", company: "Flipkart", avatar: "👨‍💼", rating: 5, quote: "Practiced behavioral questions with an actual HRBP from ABFRL. The structured feedback on my STAR responses made all the difference in my interviews." },
+  { name: "Sneha P.", role: "Data Scientist", company: "Musigma", avatar: "👩‍🔬", rating: 5, quote: "The safe practice environment removed all pressure. My mentor's ML system design feedback was gold. Recording helped me review and improve 2x faster." },
+  { name: "Amit K.", role: "HR Manager", company: "Flipkart", avatar: "👨‍💼", rating: 5, quote: "Practiced behavioral questions with an actual HRBP. The structured feedback on my STAR responses made all the difference in my interviews." },
 ];
 
 const GUARANTEES = [
@@ -37,10 +37,10 @@ const GUARANTEES = [
 ];
 
 const FAQS = [
-  { q: "How is the process anonymous?", a: "No personal details are revealed to any party. Only professional title you set during onboarding will be shown. During the meeting, the video can be kept off" },
-  { q: "What will the detailed feedback be like?", a: "You don't just get a 'pass/fail'. You will get a feedback form with your strengths and areas of improvements highlighted by the interviewer" },
-  { q: "What happens when the mentor does not show up for the session?", a: "You will be refunded the full amount. " },
-  { q: "What topic will the interview be on?", a: "You can choose the topic of your interview from a list of the commonly seen interview types in your domain" },
+  { q: "Is this a safe space to practice?", a: "Absolutely. We provide a low-pressure environment where you can make mistakes and learn from them before your real interview. You can even keep your camera off if you prefer." },
+  { q: "What will the detailed feedback be like?", a: "You don't just get a 'pass/fail'. You will get a feedback form with your strengths and areas of improvements highlighted by the interviewer." },
+  { q: "What happens when the mentor does not show up for the session?", a: "You will be refunded the full amount." },
+  { q: "Can I practice for a specific job?", a: "Yes! You can choose the topic of your interview, and paste the exact Job Description you are applying for so the mentor can tailor the questions." },
 ];
 
 // ============================================
@@ -48,7 +48,7 @@ const FAQS = [
 // ============================================
 const CheckmarkCircleIcon = ({ size = 16, color = "#3B82F6" }) => (<Svg width={size} height={size} viewBox="0 0 24 24" fill="none"><Circle cx="12" cy="12" r="10" stroke={color} strokeWidth="2" fill="none" /><Path d="M8 12.5L10.5 15L16 9.5" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></Svg>);
 const BriefcaseIcon = ({ size = 12, color = "#111827" }) => (<Svg width={size} height={size} viewBox="0 0 24 24" fill="none"><Path d="M20 7H4C2.89543 7 2 7.89543 2 9V19C2 20.1046 2.89543 21 4 21H20C21.1046 21 22 20.1046 22 19V9C22 7.89543 21.1046 7 20 7Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /><Path d="M16 7V5C16 3.89543 15.1046 3 14 3H10C8.89543 3 8 3.89543 8 5V7" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></Svg>);
-const SparklesIcon = ({ size = 14, color = "#1E40AF" }) => (<Svg width={size} height={size} viewBox="0 0 24 24" fill="none"><Path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 14.5L2 12L9.5 9.5L12 2Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /><Path d="M6 3L6.5 5.5L9 6L6.5 6.5L6 9L5.5 6.5L3 6L5.5 5.5L6 3Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></Svg>);
+const SparklesIcon = ({ size = 14, color = "#1E40AF" }) => (<Svg width={size} height={size} viewBox="0 0 24 24" fill="none"><Path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /><Path d="M6 3L6.5 5.5L9 6L6.5 6.5L6 9L5.5 6.5L3 6L5.5 5.5L6 3Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></Svg>);
 const CheckmarkDoneIcon = ({ size = 14, color = "#6B7280" }) => (<Svg width={size} height={size} viewBox="0 0 24 24" fill="none"><Path d="M5 12L10 17L20 7" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /><Path d="M2 12L7 17" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></Svg>);
 const MedalIcon = ({ size = 14, color = "#CD7F32" }) => (<Svg width={size} height={size} viewBox="0 0 24 24" fill="none"><Circle cx="12" cy="15" r="6" fill={color} stroke={color} strokeWidth="1.5" /><Path d="M9 9L7 3L12 6L17 3L15 9" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" /></Svg>);
 
@@ -87,6 +87,128 @@ const TierBadgeBlock = ({ tier }: { tier?: string | null }) => {
 };
 
 // ============================================
+// PROBLEM & SOLUTION FLOW
+// ============================================
+const TheProblemSection = memo(({ isSmall }: { isSmall: boolean }) => (
+  <View style={[styles.section, { paddingTop: 20 }]}>
+    <Text style={styles.kicker}>THE HARDEST PART</Text>
+    <Text style={[styles.h2, isSmall && styles.h2Mobile]}>Most candidates freeze when it counts</Text>
+    <View style={styles.problemGrid}>
+      <View style={styles.problemBox}>
+        <Text style={styles.problemIcon}>😰</Text>
+        <Text style={styles.problemTitle}>Interview Anxiety</Text>
+        <Text style={styles.problemText}>The pressure of the real interview causes you to blank on answers you already know.</Text>
+      </View>
+      <View style={styles.problemBox}>
+        <Text style={styles.problemIcon}>🤖</Text>
+        <Text style={styles.problemTitle}>AI & Videos Fall Short</Text>
+        <Text style={styles.problemText}>AI bots and YouTube videos cannot evaluate your communication nuance or tell you why a human would reject you.</Text>
+      </View>
+      <View style={styles.problemBox}>
+        <Text style={styles.problemIcon}>❌</Text>
+        <Text style={styles.problemTitle}>Silent Rejections</Text>
+        <Text style={styles.problemText}>You get rejected but never find out exactly why or how the hiring manager evaluated your answers.</Text>
+      </View>
+    </View>
+  </View>
+));
+
+const HowItWorksSection = memo(({ isSmall }: { isSmall: boolean }) => (
+  <View style={[styles.section, { backgroundColor: '#fff', borderRadius: 24, paddingVertical: 48, marginBottom: 40, shadowColor: "#000", shadowOpacity: 0.03, shadowRadius: 15, borderWidth: 1, borderColor: BORDER_LIGHT }]}>
+    <Text style={styles.kicker}>YOUR PATH TO THE OFFER</Text>
+    <Text style={[styles.h2, isSmall && styles.h2Mobile]}>How realistic practice builds unshakeable confidence</Text>
+    <View style={styles.stepsContainer}>
+      <View style={styles.stepBox}>
+        <View style={styles.stepNumber}><Text style={styles.stepNumberText}>1</Text></View>
+        <Text style={styles.stepTitle}>Paste a JD or Pick a Skill</Text>
+        <Text style={styles.stepText}>Use a specific Job Description to simulate the real thing, or select a targeted interview round to focus exactly on your weak spots.</Text>
+      </View>
+      <View style={styles.stepBox}>
+        <View style={styles.stepNumber}><Text style={styles.stepNumberText}>2</Text></View>
+        <Text style={styles.stepTitle}>Practice with an Insider</Text>
+        <Text style={styles.stepText}>Simulate a live interview with a vetted industry expert. Answer real questions in a safe, low-pressure environment.</Text>
+      </View>
+      <View style={styles.stepBox}>
+        <View style={styles.stepNumber}><Text style={styles.stepNumberText}>3</Text></View>
+        <Text style={styles.stepTitle}>Get Actionable Feedback</Text>
+        <Text style={styles.stepText}>Receive a detailed scorecard, review the session recording, fix your mistakes, and walk into the real interview ready.</Text>
+      </View>
+    </View>
+  </View>
+));
+
+// ============================================
+// NEW: DYNAMIC TARGETED SKILLS SECTION
+// ============================================
+const TargetedSkillsSection = memo(({ role, isSmall }: { role: string, isSmall: boolean }) => {
+  // Mapping skills explicitly derived from user DB JSON
+  const SKILLS: Record<string, string[]> = {
+    pm: ["Product Sense / Product Design", "Execution & Analytics", "Strategy & Market Understanding", "Technical & Architecture Basics", "Behavioral & Leadership"],
+    da: ["SQL & Querying", "Case Studies (Data → Insight)", "Product Metrics & Experimentation", "Excel / Visualization", "Behavioral / Communication"],
+    ds: ["ML Theory & Algorithms", "Practical ML / Model Debugging", "Coding (Python / Pandas / Algo)", "Statistics & Experimentation", "System Design (ML Systems)"],
+    hr: ["Talent Acquisition", "HR Generalist", "HR Operations", "HR Business Partner", "COE – HR Functions"],
+    default: ["Product Sense / Design", "SQL & Querying", "System Design (ML)", "Talent Acquisition", "Case Studies (Data → Insight)", "Behavioral & Leadership"]
+  };
+
+  const activeSkills = SKILLS[role.toLowerCase()] || SKILLS.default;
+
+  return (
+    <View style={[styles.section, { paddingTop: 20, paddingBottom: 60 }]}>
+      <Text style={styles.kicker}>LASER-FOCUSED PRACTICE</Text>
+      <Text style={[styles.h2, isSmall && styles.h2Mobile, { marginBottom: 16 }]}>Already know your weak spots?</Text>
+      <Text style={styles.subtext}>Skip the general prep. Select from our pre-decided skills and book mock interviews strictly focused on the specific rounds that hold you back.</Text>
+      
+      <View style={styles.skillsPillContainer}>
+        {activeSkills.map((skill, idx) => (
+          <View key={idx} style={styles.skillPill}>
+            <Text style={styles.skillPillText}>{skill}</Text>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+});
+
+const SystematicPrepSection = memo(({ onViewMentors, isSmall }: { onViewMentors: (source: string) => void, isSmall: boolean }) => (
+  <View style={styles.notSureContainer}>
+    <View style={styles.notSureBox}>
+      <View style={styles.notSureIconRow}>
+        <Text style={styles.notSureIcon}>📈</Text>
+      </View>
+      <Text style={styles.kicker}>THE SYSTEMATIC APPROACH</Text>
+      <Text style={[styles.h2, isSmall && styles.h2Mobile, { marginBottom: 16 }]}>
+        Diagnose your gaps. <Text style={{ color: BRAND_ORANGE }}>Systematically</Text> fix them.
+      </Text>
+      <Text style={styles.subtext}>
+        Not sure which skill round to focus on? Book an initial diagnostic call to map out your specific blind spots, then get a custom bundle of mock interviews tailored to turn those weaknesses into strengths.
+      </Text>
+
+      <View style={styles.notSurePerks}>
+        {[
+          { icon: "1️⃣", text: "Book an intro call to diagnose your gaps and build a prep strategy." },
+          { icon: "2️⃣", text: "Book a tailored bundle of interviews focusing exactly on your weak areas." },
+          { icon: "3️⃣", text: "Track your progress systematically until you are completely interview-ready." },
+        ].map((perk, i) => (
+          <View key={i} style={styles.notSurePerk}>
+            <Text style={styles.notSurePerkIcon}>{perk.icon}</Text>
+            <Text style={styles.notSurePerkText}>{perk.text}</Text>
+          </View>
+        ))}
+      </View>
+
+      <Button
+        nativeID="btn-lp-bundle-intro-call"
+        title="Book Your Diagnostic Call"
+        onPress={() => onViewMentors("bundle_intro_call")}
+        style={styles.notSureButton}
+        textStyle={{ fontSize: 16 }}
+      />
+      <Text style={styles.notSureNote}>Diagnostic calls are available directly on the expert's profile page</Text>
+    </View>
+  </View>
+));
+
+// ============================================
 // RESPONSIVE MENTOR CARD
 // ============================================
 const MentorCard = ({ m, displayPrice, totalSessions, isNewMentor, averageRating, showRating, hasSlots, displaySlot, customPriceLabel, onView, isSmall, isFounderCard }: any) => {
@@ -94,7 +216,6 @@ const MentorCard = ({ m, displayPrice, totalSessions, isNewMentor, averageRating
   const fallbackAvatar = `https://api.dicebear.com/9.x/micah/png?seed=${encodeURIComponent(seed)}&backgroundColor=e5e7eb,f3f4f6`;
   const introPrice = Math.round(displayPrice * 0.20);
 
-  // Dynamic responsive width logic to ensure it doesn't squish or scroll horizontally on mobile
   const cardWidthStyle = isFounderCard 
     ? { width: '100%' as const } 
     : (isSmall ? { width: '100%' as const } : { width: Platform.OS === 'web' ? 'calc(50% - 8px)' as any : '100%' as const });
@@ -106,7 +227,7 @@ const MentorCard = ({ m, displayPrice, totalSessions, isNewMentor, averageRating
           <Image source={{ uri: m.avatar_url || fallbackAvatar }} style={styles.avatarImage} />
           <View style={styles.headerInfo}>
             <View style={styles.identityGroup}>
-              <Text style={styles.mentorName} numberOfLines={1}>{m.professional_title || 'Interview Mentor'}</Text>
+              <Text style={styles.mentorName} numberOfLines={1}>{m.professional_title || 'Industry Expert'}</Text>
               <View style={styles.verifiedBadge}><CheckmarkCircleIcon size={14} color="#3B82F6" /></View>
             </View>
             {m.years_of_experience && (
@@ -250,9 +371,9 @@ const DynamicDomainMentors = ({ role, isSmall, onViewMentors }: { role: string, 
       {/* FOUNDER BLOCK */}
       {founderMentor && (
         <View style={styles.founderSection}>
-          <Text style={styles.kicker}>MEET THE FOUNDER</Text>
-          <Text style={[styles.h2, isSmall && styles.h2Mobile]}>Free session with the founder</Text>
-          <Text style={styles.subtext}>Book a complimentary discovery call to discuss your career goals and preparation strategy.</Text>
+          <Text style={styles.kicker}>START WITH STRATEGY</Text>
+          <Text style={[styles.h2, isSmall && styles.h2Mobile]}>Free prep strategy session with the founder</Text>
+          <Text style={styles.subtext}>Anxious about your upcoming interview? Book a complimentary discovery call to discuss your goals and build a prep plan.</Text>
           <View style={styles.founderCardWrapper}>
             <MentorCard
               m={founderMentor}
@@ -275,8 +396,9 @@ const DynamicDomainMentors = ({ role, isSmall, onViewMentors }: { role: string, 
       {/* GENERAL MENTORS BLOCK */}
       {mentors.length > 0 && (
         <>
-          <Text style={styles.kicker}>YOUR INTERVIEWERS</Text>
-          <Text style={[styles.h2, isSmall && styles.h2Mobile]}>Practice with top industry experts</Text>
+          <Text style={styles.kicker}>YOUR INDUSTRY INSIDERS</Text>
+          <Text style={[styles.h2, isSmall && styles.h2Mobile]}>Practice with the people who actually hire</Text>
+          <Text style={[styles.subtext, { marginBottom: 40 }]}>Stop guessing what hiring managers want. Get realistic practice and insider feedback.</Text>
           
           <View style={styles.listContainer}>
             {mentors.map((m) => {
@@ -312,7 +434,7 @@ const DynamicDomainMentors = ({ role, isSmall, onViewMentors }: { role: string, 
 
           <View style={{ alignItems: "center", marginTop: 32 }}>
             <Button
-              title="View All Mentors"
+              title="View Experts & Book"
               variant="outline"
               onPress={onViewMentors}
               style={{ minWidth: 200 }}
@@ -323,7 +445,6 @@ const DynamicDomainMentors = ({ role, isSmall, onViewMentors }: { role: string, 
     </View>
   );
 };
-
 
 // ============================================
 // STATIC SECTIONS
@@ -369,45 +490,6 @@ const TestimonialsSection = memo(({ onViewMentors, isSmall }: { onViewMentors: (
   </View>
 ));
 
-const NotSureYet = memo(({ onViewMentors, isSmall }: { onViewMentors: (source: string) => void, isSmall: boolean }) => (
-  <View style={styles.notSureContainer}>
-    <View style={styles.notSureBox}>
-      <View style={styles.notSureIconRow}>
-        <Text style={styles.notSureIcon}>🤔</Text>
-      </View>
-      <Text style={styles.kicker}>NOT READY TO COMMIT?</Text>
-      <Text style={[styles.h2, isSmall && styles.h2Mobile, { marginBottom: 16 }]}>
-        Book an <Text style={{ color: BRAND_ORANGE }}>intro call</Text> first
-      </Text>
-      <Text style={styles.subtext}>
-        Not sure which mentor is right for you, or what topic to focus on? Start with a short 30-minute intro call — no pressure, no mock interview. Just a conversation.
-      </Text>
-
-      <View style={styles.notSurePerks}>
-        {[
-          { icon: "🎯", text: "Understand your preparation gaps before committing" },
-          { icon: "🤝", text: "Get a feel for your mentor's style and approach" },
-          { icon: "📋", text: "Get a personalised prep plan for your target role" },
-        ].map((perk, i) => (
-          <View key={i} style={styles.notSurePerk}>
-            <Text style={styles.notSurePerkIcon}>{perk.icon}</Text>
-            <Text style={styles.notSurePerkText}>{perk.text}</Text>
-          </View>
-        ))}
-      </View>
-
-      <Button
-        nativeID="btn-lp-not-sure-intro-call"
-        title="Browse Mentors & Book an Intro Call"
-        onPress={() => onViewMentors("not_sure_intro_call")}
-        style={styles.notSureButton}
-        textStyle={{ fontSize: 15 }}
-      />
-      <Text style={styles.notSureNote}>Intro calls are available directly on the mentor's profile page</Text>
-    </View>
-  </View>
-));
-
 const GuaranteeCard = memo(({ guarantee }: { guarantee: typeof GUARANTEES[0] }) => (
   <View style={styles.guaranteeCard}>
     <Text style={{ fontFamily: SYSTEM_FONT, fontSize: 36, marginBottom: 14 }}>{guarantee.icon}</Text>
@@ -435,7 +517,7 @@ const GuaranteeSection = memo(({ isSmall }: { isSmall: boolean }) => (
         ))}
       </View>
       <View style={styles.trustSeal}>
-        {["SECURE PAYMENTS", "VERIFIED MENTORS", "INSTANT REFUNDS"].map((t, i) => (
+        {["SECURE PAYMENTS", "VERIFIED EXPERTS", "INSTANT REFUNDS"].map((t, i) => (
           <View key={i} style={styles.sealBadge}>
             <Text style={{ fontFamily: SYSTEM_FONT, fontSize: 12, fontWeight: "700", color: CTA_TEAL }}>✓ {t}</Text>
           </View>
@@ -475,17 +557,17 @@ const FinalCTABanner = memo(({ onViewMentors, isSmall }: { onViewMentors: (sourc
         Your next interview is closer than you think
       </Text>
       <Text style={[styles.subtext, { color: 'rgba(255,255,255,0.85)' }]}>
-        Browse mentors, pick a topic, and book your session in minutes.
+        Browse industry insiders, pick a topic, and book your session in minutes.
       </Text>
       <Button
         nativeID="btn-lp-final-view-mentors"
-        title="View Our Mentors →"
+        title="Book Your Session Now →"
         onPress={() => onViewMentors("final_cta")}
         style={styles.finalCtaButton}
         textStyle={{color: '#000000', fontSize: 17 }}
       />
       <View style={styles.finalCtaTrust}>
-        <Text style={styles.finalCtaTrustItem}>✓ Anonymous</Text>
+        <Text style={styles.finalCtaTrustItem}>✓ Safe practice space</Text>
         <Text style={styles.finalCtaTrustItem}>✓ Money-back guarantee</Text>
         <Text style={styles.finalCtaTrustItem}>✓ Recording included</Text>
       </View>
@@ -507,9 +589,12 @@ export default function LazySectionsLP({
 }) {
   return (
     <>
+      <TheProblemSection isSmall={isSmall} />
+      <HowItWorksSection isSmall={isSmall} />
+      <TargetedSkillsSection role={role} isSmall={isSmall} />
       <DynamicDomainMentors role={role} isSmall={isSmall} onViewMentors={() => onViewMentors("domain_mentors_cta")} />
       <TestimonialsSection onViewMentors={onViewMentors} isSmall={isSmall} />
-      <NotSureYet onViewMentors={onViewMentors} isSmall={isSmall} />
+      <SystematicPrepSection onViewMentors={onViewMentors} isSmall={isSmall} />
       <GuaranteeSection isSmall={isSmall} />
       <FAQ isSmall={isSmall} />
       <FinalCTABanner onViewMentors={onViewMentors} isSmall={isSmall} />
@@ -561,61 +646,37 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
 
+  // ===== New Problem & Solution Styles =====
+  problemGrid: { flexDirection: "row", flexWrap: "wrap", gap: 24, justifyContent: "center", marginTop: 20 },
+  problemBox: { backgroundColor: "#fff", padding: 24, borderRadius: 16, borderWidth: 1, borderColor: BORDER_LIGHT, width: Platform.OS === "web" ? "calc(33.333% - 16px)" : "100%", minWidth: 250 },
+  problemIcon: { fontSize: 32, marginBottom: 12 },
+  problemTitle: { fontFamily: SYSTEM_FONT, fontSize: 18, fontWeight: "700", color: TEXT_DARK, marginBottom: 8 },
+  problemText: { fontFamily: SYSTEM_FONT, fontSize: 14, color: TEXT_GRAY, lineHeight: 22 },
+  stepsContainer: { flexDirection: "row", flexWrap: "wrap", gap: 24, justifyContent: "center", paddingHorizontal: 24 },
+  stepBox: { alignItems: "center", width: Platform.OS === "web" ? "calc(33.333% - 16px)" : "100%", minWidth: 250 },
+  stepNumber: { width: 48, height: 48, borderRadius: 24, backgroundColor: "#E6F6F6", alignItems: "center", justifyContent: "center", marginBottom: 16 },
+  stepNumberText: { fontFamily: SYSTEM_FONT, fontSize: 20, fontWeight: "800", color: CTA_TEAL },
+  stepTitle: { fontFamily: SYSTEM_FONT, fontSize: 18, fontWeight: "700", color: TEXT_DARK, marginBottom: 8, textAlign: "center" },
+  stepText: { fontFamily: SYSTEM_FONT, fontSize: 14, color: TEXT_GRAY, lineHeight: 22, textAlign: "center" },
+
+  // ===== New Targeted Skills Styles =====
+  skillsPillContainer: { flexDirection: "row", flexWrap: "wrap", gap: 12, justifyContent: "center", maxWidth: 800, alignSelf: "center" },
+  skillPill: { backgroundColor: "#fff", paddingVertical: 12, paddingHorizontal: 20, borderRadius: 100, borderWidth: 1, borderColor: "rgba(24, 167, 167, 0.3)", shadowColor: CTA_TEAL, shadowOpacity: 0.05, shadowRadius: 4, shadowOffset: { width: 0, height: 2 } },
+  skillPillText: { fontFamily: SYSTEM_FONT, fontSize: 15, fontWeight: "600", color: TEXT_DARK },
+
   // ===== Button Styles =====
-  buttonBase: {
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 14,
-    paddingHorizontal: 28,
-  },
-  buttonPrimary: {
-    backgroundColor: CTA_TEAL,
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-  },
-  buttonOutline: {
-    backgroundColor: "transparent",
-    borderWidth: 2,
-    borderColor: CTA_TEAL,
-  },
-  buttonText: {
-    fontFamily: SYSTEM_FONT,
-    fontSize: 15,
-    fontWeight: "700",
-  },
+  buttonBase: { borderRadius: 8, alignItems: "center", justifyContent: "center", paddingVertical: 14, paddingHorizontal: 28 },
+  buttonPrimary: { backgroundColor: CTA_TEAL, shadowOpacity: 0.2, shadowRadius: 8, shadowOffset: { width: 0, height: 4 } },
+  buttonOutline: { backgroundColor: "transparent", borderWidth: 2, borderColor: CTA_TEAL },
+  buttonText: { fontFamily: SYSTEM_FONT, fontSize: 15, fontWeight: "700" },
 
   // ===== Dynamic Mentors List =====
-  listContainerWrapper: {
-    paddingVertical: 60,
-    maxWidth: 1200,
-    width: "100%",
-    alignSelf: "center",
-    paddingHorizontal: 24,
-  },
-  listContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 16,
-    justifyContent: "center",
-  },
-  
-  // Founder Block
-  founderSection: {
-    marginBottom: 64,
-    alignItems: 'center',
-    width: '100%',
-    maxWidth: 900,
-    alignSelf: 'center',
-  },
-  founderCardWrapper: {
-    width: '100%',
-    maxWidth: 500,
-    marginTop: 16,
-  },
+  listContainerWrapper: { paddingVertical: 60, maxWidth: 1200, width: "100%", alignSelf: "center", paddingHorizontal: 24 },
+  listContainer: { flexDirection: "row", flexWrap: "wrap", gap: 16, justifyContent: "center" },
+  founderSection: { marginBottom: 64, alignItems: 'center', width: '100%', maxWidth: 900, alignSelf: 'center' },
+  founderCardWrapper: { width: '100%', maxWidth: 500, marginTop: 16 },
 
-  // Card Styles from mentors.tsx
+  // Card Styles
   card: { backgroundColor: "#fff", borderRadius: 12, padding: 20, borderWidth: 0.5, borderColor: "#F3F4F6", minWidth: 300, maxWidth: 500, ...Platform.select({ ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4 }, android: { elevation: 2 } }) },
   cardContent: { gap: 12 },
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
@@ -654,255 +715,44 @@ const styles = StyleSheet.create({
   bookBtnText: { fontFamily: SYSTEM_FONT, color: '#FFF', fontSize: 13, fontWeight: '700', letterSpacing: 0.2 },
 
   // ===== Testimonials =====
-  testimonialsContainer: {
-    paddingTop: 40,
-    paddingBottom: 60,
-    paddingHorizontal: 24,
-    backgroundColor: BG_CREAM,
-  },
-  testimonialsGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 24,
-    justifyContent: "center",
-    maxWidth: 1200,
-    alignSelf: "center",
-  },
-  testimonialCard: {
-    backgroundColor: "#fff",
-    padding: 32,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.08)",
-    width: Platform.OS === "web" ? "calc(50% - 12px)" : "100%",
-    minWidth: 280,
-    maxWidth: 550,
-  },
-  testimonialHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 18,
-    gap: 14,
-  },
-  avatarContainer: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: BG_CREAM,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 2,
-    borderColor: BORDER_LIGHT,
-  },
-  avatarText: {
-    fontFamily: SYSTEM_FONT,
-    fontSize: 26,
-  },
-  testimonialMeta: {
-    flex: 1,
-  },
-  testimonialName: {
-    fontFamily: SYSTEM_FONT,
-    fontSize: 17,
-    fontWeight: "700",
-    color: TEXT_DARK,
-    marginBottom: 3,
-  },
-  testimonialRole: {
-    fontFamily: SYSTEM_FONT,
-    fontSize: 14,
-    fontWeight: "600",
-    color: TEXT_GRAY,
-  },
-  testimonialQuote: {
-    fontFamily: SYSTEM_FONT,
-    fontSize: 15,
-    lineHeight: 25,
-    color: TEXT_DARK,
-    marginBottom: 18,
-  },
-  trustIndicators: {
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: 32,
-    marginTop: 48,
-    flexWrap: "wrap",
-  },
-  trustText: {
-    fontFamily: SYSTEM_FONT,
-    fontSize: 13,
-    fontWeight: "600",
-    color: TEXT_GRAY,
-    opacity: 0.8,
-  },
+  testimonialsContainer: { paddingTop: 40, paddingBottom: 60, paddingHorizontal: 24, backgroundColor: BG_CREAM },
+  testimonialsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 24, justifyContent: "center", maxWidth: 1200, alignSelf: "center" },
+  testimonialCard: { backgroundColor: "#fff", padding: 32, borderRadius: 16, borderWidth: 1, borderColor: "rgba(0,0,0,0.08)", width: Platform.OS === "web" ? "calc(50% - 12px)" : "100%", minWidth: 280, maxWidth: 550 },
+  testimonialHeader: { flexDirection: "row", alignItems: "center", marginBottom: 18, gap: 14 },
+  avatarContainer: { width: 52, height: 52, borderRadius: 26, backgroundColor: BG_CREAM, alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: BORDER_LIGHT },
+  avatarText: { fontFamily: SYSTEM_FONT, fontSize: 26 },
+  testimonialMeta: { flex: 1 },
+  testimonialName: { fontFamily: SYSTEM_FONT, fontSize: 17, fontWeight: "700", color: TEXT_DARK, marginBottom: 3 },
+  testimonialRole: { fontFamily: SYSTEM_FONT, fontSize: 14, fontWeight: "600", color: TEXT_GRAY },
+  testimonialQuote: { fontFamily: SYSTEM_FONT, fontSize: 15, lineHeight: 25, color: TEXT_DARK, marginBottom: 18 },
+  trustIndicators: { flexDirection: "row", justifyContent: "center", gap: 32, marginTop: 48, flexWrap: "wrap" },
+  trustText: { fontFamily: SYSTEM_FONT, fontSize: 13, fontWeight: "600", color: TEXT_GRAY, opacity: 0.8 },
 
-  // ===== Not Sure Yet =====
-  notSureContainer: {
-    paddingHorizontal: 24,
-    paddingVertical: 16,
-    backgroundColor: BG_CREAM,
-  },
-  notSureBox: {
-    backgroundColor: "#fff9f5",
-    borderRadius: 20,
-    paddingVertical: 48,
-    paddingHorizontal: 40,
-    maxWidth: 900,
-    alignSelf: "center",
-    width: "100%",
-    alignItems: "center",
-    borderWidth: 2,
-    borderColor: "rgba(245, 135, 66, 0.25)",
-  },
-  notSureIconRow: {
-    marginBottom: 16,
-  },
-  notSureIcon: {
-    fontFamily: SYSTEM_FONT,
-    fontSize: 40,
-  },
-  notSurePerks: {
-    gap: 14,
-    alignSelf: "stretch",
-    maxWidth: 480,
-    marginBottom: 36,
-  },
-  notSurePerk: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 12,
-    backgroundColor: "#fff",
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "rgba(245, 135, 66, 0.15)",
-  },
-  notSurePerkIcon: {
-    fontFamily: SYSTEM_FONT,
-    fontSize: 20,
-  },
-  notSurePerkText: {
-    fontFamily: SYSTEM_FONT,
-    fontSize: 14,
-    color: TEXT_DARK,
-    flex: 1,
-    lineHeight: 22,
-    fontWeight: "500",
-  },
-  notSureButton: {
-    backgroundColor: BRAND_ORANGE,
-    minWidth: 280,
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-  },
-  notSureNote: {
-    fontFamily: SYSTEM_FONT,
-    fontSize: 12,
-    color: TEXT_GRAY,
-    marginTop: 14,
-    textAlign: "center",
-    opacity: 0.7,
-  },
+  // ===== Systematic Bundle Strategy =====
+  notSureContainer: { paddingHorizontal: 24, paddingVertical: 16, backgroundColor: BG_CREAM },
+  notSureBox: { backgroundColor: "#fff9f5", borderRadius: 20, paddingVertical: 48, paddingHorizontal: 40, maxWidth: 900, alignSelf: "center", width: "100%", alignItems: "center", borderWidth: 2, borderColor: "rgba(245, 135, 66, 0.25)" },
+  notSureIconRow: { marginBottom: 16 },
+  notSureIcon: { fontFamily: SYSTEM_FONT, fontSize: 40 },
+  notSurePerks: { gap: 14, alignSelf: "stretch", maxWidth: 480, marginBottom: 36 },
+  notSurePerk: { flexDirection: "row", alignItems: "flex-start", gap: 12, backgroundColor: "#fff", padding: 16, borderRadius: 12, borderWidth: 1, borderColor: "rgba(245, 135, 66, 0.15)" },
+  notSurePerkIcon: { fontFamily: SYSTEM_FONT, fontSize: 20 },
+  notSurePerkText: { fontFamily: SYSTEM_FONT, fontSize: 14, color: TEXT_DARK, flex: 1, lineHeight: 22, fontWeight: "500" },
+  notSureButton: { backgroundColor: BRAND_ORANGE, minWidth: 280, shadowOpacity: 0.2, shadowRadius: 8, shadowOffset: { width: 0, height: 4 } },
+  notSureNote: { fontFamily: SYSTEM_FONT, fontSize: 12, color: TEXT_GRAY, marginTop: 14, textAlign: "center", opacity: 0.7 },
 
   // ===== Guarantee =====
-  guaranteeContainer: {
-    paddingTop: 40,
-    paddingBottom: 80,
-    paddingHorizontal: 24,
-    backgroundColor: BG_CREAM,
-  },
-  guaranteeBox: {
-    backgroundColor: "#fff",
-    padding: 56,
-    borderRadius: 20,
-    maxWidth: 1100,
-    alignSelf: "center",
-    width: "100%",
-    borderWidth: 2,
-    borderColor: "rgba(24, 167, 167, 0.3)",
-  },
-  guaranteesGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 24,
-    marginBottom: 44,
-    justifyContent: "center",
-  },
-  guaranteeCard: {
-    backgroundColor: BG_CREAM,
-    padding: 28,
-    borderRadius: 16,
-    width: Platform.OS === "web" ? "calc(50% - 12px)" : "100%",
-    minWidth: 240,
-    maxWidth: 500,
-    borderWidth: 1,
-    borderColor: BORDER_LIGHT,
-  },
-  trustSeal: {
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: 18,
-    paddingVertical: 26,
-    borderTopWidth: 1,
-    borderTopColor: BORDER_LIGHT,
-    flexWrap: "wrap",
-  },
-  sealBadge: {
-    backgroundColor: "#e8f9f9",
-    paddingVertical: 9,
-    paddingHorizontal: 18,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "rgba(24, 167, 167, 0.15)",
-  },
+  guaranteeContainer: { paddingTop: 40, paddingBottom: 80, paddingHorizontal: 24, backgroundColor: BG_CREAM },
+  guaranteeBox: { backgroundColor: "#fff", padding: 56, borderRadius: 20, maxWidth: 1100, alignSelf: "center", width: "100%", borderWidth: 2, borderColor: "rgba(24, 167, 167, 0.3)" },
+  guaranteesGrid: { flexDirection: "row", flexWrap: "wrap", gap: 24, marginBottom: 44, justifyContent: "center" },
+  guaranteeCard: { backgroundColor: BG_CREAM, padding: 28, borderRadius: 16, width: Platform.OS === "web" ? "calc(50% - 12px)" : "100%", minWidth: 240, maxWidth: 500, borderWidth: 1, borderColor: BORDER_LIGHT },
+  trustSeal: { flexDirection: "row", justifyContent: "center", gap: 18, paddingVertical: 26, borderTopWidth: 1, borderTopColor: BORDER_LIGHT, flexWrap: "wrap" },
+  sealBadge: { backgroundColor: "#e8f9f9", paddingVertical: 9, paddingHorizontal: 18, borderRadius: 8, borderWidth: 1, borderColor: "rgba(24, 167, 167, 0.15)" },
 
-  // ===== FAQ =====
-  faqItem: {
-    backgroundColor: "#fff",
-    padding: 20,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: BORDER_LIGHT,
-  },
-
-  // ===== Final CTA Banner =====
-  finalCtaContainer: {
-    paddingHorizontal: 24,
-    paddingVertical: 60,
-    backgroundColor: BG_CREAM,
-  },
-  finalCtaBox: {
-    backgroundColor: CTA_TEAL,
-    borderRadius: 24,
-    paddingVertical: 56,
-    paddingHorizontal: 40,
-    maxWidth: 900,
-    alignSelf: "center",
-    width: "100%",
-    alignItems: "center",
-  },
-  finalCtaButton: {
-    backgroundColor: "#fff",
-    borderRadius: 8,
-    paddingVertical: 16,
-    paddingHorizontal: 36,
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    minWidth: 240,
-  },
-  finalCtaTrust: {
-    flexDirection: "row",
-    gap: 20,
-    marginTop: 24,
-    flexWrap: "wrap",
-    justifyContent: "center",
-  },
-  finalCtaTrustItem: {
-    fontFamily: SYSTEM_FONT,
-    fontSize: 13,
-    fontWeight: "600",
-    color: "rgba(255,255,255,0.9)",
-  },
+  // ===== FAQ & Final CTA =====
+  faqItem: { backgroundColor: "#fff", padding: 20, borderRadius: 12, borderWidth: 1, borderColor: BORDER_LIGHT },
+  finalCtaContainer: { paddingHorizontal: 24, paddingVertical: 60, backgroundColor: BG_CREAM },
+  finalCtaBox: { backgroundColor: CTA_TEAL, borderRadius: 24, paddingVertical: 56, paddingHorizontal: 40, maxWidth: 900, alignSelf: "center", width: "100%", alignItems: "center" },
+  finalCtaButton: { backgroundColor: "#fff", borderRadius: 8, paddingVertical: 16, paddingHorizontal: 36, shadowOpacity: 0.15, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, minWidth: 240 },
+  finalCtaTrust: { flexDirection: "row", gap: 20, marginTop: 24, flexWrap: "wrap", justifyContent: "center" },
+  finalCtaTrustItem: { fontFamily: SYSTEM_FONT, fontSize: 13, fontWeight: "600", color: "rgba(255,255,255,0.9)" },
 });
