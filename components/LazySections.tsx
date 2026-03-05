@@ -72,17 +72,16 @@ const INTERVIEW_TRACKS = [
 ];
 
 const REVIEWS = [
-  { id: 1, name: 'P.K.', role: 'Product Manager', company: 'Funded Startup', text: 'The anonymous format helped me practice without fear. Got honest feedback that directly improved my answers.', rating: 5 },
-  { id: 2, name: 'A.M.', role: 'Data Analyst', company: 'Analytics Firm', text: 'The SQL round practice was exactly like my real interview. Landed the offer!', rating: 5 },
-  { id: 3, name: 'S.K.', role: 'ML Engineer', company: 'AI Startup', text: 'Worth every rupee. The structured evaluation showed exactly where I was weak. Fixed those gaps and aced my next interview.', rating: 5 },
+  { id: 1, name: 'P.K.', role: 'Product Manager', company: 'Funded Startup', text: 'The practice environment helped me eliminate my interview anxiety. Got actionable feedback that directly improved my answers.', rating: 5 },
+  { id: 2, name: 'A.M.', role: 'Data Analyst', company: 'Analytics Firm', text: 'The human feedback was infinitely better than AI practice. Real insights from someone who actually hires. Landed the offer!', rating: 5 },
+  { id: 3, name: 'S.K.', role: 'ML Engineer', company: 'AI Startup', text: 'Worth every rupee. The structured evaluation showed exactly where I was weak. Fixed those gaps systematically and aced my next interview.', rating: 5 },
 ];
 
 const FAQ = [
-  { q: 'How does anonymous interviewing work?', a: 'Your name, photo, and personal details are hidden. You are identified only by your professional title (e.g., "Data Scientist at Uber"). Mentors see your role and resume (if you choose to upload it), nothing more. When you join the meeting, you can join and keep your video off' },
-  { q: 'Are your mentors verified?', a: 'Yes. Every mentor is vetted manually. We verify employment history, LinkedIn profiles, and conduct background checks to ensure they work at top companies.' },
-  { q: 'What happens in a session?', a: 'Book a 55-minute slot. Your mentor conducts a realistic mock interview focused on your chosen topic. After the session, you receive structured evaluation feedback covering strengths, gaps, and specific improvement areas.' },
-  { q: 'Can I practice specific rounds?', a: 'Absolutely. Choose your interview profile (PM, Data, HR, etc.) and then select the specific topic you want to practice - like "Product Thinking", "SQL", or "Behavioral Questions".' },
-  { q: 'Do you offer refunds?', a: 'Yes. If the mentor does not show up for the session, we provide a full refund. We record the session so its no problem' },
+  { q: 'Is this a safe space to practice?', a: 'Absolutely. We provide a low-pressure environment where you can make mistakes and learn from them before your real interview. You can even keep your camera off if you prefer.' },
+  { q: 'What will the detailed feedback be like?', a: 'You don\'t just get a \'pass/fail\'. You will get a detailed scorecard with your strengths and areas of improvements explicitly highlighted by a human hiring manager.' },
+  { q: 'What happens when the mentor does not show up for the session?', a: 'You will be refunded the full amount instantly.' },
+  { q: 'Can I practice for a specific job?', a: 'Yes! You can choose the topic of your interview, and paste the exact Job Description you are applying for so the expert can tailor the questions specifically to that role.' },
 ];
 
 // ============================================
@@ -141,7 +140,7 @@ const MentorCard = ({ m, displayPrice, totalSessions, isNewMentor, averageRating
           <RNImage source={{ uri: m.avatar_url || fallbackAvatar }} style={styles.avatarImage} />
           <View style={styles.headerInfo}>
             <View style={styles.identityGroup}>
-              <Text style={styles.mentorName} numberOfLines={1}>{m.professional_title || 'Interview Mentor'}</Text>
+              <Text style={styles.mentorName} numberOfLines={1}>{m.professional_title || 'Industry Expert'}</Text>
               <View style={styles.verifiedBadge}><CheckmarkCircleIcon size={14} color="#3B82F6" /></View>
             </View>
             {m.years_of_experience && (
@@ -188,6 +187,30 @@ const MentorCard = ({ m, displayPrice, totalSessions, isNewMentor, averageRating
     </View>
   );
 };
+
+const TheProblemSection = memo(({ isSmall }: { isSmall: boolean }) => (
+  <View style={[styles.sectionContainer, { paddingTop: 20, paddingBottom: 20 }]}>
+    <Text style={styles.kicker}>THE HARDEST PART</Text>
+    <Text style={[styles.h2, isSmall && styles.h2Mobile]}>Most candidates freeze when it counts</Text>
+    <View style={styles.problemGrid}>
+      <View style={styles.problemBox}>
+        <Text style={styles.problemIcon}>😰</Text>
+        <Text style={styles.problemTitle}>Interview Anxiety</Text>
+        <Text style={styles.problemText}>The pressure of the real interview causes you to blank on answers you already know.</Text>
+      </View>
+      <View style={styles.problemBox}>
+        <Text style={styles.problemIcon}>🤖</Text>
+        <Text style={styles.problemTitle}>AI & Videos Fall Short</Text>
+        <Text style={styles.problemText}>AI bots and YouTube videos cannot evaluate your communication nuance or tell you why a human would reject you.</Text>
+      </View>
+      <View style={styles.problemBox}>
+        <Text style={styles.problemIcon}>❌</Text>
+        <Text style={styles.problemTitle}>Silent Rejections</Text>
+        <Text style={styles.problemText}>You get rejected but never find out exactly why or how the hiring manager evaluated your answers.</Text>
+      </View>
+    </View>
+  </View>
+));
 
 const DynamicDomainMentors = ({ role, isSmall, onViewMentors }: { role: string, isSmall: boolean, onViewMentors: () => void }) => {
   const router = useRouter();
@@ -279,9 +302,9 @@ const DynamicDomainMentors = ({ role, isSmall, onViewMentors }: { role: string, 
       {/* FOUNDER BLOCK */}
       {founderMentor && (
         <View style={styles.founderSection}>
-          <Text style={styles.kicker}>MEET THE FOUNDER</Text>
-          <Text style={[styles.h2, isSmall && styles.h2Mobile]}>Free session with the founder</Text>
-          <Text style={styles.subtext}>Book a complimentary discovery call to discuss your career goals and preparation strategy.</Text>
+          <Text style={styles.kicker}>START WITH STRATEGY</Text>
+          <Text style={[styles.h2, isSmall && styles.h2Mobile]}>Free prep strategy session with the founder</Text>
+          <Text style={styles.subtext}>Anxious about your upcoming interview? Book a complimentary discovery call to discuss your goals and build a prep plan.</Text>
           <View style={styles.founderCardWrapper}>
             <MentorCard
               m={founderMentor}
@@ -304,9 +327,9 @@ const DynamicDomainMentors = ({ role, isSmall, onViewMentors }: { role: string, 
       {/* GENERAL MENTORS BLOCK */}
       {mentors.length > 0 && (
         <>
-          <Text style={styles.kicker}>YOUR INTERVIEWERS</Text>
-          <Text style={[styles.h2, isSmall && styles.h2Mobile]}>Practice with top industry experts</Text>
-          
+          <Text style={styles.kicker}>YOUR INDUSTRY INSIDERS</Text>
+          <Text style={[styles.h2, isSmall && styles.h2Mobile]}>Practice with the people who actually hire</Text>
+          <Text style={[styles.subtext, { marginBottom: 40 }]}>Stop guessing what hiring managers want. Get realistic practice and actionable human feedback.</Text>
           <View style={styles.listContainer}>
             {mentors.map((m) => {
               const basePrice = m.session_price_inr ?? m.session_price ?? 0;
@@ -341,7 +364,7 @@ const DynamicDomainMentors = ({ role, isSmall, onViewMentors }: { role: string, 
 
           <View style={{ alignItems: "center", marginTop: 32 }}>
             <SharedButton
-              title="View All Mentors"
+              title="View Experts & Book"
               variant="outline"
               onPress={onViewMentors}
               style={{ minWidth: 200 }}
@@ -372,7 +395,7 @@ const LogoWall = memo(() => {
   return (
     <View style={styles.logoSection} nativeID="our-mentors" accessibilityRole="region" accessibilityLabel="Companies where our mentors work">
       <Text style={styles.logoTitle} accessibilityRole="header" accessibilityLevel={2}>
-        OUR MENTORS HAVE WORKED IN
+        OUR EXPERTS HAVE WORKED IN
       </Text>
       <View style={[styles.logoWall, isSmall && styles.logoWallMobile]}>
         {COMPANIES.map((company) => (
@@ -455,7 +478,7 @@ const Reviews = memo(() => {
     <View style={[styles.sectionContainer, styles.reviewsSection]} nativeID="reviews" accessibilityRole="region" accessibilityLabel="Customer testimonials">
       <Text style={styles.sectionKicker} accessibilityRole="header">TESTIMONIALS</Text>
       <Text style={[styles.sectionTitle, isSmall && styles.sectionTitleMobile]} accessibilityRole="header" accessibilityLevel={2}>
-        What Our Users Say
+        Hear from successful candidates
       </Text>
       <View style={[styles.reviewsGrid, isSmall && styles.reviewsGridMobile]}>
         {REVIEWS.map((review) => (
@@ -486,7 +509,7 @@ const Reviews = memo(() => {
           accessibilityRole="button"
           accessibilityLabel="View our mentors"
         >
-          <Text style={styles.reviewsCtaButtonText}>View Our Mentors →</Text>
+          <Text style={styles.reviewsCtaButtonText}>View Our Experts →</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -498,16 +521,16 @@ const WhyChooseUs = memo(() => {
   const isSmall = width < 900;
 
   const BENEFITS = [
-    { icon: <FeedbackIcon />, title: 'Structured Feedback', desc: 'Detailed evaluation covering strengths, gaps, and actionable improvement areas', ariaLabel: 'Structured feedback benefit' },
+    { icon: <FeedbackIcon />, title: 'Actionable Human Feedback', desc: 'Real humans evaluating your communication nuance. No generic AI scores.', ariaLabel: 'Actionable human feedback benefit' },
     { icon: <VideoIcon />, title: 'Session Recording', desc: 'Review your performance anytime with full session recordings', ariaLabel: 'Session recording benefit' },
-    { icon: <StarIcon />, title: 'Verified Mentors', desc: 'All mentors manually vetted and verified from top companies', ariaLabel: 'Verified mentors benefit' },
+    { icon: <StarIcon />, title: 'Target JD Practice', desc: 'Paste your specific Job Description and practice exactly what they will ask.', ariaLabel: 'JD practice benefit' },
   ];
 
   return (
     <View style={styles.sectionContainer} nativeID="why-choose-us" accessibilityRole="region" accessibilityLabel="Why choose CrackJobs">
       <Text style={styles.sectionKicker} accessibilityRole="header">WHY CHOOSE US</Text>
       <Text style={[styles.sectionTitle, isSmall && styles.sectionTitleMobile]} accessibilityRole="header" accessibilityLevel={2}>
-        Practice with confidence
+        Practice with complete confidence
       </Text>
       <View style={[styles.benefitsGrid, isSmall && styles.benefitsGridMobile]}>
         {BENEFITS.map((benefit, i) => (
@@ -521,7 +544,7 @@ const WhyChooseUs = memo(() => {
 
       <View style={styles.mentorCtaContainer}>
         <Text style={[styles.sectionTitle, { fontSize: 28, marginTop: 40, marginBottom: 24 }]} accessibilityRole="header">
-          Want to become a mentor?
+          Want to become an expert mentor?
         </Text>
         <TouchableOpacity
           style={styles.mentorCtaButton}
@@ -552,7 +575,7 @@ const CandidateTiers = memo(() => {
     <View style={styles.sectionContainer} nativeID="pricing" accessibilityRole="region" accessibilityLabel="Pricing tiers">
       <Text style={styles.sectionKicker} accessibilityRole="header">PRICING</Text>
       <Text style={[styles.sectionTitle, isSmall && styles.sectionTitleMobile]} accessibilityRole="header" accessibilityLevel={2}>
-        Choose Your Mentor Tier
+        Choose Your Expert Tier
       </Text>
       <View style={[styles.tiersGrid, isSmall && styles.tiersGridMobile]}>
         {TIERS.map((tier, i) => (
@@ -571,46 +594,34 @@ const CandidateTiers = memo(() => {
           </View>
         ))}
       </View>
-
-      <View style={styles.pricingCta}>
-        <Text style={styles.pricingCtaText}>Browse mentors across all tiers and find your perfect match</Text>
-        <TouchableOpacity
-          nativeID="btn-home-pricing-view-mentors"
-          style={styles.pricingCtaButton}
-          onPress={() => router.push('/mentors')}
-          activeOpacity={0.85}
-          accessibilityRole="button"
-          accessibilityLabel="View our mentors"
-        >
-          <Text style={styles.pricingCtaButtonText}>View Our Mentors</Text>
-        </TouchableOpacity>
-      </View>
     </View>
   );
 });
 
-const NotSureYet = memo(() => {
+const SystematicPrepSection = memo(() => {
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const isSmall = width < 900;
 
   return (
-    <View style={styles.notSureContainer} nativeID="intro-call" accessibilityRole="region" accessibilityLabel="Book an intro call">
+    <View style={styles.notSureContainer}>
       <View style={styles.notSureBox}>
         <View style={styles.notSureIconRow}>
-          <Text style={styles.notSureIcon}>🤔</Text>
+          <Text style={styles.notSureIcon}>📈</Text>
         </View>
-        <Text style={styles.notSureKicker}>NOT READY TO COMMIT?</Text>
-        <Text style={styles.notSureHeading}>
-          Book an <Text style={{ color: BRAND_ORANGE }}>intro call</Text> with your mentor first
+        <Text style={styles.notSureKicker}>THE SYSTEMATIC APPROACH</Text>
+        <Text style={[styles.notSureHeading, isSmall && styles.h2Mobile]}>
+          Diagnose your weak spots. <Text style={{ color: BRAND_ORANGE }}>Systematically</Text> fix them.
         </Text>
         <Text style={styles.notSureSub}>
-          Not sure which mentor is right for you, or what topic to focus on? Start with a short 30-minute intro call — no pressure, no mock interview. Just a conversation.
+          Don't just guess what you are doing wrong. Book an initial diagnostic call to map out your specific blind spots, then get a custom bundle of mock interviews tailored to turn those weaknesses into strengths.
         </Text>
 
         <View style={styles.notSurePerks}>
           {[
-            { icon: '🎯', text: 'Understand your preparation gaps before committing' },
-            { icon: '🤝', text: "Get a feel for your mentor's style and approach" },
-            { icon: '📋', text: 'Get a personalised prep plan for your target role' },
+            { icon: "1️⃣", text: "Book an intro call to diagnose your gaps and build a prep strategy." },
+            { icon: "2️⃣", text: "Book a tailored bundle of interviews focusing exactly on your weak areas." },
+            { icon: "3️⃣", text: "Track your progress systematically until you are completely interview-ready." },
           ].map((perk, i) => (
             <View key={i} style={styles.notSurePerk}>
               <Text style={styles.notSurePerkIcon}>{perk.icon}</Text>
@@ -620,16 +631,16 @@ const NotSureYet = memo(() => {
         </View>
 
         <TouchableOpacity
-          nativeID="btn-home-not-sure-intro-call"
+          nativeID="btn-home-bundle-intro-call"
           style={styles.notSureButton}
           onPress={() => router.push('/mentors')}
           activeOpacity={0.85}
           accessibilityRole="button"
-          accessibilityLabel="Browse mentors and book an intro call"
+          accessibilityLabel="Browse experts and book an intro call"
         >
-          <Text style={styles.notSureButtonText}>Browse Mentors & Book an Intro Call</Text>
+          <Text style={styles.notSureButtonText}>Book Your Diagnostic Call</Text>
         </TouchableOpacity>
-        <Text style={styles.notSureNote}>Intro calls are available directly on the mentor's profile page</Text>
+        <Text style={styles.notSureNote}>Diagnostic calls are available directly on the expert's profile page</Text>
       </View>
     </View>
   );
@@ -666,10 +677,10 @@ const BottomCTA = memo(() => {
     <View style={styles.ctaSection} nativeID="get-started" accessibilityRole="region" accessibilityLabel="Call to action">
       <View style={[styles.ctaInner, isSmall && styles.ctaInnerMobile]}>
         <Text style={[styles.ctaTitle, isSmall && styles.ctaTitleMobile]} accessibilityRole="header" accessibilityLevel={2}>
-          Ready to ace your next interview?
+          Your next interview is closer than you think
         </Text>
         <Text style={[styles.ctaSubtitle, isSmall && styles.ctaSubtitleMobile]}>
-          Join hundreds of successful candidates who practiced with us
+          Browse industry insiders, pick a topic, and book your session in minutes.
         </Text>
         <View style={[styles.ctaButtonRow, isSmall && styles.ctaButtonRowMobile]}>
           <TouchableOpacity
@@ -677,9 +688,9 @@ const BottomCTA = memo(() => {
             onPress={() => router.push('/auth/sign-up')}
             activeOpacity={0.9}
             accessibilityRole="button"
-            accessibilityLabel="Get Started"
+            accessibilityLabel="Book Your Session Now"
           >
-            <Text style={styles.ctaButtonText}>GET STARTED</Text>
+            <Text style={styles.ctaButtonText}>BOOK YOUR SESSION NOW</Text>
           </TouchableOpacity>
           <TouchableOpacity
             nativeID="btn-home-bottom-view-mentors"
@@ -687,9 +698,9 @@ const BottomCTA = memo(() => {
             onPress={() => router.push('/mentors')}
             activeOpacity={0.9}
             accessibilityRole="button"
-            accessibilityLabel="View our mentors"
+            accessibilityLabel="View our experts"
           >
-            <Text style={[styles.ctaButtonText, { color: '#fff' }]}>VIEW OUR MENTORS</Text>
+            <Text style={[styles.ctaButtonText, { color: '#fff' }]}>VIEW OUR EXPERTS</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -704,14 +715,15 @@ export default function LazySections() {
 
   return (
     <>
-      <DynamicDomainMentors role="default" isSmall={isSmall} onViewMentors={() => router.push('/mentors')} />
       <LogoWall />
+      <TheProblemSection isSmall={isSmall} />
+      <DynamicDomainMentors role="default" isSmall={isSmall} onViewMentors={() => router.push('/mentors')} />
       <InterviewTracks />
       <SocialProof />
       <Reviews />
       <WhyChooseUs />
       <CandidateTiers />
-      <NotSureYet />
+      <SystematicPrepSection />
       <FAQSection />
       <BottomCTA />
       <Footer />
@@ -740,6 +752,13 @@ const styles = StyleSheet.create({
   // Founder Block
   founderSection: { marginBottom: 64, alignItems: 'center', width: '100%', maxWidth: 900, alignSelf: 'center' },
   founderCardWrapper: { width: '100%', maxWidth: 500, marginTop: 16 },
+
+  // ===== New Problem Section Styles =====
+  problemGrid: { flexDirection: "row", flexWrap: "wrap", gap: 24, justifyContent: "center", marginTop: 20 },
+  problemBox: { backgroundColor: "#fff", padding: 24, borderRadius: 16, borderWidth: 1, borderColor: BORDER_LIGHT, width: Platform.OS === "web" ? "calc(33.333% - 16px)" : "100%", minWidth: 250 },
+  problemIcon: { fontSize: 32, marginBottom: 12 },
+  problemTitle: { fontFamily: SYSTEM_FONT, fontSize: 18, fontWeight: "700", color: TEXT_DARK, marginBottom: 8 },
+  problemText: { fontFamily: SYSTEM_FONT, fontSize: 14, color: TEXT_GRAY, lineHeight: 22 },
 
   // Mentor Card
   card: { backgroundColor: "#fff", borderRadius: 12, padding: 20, borderWidth: 0.5, borderColor: "#F3F4F6", minWidth: 300, maxWidth: 500, ...Platform.select({ ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4 }, android: { elevation: 2 } }) },
@@ -843,11 +862,6 @@ const styles = StyleSheet.create({
   tierBenefitRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
   tierBenefitBullet: { fontFamily: SYSTEM_FONT, fontSize: 15, lineHeight: 24, fontWeight: '700' },
   tierBenefitText: { fontFamily: SYSTEM_FONT, fontSize: 15, lineHeight: 24, flex: 1 },
-
-  pricingCta: { marginTop: 40, alignItems: 'center', gap: 14 },
-  pricingCtaText: { fontFamily: SYSTEM_FONT, fontSize: 15, color: TEXT_GRAY, textAlign: 'center', maxWidth: 420 },
-  pricingCtaButton: { backgroundColor: CTA_TEAL, paddingVertical: 14, paddingHorizontal: 28, borderRadius: 8, minWidth: 200, alignItems: 'center', shadowOpacity: 0.2, shadowRadius: 8, shadowOffset: { width: 0, height: 4 } },
-  pricingCtaButtonText: { fontFamily: SYSTEM_FONT, fontWeight: '700', fontSize: 15, color: '#fff' },
 
   notSureContainer: { paddingHorizontal: 24, paddingVertical: 16, backgroundColor: BG_CREAM },
   notSureBox: { backgroundColor: '#fff9f5', borderRadius: 20, paddingVertical: 48, paddingHorizontal: 40, maxWidth: 900, alignSelf: 'center', width: '100%', alignItems: 'center', borderWidth: 2, borderColor: 'rgba(245, 135, 66, 0.25)' },
