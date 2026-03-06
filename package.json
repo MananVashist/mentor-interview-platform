@@ -8,7 +8,7 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "build": "expo export",
-    "build:web": "expo export --platform web",
+    "build:web": "expo export --platform web -c",
     "postbuild:web": "node scripts/copy-static-files.js && node scripts/prerender.js",
     "build:cloudflare": "expo export --platform web && node scripts/copy-static-files.js",
     "clean": "if exist dist rd /s /q dist",
