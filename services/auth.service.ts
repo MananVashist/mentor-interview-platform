@@ -84,6 +84,10 @@ async function signIn(email: string, password: string) {
  * SIGN UP (supabase-js)
  * Updated to accept phone number for metadata
  */
+/**
+ * SIGN UP (supabase-js)
+ * Updated to accept phone number for metadata
+ */
 async function signUp(
   email: string, 
   password: string, 
@@ -107,12 +111,29 @@ async function signUp(
     })
   );
 
-  // Send helpdesk notification for new signups (non-blocking)
   if (data?.user && !error) {
+    // 1. Send helpdesk notification
     console.log('[AUTH] 📧 Sending helpdesk signup notification...');
     sendHelpdeskSignupNotification(data.user.id, email, fullName, role).catch(err => {
       console.error('[AUTH] ⚠️ Helpdesk notification failed (non-critical):', err);
     });
+
+    // 2. Send Standard Candidate Welcome Email
+    if (role === 'candidate') {
+      console.log('[AUTH] 📧 Sending candidate welcome email...');
+      const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://crackjobs.com';
+      const html = EMAIL_TEMPLATES.CANDIDATE_WELCOME
+        .replace(/{{fullName}}/g, fullName)
+        .replace(/{{baseUrl}}/g, BASE_URL);
+
+      supabase.functions.invoke('send-email', {
+        body: {
+          to: email,
+          subject: 'Welcome to CrackJobs! 🎉',
+          html: html
+        }
+      }).catch(err => console.error('[AUTH] ⚠️ Candidate welcome email failed:', err));
+    }
   }
 
   return { user: data?.user ?? null, session: data?.session ?? null, error: error ?? null };

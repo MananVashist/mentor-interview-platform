@@ -8,17 +8,21 @@ const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://crackjobs.com';
 
 type SessionType = 'intro' | 'mock' | 'bundle';
 
-// ==========================================
-// 📧 EMAIL HELPER
-// ==========================================
-
 const compileTemplate = (template: string, data: Record<string, any>) => {
   return template.replace(/{{(\w+)}}/g, (_, key) => data[key] || '');
 };
 
-async function sendEmail(to: string, subject: string, templateHtml: string, data: Record<string, any>) {
+// 🟢 Safely updated to accept calendarHtml
+export async function sendEmail(to: string, subject: string, templateHtml: string, data: Record<string, any>, calendarHtml?: string) {
   try {
-    const compiledHtml = compileTemplate(templateHtml, data);
+    let compiledHtml = compileTemplate(templateHtml, data);
+    
+    // 🟢 Inject Calendar HTML directly into the email body since the Edge Function drops attachments
+    // We insert it right before the closing footer so it stays cleanly inside the email container
+    if (calendarHtml) {
+      compiledHtml = compiledHtml.replace(/<div class="footer">/g, `${calendarHtml}\n    </div>\n    <div class="footer">`);
+    }
+
     console.log(`📧 [Email Service] Sending to: ${to}`);
     const { data: resData, error } = await supabase.functions.invoke('send-email', {
       body: { to, subject, html: compiledHtml }
@@ -35,9 +39,45 @@ async function sendEmail(to: string, subject: string, templateHtml: string, data
   }
 }
 
-// ==========================================
-// 💳 PAYMENT & BOOKING SERVICE
-// ==========================================
+// 🟢 Generate "Add to Calendar" HTML block with secure dashboard links
+const generateCalendarHtml = (sessions: any[], sessionType: SessionType, title: string, dashboardLink: string) => {
+  let html = `
+    <div style="margin-top: 24px; margin-bottom: 24px; padding: 20px; background-color: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; text-align: center;">
+      <h3 style="margin-top: 0; margin-bottom: 8px; font-size: 16px; color: #0F172A;">📅 Add to your Calendar</h3>
+      <p style="font-size: 13px; color: #475569; margin-bottom: 16px;">(Join the meeting through your CrackJobs dashboard)</p>
+  `;
+
+  sessions.forEach((s: any, i: number) => {
+    if (!s.scheduled_at) return;
+    const start = new Date(s.scheduled_at);
+    const durationMin = sessionType === 'intro' ? 25 : 55;
+    const end = new Date(start.getTime() + durationMin * 60000);
+
+    const formatDateForGoogle = (date: Date) => date.toISOString().replace(/-|:|\.\d\d\d/g, '');
+    const gStart = formatDateForGoogle(start);
+    const gEnd = formatDateForGoogle(end);
+    
+    const description = encodeURIComponent(`Join your meeting through the CrackJobs dashboard.\n\nClick here to join at the scheduled time: ${dashboardLink}`);
+    const sessionTitle = encodeURIComponent(sessions.length > 1 ? `${title} (Session ${i+1})` : title);
+
+    const googleCalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${sessionTitle}&dates=${gStart}/${gEnd}&details=${description}`;
+    const outlookCalUrl = `https://outlook.live.com/calendar/0/deeplink/compose?path=/calendar/action/compose&rru=addevent&subject=${sessionTitle}&startdt=${encodeURIComponent(start.toISOString())}&enddt=${encodeURIComponent(end.toISOString())}&body=${description}`;
+
+    html += `<div style="margin-bottom: ${sessions.length > 1 && i < sessions.length - 1 ? '16px' : '0'};">`;
+    if (sessions.length > 1) {
+      const formattedDate = start.toLocaleString('en-US', { timeZone: 'Asia/Kolkata', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+      html += `<div style="font-size: 13px; font-weight: 600; color: #64748B; margin-bottom: 8px;">Session ${i+1}: ${formattedDate} IST</div>`;
+    }
+    html += `
+      <a href="${googleCalUrl}" target="_blank" style="display: inline-block; background-color: #fff; border: 1px solid #CBD5E1; color: #334155; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-size: 13px; font-weight: 600; margin: 0 4px;">Google Calendar</a>
+      <a href="${outlookCalUrl}" target="_blank" style="display: inline-block; background-color: #fff; border: 1px solid #CBD5E1; color: #334155; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-size: 13px; font-weight: 600; margin: 0 4px;">Outlook</a>
+    `;
+    html += `</div>`;
+  });
+
+  html += `</div>`;
+  return html;
+};
 
 export const paymentService = {
 
@@ -65,7 +105,7 @@ export const paymentService = {
     candidateId: string,
     mentorId: string,
     interviewProfileId: number,
-    skillIds: string | string[], // Allow runtime to pass string or array
+    skillIds: string | string[], 
     selectedSlots: string[],
     sessionType: SessionType = 'mock',
     jdText?: string,
@@ -73,14 +113,15 @@ export const paymentService = {
     try {
       console.log('🚀 Starting Booking Process...');
       
-      // ✅ FIX 1: Force-split the incoming skillIds whether it's an array or a single string
+      // 🟢 NEW: Identify Free Founder Intro Call
+      const FOUNDER_MENTOR_ID = 'e251486e-c21a-49f4-8ab7-ce808785638a';
+      const isFreeFounderIntro = mentorId === FOUNDER_MENTOR_ID && sessionType === 'intro';
+
       const parsedSkillIds = (Array.isArray(skillIds) ? skillIds : [skillIds])
         .filter(Boolean)
         .flatMap(id => String(id).split(',').map(s => s.trim()))
         .filter(Boolean);
 
-      // ✅ FIX 2: Sort slots AND their paired skillIds together chronologically.
-      // Sorting slots alone breaks the skill→slot index mapping for bundles.
       const paired = selectedSlots.map((slot, i) => ({
         slot,
         skillId: parsedSkillIds[i] ?? null,
@@ -91,11 +132,9 @@ export const paymentService = {
 
       console.log('📋 Details:', { candidateId, mentorId, sessionType, slotCount: sortedSlots.length, skillCount: sortedSkillIds.length });
 
-      // ── STEP 1: Pre-flight slot check ───────────────────────────────────
       console.log('[Payment] 🔒 STEP 1: Pre-flight slot check...');
       await this.checkBookingConflict(mentorId, sortedSlots);
 
-      // ── STEP 2: Fetch mentor data ────────────────────────────────────────
       const { data: mentorData, error: mentorError } = await supabase
         .from('mentors')
         .select('session_price_inr, tier')
@@ -104,7 +143,6 @@ export const paymentService = {
 
       if (mentorError || !mentorData) throw new Error('Unable to retrieve mentor pricing details.');
 
-      // ── STEP 3: Fetch tier data ──────────────────────────────────────────
       const tierName = mentorData.tier || 'bronze';
       const { data: tierData, error: tierError } = await supabase
         .from('mentor_tiers')
@@ -118,14 +156,18 @@ export const paymentService = {
       const percentageCut = tierData.percentage_cut || 50;
       const cutDecimal    = percentageCut / 100;
 
-      // ── STEP 4: Price calculation ────────────────────────────────────────
       const mockPrice = Math.round(basePrice / (1 - cutDecimal));
 
       let totalPrice: number;
       let mentorPayout: number;
       let platformFee: number;
 
-      if (sessionType === 'intro') {
+      // 🟢 Updated Price Logic to force 0 for Founder Intro
+      if (isFreeFounderIntro) {
+        totalPrice   = 0;
+        mentorPayout = 0;
+        platformFee  = 0;
+      } else if (sessionType === 'intro') {
         totalPrice   = Math.round(mockPrice * 0.20);
         mentorPayout = totalPrice;
         platformFee  = 0;
@@ -142,7 +184,6 @@ export const paymentService = {
 
       const amountToSend = totalPrice * 100; 
 
-      // ── STEP 5: Save JD if provided ──────────────────────────────────────
       let jdId: string | null = null;
       if (jdText && jdText.trim().length > 0) {
         console.log('[Payment] 📄 STEP 5: Saving job description...');
@@ -157,19 +198,23 @@ export const paymentService = {
         }
       }
 
-      // ── STEP 6: Create Razorpay order ────────────────────────────────────
       let razorpayOrderId = null;
       let razorpayKeyId   = null;
 
-      if (ENABLE_RAZORPAY) {
+      // 🟢 Bypass Razorpay if it's the free founder intro
+      if (ENABLE_RAZORPAY && !isFreeFounderIntro) {
         console.log('[Payment] 💳 STEP 6: Creating Razorpay order...');
+        
+        // PREVENT RAZORPAY IDEMPOTENCY CONFLICTS
+        const uniqueReceipt = `rcpt_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+        
         const { data: orderData, error: orderError } = await supabase.functions.invoke(
           'create-razorpay-order',
           {
             body: {
               amount:   amountToSend,
               currency: 'INR',
-              receipt:  `rcpt_${Date.now()}`,
+              receipt:  uniqueReceipt, 
               notes: { candidate_id: candidateId, mentor_id: mentorId, session_type: sessionType }
             }
           }
@@ -181,7 +226,6 @@ export const paymentService = {
         razorpayKeyId   = orderData.key_id;
       }
 
-      // ── STEP 7: Create package ────────────────────────────────────────────
       console.log('[Payment] 📦 STEP 7: Creating package record...');
       const { data: pkg, error: pkgError } = await supabase
         .from('interview_packages')
@@ -192,12 +236,13 @@ export const paymentService = {
           total_amount_inr:     totalPrice,
           mentor_payout_inr:    mentorPayout,
           platform_fee_inr:     platformFee,
-          payment_status:       ENABLE_RAZORPAY ? 'pending' : 'held_in_escrow',
+          // 🟢 Immediately mark as completed if free
+          payment_status:       isFreeFounderIntro ? 'completed' : (ENABLE_RAZORPAY ? 'pending' : 'held_in_escrow'),
           razorpay_order_id:    razorpayOrderId,
           booking_metadata: {
             session_type: sessionType,
             scheduled_at: sortedSlots[0],
-            skill_ids:    sortedSkillIds, // Ordered to match session slots
+            skill_ids:    sortedSkillIds,
             jd_id:        jdId,
           }
         })
@@ -206,21 +251,20 @@ export const paymentService = {
 
       if (pkgError || !pkg) throw new Error('Unable to create booking record. Please try again.');
 
-      // ── STEP 8: Create session row(s) ─────────────────────────────────────
       console.log('[Payment] 🔒 STEP 8: Creating session(s) to block slot(s)...');
 
-      // ✅ FIX 3: Use sortedSkillIds (paired with sortedSlots) so each session gets the correct skill.
       const sessionInserts = sortedSlots.map((slot, i) => ({
         package_id:   pkg.id,
         candidate_id: candidateId,
         mentor_id:    mentorId,
         skill_id:     sortedSkillIds[i] ?? null,
         scheduled_at: slot,
-        status:       'awaiting_payment',
+        // 🟢 Immediately mark as confirmed if free
+        status:       isFreeFounderIntro ? 'confirmed' : 'awaiting_payment',
         session_type: sessionType,
         jd_id:        jdId,
       }));
-      console.log('[Payment] sessionInserts:', JSON.stringify(sessionInserts, null, 2));
+      
       const { data: newSessions, error: sessionError } = await supabase
         .from('interview_sessions')
         .insert(sessionInserts)
@@ -233,7 +277,6 @@ export const paymentService = {
 
       console.log('[Payment] ✅ Sessions created:', newSessions.map(s => s.id));
 
-      // ── STEP 9: Update package metadata with session id(s) ────────────────
       const isBundle = sessionType === 'bundle';
       const metadataUpdate = isBundle
         ? { session_ids: newSessions.map(s => s.id) }
@@ -243,6 +286,15 @@ export const paymentService = {
         .from('interview_packages')
         .update({ booking_metadata: { ...pkg.booking_metadata, ...metadataUpdate } })
         .eq('id', pkg.id);
+
+      // 🟢 NEW: Trigger meeting and emails automatically for free intro
+      if (isFreeFounderIntro) {
+        console.log('[Payment] 🆓 Free Founder Intro: Creating 100ms meeting & sending emails...');
+        for (const session of newSessions) {
+          await supabase.functions.invoke('create-meeting', { body: { sessionId: session.id } });
+        }
+        await this.triggerBookingNotificationEmails(pkg.id);
+      }
 
       console.log('[Payment] ✅ Booking flow complete!');
 
@@ -357,7 +409,7 @@ export const paymentService = {
         supabase.from('candidates').select('professional_title, profile:profiles!id(email, full_name)').eq('id', pkg.candidate_id).single(),
         supabase.from('interview_profiles_admin').select('name').eq('id', pkg.interview_profile_id).single(),
         supabase.from('interview_sessions')
-          .select('scheduled_at, skill:interview_skills_admin!skill_id(name)')
+          .select('id, scheduled_at, skill:interview_skills_admin!skill_id(name)')
           .eq('package_id', pkgId)
           .order('scheduled_at', { ascending: true }),
       ]);
@@ -386,12 +438,17 @@ export const paymentService = {
         : sessionType === 'bundle' ? 'Bundle of 3 Mock Interviews'
         : 'Mock Interview';
 
+      // 🟢 Generate HTML Calendar Invites mapped to Dashboards
+      const candidateHtml = generateCalendarHtml(sessions, sessionType, `Interview with ${mentor?.professional_title || 'Mentor'}`, `${BASE_URL}/candidate/bookings`);
+      const mentorHtml = generateCalendarHtml(sessions, sessionType, `Interview with ${candidate?.profile?.full_name || 'Candidate'}`, `${BASE_URL}/mentor/bookings`);
+
       if (candidate?.profile?.email) {
         await sendEmail(
           candidate.profile.email,
           `✅ ${sessionTypeLabel} Confirmed`,
           EMAIL_TEMPLATES.CANDIDATE_BOOKING_CONFIRMATION,
-          { name: candidate.profile.full_name, mentorTitle: mentor?.professional_title, profileName: profile?.name, skillName, dateTime, baseUrl: BASE_URL }
+          { name: candidate.profile.full_name, mentorTitle: mentor?.professional_title, profileName: profile?.name, skillName, dateTime, baseUrl: BASE_URL },
+          candidateHtml
         );
       }
 
@@ -400,7 +457,8 @@ export const paymentService = {
           mentor.profile.email,
           `🎯 ${sessionTypeLabel} Confirmed`,
           EMAIL_TEMPLATES.MENTOR_BOOKING_CONFIRMATION,
-          { name: mentor.profile.full_name, candidateTitle: candidate?.professional_title, profileName: profile?.name, skillName, dateTime, baseUrl: BASE_URL }
+          { name: mentor.profile.full_name, candidateTitle: candidate?.professional_title, profileName: profile?.name, skillName, dateTime, baseUrl: BASE_URL },
+          mentorHtml
         );
       }
 
@@ -449,7 +507,7 @@ export const paymentService = {
         supabase.from('candidates').select('professional_title, profile:profiles!id(email, full_name)').eq('id', pkg.candidate_id).single(),
         supabase.from('interview_profiles_admin').select('name').eq('id', pkg.interview_profile_id).single(),
         supabase.from('interview_sessions')
-          .select('scheduled_at, skill:interview_skills_admin!skill_id(name)')
+          .select('id, scheduled_at, skill:interview_skills_admin!skill_id(name)')
           .eq('package_id', pkgId)
           .order('scheduled_at', { ascending: true }),
       ]);
@@ -476,12 +534,17 @@ export const paymentService = {
         : sessionType === 'bundle' ? 'Bundle of 3 Mock Interviews'
         : 'Mock Interview';
 
+      // 🟢 Generate HTML Calendar Invites mapped to Dashboards
+      const candidateHtml = generateCalendarHtml(sessions, sessionType, `Interview with ${mentor?.professional_title || 'Mentor'}`, `${BASE_URL}/candidate/bookings`);
+      const mentorHtml = generateCalendarHtml(sessions, sessionType, `Interview with ${candidate?.profile?.full_name || 'Candidate'}`, `${BASE_URL}/mentor/bookings`);
+
       if (candidate?.profile?.email) {
         await sendEmail(
           candidate.profile.email,
           `✅ ${sessionTypeLabel} Confirmed — ${profile?.name}`,
           EMAIL_TEMPLATES.CANDIDATE_BOOKING_CONFIRMATION,
-          { name: candidate.profile.full_name, mentorTitle: mentor?.professional_title, profileName: profile?.name, skillName, dateTime, baseUrl: BASE_URL }
+          { name: candidate.profile.full_name, mentorTitle: mentor?.professional_title, profileName: profile?.name, skillName, dateTime, baseUrl: BASE_URL },
+          candidateHtml
         );
       }
 
@@ -490,7 +553,8 @@ export const paymentService = {
           mentor.profile.email,
           `🎯 ${sessionTypeLabel} Confirmed — ${profile?.name}`,
           EMAIL_TEMPLATES.MENTOR_BOOKING_CONFIRMATION,
-          { name: mentor.profile.full_name, candidateTitle: candidate?.professional_title, profileName: profile?.name, skillName, dateTime, baseUrl: BASE_URL }
+          { name: mentor.profile.full_name, candidateTitle: candidate?.professional_title, profileName: profile?.name, skillName, dateTime, baseUrl: BASE_URL },
+          mentorHtml
         );
       }
 
