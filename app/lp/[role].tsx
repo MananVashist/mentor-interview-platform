@@ -5,6 +5,18 @@ import Head from "expo-router/head";
 import { Header } from "@/components/Header";
 import { trackEvent } from "@/lib/analytics";
 
+// ─── GTM DataLayer Helper ─────────────────────────────────────────────────────
+const pushToDataLayer = (eventName: string, data: Record<string, any>) => {
+  if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    const win = window as any;
+    win.dataLayer = win.dataLayer || [];
+    win.dataLayer.push({
+      event: eventName,
+      ...data
+    });
+  }
+};
+
 // Lazy Load Heavy Sections - Load immediately, no delay
 const LazySectionsLP = lazy(() => import("./lazysectionslp"));
 
@@ -130,10 +142,20 @@ export default function CampaignLanding() {
   const content = ROLE_CONTENT[activeRole];
 
   const handleBookClick = (tier: string = "general") => {
+    // 🟢 GTM: Track Hero CTA Click
+    pushToDataLayer("lp_hero_cta_click", { role_viewed: activeRole });
     router.push("/mentors");
   };
 
   const handleViewMentors = (source: string = "hero_secondary") => {
+    // 🟢 GTM: Track Specific Body CTAs
+    if (source === "domain_mentors_cta") {
+      pushToDataLayer("lp_view_experts_click", { role_viewed: activeRole });
+    } else if (source === "bundle_intro_call") {
+      pushToDataLayer("lp_diagnostic_call_click", { role_viewed: activeRole });
+    } else if (source === "final_cta") {
+      pushToDataLayer("lp_final_cta_click", { role_viewed: activeRole });
+    }
     router.push("/mentors");
   };
 

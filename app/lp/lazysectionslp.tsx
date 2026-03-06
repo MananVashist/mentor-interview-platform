@@ -4,6 +4,18 @@ import { useRouter } from "expo-router";
 import { Svg, Path, Circle } from "react-native-svg";
 import { availabilityService } from "@/services/availability.service";
 
+// ─── GTM DataLayer Helper ─────────────────────────────────────────────────────
+const pushToDataLayer = (eventName: string, data: Record<string, any>) => {
+  if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    const win = window as any;
+    win.dataLayer = win.dataLayer || [];
+    win.dataLayer.push({
+      event: eventName,
+      ...data
+    });
+  }
+};
+
 // --- Constants & Config ---
 const SUPABASE_URL = "https://rcbaaiiawrglvyzmawvr.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJjYmFhaWlhd3JnbHZ5em1hd3ZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjExNTA1NjAsImV4cCI6MjA3NjcyNjU2MH0.V3qRHGXBMlspRS7XFJlXdo4qIcCms60Nepp7dYMEjLA";
@@ -47,7 +59,7 @@ const FAQS = [
 // SVG ICONS
 // ============================================
 const CheckmarkCircleIcon = ({ size = 16, color = "#3B82F6" }) => (<Svg width={size} height={size} viewBox="0 0 24 24" fill="none"><Circle cx="12" cy="12" r="10" stroke={color} strokeWidth="2" fill="none" /><Path d="M8 12.5L10.5 15L16 9.5" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></Svg>);
-const BriefcaseIcon = ({ size = 12, color = "#111827" }) => (<Svg width={size} height={size} viewBox="0 0 24 24" fill="none"><Path d="M20 7H4C2.89543 7 2 7.89543 2 9V19C2 20.1046 2.89543 21 4 21H20C21.1046 21 22 20.1046 22 19V9C22 7.89543 21.1046 7 20 7Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /><Path d="M16 7V5C16 3.89543 15.1046 3 14 3H10C8.89543 3 8 3.89543 8 5V7" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></Svg>);
+const BriefcaseIcon = ({ size = 12, color = "#111827" }) => (<Svg width={size} height={size} viewBox="0 0 24 24" fill="none"><Path d="M20 7H4C2.89543 7 2 7.89543 2 9V19C2 20.1046 21 4 21H20C21.1046 21 22 20.1046 22 19V9C22 7.89543 21.1046 7 20 7Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /><Path d="M16 7V5C16 3.89543 15.1046 3 14 3H10C8.89543 3 8 3.89543 8 5V7" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></Svg>);
 const SparklesIcon = ({ size = 14, color = "#1E40AF" }) => (<Svg width={size} height={size} viewBox="0 0 24 24" fill="none"><Path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /><Path d="M6 3L6.5 5.5L9 6L6.5 6.5L6 9L5.5 6.5L3 6L5.5 5.5L6 3Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></Svg>);
 const CheckmarkDoneIcon = ({ size = 14, color = "#6B7280" }) => (<Svg width={size} height={size} viewBox="0 0 24 24" fill="none"><Path d="M5 12L10 17L20 7" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /><Path d="M2 12L7 17" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></Svg>);
 const MedalIcon = ({ size = 14, color = "#CD7F32" }) => (<Svg width={size} height={size} viewBox="0 0 24 24" fill="none"><Circle cx="12" cy="15" r="6" fill={color} stroke={color} strokeWidth="1.5" /><Path d="M9 9L7 3L12 6L17 3L15 9" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" /></Svg>);
@@ -385,7 +397,11 @@ const DynamicDomainMentors = ({ role, isSmall, onViewMentors }: { role: string, 
               hasSlots={founderSlot !== "No slots available" && founderSlot !== "Loading..."}
               displaySlot={founderSlot}
               customPriceLabel="Free"
-              onView={() => router.push(`/mentors/${founderMentor.id}`)}
+              onView={() => {
+                // 🟢 GTM: Track Mentor Card Click
+                pushToDataLayer("lp_mentor_card_click", { mentor_id: founderMentor.id, mentor_tier: founderMentor.tier || 'founder', is_founder: true, role_viewed: role });
+                router.push(`/mentors/${founderMentor.id}`);
+              }}
               isSmall={isSmall}
               isFounderCard={true}
             />
@@ -424,7 +440,11 @@ const DynamicDomainMentors = ({ role, isSmall, onViewMentors }: { role: string, 
                   showRating={showRating}
                   hasSlots={hasSlots}
                   displaySlot={displaySlot}
-                  onView={() => router.push(`/mentors/${m.id}`)}
+                  onView={() => {
+                    // 🟢 GTM: Track Mentor Card Click
+                    pushToDataLayer("lp_mentor_card_click", { mentor_id: m.id, mentor_tier: m.tier || 'bronze', is_founder: false, role_viewed: role });
+                    router.push(`/mentors/${m.id}`);
+                  }}
                   isSmall={isSmall}
                   isFounderCard={false}
                 />
@@ -733,7 +753,7 @@ const styles = StyleSheet.create({
   notSureBox: { backgroundColor: "#fff9f5", borderRadius: 20, paddingVertical: 48, paddingHorizontal: 40, maxWidth: 900, alignSelf: "center", width: "100%", alignItems: "center", borderWidth: 2, borderColor: "rgba(245, 135, 66, 0.25)" },
   notSureIconRow: { marginBottom: 16 },
   notSureIcon: { fontFamily: SYSTEM_FONT, fontSize: 40 },
-  notSurePerks: { gap: 14, alignSelf: "stretch", maxWidth: 480, marginBottom: 36 },
+  notSurePerks: { gap: 14, alignSelf: "center", maxWidth: 480, marginBottom: 36 },
   notSurePerk: { flexDirection: "row", alignItems: "flex-start", gap: 12, backgroundColor: "#fff", padding: 16, borderRadius: 12, borderWidth: 1, borderColor: "rgba(245, 135, 66, 0.15)" },
   notSurePerkIcon: { fontFamily: SYSTEM_FONT, fontSize: 20 },
   notSurePerkText: { fontFamily: SYSTEM_FONT, fontSize: 14, color: TEXT_DARK, flex: 1, lineHeight: 22, fontWeight: "500" },

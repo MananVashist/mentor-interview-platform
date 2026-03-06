@@ -921,5 +921,92 @@ export const EMAIL_TEMPLATES = {
   </div>
 </body>
 </html>
+  `,
+  
+  // 🟢 NEW: TEMPLATE FOR STANDARD CANDIDATE SIGNUPS
+  CANDIDATE_WELCOME: `
+    <!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Welcome to CrackJobs</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; line-height: 1.6; color: #333; background-color: #f3f4f6; margin: 0; padding: 20px; }
+    .container { max-width: 600px; margin: 0 auto; background: #fff; border-radius: 8px; overflow: hidden; border: 1px solid #e5e7eb; }
+    .header { background: linear-gradient(135deg, #0E9384 0%, #059669 100%); color: white; padding: 30px; text-align: center; }
+    .header h1 { margin: 0; font-size: 24px; }
+    .content { padding: 30px; }
+    .button { display: inline-block; background: #0E9384; color: white !important; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600; margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Welcome to CrackJobs!</h1>
+    </div>
+    <div class="content">
+      <p>Hi {{fullName}},</p>
+      <p>Welcome to CrackJobs! We're thrilled to help you prepare for your upcoming interviews.</p>
+      <p>You can now browse vetted industry experts, book mock interviews tailored to your exact job description, and get actionable feedback to land your dream role.</p>
+      <div style="text-align: center;">
+        <a href="{{baseUrl}}/mentors" class="button">Browse Mentors</a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+  `,
+
+  // 🟢 NEW: TEMPLATE FOR GUEST CHECKOUTS (INCLUDES PASSWORD)
+  GUEST_ACCOUNT_CREATED: `
+    <!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Welcome to CrackJobs</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; line-height: 1.6; color: #333; background-color: #f3f4f6; margin: 0; padding: 20px; }
+    .container { max-width: 600px; margin: 0 auto; background: #fff; border-radius: 8px; overflow: hidden; border: 1px solid #e5e7eb; }
+    .header { background: linear-gradient(135deg, #0E9384 0%, #059669 100%); color: white; padding: 30px; text-align: center; }
+    .header h1 { margin: 0; font-size: 24px; }
+    .content { padding: 30px; }
+    .creds-box { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; padding: 20px; margin: 20px 0; }
+    .label { font-size: 12px; color: #6b7280; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 4px; }
+    .value { font-size: 16px; font-weight: 700; color: #111827; margin-bottom: 16px; }
+    .value:last-child { margin-bottom: 0; }
+    .note { background: #F0FDFA; border: 1px solid #CCFBF1; color: #0F766E; padding: 16px; border-radius: 6px; font-size: 14px; margin-top: 20px; }
+    .button { display: inline-block; background: #0E9384; color: white !important; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600; margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Welcome to CrackJobs!</h1>
+    </div>
+    <div class="content">
+      <p>Hello,</p>
+      <p>To save your interview booking and give you access to your feedback scorecards and recordings, we've automatically created a secure account for you.</p>
+      
+      <div class="creds-box">
+        <div class="label">Email Address</div>
+        <div class="value">{{email}}</div>
+        
+        <div class="label">Temporary Password</div>
+        <div class="value" style="font-family: monospace; letter-spacing: 1px; color: #0E9384;">{{password}}</div>
+      </div>
+
+      <div class="note">
+        <strong>Security Tip:</strong> Use this temporary password to sign in and access your booking. To set your own password, use <strong>Forgot Password</strong> on the sign-in page — your email is already registered.
+      </div>
+
+      <div style="text-align: center;">
+        <a href="{{baseUrl}}/auth/sign-in" class="button">Sign In to View Booking</a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
   `
 };

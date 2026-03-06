@@ -17,11 +17,17 @@ import { Footer } from './Footer';
 import { Svg, Path, Circle } from "react-native-svg";
 import { availabilityService } from "@/services/availability.service";
 
-// 🟢 Optimized Icons
-import {
-  FeedbackIcon, VideoIcon, StarIcon,
-  BronzeBadge, SilverBadge, GoldBadge
-} from './AppIcons';
+// ─── GTM DataLayer Helper ─────────────────────────────────────────────────────
+const pushToDataLayer = (eventName: string, data: Record<string, any>) => {
+  if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    const win = window as any;
+    win.dataLayer = win.dataLayer || [];
+    win.dataLayer.push({
+      event: eventName,
+      ...data
+    });
+  }
+};
 
 // 🟢 Lazy Loaded Images
 import GoogleImg from '../assets/companies/Google.png';
@@ -59,37 +65,40 @@ const COMPANIES = [
   { name: 'Adobe', image: AdobeImg, width: 120 },
 ];
 
-const STATS = [
-  { id: 1, number: '500+', label: 'Interviews Conducted' },
-  { id: 2, number: '4.5★', label: 'Average Mentor Rating' },
-];
-
 const INTERVIEW_TRACKS = [
-  { id: 'pm', emoji: '📊', title: 'Product Management', desc: 'Product sense, strategy, execution, technical, leadership', path: '/interviews/product-management' },
-  { id: 'data-analytics', emoji: '📈', title: 'Data Analytics', desc: 'SQL, Case studies, Excel, business intelligence', path: '/interviews/data-analytics' },
-  { id: 'data-science', emoji: '🤖', title: 'Data Science', desc: 'ML theory, Practical ML, statistics, modeling, coding', path: '/interviews/data-science' },
+  { id: 'pm', emoji: '📊', title: 'Product Management', desc: 'Product sense, strategy, execution, technical, leadership', path: '/interviews/pm' },
+  { id: 'data-analytics', emoji: '📈', title: 'Data Analytics', desc: 'SQL, Case studies, Excel, business intelligence', path: '/interviews/da' },
+  { id: 'data-science', emoji: '🤖', title: 'Data Science', desc: 'ML theory, Practical ML, statistics, modeling, coding', path: '/interviews/ds' },
   { id: 'hr', emoji: '👥', title: 'HR Interviews', desc: 'Talent acquisition, HR generalist, HRBP, COE, HR operations', path: '/interviews/hr' },
 ];
 
-const REVIEWS = [
-  { id: 1, name: 'P.K.', role: 'Product Manager', company: 'Funded Startup', text: 'The practice environment helped me eliminate my interview anxiety. Got actionable feedback that directly improved my answers.', rating: 5 },
-  { id: 2, name: 'A.M.', role: 'Data Analyst', company: 'Analytics Firm', text: 'The human feedback was infinitely better than AI practice. Real insights from someone who actually hires. Landed the offer!', rating: 5 },
-  { id: 3, name: 'S.K.', role: 'ML Engineer', company: 'AI Startup', text: 'Worth every rupee. The structured evaluation showed exactly where I was weak. Fixed those gaps systematically and aced my next interview.', rating: 5 },
+const TESTIMONIALS = [
+  { name: "Priya S.", role: "Product Manager", company: "TATA", avatar: "👩‍💼", rating: 5, quote: "The mock interview was incredibly realistic. My mentor's feedback on my product sense helped me identify exact gaps." },
+  { name: "Rahul V.", role: "Data Analyst", company: "Bigbasket", avatar: "👨‍💻", rating: 5, quote: "I practiced SQL and case studies with a senior analyst. The detailed scorecard showed me exactly what to improve. Worth every rupee!" },
+  { name: "Sneha P.", role: "Data Scientist", company: "Musigma", avatar: "👩‍🔬", rating: 5, quote: "The safe practice environment removed all pressure. My mentor's ML system design feedback was gold. Recording helped me review and improve 2x faster." },
+  { name: "Amit K.", role: "HR Manager", company: "Flipkart", avatar: "👨‍💼", rating: 5, quote: "Practiced behavioral questions with an actual HRBP. The structured feedback on my STAR responses made all the difference in my interviews." },
 ];
 
-const FAQ = [
-  { q: 'Is this a safe space to practice?', a: 'Absolutely. We provide a low-pressure environment where you can make mistakes and learn from them before your real interview. You can even keep your camera off if you prefer.' },
-  { q: 'What will the detailed feedback be like?', a: 'You don\'t just get a \'pass/fail\'. You will get a detailed scorecard with your strengths and areas of improvements explicitly highlighted by a human hiring manager.' },
-  { q: 'What happens when the mentor does not show up for the session?', a: 'You will be refunded the full amount instantly.' },
-  { q: 'Can I practice for a specific job?', a: 'Yes! You can choose the topic of your interview, and paste the exact Job Description you are applying for so the expert can tailor the questions specifically to that role.' },
+const GUARANTEES = [
+  { icon: "💰", title: "100% Money-Back Guarantee", description: "If your mentor doesn't show up, you get a full refund. No questions asked." },
+  { icon: "🔄", title: "Free Rescheduling", description: "Life happens, we get it. Reschedule for free before your session. " },
+  { icon: "📹", title: "Recording Guaranteed", description: "Every session is recorded and shared within 24 hours. Review unlimited times." },
+  { icon: "📝", title: "Detailed Feedback Promise", description: "Structured scorecard with actionable tips delivered within 48 hours of your session." },
+];
+
+const FAQS = [
+  { q: "Is this a safe space to practice?", a: "Absolutely. We provide a low-pressure environment where you can make mistakes and learn from them before your real interview. You can even keep your camera off if you prefer." },
+  { q: "What will the detailed feedback be like?", a: "You don't just get a 'pass/fail'. You will get a feedback form with your strengths and areas of improvements highlighted by the interviewer." },
+  { q: "What happens when the mentor does not show up for the session?", a: "You will be refunded the full amount." },
+  { q: "Can I practice for a specific job?", a: "Yes! You can choose the topic of your interview, and paste the exact Job Description you are applying for so the mentor can tailor the questions." },
 ];
 
 // ============================================
-// DYNAMIC MENTORS ICONS & COMPONENTS
+// SVG ICONS & SHARED
 // ============================================
 const CheckmarkCircleIcon = ({ size = 16, color = "#3B82F6" }) => (<Svg width={size} height={size} viewBox="0 0 24 24" fill="none"><Circle cx="12" cy="12" r="10" stroke={color} strokeWidth="2" fill="none" /><Path d="M8 12.5L10.5 15L16 9.5" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></Svg>);
 const BriefcaseIcon = ({ size = 12, color = "#111827" }) => (<Svg width={size} height={size} viewBox="0 0 24 24" fill="none"><Path d="M20 7H4C2.89543 7 2 7.89543 2 9V19C2 20.1046 2.89543 21 4 21H20C21.1046 21 22 20.1046 22 19V9C22 7.89543 21.1046 7 20 7Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /><Path d="M16 7V5C16 3.89543 15.1046 3 14 3H10C8.89543 3 8 3.89543 8 5V7" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></Svg>);
-const SparklesIcon = ({ size = 14, color = "#1E40AF" }) => (<Svg width={size} height={size} viewBox="0 0 24 24" fill="none"><Path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 14.5L2 12L9.5 9.5L12 2Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /><Path d="M6 3L6.5 5.5L9 6L6.5 6.5L6 9L5.5 6.5L3 6L5.5 5.5L6 3Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></Svg>);
+const SparklesIcon = ({ size = 14, color = "#1E40AF" }) => (<Svg width={size} height={size} viewBox="0 0 24 24" fill="none"><Path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /><Path d="M6 3L6.5 5.5L9 6L6.5 6.5L6 9L5.5 6.5L3 6L5.5 5.5L6 3Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></Svg>);
 const CheckmarkDoneIcon = ({ size = 14, color = "#6B7280" }) => (<Svg width={size} height={size} viewBox="0 0 24 24" fill="none"><Path d="M5 12L10 17L20 7" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /><Path d="M2 12L7 17" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></Svg>);
 const MedalIcon = ({ size = 14, color = "#CD7F32" }) => (<Svg width={size} height={size} viewBox="0 0 24 24" fill="none"><Circle cx="12" cy="15" r="6" fill={color} stroke={color} strokeWidth="1.5" /><Path d="M9 9L7 3L12 6L17 3L15 9" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" /></Svg>);
 
@@ -123,6 +132,142 @@ const TierBadgeBlock = ({ tier }: { tier?: string | null }) => {
     </View>
   );
 };
+
+// ============================================
+// SECTIONS
+// ============================================
+const SimpleImage = ({ source, style, alt }: any) => {
+  const isWeb = Platform.OS === 'web';
+  if (isWeb) {
+    let src = typeof source === 'string' ? source : (source?.uri || Asset.fromModule(source)?.uri || '');
+    if (src) return <img src={src} alt={alt} style={{ ...style, objectFit: 'contain' }} loading="lazy" decoding="async" />;
+  }
+  return <RNImage source={source} style={style} resizeMode="contain" accessible={true} accessibilityLabel={alt} />;
+};
+
+const LogoWall = memo(() => {
+  const { width } = useWindowDimensions();
+  const isSmall = width < 900;
+  return (
+    <View style={styles.logoSection} nativeID="our-mentors" accessibilityRole="region" accessibilityLabel="Companies where our mentors work">
+      <Text style={styles.logoTitle} accessibilityRole="header" accessibilityLevel={2}>
+        OUR EXPERTS HAVE WORKED IN
+      </Text>
+      <View style={[styles.logoWall, isSmall && styles.logoWallMobile]}>
+        {COMPANIES.map((company) => (
+          <View key={company.name} style={styles.logoWrapper} accessibilityRole="image" accessibilityLabel={`${company.name} logo`}>
+            <SimpleImage source={company.image} style={{ width: company.width, height: 35 }} alt={`${company.name} company logo`} />
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+});
+
+const TheProblemSection = memo(({ isSmall }: { isSmall: boolean }) => (
+  <View style={[styles.sectionContainer, { paddingTop: 40, paddingBottom: 20 }]}>
+    <Text style={styles.kicker}>THE HARDEST PART</Text>
+    <Text style={[styles.h2, isSmall && styles.h2Mobile]}>Most candidates freeze when it counts</Text>
+    <View style={styles.problemGrid}>
+      <View style={styles.problemBox}>
+        <Text style={styles.problemIcon}>😰</Text>
+        <Text style={styles.problemTitle}>Interview Anxiety</Text>
+        <Text style={styles.problemText}>The pressure of the real interview causes you to blank on answers you already know.</Text>
+      </View>
+      <View style={styles.problemBox}>
+        <Text style={styles.problemIcon}>🤖</Text>
+        <Text style={styles.problemTitle}>AI & Videos Fall Short</Text>
+        <Text style={styles.problemText}>AI bots and YouTube videos cannot evaluate your communication nuance or tell you why a human would reject you.</Text>
+      </View>
+      <View style={styles.problemBox}>
+        <Text style={styles.problemIcon}>❌</Text>
+        <Text style={styles.problemTitle}>Silent Rejections</Text>
+        <Text style={styles.problemText}>You get rejected but never find out exactly why or how the hiring manager evaluated your answers.</Text>
+      </View>
+    </View>
+  </View>
+));
+
+const HowItWorksSection = memo(({ isSmall }: { isSmall: boolean }) => (
+  <View style={[styles.sectionContainer, { backgroundColor: '#fff', borderRadius: 24, paddingVertical: 48, marginBottom: 40, shadowColor: "#000", shadowOpacity: 0.03, shadowRadius: 15, borderWidth: 1, borderColor: BORDER_LIGHT }]}>
+    <Text style={styles.kicker}>YOUR PATH TO THE OFFER</Text>
+    <Text style={[styles.h2, isSmall && styles.h2Mobile]}>How realistic practice builds unshakeable confidence</Text>
+    <View style={styles.stepsContainer}>
+      <View style={styles.stepBox}>
+        <View style={styles.stepNumber}><Text style={styles.stepNumberText}>1</Text></View>
+        <Text style={styles.stepTitle}>Paste a JD or Pick a Skill</Text>
+        <Text style={styles.stepText}>Use a specific Job Description to simulate the real thing, or select a targeted interview round to focus exactly on your weak spots.</Text>
+      </View>
+      <View style={styles.stepBox}>
+        <View style={styles.stepNumber}><Text style={styles.stepNumberText}>2</Text></View>
+        <Text style={styles.stepTitle}>Practice with an Insider</Text>
+        <Text style={styles.stepText}>Simulate a live interview with a vetted industry expert. Answer real questions in a safe, low-pressure environment.</Text>
+      </View>
+      <View style={styles.stepBox}>
+        <View style={styles.stepNumber}><Text style={styles.stepNumberText}>3</Text></View>
+        <Text style={styles.stepTitle}>Get Actionable Feedback</Text>
+        <Text style={styles.stepText}>Receive a detailed scorecard, review the session recording, fix your mistakes, and walk into the real interview ready.</Text>
+      </View>
+    </View>
+  </View>
+));
+
+const InterviewTracks = memo(() => {
+  const { width } = useWindowDimensions();
+  const isSmall = width < 900;
+  const router = useRouter();
+
+  return (
+    <View style={[styles.sectionContainer, { paddingTop: 20 }]} nativeID="interview-tracks">
+      <Text style={styles.kicker} accessibilityRole="header">INTERVIEW TRACKS</Text>
+      <Text style={[styles.h2, isSmall && styles.h2Mobile]} accessibilityRole="header" accessibilityLevel={2}>
+        Choose Your Specialization
+      </Text>
+      <View style={[styles.tracksGrid, isSmall && styles.tracksGridMobile]}>
+        {INTERVIEW_TRACKS.map((track) => (
+          <TouchableOpacity
+            key={track.id}
+            style={styles.trackCard}
+            onPress={() => {
+              pushToDataLayer("lp_track_card_click", { role_viewed: "homepage", target_track: track.id });
+              router.push(track.path as any);
+            }}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.trackEmoji}>{track.emoji}</Text>
+            <Text style={styles.trackTitle}>{track.title}</Text>
+            <Text style={styles.trackDesc}>{track.desc}</Text>
+            <View style={styles.trackArrow}>
+              <Text style={styles.trackArrowText}>Explore →</Text>
+            </View>
+          </TouchableOpacity>
+        ))}
+      </View>
+    </View>
+  );
+});
+
+const TargetedSkillsSection = memo(({ isSmall }: { isSmall: boolean }) => {
+  const activeSkills = [
+    "Product Sense / Design", "SQL & Querying", "System Design (ML)", "Talent Acquisition", "Case Studies (Data → Insight)", "Behavioral & Leadership"
+  ];
+
+  return (
+    <View style={[styles.sectionContainer, { paddingTop: 20, paddingBottom: 60 }]}>
+      <Text style={styles.kicker}>LASER-FOCUSED PRACTICE</Text>
+      <Text style={[styles.h2, isSmall && styles.h2Mobile, { marginBottom: 16 }]}>Already know your weak spots?</Text>
+      <Text style={styles.subtext}>Skip the general prep. Select from our pre-decided skills and book mock interviews strictly focused on the specific rounds that hold you back.</Text>
+      
+      <View style={styles.skillsPillContainer}>
+        {activeSkills.map((skill, idx) => (
+          <View key={idx} style={styles.skillPill}>
+            <Text style={styles.skillPillText}>{skill}</Text>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+});
 
 const MentorCard = ({ m, displayPrice, totalSessions, isNewMentor, averageRating, showRating, hasSlots, displaySlot, customPriceLabel, onView, isSmall, isFounderCard }: any) => {
   const seed = m.id || m.profiles?.full_name || 'Mentor';
@@ -188,31 +333,7 @@ const MentorCard = ({ m, displayPrice, totalSessions, isNewMentor, averageRating
   );
 };
 
-const TheProblemSection = memo(({ isSmall }: { isSmall: boolean }) => (
-  <View style={[styles.sectionContainer, { paddingTop: 20, paddingBottom: 20 }]}>
-    <Text style={styles.kicker}>THE HARDEST PART</Text>
-    <Text style={[styles.h2, isSmall && styles.h2Mobile]}>Most candidates freeze when it counts</Text>
-    <View style={styles.problemGrid}>
-      <View style={styles.problemBox}>
-        <Text style={styles.problemIcon}>😰</Text>
-        <Text style={styles.problemTitle}>Interview Anxiety</Text>
-        <Text style={styles.problemText}>The pressure of the real interview causes you to blank on answers you already know.</Text>
-      </View>
-      <View style={styles.problemBox}>
-        <Text style={styles.problemIcon}>🤖</Text>
-        <Text style={styles.problemTitle}>AI & Videos Fall Short</Text>
-        <Text style={styles.problemText}>AI bots and YouTube videos cannot evaluate your communication nuance or tell you why a human would reject you.</Text>
-      </View>
-      <View style={styles.problemBox}>
-        <Text style={styles.problemIcon}>❌</Text>
-        <Text style={styles.problemTitle}>Silent Rejections</Text>
-        <Text style={styles.problemText}>You get rejected but never find out exactly why or how the hiring manager evaluated your answers.</Text>
-      </View>
-    </View>
-  </View>
-));
-
-const DynamicDomainMentors = ({ role, isSmall, onViewMentors }: { role: string, isSmall: boolean, onViewMentors: () => void }) => {
+const DynamicDomainMentors = ({ isSmall, onViewMentors }: { isSmall: boolean, onViewMentors: () => void }) => {
   const router = useRouter();
   const [mentors, setMentors] = useState<any[]>([]);
   const [founderMentor, setFounderMentor] = useState<any>(null);
@@ -234,23 +355,6 @@ const DynamicDomainMentors = ({ role, isSmall, onViewMentors }: { role: string, 
         tiersData?.forEach((t: any) => (tMap[t.tier] = t.percentage_cut));
         if (isMounted) setTierMap(tMap);
 
-        const profilesRes = await fetch(`${SUPABASE_URL}/rest/v1/interview_profiles_admin?select=*`, { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } });
-        const profilesData = await profilesRes.json();
-
-        const r = role.toLowerCase();
-        let matchedProfileId = null;
-        if (r !== 'default') {
-           const matched = profilesData.find((p: any) => {
-              const n = p.name.toLowerCase();
-              if (r === 'pm' && n.includes('product')) return true;
-              if (r === 'da' && n.includes('analytics')) return true;
-              if (r === 'ds' && n.includes('science')) return true;
-              if (r === 'hr' && (n.includes('hr') || n.includes('human'))) return true;
-              return false;
-           });
-           matchedProfileId = matched?.id;
-        }
-
         const mentorsRes = await fetch(`${SUPABASE_URL}/rest/v1/mentors?select=*,tier,profiles(full_name)&status=eq.approved`, { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } });
         const allMentors = await mentorsRes.json();
 
@@ -262,11 +366,7 @@ const DynamicDomainMentors = ({ role, isSmall, onViewMentors }: { role: string, 
         }
 
         let filtered = allMentors.filter((m: any) => m.id !== FOUNDER_ID) || [];
-        if (matchedProfileId) {
-           filtered = filtered.filter((m: any) => Array.isArray(m.profile_ids) && m.profile_ids.includes(matchedProfileId));
-        }
-
-        filtered = filtered.slice(0, 6);
+        filtered = filtered.slice(0, 6); // Just show top 6 on generic homepage
         if (isMounted) setMentors(filtered);
 
         const availabilityPromises = filtered.map(async (m: any) => {
@@ -285,7 +385,7 @@ const DynamicDomainMentors = ({ role, isSmall, onViewMentors }: { role: string, 
       }
     })();
     return () => { isMounted = false; };
-  }, [role]);
+  }, []);
 
   if (loading) {
     return (
@@ -316,7 +416,10 @@ const DynamicDomainMentors = ({ role, isSmall, onViewMentors }: { role: string, 
               hasSlots={founderSlot !== "No slots available" && founderSlot !== "Loading..."}
               displaySlot={founderSlot}
               customPriceLabel="Free"
-              onView={() => router.push(`/mentors/${founderMentor.id}`)}
+              onView={() => {
+                pushToDataLayer("lp_mentor_card_click", { mentor_id: founderMentor.id, mentor_tier: founderMentor.tier || 'founder', is_founder: true, role_viewed: 'homepage' });
+                router.push(`/mentors/${founderMentor.id}`);
+              }}
               isSmall={isSmall}
               isFounderCard={true}
             />
@@ -354,7 +457,10 @@ const DynamicDomainMentors = ({ role, isSmall, onViewMentors }: { role: string, 
                   showRating={showRating}
                   hasSlots={hasSlots}
                   displaySlot={displaySlot}
-                  onView={() => router.push(`/mentors/${m.id}`)}
+                  onView={() => {
+                    pushToDataLayer("lp_mentor_card_click", { mentor_id: m.id, mentor_tier: m.tier || 'bronze', is_founder: false, role_viewed: 'homepage' });
+                    router.push(`/mentors/${m.id}`);
+                  }}
                   isSmall={isSmall}
                   isFounderCard={false}
                 />
@@ -364,7 +470,7 @@ const DynamicDomainMentors = ({ role, isSmall, onViewMentors }: { role: string, 
 
           <View style={{ alignItems: "center", marginTop: 32 }}>
             <SharedButton
-              title="View Experts & Book"
+              title="View All Experts"
               variant="outline"
               onPress={onViewMentors}
               style={{ minWidth: 200 }}
@@ -376,356 +482,172 @@ const DynamicDomainMentors = ({ role, isSmall, onViewMentors }: { role: string, 
   );
 };
 
-
-// --- EXISTING LAZY COMPONENTS ---
-
-// Simple Image for Lazy Loading
-const SimpleImage = ({ source, style, alt }: any) => {
-  const isWeb = Platform.OS === 'web';
-  if (isWeb) {
-    let src = typeof source === 'string' ? source : (source?.uri || Asset.fromModule(source)?.uri || '');
-    if (src) return <img src={src} alt={alt} style={{ ...style, objectFit: 'contain' }} loading="lazy" decoding="async" />;
-  }
-  return <RNImage source={source} style={style} resizeMode="contain" accessible={true} accessibilityLabel={alt} />;
-};
-
-const LogoWall = memo(() => {
-  const { width } = useWindowDimensions();
-  const isSmall = width < 900;
-  return (
-    <View style={styles.logoSection} nativeID="our-mentors" accessibilityRole="region" accessibilityLabel="Companies where our mentors work">
-      <Text style={styles.logoTitle} accessibilityRole="header" accessibilityLevel={2}>
-        OUR EXPERTS HAVE WORKED IN
-      </Text>
-      <View style={[styles.logoWall, isSmall && styles.logoWallMobile]}>
-        {COMPANIES.map((company) => (
-          <View key={company.name} style={styles.logoWrapper} accessibilityRole="image" accessibilityLabel={`${company.name} logo`}>
-            <SimpleImage source={company.image} style={{ width: company.width, height: 35 }} alt={`${company.name} company logo`} />
-          </View>
-        ))}
-      </View>
-    </View>
-  );
-});
-
-const InterviewTracks = memo(() => {
-  const { width } = useWindowDimensions();
-  const isSmall = width < 900;
-  const router = useRouter();
-
-  return (
-    <View style={[styles.sectionContainer, styles.tracksSection]} nativeID="interview-tracks" accessibilityRole="region" accessibilityLabel="Interview practice tracks">
-      <Text style={styles.sectionKicker} accessibilityRole="header">INTERVIEW TRACKS</Text>
-      <Text style={[styles.sectionTitle, isSmall && styles.sectionTitleMobile]} accessibilityRole="header" accessibilityLevel={2}>
-        Choose Your Interview Track
-      </Text>
-      <View style={[styles.tracksGrid, isSmall && styles.tracksGridMobile]}>
-        {INTERVIEW_TRACKS.map((track) => (
-          <TouchableOpacity
-            key={track.id}
-            style={styles.trackCard}
-            onPress={() => router.push(track.path as any)}
-            activeOpacity={0.8}
-            accessibilityRole="button"
-            accessibilityLabel={`Practice ${track.title} interviews`}
-          >
-            <Text style={styles.trackEmoji}>{track.emoji}</Text>
-            <Text style={styles.trackTitle}>{track.title}</Text>
-            <Text style={styles.trackDesc}>{track.desc}</Text>
-            <View style={styles.trackArrow}>
-              <Text style={styles.trackArrowText}>→</Text>
+const TestimonialsSection = memo(({ isSmall }: { isSmall: boolean }) => (
+  <View style={styles.testimonialsContainer} nativeID="testimonials">
+    <Text style={styles.kicker}>SUCCESS STORIES</Text>
+    <Text style={[styles.h2, isSmall && styles.h2Mobile]}>Hear from successful candidates</Text>
+    <View style={styles.testimonialsGrid}>
+      {TESTIMONIALS.map((testimonial, i) => (
+        <View key={i} style={styles.testimonialCard}>
+          <View style={styles.testimonialHeader}>
+            <View style={styles.avatarContainer}>
+              <Text style={styles.avatarText}>{testimonial.avatar}</Text>
             </View>
-          </TouchableOpacity>
-        ))}
-      </View>
-    </View>
-  );
-});
-
-const SocialProof = memo(() => {
-  const { width } = useWindowDimensions();
-  const isSmall = width < 900;
-
-  return (
-    <View style={styles.socialProofSection} nativeID="social-proof" accessibilityRole="region" accessibilityLabel="Our impact in numbers">
-      <View style={[styles.statsGrid, isSmall && styles.statsGridMobile]}>
-        {STATS.map((stat) => (
-          <View key={stat.id} style={styles.statCard} accessibilityRole="text" accessibilityLabel={`${stat.number} ${stat.label}`}>
-            <Text style={styles.statNumber}>{stat.number}</Text>
-            <Text style={styles.statLabel}>{stat.label}</Text>
-          </View>
-        ))}
-      </View>
-      <TouchableOpacity
-        style={styles.linkedinButton}
-        onPress={() => Linking.openURL('https://www.linkedin.com/company/crackjobs')}
-        activeOpacity={0.8}
-        accessibilityRole="button"
-        accessibilityLabel="Follow us on LinkedIn"
-      >
-        <Text style={styles.linkedinButtonText}>🔗 Follow on LinkedIn</Text>
-      </TouchableOpacity>
-    </View>
-  );
-});
-
-const Reviews = memo(() => {
-  const { width } = useWindowDimensions();
-  const isSmall = width < 900;
-  const router = useRouter();
-
-  return (
-    <View style={[styles.sectionContainer, styles.reviewsSection]} nativeID="reviews" accessibilityRole="region" accessibilityLabel="Customer testimonials">
-      <Text style={styles.sectionKicker} accessibilityRole="header">TESTIMONIALS</Text>
-      <Text style={[styles.sectionTitle, isSmall && styles.sectionTitleMobile]} accessibilityRole="header" accessibilityLevel={2}>
-        Hear from successful candidates
-      </Text>
-      <View style={[styles.reviewsGrid, isSmall && styles.reviewsGridMobile]}>
-        {REVIEWS.map((review) => (
-          <View key={review.id} style={styles.reviewCard} accessibilityRole="article" accessibilityLabel={`Review from ${review.name}`}>
-            <View style={styles.reviewHeader}>
-              <View style={styles.reviewHeaderLeft}>
-                <Text style={styles.reviewName}>{review.name}</Text>
-                <Text style={styles.reviewRole}>{review.role} • {review.company}</Text>
-              </View>
-              <View style={styles.reviewStarsContainer}>
-                <Text style={styles.reviewStars} accessibilityLabel={`Rating: ${review.rating} stars`}>
-                  {'⭐'.repeat(review.rating)}
-                </Text>
-              </View>
-            </View>
-            <Text style={styles.reviewText}>"{review.text}"</Text>
-          </View>
-        ))}
-      </View>
-
-      <View style={styles.reviewsCtaStrip}>
-        <Text style={styles.reviewsCtaHeading}>Ready to get feedback like this?</Text>
-        <TouchableOpacity
-          nativeID="btn-home-reviews-view-mentors"
-          style={styles.reviewsCtaButton}
-          onPress={() => router.push('/mentors')}
-          activeOpacity={0.85}
-          accessibilityRole="button"
-          accessibilityLabel="View our mentors"
-        >
-          <Text style={styles.reviewsCtaButtonText}>View Our Experts →</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
-});
-
-const WhyChooseUs = memo(() => {
-  const { width } = useWindowDimensions();
-  const isSmall = width < 900;
-
-  const BENEFITS = [
-    { icon: <FeedbackIcon />, title: 'Actionable Human Feedback', desc: 'Real humans evaluating your communication nuance. No generic AI scores.', ariaLabel: 'Actionable human feedback benefit' },
-    { icon: <VideoIcon />, title: 'Session Recording', desc: 'Review your performance anytime with full session recordings', ariaLabel: 'Session recording benefit' },
-    { icon: <StarIcon />, title: 'Target JD Practice', desc: 'Paste your specific Job Description and practice exactly what they will ask.', ariaLabel: 'JD practice benefit' },
-  ];
-
-  return (
-    <View style={styles.sectionContainer} nativeID="why-choose-us" accessibilityRole="region" accessibilityLabel="Why choose CrackJobs">
-      <Text style={styles.sectionKicker} accessibilityRole="header">WHY CHOOSE US</Text>
-      <Text style={[styles.sectionTitle, isSmall && styles.sectionTitleMobile]} accessibilityRole="header" accessibilityLevel={2}>
-        Practice with complete confidence
-      </Text>
-      <View style={[styles.benefitsGrid, isSmall && styles.benefitsGridMobile]}>
-        {BENEFITS.map((benefit, i) => (
-          <View key={i} style={styles.benefitCard} accessibilityRole="article" accessibilityLabel={benefit.ariaLabel}>
-            <View style={styles.benefitIconContainer}>{benefit.icon}</View>
-            <Text style={styles.benefitTitle}>{benefit.title}</Text>
-            <Text style={styles.benefitDesc}>{benefit.desc}</Text>
-          </View>
-        ))}
-      </View>
-
-      <View style={styles.mentorCtaContainer}>
-        <Text style={[styles.sectionTitle, { fontSize: 28, marginTop: 40, marginBottom: 24 }]} accessibilityRole="header">
-          Want to become an expert mentor?
-        </Text>
-        <TouchableOpacity
-          style={styles.mentorCtaButton}
-          onPress={() => Linking.openURL('https://crackjobs.com/auth/sign-up')}
-          activeOpacity={0.9}
-          accessibilityRole="button"
-          accessibilityLabel="Apply to become a mentor"
-        >
-          <Text style={styles.mentorCtaButtonText}>Sign up</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
-});
-
-const CandidateTiers = memo(() => {
-  const { width } = useWindowDimensions();
-  const isSmall = width < 900;
-  const router = useRouter();
-
-  const TIERS = [
-    { badge: <BronzeBadge />, title: 'Bronze Tier', sessions: '0-5 Sessions', color: '#cd7f32', bgColor: '#fff5e6', borderColor: '#cd7f32', benefits: ['Top performing mid-Level Managers', '5 - 10 yrs experienced', 'Best for: Strengthening basics'], ariaLabel: 'Bronze tier pricing' },
-    { badge: <SilverBadge />, title: 'Silver Tier', sessions: '5-15 Sessions',  color: '#c0c0c0', bgColor: '#f5f5f5', borderColor: '#c0c0c0', benefits: ['Senior Management from top companies', '10-15 yrs experienced', 'Best for: Senior level interviews'], ariaLabel: 'Silver tier pricing' },
-    { badge: <GoldBadge />, title: 'Gold Tier', sessions: '15+ Sessions', color: '#fbbf24', bgColor: '#fffbeb', borderColor: '#fbbf24', benefits: ['Leadership / Directors', '15-20 yrs experienced', 'Best for: Hiring manager or CXO rounds'], ariaLabel: 'Gold tier pricing' },
-  ];
-
-  return (
-    <View style={styles.sectionContainer} nativeID="pricing" accessibilityRole="region" accessibilityLabel="Pricing tiers">
-      <Text style={styles.sectionKicker} accessibilityRole="header">PRICING</Text>
-      <Text style={[styles.sectionTitle, isSmall && styles.sectionTitleMobile]} accessibilityRole="header" accessibilityLevel={2}>
-        Choose Your Expert Tier
-      </Text>
-      <View style={[styles.tiersGrid, isSmall && styles.tiersGridMobile]}>
-        {TIERS.map((tier, i) => (
-          <View key={i} style={[styles.tierCard, { backgroundColor: tier.bgColor, borderColor: tier.borderColor }]} accessibilityRole="article" accessibilityLabel={tier.ariaLabel}>
-            <View style={styles.tierBadgeContainer}>{tier.badge}</View>
-            <Text style={[styles.tierTitle, { color: tier.color }]}>{tier.title}</Text>
-            <Text style={[styles.tierTitle, { fontSize: 24, marginBottom: 24, color: tier.color }]}>{tier.price}</Text>
-            <View style={styles.tierBenefits}>
-              {tier.benefits.map((benefit, j) => (
-                <View key={j} style={styles.tierBenefitRow}>
-                  <Text style={[styles.tierBenefitBullet, { color: tier.color }]}>✓</Text>
-                  <Text style={[styles.tierBenefitText, { color: TEXT_DARK }]}>{benefit}</Text>
-                </View>
-              ))}
+            <View style={styles.testimonialMeta}>
+              <Text style={styles.testimonialName}>{testimonial.name}</Text>
+              <Text style={styles.testimonialRole}>{testimonial.role} at {testimonial.company}</Text>
             </View>
           </View>
-        ))}
-      </View>
-    </View>
-  );
-});
-
-const SystematicPrepSection = memo(() => {
-  const router = useRouter();
-  const { width } = useWindowDimensions();
-  const isSmall = width < 900;
-
-  return (
-    <View style={styles.notSureContainer}>
-      <View style={styles.notSureBox}>
-        <View style={styles.notSureIconRow}>
-          <Text style={styles.notSureIcon}>📈</Text>
+          <View style={{ flexDirection: "row", gap: 3, marginBottom: 18 }}>
+            {Array.from({ length: testimonial.rating }, (_, j) => (
+              <Text key={j} style={{ fontFamily: SYSTEM_FONT, fontSize: 15 }}>⭐</Text>
+            ))}
+          </View>
+          <Text style={styles.testimonialQuote}>"{testimonial.quote}"</Text>
         </View>
-        <Text style={styles.notSureKicker}>THE SYSTEMATIC APPROACH</Text>
-        <Text style={[styles.notSureHeading, isSmall && styles.h2Mobile]}>
-          Diagnose your weak spots. <Text style={{ color: BRAND_ORANGE }}>Systematically</Text> fix them.
-        </Text>
-        <Text style={styles.notSureSub}>
-          Don't just guess what you are doing wrong. Book an initial diagnostic call to map out your specific blind spots, then get a custom bundle of mock interviews tailored to turn those weaknesses into strengths.
-        </Text>
-
-        <View style={styles.notSurePerks}>
-          {[
-            { icon: "1️⃣", text: "Book an intro call to diagnose your gaps and build a prep strategy." },
-            { icon: "2️⃣", text: "Book a tailored bundle of interviews focusing exactly on your weak areas." },
-            { icon: "3️⃣", text: "Track your progress systematically until you are completely interview-ready." },
-          ].map((perk, i) => (
-            <View key={i} style={styles.notSurePerk}>
-              <Text style={styles.notSurePerkIcon}>{perk.icon}</Text>
-              <Text style={styles.notSurePerkText}>{perk.text}</Text>
-            </View>
-          ))}
-        </View>
-
-        <TouchableOpacity
-          nativeID="btn-home-bundle-intro-call"
-          style={styles.notSureButton}
-          onPress={() => router.push('/mentors')}
-          activeOpacity={0.85}
-          accessibilityRole="button"
-          accessibilityLabel="Browse experts and book an intro call"
-        >
-          <Text style={styles.notSureButtonText}>Book Your Diagnostic Call</Text>
-        </TouchableOpacity>
-        <Text style={styles.notSureNote}>Diagnostic calls are available directly on the expert's profile page</Text>
-      </View>
+      ))}
     </View>
-  );
-});
+    <View style={styles.trustIndicators}>
+      <Text style={styles.trustText}>✓ Verified testimonials</Text>
+      <Text style={styles.trustText}>✓ Real candidate outcomes</Text>
+      <Text style={styles.trustText}>✓ Proven results</Text>
+    </View>
+  </View>
+));
 
-const FAQSection = memo(() => {
-  const { width } = useWindowDimensions();
-  const isSmall = width < 900;
-
-  return (
-    <View style={styles.sectionContainer} nativeID="faq" accessibilityRole="region" accessibilityLabel="Frequently asked questions">
-      <Text style={styles.sectionKicker} accessibilityRole="header">FAQ</Text>
-      <Text style={[styles.sectionTitle, isSmall && styles.sectionTitleMobile]} accessibilityRole="header" accessibilityLevel={2}>
-        Common Questions
+const SystematicPrepSection = memo(({ onViewMentors, isSmall }: { onViewMentors: () => void, isSmall: boolean }) => (
+  <View style={styles.notSureContainer}>
+    <View style={styles.notSureBox}>
+      <View style={styles.notSureIconRow}>
+        <Text style={styles.notSureIcon}>📈</Text>
+      </View>
+      <Text style={styles.kicker}>THE SYSTEMATIC APPROACH</Text>
+      <Text style={[styles.h2, isSmall && styles.h2Mobile, { marginBottom: 16 }]}>
+        Diagnose your gaps. <Text style={{ color: BRAND_ORANGE }}>Systematically</Text> fix them.
       </Text>
-      <View style={styles.faqContainer}>
-        {FAQ.map((item, i) => (
-          <View key={i} style={styles.faqItem} accessibilityRole="article" accessibilityLabel={`Question: ${item.q}`}>
-            <Text style={styles.faqQ} accessibilityRole="header">{item.q}</Text>
-            <Text style={styles.faqA}>{item.a}</Text>
+      <Text style={styles.subtext}>
+        Not sure which skill round to focus on? Book an initial diagnostic call to map out your specific blind spots, then get a custom bundle of mock interviews tailored to turn those weaknesses into strengths.
+      </Text>
+
+      <View style={styles.notSurePerks}>
+        {[
+          { icon: "1️⃣", text: "Book an intro call to diagnose your gaps and build a prep strategy." },
+          { icon: "2️⃣", text: "Book a tailored bundle of interviews focusing exactly on your weak areas." },
+          { icon: "3️⃣", text: "Track your progress systematically until you are completely interview-ready." },
+        ].map((perk, i) => (
+          <View key={i} style={styles.notSurePerk}>
+            <Text style={styles.notSurePerkIcon}>{perk.icon}</Text>
+            <Text style={styles.notSurePerkText}>{perk.text}</Text>
+          </View>
+        ))}
+      </View>
+
+      <SharedButton
+        nativeID="btn-home-bundle-intro-call"
+        title="Book Your Diagnostic Call"
+        onPress={onViewMentors}
+        style={styles.notSureButton}
+        textStyle={{ fontSize: 16 }}
+      />
+      <Text style={styles.notSureNote}>Diagnostic calls are available directly on the expert's profile page</Text>
+    </View>
+  </View>
+));
+
+const GuaranteeSection = memo(({ isSmall }: { isSmall: boolean }) => (
+  <View style={styles.guaranteeContainer} nativeID="guarantee">
+    <View style={styles.guaranteeBox}>
+      <Text style={styles.kicker}>RISK-FREE GUARANTEE</Text>
+      <Text style={[styles.h2, isSmall && styles.h2Mobile]}>
+        Practice with complete <Text style={{ color: CTA_TEAL }}>confidence</Text>
+      </Text>
+      <Text style={styles.subtext}>
+        Your investment is protected. We've got your back every step of the way.
+      </Text>
+      
+      <View style={styles.guaranteesGrid}>
+        {GUARANTEES.map((g, i) => (
+          <View key={i} style={styles.guaranteeCard}>
+            <Text style={{ fontFamily: SYSTEM_FONT, fontSize: 36, marginBottom: 14 }}>{g.icon}</Text>
+            <Text style={{ fontFamily: SYSTEM_FONT, fontSize: 17, fontWeight: "700", color: TEXT_DARK, marginBottom: 10 }}>{g.title}</Text>
+            <Text style={{ fontFamily: SYSTEM_FONT, fontSize: 15, color: TEXT_GRAY }}>{g.description}</Text>
+          </View>
+        ))}
+      </View>
+      <View style={styles.trustSeal}>
+        {["SECURE PAYMENTS", "VERIFIED EXPERTS", "INSTANT REFUNDS"].map((t, i) => (
+          <View key={i} style={styles.sealBadge}>
+            <Text style={{ fontFamily: SYSTEM_FONT, fontSize: 12, fontWeight: "700", color: CTA_TEAL }}>✓ {t}</Text>
           </View>
         ))}
       </View>
     </View>
-  );
-});
+  </View>
+));
 
-const BottomCTA = memo(() => {
-  const { width } = useWindowDimensions();
-  const isSmall = width < 900;
-  const router = useRouter();
-
-  return (
-    <View style={styles.ctaSection} nativeID="get-started" accessibilityRole="region" accessibilityLabel="Call to action">
-      <View style={[styles.ctaInner, isSmall && styles.ctaInnerMobile]}>
-        <Text style={[styles.ctaTitle, isSmall && styles.ctaTitleMobile]} accessibilityRole="header" accessibilityLevel={2}>
-          Your next interview is closer than you think
-        </Text>
-        <Text style={[styles.ctaSubtitle, isSmall && styles.ctaSubtitleMobile]}>
-          Browse industry insiders, pick a topic, and book your session in minutes.
-        </Text>
-        <View style={[styles.ctaButtonRow, isSmall && styles.ctaButtonRowMobile]}>
-          <TouchableOpacity
-            style={styles.ctaButton}
-            onPress={() => router.push('/auth/sign-up')}
-            activeOpacity={0.9}
-            accessibilityRole="button"
-            accessibilityLabel="Book Your Session Now"
-          >
-            <Text style={styles.ctaButtonText}>BOOK YOUR SESSION NOW</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            nativeID="btn-home-bottom-view-mentors"
-            style={[styles.ctaButton, styles.ctaButtonOutline]}
-            onPress={() => router.push('/mentors')}
-            activeOpacity={0.9}
-            accessibilityRole="button"
-            accessibilityLabel="View our experts"
-          >
-            <Text style={[styles.ctaButtonText, { color: '#fff' }]}>VIEW OUR EXPERTS</Text>
-          </TouchableOpacity>
+const FAQSection = memo(({ isSmall }: { isSmall: boolean }) => (
+  <View style={styles.sectionContainer}>
+    <Text style={styles.kicker}>FAQ</Text>
+    <Text style={[styles.h2, isSmall && styles.h2Mobile]}>Common Questions</Text>
+    <View style={{ gap: 12, maxWidth: 800, alignSelf: 'center', width: '100%' }}>
+      {FAQS.map((faq, i) => (
+        <View key={i} style={styles.faqItem}>
+          <Text style={{ fontFamily: SYSTEM_FONT, fontWeight: "700", fontSize: 16, color: TEXT_DARK, marginBottom: 6 }}>{faq.q}</Text>
+          <Text style={{ fontFamily: SYSTEM_FONT, fontSize: 14, color: TEXT_GRAY, lineHeight: 22 }}>{faq.a}</Text>
         </View>
+      ))}
+    </View>
+  </View>
+));
+
+const FinalCTABanner = memo(({ onViewMentors, isSmall }: { onViewMentors: () => void, isSmall: boolean }) => (
+  <View style={styles.finalCtaContainer}>
+    <View style={styles.finalCtaBox}>
+      <Text style={[styles.h2, isSmall && styles.h2Mobile, { color: '#fff', marginBottom: 16 }]}>
+        Your next interview is closer than you think
+      </Text>
+      <Text style={[styles.subtext, { color: 'rgba(255,255,255,0.85)' }]}>
+        Browse industry insiders, pick a topic, and book your session in minutes.
+      </Text>
+      <SharedButton
+        nativeID="btn-home-final-view-mentors"
+        title="Book Your Session Now →"
+        onPress={onViewMentors}
+        style={styles.finalCtaButton}
+        textStyle={{color: '#000000', fontSize: 17 }}
+      />
+      <View style={styles.finalCtaTrust}>
+        <Text style={styles.finalCtaTrustItem}>✓ Safe practice space</Text>
+        <Text style={styles.finalCtaTrustItem}>✓ Money-back guarantee</Text>
+        <Text style={styles.finalCtaTrustItem}>✓ Recording included</Text>
       </View>
     </View>
-  );
-});
+  </View>
+));
 
 export default function LazySections() {
   const { width } = useWindowDimensions();
   const isSmall = width < 900;
   const router = useRouter();
 
+  const handleViewMentors = (source: string) => {
+    pushToDataLayer("lp_view_experts_click", { role_viewed: "homepage" });
+    router.push('/mentors');
+  };
+
   return (
     <>
       <LogoWall />
       <TheProblemSection isSmall={isSmall} />
-      <DynamicDomainMentors role="default" isSmall={isSmall} onViewMentors={() => router.push('/mentors')} />
+      <HowItWorksSection isSmall={isSmall} />
       <InterviewTracks />
-      <SocialProof />
-      <Reviews />
-      <WhyChooseUs />
-      <CandidateTiers />
-      <SystematicPrepSection />
-      <FAQSection />
-      <BottomCTA />
+      <TargetedSkillsSection isSmall={isSmall} />
+      <DynamicDomainMentors isSmall={isSmall} onViewMentors={() => handleViewMentors("domain_mentors_cta")} />
+      <TestimonialsSection isSmall={isSmall} />
+      <SystematicPrepSection isSmall={isSmall} onViewMentors={() => handleViewMentors("bundle_intro_call")} />
+      <GuaranteeSection isSmall={isSmall} />
+      <FAQSection isSmall={isSmall} />
+      <FinalCTABanner isSmall={isSmall} onViewMentors={() => handleViewMentors("final_cta")} />
       <Footer />
     </>
   );
@@ -733,7 +655,8 @@ export default function LazySections() {
 
 // --- STYLES ---
 const styles = StyleSheet.create({
-  // ===== New Standardized Headings =====
+  // ===== Unified Section & Text Styles =====
+  sectionContainer: { maxWidth: 900, width: "100%", alignSelf: "center", paddingHorizontal: 24, paddingVertical: 60 },
   kicker: { fontFamily: SYSTEM_FONT, fontWeight: "800", fontSize: 13, color: CTA_TEAL, marginBottom: 12, textAlign: "center", letterSpacing: 1.5, textTransform: "uppercase" },
   h2: { fontFamily: SYSTEM_FONT, fontWeight: "800", fontSize: 36, color: TEXT_DARK, marginBottom: 32, textAlign: "center", lineHeight: 44 },
   h2Mobile: { fontSize: 28, lineHeight: 36, marginBottom: 24 },
@@ -745,24 +668,50 @@ const styles = StyleSheet.create({
   sharedButtonOutline: { backgroundColor: "transparent", borderWidth: 2, borderColor: CTA_TEAL },
   sharedButtonText: { fontFamily: SYSTEM_FONT, fontSize: 15, fontWeight: "700" },
 
-  // ===== Dynamic Mentors List =====
-  listContainerWrapper: { paddingTop: 60, paddingBottom: 20, maxWidth: 1200, width: "100%", alignSelf: "center", paddingHorizontal: 24 },
-  listContainer: { flexDirection: "row", flexWrap: "wrap", gap: 16, justifyContent: "center" },
-  
-  // Founder Block
-  founderSection: { marginBottom: 64, alignItems: 'center', width: '100%', maxWidth: 900, alignSelf: 'center' },
-  founderCardWrapper: { width: '100%', maxWidth: 500, marginTop: 16 },
+  // ===== Logo Wall =====
+  logoSection: { backgroundColor: '#fff', paddingVertical: 50, borderTopWidth: 1, borderBottomWidth: 1, borderColor: '#f0f0f0' },
+  logoTitle: { textAlign: 'center', fontSize: 15, fontWeight: '500', color: '#bbb', marginBottom: 30, letterSpacing: 1.5, textTransform: 'uppercase' },
+  logoWall: { flexDirection: 'row', justifyContent: 'center', gap: 60, flexWrap: 'wrap', alignItems: 'center' },
+  logoWallMobile: { gap: 30, paddingHorizontal: 20 },
+  logoWrapper: { height: 50, justifyContent: 'center', alignItems: 'center' },
 
-  // ===== New Problem Section Styles =====
+  // ===== New Problem & Solution Styles =====
   problemGrid: { flexDirection: "row", flexWrap: "wrap", gap: 24, justifyContent: "center", marginTop: 20 },
   problemBox: { backgroundColor: "#fff", padding: 24, borderRadius: 16, borderWidth: 1, borderColor: BORDER_LIGHT, width: Platform.OS === "web" ? "calc(33.333% - 16px)" : "100%", minWidth: 250 },
   problemIcon: { fontSize: 32, marginBottom: 12 },
   problemTitle: { fontFamily: SYSTEM_FONT, fontSize: 18, fontWeight: "700", color: TEXT_DARK, marginBottom: 8 },
   problemText: { fontFamily: SYSTEM_FONT, fontSize: 14, color: TEXT_GRAY, lineHeight: 22 },
+  
+  stepsContainer: { flexDirection: "row", flexWrap: "wrap", gap: 24, justifyContent: "center", paddingHorizontal: 24 },
+  stepBox: { alignItems: "center", width: Platform.OS === "web" ? "calc(33.333% - 16px)" : "100%", minWidth: 250 },
+  stepNumber: { width: 48, height: 48, borderRadius: 24, backgroundColor: "#E6F6F6", alignItems: "center", justifyContent: "center", marginBottom: 16 },
+  stepNumberText: { fontFamily: SYSTEM_FONT, fontSize: 20, fontWeight: "800", color: CTA_TEAL },
+  stepTitle: { fontFamily: SYSTEM_FONT, fontSize: 18, fontWeight: "700", color: TEXT_DARK, marginBottom: 8, textAlign: "center" },
+  stepText: { fontFamily: SYSTEM_FONT, fontSize: 14, color: TEXT_GRAY, lineHeight: 22, textAlign: "center" },
+
+  // ===== Interview Tracks =====
+  tracksGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 20, justifyContent: 'center' },
+  tracksGridMobile: { flexDirection: 'column', alignItems: 'stretch', width: '100%' },
+  trackCard: { flex: 1, minWidth: 260, maxWidth: 280, backgroundColor: '#fff', padding: 20, borderRadius: 16, borderWidth: 1, borderColor: '#f0f0f0' },
+  trackEmoji: { fontSize: 32, marginBottom: 12 },
+  trackTitle: { fontFamily: SYSTEM_FONT, fontWeight: '700', fontSize: 18, color: TEXT_DARK, marginBottom: 8 },
+  trackDesc: { fontFamily: SYSTEM_FONT, fontSize: 14, color: TEXT_GRAY, lineHeight: 20, marginBottom: 16 },
+  trackArrow: { alignSelf: 'flex-start', backgroundColor: CTA_TEAL, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
+  trackArrowText: { color: '#fff', fontWeight: '700' },
+
+  // ===== Targeted Skills Styles =====
+  skillsPillContainer: { flexDirection: "row", flexWrap: "wrap", gap: 12, justifyContent: "center", maxWidth: 800, alignSelf: "center" },
+  skillPill: { backgroundColor: "#fff", paddingVertical: 12, paddingHorizontal: 20, borderRadius: 100, borderWidth: 1, borderColor: "rgba(24, 167, 167, 0.3)", shadowColor: CTA_TEAL, shadowOpacity: 0.05, shadowRadius: 4, shadowOffset: { width: 0, height: 2 } },
+  skillPillText: { fontFamily: SYSTEM_FONT, fontSize: 15, fontWeight: "600", color: TEXT_DARK },
+
+  // ===== Dynamic Mentors List =====
+  listContainerWrapper: { paddingVertical: 60, maxWidth: 1200, width: "100%", alignSelf: "center", paddingHorizontal: 24 },
+  listContainer: { flexDirection: "row", flexWrap: "wrap", gap: 16, justifyContent: "center" },
+  founderSection: { marginBottom: 64, alignItems: 'center', width: '100%', maxWidth: 900, alignSelf: 'center' },
+  founderCardWrapper: { width: '100%', maxWidth: 500, marginTop: 16 },
 
   // Mentor Card
   card: { backgroundColor: "#fff", borderRadius: 12, padding: 20, borderWidth: 0.5, borderColor: "#F3F4F6", minWidth: 300, maxWidth: 500, ...Platform.select({ ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4 }, android: { elevation: 2 } }) },
-  cardFullWidth: { width: '100%', maxWidth: '100%' },
   cardContent: { gap: 12 },
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   avatarImage: { width: 56, height: 56, borderRadius: 28, backgroundColor: '#F3F4F6' },
@@ -799,100 +748,45 @@ const styles = StyleSheet.create({
   bookBtn: { backgroundColor: CTA_TEAL, paddingVertical: 10, paddingHorizontal: 16, borderRadius: 8, alignItems: 'center' },
   bookBtnText: { fontFamily: SYSTEM_FONT, color: '#FFF', fontSize: 13, fontWeight: '700', letterSpacing: 0.2 },
 
-  // Existing Sections
-  sectionContainer: { maxWidth: 1200, width: '100%', alignSelf: 'center', paddingHorizontal: 24, paddingVertical: 60 },
-  sectionKicker: { fontFamily: SYSTEM_FONT, fontWeight: '700', fontSize: 13, textTransform: 'uppercase', letterSpacing: 1.5, color: CTA_TEAL, marginBottom: 12, textAlign: 'center' },
-  sectionTitle: { fontFamily: SYSTEM_FONT, fontWeight: '800', fontSize: 36, color: TEXT_DARK, marginBottom: 48, textAlign: 'center' },
-  sectionTitleMobile: { fontSize: 28 },
-  logoSection: { backgroundColor: '#fff', paddingVertical: 50, borderTopWidth: 1, borderBottomWidth: 1, borderColor: '#f0f0f0' },
-  logoTitle: { textAlign: 'center', fontSize: 15, fontWeight: '500', color: '#bbb', marginBottom: 30, letterSpacing: 1.5, textTransform: 'uppercase' },
-  logoWall: { flexDirection: 'row', justifyContent: 'center', gap: 60, flexWrap: 'wrap', alignItems: 'center' },
-  logoWallMobile: { gap: 30, paddingHorizontal: 20 },
-  logoWrapper: { height: 50, justifyContent: 'center', alignItems: 'center' },
-  socialProofSection: { backgroundColor: BG_CREAM, paddingVertical: 60, paddingHorizontal: 24, borderBottomWidth: 1, borderBottomColor: '#f0f0f0' },
-  statsGrid: { flexDirection: 'row', justifyContent: 'center', gap: 48, flexWrap: 'wrap', maxWidth: 900, alignSelf: 'center', width: '100%', marginBottom: 32 },
-  statsGridMobile: { gap: 32, paddingHorizontal: 20 },
-  statCard: { alignItems: 'center', minWidth: 140 },
-  statNumber: { fontFamily: SYSTEM_FONT, fontWeight: '800', fontSize: 48, color: BRAND_ORANGE, marginBottom: 8, lineHeight: 52 },
-  statLabel: { fontFamily: SYSTEM_FONT, fontSize: 14, color: TEXT_GRAY, textAlign: 'center', fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
-  linkedinButton: { alignSelf: 'center', backgroundColor: '#0077b5', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 3 },
-  linkedinButtonText: { fontFamily: SYSTEM_FONT, fontSize: 15, fontWeight: '600', color: '#fff', letterSpacing: 0.3 },
-  tracksSection: { backgroundColor: BG_CREAM },
-  tracksGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 20, justifyContent: 'center' },
-  tracksGridMobile: { flexDirection: 'column', alignItems: 'center' },
-  trackCard: { flex: 1, minWidth: 260, maxWidth: 280, backgroundColor: '#fff', padding: 20, borderRadius: 16, borderWidth: 1, borderColor: '#f0f0f0' },
-  trackEmoji: { fontSize: 32, marginBottom: 12 },
-  trackTitle: { fontFamily: SYSTEM_FONT, fontWeight: '700', fontSize: 18, color: TEXT_DARK, marginBottom: 8 },
-  trackDesc: { fontFamily: SYSTEM_FONT, fontSize: 14, color: TEXT_GRAY, lineHeight: 20, marginBottom: 16 },
-  trackArrow: { alignSelf: 'flex-start', backgroundColor: CTA_TEAL, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
-  trackArrowText: { color: '#fff', fontWeight: '700' },
-  reviewsSection: { backgroundColor: '#fff', paddingVertical: 80 },
-  reviewsGrid: { flexDirection: 'row', gap: 24, justifyContent: 'center', flexWrap: 'wrap' },
-  reviewsGridMobile: { flexDirection: 'column', alignItems: 'center' },
-  reviewCard: { flex: 1, minWidth: 280, maxWidth: 360, backgroundColor: BG_CREAM, padding: 24, borderRadius: 16, borderWidth: 1, borderColor: '#f0f0f0' },
-  reviewHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12, gap: 12 },
-  reviewHeaderLeft: { flex: 1, flexShrink: 1, minWidth: 0 },
-  reviewStarsContainer: { flexShrink: 0, paddingLeft: 8 },
-  reviewName: { fontFamily: SYSTEM_FONT, fontWeight: '700', fontSize: 16, color: TEXT_DARK },
-  reviewRole: { fontFamily: SYSTEM_FONT, fontSize: 13, color: TEXT_GRAY, marginTop: 2 },
-  reviewStars: { fontSize: 16 },
-  reviewText: { fontFamily: SYSTEM_FONT, fontSize: 15, color: TEXT_DARK, lineHeight: 22, fontStyle: 'italic' },
+  // ===== Testimonials =====
+  testimonialsContainer: { paddingTop: 40, paddingBottom: 60, paddingHorizontal: 24, backgroundColor: BG_CREAM },
+  testimonialsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 24, justifyContent: "center", maxWidth: 1200, alignSelf: "center" },
+  testimonialCard: { backgroundColor: "#fff", padding: 32, borderRadius: 16, borderWidth: 1, borderColor: "rgba(0,0,0,0.08)", width: Platform.OS === "web" ? "calc(50% - 12px)" : "100%", minWidth: 280, maxWidth: 550 },
+  testimonialHeader: { flexDirection: "row", alignItems: "center", marginBottom: 18, gap: 14 },
+  avatarContainer: { width: 52, height: 52, borderRadius: 26, backgroundColor: BG_CREAM, alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: BORDER_LIGHT },
+  avatarText: { fontFamily: SYSTEM_FONT, fontSize: 26 },
+  testimonialMeta: { flex: 1 },
+  testimonialName: { fontFamily: SYSTEM_FONT, fontSize: 17, fontWeight: "700", color: TEXT_DARK, marginBottom: 3 },
+  testimonialRole: { fontFamily: SYSTEM_FONT, fontSize: 14, fontWeight: "600", color: TEXT_GRAY },
+  testimonialQuote: { fontFamily: SYSTEM_FONT, fontSize: 15, lineHeight: 25, color: TEXT_DARK, marginBottom: 18 },
+  trustIndicators: { flexDirection: "row", justifyContent: "center", gap: 32, marginTop: 48, flexWrap: "wrap" },
+  trustText: { fontFamily: SYSTEM_FONT, fontSize: 13, fontWeight: "600", color: TEXT_GRAY, opacity: 0.8 },
 
-  reviewsCtaStrip: { marginTop: 48, alignItems: 'center', gap: 16, backgroundColor: BG_CREAM, borderRadius: 16, paddingVertical: 32, paddingHorizontal: 24, maxWidth: 600, alignSelf: 'center', width: '100%', borderWidth: 1, borderColor: 'rgba(24,167,167,0.2)' },
-  reviewsCtaHeading: { fontFamily: SYSTEM_FONT, fontWeight: '700', fontSize: 20, color: TEXT_DARK, textAlign: 'center' },
-  reviewsCtaButton: { backgroundColor: CTA_TEAL, paddingVertical: 14, paddingHorizontal: 28, borderRadius: 8, minWidth: 220, alignItems: 'center', shadowOpacity: 0.2, shadowRadius: 8, shadowOffset: { width: 0, height: 4 } },
-  reviewsCtaButtonText: { fontFamily: SYSTEM_FONT, fontWeight: '700', fontSize: 16, color: '#fff' },
-
-  benefitsGrid: { flexDirection: 'row', gap: 32, justifyContent: 'center', alignItems: 'flex-start', maxWidth: 1200, alignSelf: 'center', marginBottom: 48 },
-  benefitsGridMobile: { flexDirection: 'column', maxWidth: 600, gap: 16 },
-  benefitCard: { flex: 1, maxWidth: 320, backgroundColor: '#fff', padding: 24, borderRadius: 16, alignItems: 'center', borderWidth: 1, borderColor: '#f0f0f0' },
-  benefitIconContainer: { marginBottom: 16 },
-  benefitTitle: { fontFamily: SYSTEM_FONT, fontWeight: '700', fontSize: 18, color: TEXT_DARK, marginBottom: 8, textAlign: 'center' },
-  benefitDesc: { fontFamily: SYSTEM_FONT, fontSize: 15, color: TEXT_GRAY, lineHeight: 22, textAlign: 'center' },
-  mentorCtaContainer: { alignItems: 'center' },
-  mentorCtaButton: { backgroundColor: CTA_TEAL, paddingVertical: 16, paddingHorizontal: 32, borderRadius: 100, minWidth: 200 },
-  mentorCtaButtonText: { fontFamily: SYSTEM_FONT, fontSize: 16, fontWeight: '700', color: '#fff', textAlign: 'center' },
-  tiersGrid: { flexDirection: 'row', gap: 24, justifyContent: 'center', alignItems: 'stretch', maxWidth: 1200, alignSelf: 'center' },
-  tiersGridMobile: { flexDirection: 'column', maxWidth: 800, gap: 20 },
-  tierCard: { flex: 1, maxWidth: 360, padding: 28, borderRadius: 16, alignItems: 'center', borderWidth: 2 },
-  tierBadgeContainer: { marginBottom: 16 },
-  tierTitle: { fontFamily: SYSTEM_FONT, fontWeight: '700', fontSize: 20, marginBottom: 4, textAlign: 'center' },
-  tierSessions: { fontFamily: SYSTEM_FONT, fontSize: 14, marginBottom: 16, textAlign: 'center' },
-  tierBenefits: { gap: 8, alignSelf: 'stretch' },
-  tierBenefitRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
-  tierBenefitBullet: { fontFamily: SYSTEM_FONT, fontSize: 15, lineHeight: 24, fontWeight: '700' },
-  tierBenefitText: { fontFamily: SYSTEM_FONT, fontSize: 15, lineHeight: 24, flex: 1 },
-
+  // ===== Systematic Bundle Strategy =====
   notSureContainer: { paddingHorizontal: 24, paddingVertical: 16, backgroundColor: BG_CREAM },
-  notSureBox: { backgroundColor: '#fff9f5', borderRadius: 20, paddingVertical: 48, paddingHorizontal: 40, maxWidth: 900, alignSelf: 'center', width: '100%', alignItems: 'center', borderWidth: 2, borderColor: 'rgba(245, 135, 66, 0.25)' },
+  notSureBox: { backgroundColor: "#fff9f5", borderRadius: 20, paddingVertical: 48, paddingHorizontal: 40, maxWidth: 900, alignSelf: "center", width: "100%", alignItems: "center", borderWidth: 2, borderColor: "rgba(245, 135, 66, 0.25)" },
   notSureIconRow: { marginBottom: 16 },
-  notSureIcon: { fontSize: 40 },
-  notSureKicker: { fontFamily: SYSTEM_FONT, fontWeight: '800', fontSize: 12, color: BRAND_ORANGE, letterSpacing: 1.2, marginBottom: 12, textAlign: 'center' },
-  notSureHeading: { fontFamily: SYSTEM_FONT, fontWeight: '800', fontSize: 30, color: TEXT_DARK, textAlign: 'center', lineHeight: 40, marginBottom: 16 },
-  notSureSub: { fontFamily: SYSTEM_FONT, fontSize: 16, color: TEXT_GRAY, textAlign: 'center', lineHeight: 26, maxWidth: 560, marginBottom: 32 },
-  notSurePerks: { gap: 14, alignSelf: 'stretch', maxWidth: 480, marginBottom: 36 },
-  notSurePerk: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, backgroundColor: '#fff', padding: 16, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(245, 135, 66, 0.15)' },
-  notSurePerkIcon: { fontSize: 20 },
-  notSurePerkText: { fontFamily: SYSTEM_FONT, fontSize: 14, color: TEXT_DARK, flex: 1, lineHeight: 22, fontWeight: '500' },
-  notSureButton: { backgroundColor: BRAND_ORANGE, paddingVertical: 14, paddingHorizontal: 28, borderRadius: 8, minWidth: 280, alignItems: 'center', shadowOpacity: 0.2, shadowRadius: 8, shadowOffset: { width: 0, height: 4 } },
-  notSureButtonText: { fontFamily: SYSTEM_FONT, fontWeight: '700', fontSize: 15, color: '#fff' },
-  notSureNote: { fontFamily: SYSTEM_FONT, fontSize: 12, color: TEXT_GRAY, marginTop: 14, textAlign: 'center', opacity: 0.7 },
+  notSureIcon: { fontFamily: SYSTEM_FONT, fontSize: 40 },
+  notSurePerks: { gap: 14, alignSelf: "center", maxWidth: 480, marginBottom: 36 },
+  notSurePerk: { flexDirection: "row", alignItems: "flex-start", gap: 12, backgroundColor: "#fff", padding: 16, borderRadius: 12, borderWidth: 1, borderColor: "rgba(245, 135, 66, 0.15)" },
+  notSurePerkIcon: { fontFamily: SYSTEM_FONT, fontSize: 20 },
+  notSurePerkText: { fontFamily: SYSTEM_FONT, fontSize: 14, color: TEXT_DARK, flex: 1, lineHeight: 22, fontWeight: "500" },
+  notSureButton: { backgroundColor: BRAND_ORANGE, shadowOpacity: 0.2, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, minWidth: 280 },
+  notSureNote: { fontFamily: SYSTEM_FONT, fontSize: 12, color: TEXT_GRAY, marginTop: 14, textAlign: "center", opacity: 0.7 },
 
-  faqContainer: { maxWidth: 800, alignSelf: 'center', width: '100%', gap: 24 },
-  faqItem: { backgroundColor: '#fff', padding: 24, borderRadius: 12, borderWidth: 1, borderColor: '#f0f0f0' },
-  faqQ: { fontFamily: SYSTEM_FONT, fontWeight: '700', fontSize: 16, color: TEXT_DARK, marginBottom: 8 },
-  faqA: { fontFamily: SYSTEM_FONT, fontSize: 15, color: TEXT_GRAY, lineHeight: 22 },
+  // ===== Guarantee =====
+  guaranteeContainer: { paddingTop: 40, paddingBottom: 80, paddingHorizontal: 24, backgroundColor: BG_CREAM },
+  guaranteeBox: { backgroundColor: "#fff", padding: 56, borderRadius: 20, maxWidth: 1100, alignSelf: "center", width: "100%", borderWidth: 2, borderColor: "rgba(24, 167, 167, 0.3)" },
+  guaranteesGrid: { flexDirection: "row", flexWrap: "wrap", gap: 24, marginBottom: 44, justifyContent: "center" },
+  guaranteeCard: { backgroundColor: BG_CREAM, padding: 28, borderRadius: 16, width: Platform.OS === "web" ? "calc(50% - 12px)" : "100%", minWidth: 240, maxWidth: 500, borderWidth: 1, borderColor: BORDER_LIGHT },
+  trustSeal: { flexDirection: "row", justifyContent: "center", gap: 18, paddingVertical: 26, borderTopWidth: 1, borderTopColor: BORDER_LIGHT, flexWrap: "wrap" },
+  sealBadge: { backgroundColor: "#e8f9f9", paddingVertical: 9, paddingHorizontal: 18, borderRadius: 8, borderWidth: 1, borderColor: "rgba(24, 167, 167, 0.15)" },
 
-  ctaSection: { backgroundColor: BRAND_ORANGE, paddingVertical: 80 },
-  ctaInner: { maxWidth: 700, alignSelf: 'center', alignItems: 'center', paddingHorizontal: 24 },
-  ctaInnerMobile: { paddingHorizontal: 32 },
-  ctaTitle: { fontFamily: SYSTEM_FONT, fontWeight: '800', fontSize: 40, color: '#fff', marginBottom: 16, textAlign: 'center' },
-  ctaTitleMobile: { fontSize: 28 },
-  ctaSubtitle: { fontFamily: SYSTEM_FONT, fontSize: 18, color: '#fff', marginBottom: 32, textAlign: 'center', opacity: 0.95 },
-  ctaSubtitleMobile: { fontSize: 16 },
-  ctaButtonRow: { flexDirection: 'row', gap: 16, flexWrap: 'wrap', justifyContent: 'center' },
-  ctaButtonRowMobile: { flexDirection: 'column', alignItems: 'center' },
-  ctaButton: { backgroundColor: '#fff', paddingHorizontal: 40, paddingVertical: 16, borderRadius: 100 },
-  ctaButtonOutline: { backgroundColor: 'transparent', borderWidth: 2, borderColor: '#fff' },
-  ctaButtonText: { fontFamily: SYSTEM_FONT, fontWeight: '700', fontSize: 16, color: BRAND_ORANGE },
+  // ===== FAQ & Final CTA =====
+  faqItem: { backgroundColor: "#fff", padding: 20, borderRadius: 12, borderWidth: 1, borderColor: BORDER_LIGHT },
+  finalCtaContainer: { paddingHorizontal: 24, paddingVertical: 60, backgroundColor: BG_CREAM },
+  finalCtaBox: { backgroundColor: CTA_TEAL, borderRadius: 24, paddingVertical: 56, paddingHorizontal: 40, maxWidth: 900, alignSelf: "center", width: "100%", alignItems: "center" },
+  finalCtaButton: { backgroundColor: "#fff", borderRadius: 8, paddingVertical: 16, paddingHorizontal: 36, shadowOpacity: 0.15, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, minWidth: 240 },
+  finalCtaTrust: { flexDirection: "row", gap: 20, marginTop: 24, flexWrap: "wrap", justifyContent: "center" },
+  finalCtaTrustItem: { fontFamily: SYSTEM_FONT, fontSize: 13, fontWeight: "600", color: "rgba(255,255,255,0.9)" },
 });

@@ -11,7 +11,6 @@ import {
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { paymentService } from '../../services/payment.service';
 import { trackEvent } from '@/lib/analytics';
-import { authService } from '../../services/auth.service';
 import { supabase } from '../../lib/supabase/client';
 
 type SessionType = 'intro' | 'mock' | 'bundle';
@@ -35,6 +34,7 @@ export default function PGScreen() {
     skillId,
     skillName,
     sessionType: sessionTypeParam,
+    isNewGuest, // 🟢 Guest flag — routes to booking-confirmed instead of bookings after payment
   } = params as {
     orderId?: string;
     packageId?: string;
@@ -45,6 +45,7 @@ export default function PGScreen() {
     skillId?: string;
     skillName?: string;
     sessionType?: string;
+    isNewGuest?: string;
   };
 
   const sessionType: SessionType = (sessionTypeParam as SessionType) || 'mock';
@@ -54,36 +55,24 @@ export default function PGScreen() {
   const [verifying, setVerifying] = useState(false);
   const hasRun = useRef(false);
 
-  // Build the "back to schedule" URL including sessionType
   const scheduleBackUrl = (mentorId && profileId && skillId && skillName)
-    ? {
-        pathname: '/candidate/schedule' as const,
-        params: { mentorId, profileId, skillId, skillName, sessionType },
-      }
+    ? { pathname: '/candidate/schedule' as const, params: { mentorId, profileId, skillId, skillName, sessionType } }
     : null;
 
   const navigateBack = () => {
-    if (scheduleBackUrl) {
-      router.replace(scheduleBackUrl);
-    } else {
-      router.replace('/candidate/bookings');
-    }
+    if (scheduleBackUrl) { router.replace(scheduleBackUrl); }
+    else { router.replace('/candidate/bookings'); }
   };
 
   useEffect(() => {
     console.log('[PGScreen] 🔍 Received Params:', {
-      orderId,
-      packageId,
-      keyId,
-      sessionType,
+      orderId, packageId, keyId, sessionType, isNewGuest,
       amount: amount ? `₹${Number(amount) / 100}` : 'missing'
     });
 
     if (!packageId || !keyId || !amount || !orderId) {
       console.error('[PGScreen] ❌ Missing required params');
-      Alert.alert('Error', 'Missing payment details.', [
-        { text: 'OK', onPress: navigateBack }
-      ]);
+      Alert.alert('Error', 'Missing payment details.', [{ text: 'OK', onPress: navigateBack }]);
       return;
     }
 
@@ -123,31 +112,17 @@ export default function PGScreen() {
         retry: { enabled: false }
       };
 
-      console.log('[PGScreen][WEB] 📋 Razorpay Options:', {
-        key: keyId,
-        order_id: orderId,
-        amount: `₹${amountPaise / 100}`,
-        description: sessionDescription,
-      });
-
       const rzp = new (window as any).Razorpay(options);
-
       rzp.on('payment.failed', (resp: any) => {
         console.error('[PGScreen][WEB] ❌ payment.failed:', resp);
-        Alert.alert(
-          'Payment Failed',
-          resp.error?.description || 'Payment failed. Please try again.',
-          [{ text: 'OK', onPress: navigateBack }]
-        );
+        Alert.alert('Payment Failed', resp.error?.description || 'Payment failed. Please try again.', [{ text: 'OK', onPress: navigateBack }]);
       });
-
       rzp.open();
       return;
     }
 
     // NATIVE
     const RazorpayCheckout = require('react-native-razorpay').default;
-
     const rnOptions: any = {
       key: keyId,
       order_id: orderId,
@@ -159,58 +134,34 @@ export default function PGScreen() {
       retry: { enabled: false },
     };
 
-    console.log('[PGScreen][RN] 📋 Razorpay Options:', {
-      key: keyId,
-      order_id: orderId,
-      amount: `₹${amountPaise / 100}`,
-      description: sessionDescription,
-    });
-
     RazorpayCheckout.open(rnOptions)
       .then(handleSuccess)
       .catch((err: any) => {
         console.log('[PGScreen][RN] ⚠️ Checkout Error:', err);
-        if (err.code === 0 || err.code === 2) {
-          console.log('[PGScreen][RN] User cancelled payment');
-          navigateBack();
-        } else {
-          Alert.alert(
-            'Payment Error',
-            err.description || 'Something went wrong',
-            [{ text: 'OK', onPress: navigateBack }]
-          );
-        }
+        if (err.code === 0 || err.code === 2) { navigateBack(); }
+        else { Alert.alert('Payment Error', err.description || 'Something went wrong', [{ text: 'OK', onPress: navigateBack }]); }
       });
   };
 
   const handleSuccess = async (data: any) => {
-    console.log('[PGScreen] ✅ Payment Success! Data:', {
-      order_id: data.razorpay_order_id,
-      payment_id: data.razorpay_payment_id,
-      signature: data.razorpay_signature ? '✓ Present' : '✗ Missing'
-    });
-
+    console.log('[PGScreen] ✅ Payment Success!', { isNewGuest });
     setVerifying(true);
 
     let userEmail: string | undefined;
     try {
       const { data: { user } } = await supabase.auth.getUser();
       userEmail = user?.email;
-      console.log('[PGScreen] 📧 Retrieved email from session:', userEmail);
     } catch (err) {
       console.warn('[PGScreen] ⚠️ Could not retrieve email from session:', err);
     }
 
     try {
-      console.log('[PGScreen] 🔐 Starting verification...');
-
       const result = await paymentService.verifyPayment(
         packageId as string,
         data.razorpay_payment_id,
         data.razorpay_signature,
         orderId as string,
       );
-
       console.log('[PGScreen] ✅ Verification successful!', result);
 
       trackEvent('purchase', {
@@ -230,21 +181,24 @@ export default function PGScreen() {
       });
 
       setTimeout(() => {
-        router.replace('/candidate/bookings');
+        if (isNewGuest === 'true') {
+          // 🟢 Guest users go to the dedicated confirmation screen which:
+          //    1. Shows booking success clearly
+          //    2. Instructs them to check email for their temp password
+          //    3. Directs them to Forgot Password to set a permanent one
+          //    4. Then forces complete-profile (name + title) before dashboard access
+          console.log('[PGScreen] 🆕 Guest — redirecting to booking-confirmed');
+          router.replace('/candidate/booking-confirmed');
+        } else {
+          router.replace('/candidate/bookings');
+        }
       }, 1500);
 
     } catch (err: any) {
-      console.error('[PGScreen] ❌ Verification failed:', {
-        error: err,
-        message: err?.message,
-        details: err?.details,
-      });
-
+      console.error('[PGScreen] ❌ Verification failed:', err);
       setVerifying(false);
-
       const errorMessage = err?.message || 'Verification failed';
       const errorDetails = err?.details ? `\n\nDetails: ${err.details}` : '';
-
       Alert.alert(
         'Verification Failed',
         `${errorMessage}${errorDetails}\n\nOrder ID: ${orderId}\n\nPlease contact support if payment was deducted.`,
@@ -271,23 +225,12 @@ export default function PGScreen() {
 function loadRazorpayScript() {
   return new Promise((resolve) => {
     if (Platform.OS !== 'web') return resolve(true);
-    if (document.getElementById('razorpay-sdk')) {
-      console.log('[PGScreen] ✓ Razorpay SDK already loaded');
-      return resolve(true);
-    }
-
-    console.log('[PGScreen] 📥 Loading Razorpay SDK...');
+    if (document.getElementById('razorpay-sdk')) return resolve(true);
     const script = document.createElement('script');
     script.id = 'razorpay-sdk';
     script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-    script.onload = () => {
-      console.log('[PGScreen] ✓ Razorpay SDK loaded successfully');
-      resolve(true);
-    };
-    script.onerror = () => {
-      console.error('[PGScreen] ✗ Razorpay SDK failed to load');
-      resolve(false);
-    };
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
     document.body.appendChild(script);
   });
 }
