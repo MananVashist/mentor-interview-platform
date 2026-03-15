@@ -55,6 +55,75 @@ const FAQS = [
   { q: "Can I practice for a specific job?", a: "Yes! You can choose the topic of your interview, and paste the exact Job Description you are applying for so the mentor can tailor the questions." },
 ];
 
+// --- Role-specific problems (shown in a separate section after How It Works) ---
+const ROLE_PROBLEMS: Record<string, { icon: string; title: string; text: string }[]> = {
+  da: [
+    { icon: "🧩", title: "You can write the query. You blank on what it means for the business.", text: "SQL rounds are usually fine. The case study round is where most DA candidates lose the offer. You're handed a business problem, raw data, and silence. No one teaches you how to structure that." },
+    { icon: "📊", title: "Your dashboard looks good. Your walkthrough doesn't.", text: "Walking an interviewer through a dashboard live is a completely different skill from building one. Most candidates ramble, lead with the wrong insight, and lose the room in the first 90 seconds." },
+    { icon: "🗣️", title: "Stakeholder questions aren't about data. They're about judgment.", text: "When an interviewer asks how you'd handle a stakeholder who rejects your analysis — they're not testing your data skills. They're testing whether you can operate without hand-holding. Most candidates have never practised this part at all." },
+  ],
+  pm: [
+    { icon: "🎯", title: "You know the framework. You apply it wrong when someone's watching.", text: "Product sense questions feel different in a real interview. You jump to solutions too fast, forget to define the user, lose the thread halfway through. Knowing CIRCLES doesn't help when your brain goes offline under pressure." },
+    { icon: "📉", title: "Execution rounds are where PM interviews are won or lost. Almost nobody prepares for them properly.", text: "DAU dropped 20%. North Star for a new feature. Root cause a funnel drop. These questions have a specific structure interviewers expect — and most candidates freestyle their way through and don't realize it went badly." },
+    { icon: "🏗️", title: "Your strategy answers sound like consulting, not product thinking.", text: "Market entry, competitive response, build-vs-buy — PM strategy questions test whether you think like an owner, not an MBA. If your answer reads like a Porter's Five Forces slide, you're signalling the wrong thing." },
+  ],
+  ds: [
+    { icon: "🧠", title: "You understand the theory. You can't explain it to someone evaluating you in real time.", text: "Bias-variance tradeoff, regularization, why XGBoost over a random forest — you know this cold. But explaining it clearly, concisely, without trailing off? That's a live performance skill, not a knowledge test. Nobody practises it." },
+    { icon: "💻", title: "LeetCode doesn't prepare you for real DS coding rounds.", text: "DS coding interviews aren't competitive programming. They're Pandas transforms, feature engineering, debugging a broken pipeline. LeetCode grind gives you false confidence in the wrong skill set." },
+    { icon: "🏗️", title: "System design is the round most DS candidates skip preparing for entirely.", text: "Design a recommendation engine. Deploy a fraud model at scale. Handle drift. These questions come up for mid-senior roles and most candidates wing it. The ones who prep specifically for ML system design stand out immediately." },
+  ],
+  hr: [
+    { icon: "📋", title: "Your answers are technically correct. They don't signal strategic thinking.", text: "Senior HR interviews aren't testing your HR knowledge — they're testing how you think about the business. Textbook answers about policies and processes get you screened out for roles that need an operator, not a handbook." },
+    { icon: "🏆", title: "Your examples are real but they don't land as impactful.", text: "You've done meaningful work. But there's a gap between what you did and what an interviewer hears. Most HR candidates undersell their impact, bury the insight, or give examples that sound operational when the role needs strategic." },
+    { icon: "🔄", title: "TA interviews and HRBP interviews test completely different things. Most candidates prep for the wrong one.", text: "If you're interviewing for an HRBP role but practising TA scenarios — or vice versa — you'll give a competent performance for a job you're not interviewing for. Wrong prep is almost worse than no prep." },
+  ],
+};
+
+const ROLE_PROBLEM_HEADLINES: Record<string, string> = {
+  da: "Sound familiar? These are the exact gaps that cost DA candidates offers.",
+  pm: "Sound familiar? These are the exact gaps that cost PM candidates offers.",
+  ds: "Sound familiar? These are the exact gaps that cost DS candidates offers.",
+  hr: "Sound familiar? These are the exact gaps that cost HR candidates offers.",
+};
+
+// --- Role-specific testimonials ---
+const ROLE_TESTIMONIALS: Record<string, { name: string; role: string; company: string; avatar: string; rating: number; quote: string }[]> = {
+  pm: [
+    { name: "Priya S.", role: "Product Manager", company: "TATA", avatar: "👩‍💼", rating: 5, quote: "I was designing features when I should have been solving problems. My mentor made me restart the same question three times. Felt brutal in the moment but that was exactly the gap I had." },
+    { name: "Arjun T.", role: "APM", company: "Razorpay", avatar: "👨‍💼", rating: 5, quote: "The mock was harder than my actual interview. He kept pushing back on every assumption I made. Had to rethink my entire framework. Got the offer eight days later." },
+  ],
+  da: [
+    { name: "Rahul V.", role: "Data Analyst", company: "Bigbasket", avatar: "👨‍💻", rating: 5, quote: "I thought I was decent at SQL until the case study completely threw me. The mentor gave me a messy real-world scenario and I had no idea how to structure it. Two sessions later I finally understood what interviewers actually want to hear." },
+    { name: "Nisha R.", role: "Data Analyst", company: "Swiggy", avatar: "👩‍💻", rating: 5, quote: "I kept failing the walk-me-through-your-analysis part. My mentor pointed out I was jumping straight to the answer without building the story. Small fix. Exact reason I was getting rejected." },
+  ],
+  ds: [
+    { name: "Sneha P.", role: "Data Scientist", company: "Musigma", avatar: "👩‍🔬", rating: 5, quote: "I could solve the ML problems on paper but completely fell apart explaining my reasoning out loud. My mentor made me talk through every single step. Felt embarrassing in the session. Felt confident in the real interview." },
+    { name: "Rohit A.", role: "Data Scientist", company: "Ola", avatar: "👨‍🔬", rating: 5, quote: "Stats has always been my weak spot. One focused session on hypothesis testing and A/B test design. My mentor caught three conceptual gaps I didn't even know I had. Worth more than a month of self-study." },
+  ],
+  hr: [
+    { name: "Amit K.", role: "HR Manager", company: "Flipkart", avatar: "👨‍💼", rating: 5, quote: "I was giving textbook answers and going nowhere. My mentor told me straight up my examples were too vague. We spent an hour sharpening my STAR responses to be actually specific. First real feedback I've gotten in years." },
+    { name: "Riya P.", role: "HRBP", company: "Zomato", avatar: "👩‍💼", rating: 5, quote: "I was nervous about the strategic questions for senior roles. My mentor has sat on the other side of those exact interviews and knew precisely what they test for. That context completely changed how I answered everything." },
+  ],
+};
+
+// --- Role-specific systematic prep copy ---
+const ROLE_SYSTEMATIC: Record<string, { question: string; body: string }> = {
+  da: { question: "Not sure if you need more SQL practice or case study practice?", body: "Book a diagnostic call to map out exactly which rounds — SQL, business cases, metrics, or stakeholder communication — are costing you offers. Then get a targeted bundle of mocks to fix them." },
+  pm: { question: "Not sure whether product sense or execution questions are holding you back?", body: "Book a diagnostic call to find your exact weak spots across product sense, execution, strategy, and behavioral rounds. Then get a focused bundle of mocks built around your specific gaps." },
+  ds: { question: "Not sure if it's ML theory, stats, or system design that's costing you?", body: "Book a diagnostic call to identify which DS interview rounds you're actually weak on. Then get a bundle of targeted mocks — no time wasted on rounds you're already good at." },
+  hr: { question: "Not sure whether it's your TA skills or your HRBP framing that's getting you rejected?", body: "Book a diagnostic call to figure out exactly which HR interview areas need work. Then get a tailored bundle of mocks focused on the specific rounds that are standing between you and the offer." },
+  default: { question: "Not sure which skill round to focus on?", body: "Book an initial diagnostic call to map out your specific blind spots, then get a custom bundle of mock interviews tailored to turn those weaknesses into strengths." },
+};
+
+// --- Role-specific final CTA copy ---
+const ROLE_FINAL_CTA: Record<string, { headline: string; sub: string; btn: string }> = {
+  da: { headline: "Your next DA offer is one realistic mock away.", sub: "Browse data analytics experts, pick your weak round — SQL, cases, metrics — and book in minutes.", btn: "Book Your DA Mock →" },
+  pm: { headline: "Your next PM offer is one realistic mock away.", sub: "Browse product managers, pick the round you keep failing, and book in minutes.", btn: "Book Your PM Mock →" },
+  ds: { headline: "One session with the right DS interviewer changes everything.", sub: "Browse data scientists, pick the round that's costing you — ML, stats, or system design — and book in minutes.", btn: "Book Your DS Mock →" },
+  hr: { headline: "Your next senior HR role is closer than you think.", sub: "Browse HR professionals, pick your interview focus, and book in minutes.", btn: "Book Your HR Mock →" },
+  default: { headline: "Your next interview is closer than you think.", sub: "Browse industry insiders, pick a topic, and book your session in minutes.", btn: "Book Your Session Now →" },
+};
+
 // ============================================
 // SVG ICONS
 // ============================================
@@ -150,6 +219,37 @@ const HowItWorksSection = memo(({ isSmall }: { isSmall: boolean }) => (
 ));
 
 // ============================================
+// ROLE-SPECIFIC PROBLEMS SECTION
+// ============================================
+const ROLE_KICKERS: Record<string, string> = {
+  da: 'FOR DATA ANALYSTS', pm: 'FOR PRODUCT MANAGERS',
+  ds: 'FOR DATA SCIENTISTS', hr: 'FOR HR PROFESSIONALS',
+};
+
+const RoleSpecificProblemsSection = memo(({ isSmall, role }: { isSmall: boolean; role: string }) => {
+  const r = role.toLowerCase();
+  const problems = ROLE_PROBLEMS[r];
+  if (!problems) return null;
+  return (
+    <View nativeID="section-role-problems" style={[styles.section, { paddingTop: 0, paddingBottom: 48 }]}>
+      <Text style={styles.kicker}>{ROLE_KICKERS[r] || 'FOR YOU'}</Text>
+      <Text style={[styles.h2, isSmall && styles.h2Mobile]}>
+        {ROLE_PROBLEM_HEADLINES[r]}
+      </Text>
+      <View style={styles.problemGrid}>
+        {problems.map((p, i) => (
+          <View key={i} style={styles.problemBox}>
+            <Text style={styles.problemIcon}>{p.icon}</Text>
+            <Text style={styles.problemTitle}>{p.title}</Text>
+            <Text style={styles.problemText}>{p.text}</Text>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+});
+
+// ============================================
 // NEW: DYNAMIC TARGETED SKILLS SECTION
 // ============================================
 const TargetedSkillsSection = memo(({ role, isSmall }: { role: string, isSmall: boolean }) => {
@@ -181,7 +281,9 @@ const TargetedSkillsSection = memo(({ role, isSmall }: { role: string, isSmall: 
   );
 });
 
-const SystematicPrepSection = memo(({ onViewMentors, isSmall }: { onViewMentors: (source: string) => void, isSmall: boolean }) => (
+const SystematicPrepSection = memo(({ onViewMentors, isSmall, role }: { onViewMentors: (source: string) => void, isSmall: boolean, role: string }) => {
+  const copy = ROLE_SYSTEMATIC[role.toLowerCase()] || ROLE_SYSTEMATIC.default;
+  return (
   <View nativeID="section-systematic" style={styles.notSureContainer}>
     <View style={styles.notSureBox}>
       <View style={styles.notSureIconRow}>
@@ -191,9 +293,7 @@ const SystematicPrepSection = memo(({ onViewMentors, isSmall }: { onViewMentors:
       <Text style={[styles.h2, isSmall && styles.h2Mobile, { marginBottom: 16 }]}>
         Diagnose your gaps. <Text style={{ color: BRAND_ORANGE }}>Systematically</Text> fix them.
       </Text>
-      <Text style={styles.subtext}>
-        Not sure which skill round to focus on? Book an initial diagnostic call to map out your specific blind spots, then get a custom bundle of mock interviews tailored to turn those weaknesses into strengths.
-      </Text>
+      <Text style={styles.subtext}>{copy.question} {copy.body}</Text>
 
       <View style={styles.notSurePerks}>
         {[
@@ -218,7 +318,8 @@ const SystematicPrepSection = memo(({ onViewMentors, isSmall }: { onViewMentors:
       <Text style={styles.notSureNote}>Diagnostic calls are available directly on the expert's profile page</Text>
     </View>
   </View>
-));
+  );
+});
 
 // ============================================
 // RESPONSIVE MENTOR CARD
@@ -493,12 +594,14 @@ const TestimonialCard = memo(({ testimonial }: { testimonial: typeof TESTIMONIAL
   </View>
 ));
 
-const TestimonialsSection = memo(({ onViewMentors, isSmall }: { onViewMentors: (source: string) => void, isSmall: boolean }) => (
+const TestimonialsSection = memo(({ onViewMentors, isSmall, role }: { onViewMentors: (source: string) => void, isSmall: boolean, role: string }) => {
+  const shown = ROLE_TESTIMONIALS[role.toLowerCase()] || TESTIMONIALS.slice(0, 2);
+  return (
   <View nativeID="section-testimonials" style={styles.testimonialsContainer}>
     <Text style={styles.kicker}>SUCCESS STORIES</Text>
     <Text style={[styles.h2, isSmall && styles.h2Mobile]}>Hear from successful candidates</Text>
     <View style={styles.testimonialsGrid}>
-      {TESTIMONIALS.map((t, i) => (
+      {shown.map((t, i) => (
         <TestimonialCard key={i} testimonial={t} />
       ))}
     </View>
@@ -508,7 +611,8 @@ const TestimonialsSection = memo(({ onViewMentors, isSmall }: { onViewMentors: (
       <Text style={styles.trustText}>✓ Proven results</Text>
     </View>
   </View>
-));
+  );
+});
 
 const GuaranteeCard = memo(({ guarantee }: { guarantee: typeof GUARANTEES[0] }) => (
   <View style={styles.guaranteeCard}>
@@ -570,18 +674,20 @@ const FAQ = memo(({ isSmall }: { isSmall: boolean }) => (
   </View>
 ));
 
-const FinalCTABanner = memo(({ onViewMentors, isSmall }: { onViewMentors: (source: string) => void, isSmall: boolean }) => (
+const FinalCTABanner = memo(({ onViewMentors, isSmall, role }: { onViewMentors: (source: string) => void, isSmall: boolean, role: string }) => {
+  const copy = ROLE_FINAL_CTA[role.toLowerCase()] || ROLE_FINAL_CTA.default;
+  return (
   <View nativeID="section-finalcta" style={styles.finalCtaContainer}>
     <View style={styles.finalCtaBox}>
       <Text style={[styles.h2, isSmall && styles.h2Mobile, { color: '#fff', marginBottom: 16 }]}>
-        Your next interview is closer than you think
+        {copy.headline}
       </Text>
       <Text style={[styles.subtext, { color: 'rgba(255,255,255,0.85)' }]}>
-        Browse industry insiders, pick a topic, and book your session in minutes.
+        {copy.sub}
       </Text>
       <Button
         nativeID="btn-lp-final-view-mentors"
-        title="Book Your Session Now →"
+        title={copy.btn}
         onPress={() => onViewMentors("final_cta")}
         style={styles.finalCtaButton}
         textStyle={{color: '#000000', fontSize: 17 }}
@@ -593,7 +699,8 @@ const FinalCTABanner = memo(({ onViewMentors, isSmall }: { onViewMentors: (sourc
       </View>
     </View>
   </View>
-));
+  );
+});
 
 // --- SINGLE DEFAULT EXPORT ---
 export default function LazySectionsLP({
@@ -612,28 +719,28 @@ export default function LazySectionsLP({
     if (Platform.OS !== 'web' || typeof window === 'undefined') return;
 
     const SECTIONS = [
-      { id: 'section-problem',      name: 'the_problem' },
-      { id: 'section-howitworks',   name: 'how_it_works' },
-      { id: 'section-skills',       name: 'targeted_skills' },
-      { id: 'section-mentors',      name: 'domain_mentors' },
-      { id: 'section-testimonials', name: 'testimonials' },
-      { id: 'section-systematic',   name: 'systematic_prep' },
-      { id: 'section-guarantees',   name: 'guarantees' },
-      { id: 'section-faq',          name: 'faq' },
-      { id: 'section-finalcta',     name: 'final_cta_banner' },
+      { id: 'section-problem',       name: 'the_problem' },
+      { id: 'section-howitworks',    name: 'how_it_works' },
+      { id: 'section-role-problems', name: 'role_specific_problems' },
+      { id: 'section-skills',        name: 'targeted_skills' },
+      { id: 'section-mentors',       name: 'domain_mentors' },
+      { id: 'section-testimonials',  name: 'testimonials' },
+      { id: 'section-systematic',    name: 'systematic_prep' },
+      { id: 'section-guarantees',    name: 'guarantees' },
+      { id: 'section-faq',           name: 'faq' },
+      { id: 'section-finalcta',      name: 'final_cta_banner' },
     ];
 
-    const observer = new (window as any).IntersectionObserver(
+    const observed = new Set<string>();
+
+    const intersectionObserver = new (window as any).IntersectionObserver(
       (entries: any[]) => {
         entries.forEach((entry: any) => {
           if (entry.isIntersecting) {
             const section = SECTIONS.find(s => s.id === entry.target.id);
             if (section) {
-              pushToDataLayer('lp_section_viewed', {
-                section_name: section.name,
-                role_viewed: role,
-              });
-              observer.unobserve(entry.target); // fire once per section per page visit
+              pushToDataLayer('lp_section_viewed', { section_name: section.name, role_viewed: role });
+              intersectionObserver.unobserve(entry.target);
             }
           }
         });
@@ -641,31 +748,35 @@ export default function LazySectionsLP({
       { threshold: 0.3 }
     );
 
-    // Small delay to let React render nativeIDs into the DOM
-    const timer = setTimeout(() => {
-      SECTIONS.forEach(s => {
-        const el = document.getElementById(s.id);
-        if (el) observer.observe(el);
-      });
-    }, 300);
-
-    return () => {
-      clearTimeout(timer);
-      observer.disconnect();
+    const tryObserve = (id: string) => {
+      if (observed.has(id)) return;
+      const el = document.getElementById(id);
+      if (el) { intersectionObserver.observe(el); observed.add(id); }
     };
+
+    SECTIONS.forEach(s => tryObserve(s.id));
+
+    const mutationObserver = new MutationObserver(() => {
+      SECTIONS.forEach(s => tryObserve(s.id));
+      if (observed.size === SECTIONS.length) mutationObserver.disconnect();
+    });
+    mutationObserver.observe(document.body, { childList: true, subtree: true });
+
+    return () => { intersectionObserver.disconnect(); mutationObserver.disconnect(); };
   }, [role]);
 
   return (
     <>
       <TheProblemSection isSmall={isSmall} />
       <HowItWorksSection isSmall={isSmall} />
+      <RoleSpecificProblemsSection isSmall={isSmall} role={role} />
       <TargetedSkillsSection role={role} isSmall={isSmall} />
       <DynamicDomainMentors role={role} isSmall={isSmall} onViewMentors={() => onViewMentors("domain_mentors_cta")} />
-      <TestimonialsSection onViewMentors={onViewMentors} isSmall={isSmall} />
-      <SystematicPrepSection onViewMentors={onViewMentors} isSmall={isSmall} />
+      <TestimonialsSection onViewMentors={onViewMentors} isSmall={isSmall} role={role} />
+      <SystematicPrepSection onViewMentors={onViewMentors} isSmall={isSmall} role={role} />
       <GuaranteeSection isSmall={isSmall} />
       <FAQ isSmall={isSmall} />
-      <FinalCTABanner onViewMentors={onViewMentors} isSmall={isSmall} />
+      <FinalCTABanner onViewMentors={onViewMentors} isSmall={isSmall} role={role} />
     </>
   );
 }
