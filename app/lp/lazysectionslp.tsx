@@ -102,7 +102,7 @@ const TierBadgeBlock = ({ tier }: { tier?: string | null }) => {
 // PROBLEM & SOLUTION FLOW
 // ============================================
 const TheProblemSection = memo(({ isSmall }: { isSmall: boolean }) => (
-  <View style={[styles.section, { paddingTop: 20 }]}>
+  <View nativeID="section-problem" style={[styles.section, { paddingTop: 20 }]}>
     <Text style={styles.kicker}>THE HARDEST PART</Text>
     <Text style={[styles.h2, isSmall && styles.h2Mobile]}>Most candidates freeze when it counts</Text>
     <View style={styles.problemGrid}>
@@ -126,7 +126,7 @@ const TheProblemSection = memo(({ isSmall }: { isSmall: boolean }) => (
 ));
 
 const HowItWorksSection = memo(({ isSmall }: { isSmall: boolean }) => (
-  <View style={[styles.section, { backgroundColor: '#fff', borderRadius: 24, paddingVertical: 48, marginBottom: 40, shadowColor: "#000", shadowOpacity: 0.03, shadowRadius: 15, borderWidth: 1, borderColor: BORDER_LIGHT }]}>
+  <View nativeID="section-howitworks" style={[styles.section, { backgroundColor: '#fff', borderRadius: 24, paddingVertical: 48, marginBottom: 40, shadowColor: "#000", shadowOpacity: 0.03, shadowRadius: 15, borderWidth: 1, borderColor: BORDER_LIGHT }]}>
     <Text style={styles.kicker}>YOUR PATH TO THE OFFER</Text>
     <Text style={[styles.h2, isSmall && styles.h2Mobile]}>How realistic practice builds unshakeable confidence</Text>
     <View style={styles.stepsContainer}>
@@ -165,7 +165,7 @@ const TargetedSkillsSection = memo(({ role, isSmall }: { role: string, isSmall: 
   const activeSkills = SKILLS[role.toLowerCase()] || SKILLS.default;
 
   return (
-    <View style={[styles.section, { paddingTop: 20, paddingBottom: 60 }]}>
+    <View nativeID="section-skills" style={[styles.section, { paddingTop: 20, paddingBottom: 60 }]}>
       <Text style={styles.kicker}>LASER-FOCUSED PRACTICE</Text>
       <Text style={[styles.h2, isSmall && styles.h2Mobile, { marginBottom: 16 }]}>Already know your weak spots?</Text>
       <Text style={styles.subtext}>Skip the general prep. Select from our pre-decided skills and book mock interviews strictly focused on the specific rounds that hold you back.</Text>
@@ -182,7 +182,7 @@ const TargetedSkillsSection = memo(({ role, isSmall }: { role: string, isSmall: 
 });
 
 const SystematicPrepSection = memo(({ onViewMentors, isSmall }: { onViewMentors: (source: string) => void, isSmall: boolean }) => (
-  <View style={styles.notSureContainer}>
+  <View nativeID="section-systematic" style={styles.notSureContainer}>
     <View style={styles.notSureBox}>
       <View style={styles.notSureIconRow}>
         <Text style={styles.notSureIcon}>📈</Text>
@@ -225,7 +225,7 @@ const SystematicPrepSection = memo(({ onViewMentors, isSmall }: { onViewMentors:
 // ============================================
 const MentorCard = ({ m, displayPrice, totalSessions, isNewMentor, averageRating, showRating, hasSlots, displaySlot, customPriceLabel, onView, isSmall, isFounderCard }: any) => {
   const seed = m.id || m.profiles?.full_name || 'Mentor';
-  const fallbackAvatar = `https://api.dicebear.com/9.x/micah/png?seed=${encodeURIComponent(seed)}&backgroundColor=e5e7eb,f3f4f6`;
+  const fallbackAvatar = `https://api.dicebear.com/9.x/micah/png?seed=${encodeURIComponent(m.id || "Mentor")}&backgroundColor=e5e7eb,f3f4f6`;
   const introPrice = Math.round(displayPrice * 0.20);
 
   const cardWidthStyle = isFounderCard 
@@ -378,7 +378,7 @@ const DynamicDomainMentors = ({ role, isSmall, onViewMentors }: { role: string, 
   if (mentors.length === 0 && !founderMentor) return null;
 
   return (
-    <View style={styles.listContainerWrapper}>
+    <View nativeID="section-mentors" style={styles.listContainerWrapper}>
       
       {/* FOUNDER BLOCK */}
       {founderMentor && (
@@ -400,7 +400,7 @@ const DynamicDomainMentors = ({ role, isSmall, onViewMentors }: { role: string, 
               onView={() => {
                 // 🟢 GTM: Track Mentor Card Click
                 pushToDataLayer("lp_mentor_card_click", { mentor_id: founderMentor.id, mentor_tier: founderMentor.tier || 'founder', is_founder: true, role_viewed: role });
-                router.push(`/mentors/${founderMentor.id}`);
+                router.push(`/mentors/${founderMentor.id}?role=${role}`);
               }}
               isSmall={isSmall}
               isFounderCard={true}
@@ -443,7 +443,7 @@ const DynamicDomainMentors = ({ role, isSmall, onViewMentors }: { role: string, 
                   onView={() => {
                     // 🟢 GTM: Track Mentor Card Click
                     pushToDataLayer("lp_mentor_card_click", { mentor_id: m.id, mentor_tier: m.tier || 'bronze', is_founder: false, role_viewed: role });
-                    router.push(`/mentors/${m.id}`);
+                    router.push(`/mentors/${m.id}?role=${role}`);
                   }}
                   isSmall={isSmall}
                   isFounderCard={false}
@@ -494,7 +494,7 @@ const TestimonialCard = memo(({ testimonial }: { testimonial: typeof TESTIMONIAL
 ));
 
 const TestimonialsSection = memo(({ onViewMentors, isSmall }: { onViewMentors: (source: string) => void, isSmall: boolean }) => (
-  <View style={styles.testimonialsContainer} nativeID="testimonials">
+  <View nativeID="section-testimonials" style={styles.testimonialsContainer}>
     <Text style={styles.kicker}>SUCCESS STORIES</Text>
     <Text style={[styles.h2, isSmall && styles.h2Mobile]}>Hear from successful candidates</Text>
     <View style={styles.testimonialsGrid}>
@@ -521,7 +521,7 @@ const GuaranteeCard = memo(({ guarantee }: { guarantee: typeof GUARANTEES[0] }) 
 ));
 
 const GuaranteeSection = memo(({ isSmall }: { isSmall: boolean }) => (
-  <View style={styles.guaranteeContainer} nativeID="guarantee">
+  <View nativeID="section-guarantees" style={styles.guaranteeContainer}>
     <View style={styles.guaranteeBox}>
       <Text style={styles.kicker}>RISK-FREE GUARANTEE</Text>
       <Text style={[styles.h2, isSmall && styles.h2Mobile]}>
@@ -559,7 +559,7 @@ const FAQItem = memo(({ faq }: { faq: typeof FAQS[0] }) => (
 ));
 
 const FAQ = memo(({ isSmall }: { isSmall: boolean }) => (
-  <View style={styles.section}>
+  <View nativeID="section-faq" style={styles.section}>
     <Text style={styles.kicker}>FAQ</Text>
     <Text style={[styles.h2, isSmall && styles.h2Mobile]}>Common Questions</Text>
     <View style={{ gap: 12 }}>
@@ -571,7 +571,7 @@ const FAQ = memo(({ isSmall }: { isSmall: boolean }) => (
 ));
 
 const FinalCTABanner = memo(({ onViewMentors, isSmall }: { onViewMentors: (source: string) => void, isSmall: boolean }) => (
-  <View style={styles.finalCtaContainer}>
+  <View nativeID="section-finalcta" style={styles.finalCtaContainer}>
     <View style={styles.finalCtaBox}>
       <Text style={[styles.h2, isSmall && styles.h2Mobile, { color: '#fff', marginBottom: 16 }]}>
         Your next interview is closer than you think
@@ -607,6 +607,54 @@ export default function LazySectionsLP({
   isSmall: boolean;
   onViewMentors: (source: string) => void;
 }) {
+  // ─── Section visibility tracking via IntersectionObserver (web only) ─────────
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof window === 'undefined') return;
+
+    const SECTIONS = [
+      { id: 'section-problem',      name: 'the_problem' },
+      { id: 'section-howitworks',   name: 'how_it_works' },
+      { id: 'section-skills',       name: 'targeted_skills' },
+      { id: 'section-mentors',      name: 'domain_mentors' },
+      { id: 'section-testimonials', name: 'testimonials' },
+      { id: 'section-systematic',   name: 'systematic_prep' },
+      { id: 'section-guarantees',   name: 'guarantees' },
+      { id: 'section-faq',          name: 'faq' },
+      { id: 'section-finalcta',     name: 'final_cta_banner' },
+    ];
+
+    const observer = new (window as any).IntersectionObserver(
+      (entries: any[]) => {
+        entries.forEach((entry: any) => {
+          if (entry.isIntersecting) {
+            const section = SECTIONS.find(s => s.id === entry.target.id);
+            if (section) {
+              pushToDataLayer('lp_section_viewed', {
+                section_name: section.name,
+                role_viewed: role,
+              });
+              observer.unobserve(entry.target); // fire once per section per page visit
+            }
+          }
+        });
+      },
+      { threshold: 0.3 }
+    );
+
+    // Small delay to let React render nativeIDs into the DOM
+    const timer = setTimeout(() => {
+      SECTIONS.forEach(s => {
+        const el = document.getElementById(s.id);
+        if (el) observer.observe(el);
+      });
+    }, 300);
+
+    return () => {
+      clearTimeout(timer);
+      observer.disconnect();
+    };
+  }, [role]);
+
   return (
     <>
       <TheProblemSection isSmall={isSmall} />
