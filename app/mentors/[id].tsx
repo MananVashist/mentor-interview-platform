@@ -283,7 +283,8 @@ export default function MentorDetail() {
   const [guestErr,     setGuestErr]     = useState("");
   const [guestLoading, setGuestLoading] = useState(false);
 
-  useEffect(() => { fetchMentor(); initAuth(); }, [id, user]);
+  useEffect(() => { fetchMentor(); }, [id]);
+  useEffect(() => { initAuth(); }, [user]);
   useEffect(() => { if (profId && (sType === "mock" || sType === "bundle")) fetchSkills(); else { setSkills([]); setSkill(null); } }, [profId, sType]);
   useEffect(() => { setSelSlot(null); setSelSlots([]); setSelDay(null); setSkill(null); setBundleMode("intro"); setBundleSkills([]); }, [sType]);
   useEffect(() => { if (profiles.length === 1 && !profId) setProfId(profiles[0].id); }, [profiles]);
@@ -306,20 +307,24 @@ export default function MentorDetail() {
       if (d1?.length) {
         const m = d1[0]; setMentor(m);
         const base = m.session_price_inr || 1000;
-        const r2 = await fetch(
-          `${SUPABASE_URL}/rest/v1/mentor_tiers?select=percentage_cut&tier=eq.${m.tier || "bronze"}&limit=1`,
-          { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
-        );
-        const d2 = await r2.json();
+
+        // FIX: Fetch tier and profiles in parallel — they don't depend on each other
+        const [d2, d3] = await Promise.all([
+          fetch(
+            `${SUPABASE_URL}/rest/v1/mentor_tiers?select=percentage_cut&tier=eq.${m.tier || "bronze"}&limit=1`,
+            { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
+          ).then(r => r.json()),
+          m.profile_ids?.length
+            ? fetch(
+                `${SUPABASE_URL}/rest/v1/interview_profiles_admin?select=id,name,description&id=in.(${m.profile_ids.join(",")})&order=name`,
+                { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
+              ).then(r => r.json())
+            : Promise.resolve([]),
+        ]);
+
         const cut = d2?.[0]?.percentage_cut || 50;
         setMockP(Math.round(base / (1 - cut / 100)));
-        if (m.profile_ids?.length) {
-          const r3 = await fetch(
-            `${SUPABASE_URL}/rest/v1/interview_profiles_admin?select=id,name,description&id=in.(${m.profile_ids.join(",")})&order=name`,
-            { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
-          );
-          setProfiles((await r3.json()) || []);
-        }
+        setProfiles(d3 || []);
       }
     } catch (e) {} finally { setLoading(false); }
   };
@@ -355,10 +360,15 @@ export default function MentorDetail() {
     try {
       const days = await availabilityService.generateAvailability(id as string);
       setAvail(days);
-      if (selDay) { const s = days.find(d => d.dateStr === selDay.dateStr); if (s) setSelDay(s); }
-      else { const f = days.find(d => !d.isFullDayOff && d.slots.some(sl => sl.isAvailable)); if (f) setSelDay(f); }
+      setSelDay(prev => {
+        if (prev) {
+          const updated = days.find(d => d.dateStr === prev.dateStr);
+          return updated || prev;
+        }
+        return days.find(d => !d.isFullDayOff && d.slots.some(sl => sl.isAvailable)) || null;
+      });
     } catch (e) {} finally { setAvailL(false); }
-  }, [id, selDay]);
+  }, [id]);
 
   const checkGuestIntroUsed = async (email: string): Promise<boolean> => {
     try {

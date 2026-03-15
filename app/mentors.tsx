@@ -1,5 +1,5 @@
 ﻿// app/mentors.tsx
-import React, { useEffect, useState, useCallback, useMemo } from "react";
+import React, { useEffect, useState, useCallback, useMemo, useRef, memo } from "react";
 import {
   View,
   ScrollView,
@@ -13,9 +13,9 @@ import {
   Text,
   Image,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { Svg, Path, Circle } from "react-native-svg";
-import { AppText, Card, Heading, Button } from "@/lib/ui";
+import { Card, Heading } from "@/lib/ui";
 import { theme } from "@/lib/theme";
 import { Header } from "@/components/Header";
 import { availabilityService } from "@/services/availability.service";
@@ -23,6 +23,9 @@ import { Footer } from "@/components/Footer";
 
 const SUPABASE_URL = "https://rcbaaiiawrglvyzmawvr.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJjYmFhaWlhd3JnbHZ5em1hd3ZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjExNTA1NjAsImV4cCI6MjA3NjcyNjU2MH0.V3qRHGXBMlspRS7XFJlXdo4qIcCms60Nepp7dYMEjLA";
+
+// Founder mentor ID — shows "Free" intro call, matching landing page logic
+const FOUNDER_ID = 'e251486e-c21a-49f4-8ab7-ce808785638a';
 
 // Brand Colors
 const BRAND_ORANGE = '#f58742';
@@ -35,20 +38,21 @@ const SYSTEM_FONT = Platform.select({
   default: "System"
 }) as string;
 
+// Map URL role param → profile name keywords for auto-selection from landing page
+const ROLE_PROFILE_KEYWORDS: Record<string, string[]> = {
+  pm: ['product management', 'product manager', 'pm'],
+  da: ['data analytics', 'data analyst', 'analytics', 'business analytics'],
+  ds: ['data science', 'data scientist'],
+  hr: ['hr', 'human resources'],
+};
+
 // --- TYPOGRAPHY SYSTEM ---
-// Adding SYSTEM_FONT strictly to all base definitions
 const FONTS = {
   heading: { fontFamily: SYSTEM_FONT, fontSize: 20, fontWeight: "700" as const, lineHeight: 28 },
   body: { fontFamily: SYSTEM_FONT, fontSize: 14, fontWeight: "400" as const, lineHeight: 20 },
   bodyBold: { fontFamily: SYSTEM_FONT, fontSize: 14, fontWeight: "600" as const, lineHeight: 20 },
   caption: { fontFamily: SYSTEM_FONT, fontSize: 12, fontWeight: "400" as const, lineHeight: 16 },
   captionBold: { fontFamily: SYSTEM_FONT, fontSize: 12, fontWeight: "600" as const, lineHeight: 16 },
-};
-
-const TIER_RANK: Record<string, number> = {
-  bronze: 1,
-  silver: 2,
-  gold: 3,
 };
 
 type SortOption = 'price_low' | 'sessions' | 'rating' | 'experience';
@@ -198,7 +202,47 @@ const TierBadge = ({ tier }: { tier?: string | null }) => {
 };
 
 // ============================================
-// MENTOR CARD COMPONENT
+// CHIP BUTTON — outside component to prevent remount on every render
+// ============================================
+
+const ChipBtn = memo(({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) => (
+  <TouchableOpacity style={[styles.chip, active && styles.chipActive]} onPress={onPress}>
+    <Text style={[styles.chipText, active && styles.chipTextActive]}>{label}</Text>
+  </TouchableOpacity>
+));
+
+// ============================================
+// SKELETON CARD — shown while loading instead of bare spinner
+// ============================================
+
+const SkeletonCard = () => (
+  <View style={[styles.card, { overflow: 'hidden' }]}>
+    <View style={styles.cardContent}>
+      <View style={styles.headerRow}>
+        <View style={[styles.avatarImage, styles.skeleton]} />
+        <View style={{ flex: 1, gap: 8 }}>
+          <View style={[styles.skeleton, { height: 16, width: '60%', borderRadius: 4 }]} />
+          <View style={[styles.skeleton, { height: 12, width: '30%', borderRadius: 4 }]} />
+        </View>
+      </View>
+      <View style={[styles.skeleton, { height: 12, width: '100%', borderRadius: 4 }]} />
+      <View style={[styles.skeleton, { height: 12, width: '80%', borderRadius: 4 }]} />
+      <View style={{ flexDirection: 'row', gap: 8, marginTop: 4 }}>
+        <View style={[styles.skeleton, { height: 24, width: 70, borderRadius: 6 }]} />
+        <View style={[styles.skeleton, { height: 24, width: 90, borderRadius: 6 }]} />
+        <View style={[styles.skeleton, { height: 24, width: 120, borderRadius: 6 }]} />
+      </View>
+      <View style={styles.dividerLine} />
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+        <View style={[styles.skeleton, { height: 20, width: 80, borderRadius: 4 }]} />
+        <View style={[styles.skeleton, { height: 44, width: 140, borderRadius: 10 }]} />
+      </View>
+    </View>
+  </View>
+);
+
+// ============================================
+// MENTOR CARD COMPONENT — memo to prevent re-renders on per-mentor availability updates
 // ============================================
 
 type MentorCardProps = {
@@ -208,29 +252,54 @@ type MentorCardProps = {
   isNewMentor: boolean;
   averageRating: number;
   showRating: boolean;
-  hasSlots: boolean;
+  availabilityState: 'loading' | 'available' | 'unavailable';
   displaySlot: string;
+  customPriceLabel?: string | null;
   onView: () => void;
 };
 
-const MentorCard = ({
+const MentorCard = memo(({
   m, displayPrice, totalSessions, isNewMentor, averageRating,
-  showRating, hasSlots, displaySlot, onView,
+  showRating, availabilityState, displaySlot, customPriceLabel, onView,
 }: MentorCardProps) => {
 
   const seed = m.id || m.profiles?.full_name || 'Mentor';
-  const fallbackAvatar = `https://api.dicebear.com/9.x/micah/png?seed=${encodeURIComponent(seed)}&backgroundColor=e5e7eb,f3f4f6`;
-
   const introPrice = Math.round(displayPrice * 0.20);
+const fallbackAvatar = `https://api.dicebear.com/9.x/micah/png?seed=${encodeURIComponent(seed)}&backgroundColor=e5e7eb,f3f4f6`;
+
+  const renderAvailabilityBadge = () => {
+    if (availabilityState === 'loading') {
+      return (
+        <View style={styles.availabilityBadgeChecking}>
+          <Text style={styles.availabilityIcon}>🔍</Text>
+          <Text style={styles.availabilityTextChecking}>Checking...</Text>
+        </View>
+      );
+    }
+    if (availabilityState === 'available') {
+      return (
+        <View style={styles.availabilityBadge}>
+          <Text style={styles.availabilityIcon}>🟢</Text>
+          <Text style={styles.availabilityText}>Next: {displaySlot}</Text>
+        </View>
+      );
+    }
+    return (
+      <View style={styles.availabilityBadgeUnavailable}>
+        <Text style={styles.availabilityIcon}>⏰</Text>
+        <Text style={styles.availabilityTextUnavailable}>No slots available</Text>
+      </View>
+    );
+  };
 
   return (
     <Card style={styles.card}>
       <View style={styles.cardContent}>
-        
+
         <View style={styles.headerRow}>
-          <Image 
-            source={{ uri: m.avatar_url || fallbackAvatar }} 
-            style={styles.avatarImage} 
+          <Image
+            source={{ uri: m.avatar_url || fallbackAvatar }}
+            style={styles.avatarImage}
           />
           <View style={styles.headerInfo}>
             <View style={styles.identityGroup}>
@@ -241,20 +310,20 @@ const MentorCard = ({
                 <CheckmarkCircleIcon size={14} color="#3B82F6" />
               </View>
             </View>
-
             {m.years_of_experience && (
               <View style={{ alignSelf: 'flex-start', marginTop: 4 }}>
                 <View style={styles.expBadge}>
                   <BriefcaseIcon size={12} color="#111827" />
-                  <Text style={styles.expText}>{m.years_of_experience} yrs</Text>
+                  <Text style={styles.expText}>{m.years_of_experience} yrs exp</Text>
                 </View>
               </View>
             )}
           </View>
         </View>
 
+        {/* FIX: 3 lines so company names (ex-Google etc.) aren't cut off */}
         {m.experience_description && (
-          <Text style={styles.bioText} numberOfLines={2}>
+          <Text style={styles.bioText} numberOfLines={3}>
             {m.experience_description}
           </Text>
         )}
@@ -280,35 +349,33 @@ const MentorCard = ({
 
           {showRating && <StarRating rating={averageRating} />}
 
-          <View style={[styles.availabilityBadge, !hasSlots && styles.availabilityBadgeUnavailable]}>
-            <Text style={styles.availabilityIcon}>{hasSlots ? '🟢' : '⏰'}</Text>
-            <Text style={[styles.availabilityText, !hasSlots && styles.availabilityTextUnavailable]}>
-              {hasSlots ? `Next slot: ${displaySlot}` : displaySlot}
-            </Text>
-          </View>
+          {renderAvailabilityBadge()}
         </View>
 
         <View style={styles.dividerLine} />
 
         <View style={styles.actionRow}>
           <View style={styles.priceContainer}>
-             <Text style={styles.startingAt}>Intro calls from</Text>
-             <Text style={styles.basePrice}>₹{introPrice.toLocaleString()}</Text>
+            <Text style={styles.startingAt}>{customPriceLabel ? 'Intro call' : 'Intro calls from'}</Text>
+            <Text style={styles.basePrice}>
+              {customPriceLabel
+                ? customPriceLabel
+                : displayPrice > 0
+                  ? `₹${introPrice.toLocaleString()}`
+                  : 'Free'}
+            </Text>
           </View>
 
-          <TouchableOpacity
-            style={styles.bookBtn}
-            onPress={onView}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.bookBtnText}>View Profile and Book</Text>
+          {/* FIX: Larger, more prominent CTA button */}
+          <TouchableOpacity style={styles.bookBtn} onPress={onView} activeOpacity={0.8}>
+            <Text style={styles.bookBtnText}>View & Book</Text>
           </TouchableOpacity>
         </View>
 
       </View>
     </Card>
   );
-};
+});
 
 // ============================================
 // MAIN COMPONENT
@@ -318,6 +385,7 @@ export default function PublicBrowseMentors() {
   const { width } = useWindowDimensions();
   const isMobile = width <= 768;
   const router = useRouter();
+  const params = useLocalSearchParams();
 
   const [adminProfiles, setAdminProfiles] = useState<AdminProfile[]>([]);
   const [profilesLoading, setProfilesLoading] = useState(true);
@@ -325,92 +393,128 @@ export default function PublicBrowseMentors() {
 
   const [mentors, setMentors] = useState<Mentor[]>([]);
   const [mentorsLoading, setMentorsLoading] = useState(false);
+  const [fetchError, setFetchError] = useState(false);
 
   const [sortBy, setSortBy] = useState<SortOption>('price_low');
   const [showTierInfo, setShowTierInfo] = useState(false);
 
   const [tierMap, setTierMap] = useState<Record<string, number>>({});
   const [mentorAvailability, setMentorAvailability] = useState<Record<string, string>>({});
+  const [totalSessionCount, setTotalSessionCount] = useState(0);
 
-  useEffect(() => {
-    (async () => {
-      setProfilesLoading(true);
-      try {
-        const tiersRes = await fetch(
-          `${SUPABASE_URL}/rest/v1/mentor_tiers?select=tier,percentage_cut`,
-          { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
+  // Cache all mentors to avoid re-fetching on profile tab switch
+  const allMentorsRef = useRef<Mentor[]>([]);
+  // Fetch ID to prevent stale availability callbacks from updating wrong profile
+  const fetchIdRef = useRef(0);
+
+  const loadData = useCallback(async () => {
+    setProfilesLoading(true);
+    setFetchError(false);
+    try {
+      // FIX: Parallel fetches — was sequential before (3x slower)
+      const [tiersRes, profilesRes, mentorsRes] = await Promise.all([
+        fetch(`${SUPABASE_URL}/rest/v1/mentor_tiers?select=tier,percentage_cut`,
+          { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }),
+        fetch(`${SUPABASE_URL}/rest/v1/interview_profiles_admin?select=*`,
+          { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }),
+        fetch(`${SUPABASE_URL}/rest/v1/mentors?select=*,tier,profiles(full_name)&status=eq.approved`,
+          { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }),
+      ]);
+
+      const [tiersData, profilesData, allMentors] = await Promise.all([
+        tiersRes.json(), profilesRes.json(), mentorsRes.json(),
+      ]);
+
+      const tMap: Record<string, number> = {};
+      tiersData?.forEach((t: any) => (tMap[t.tier] = t.percentage_cut));
+      setTierMap(tMap);
+
+      if (profilesRes.ok && mentorsRes.ok) {
+        allMentorsRef.current = allMentors || [];
+
+        // Compute total sessions for social proof strip
+        const total = (allMentors || []).reduce(
+          (sum: number, m: Mentor) => sum + (m.total_sessions || 0), 0
         );
-        const tiersData = await tiersRes.json();
-        const tMap: Record<string, number> = {};
-        tiersData?.forEach((t: any) => (tMap[t.tier] = t.percentage_cut));
-        setTierMap(tMap);
+        setTotalSessionCount(total);
 
-        const profilesRes = await fetch(
-          `${SUPABASE_URL}/rest/v1/interview_profiles_admin?select=*`,
-          { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
-        );
-        const profilesData = await profilesRes.json();
+        const actives = (profilesData || []).filter((p: AdminProfile) => p.is_active !== false);
+        const profileMentorCounts = actives.map((profile: AdminProfile) => {
+          const mentorCount = (allMentors || []).filter((m: Mentor) =>
+            Array.isArray(m.profile_ids) && m.profile_ids.includes(profile.id)
+          ).length;
+          return { ...profile, mentorCount };
+        });
 
-        const mentorsRes = await fetch(
-          `${SUPABASE_URL}/rest/v1/mentors?select=*,tier,profiles(full_name)&status=eq.approved`,
-          { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
-        );
-        const allMentors = await mentorsRes.json();
+        const sortedProfiles = profileMentorCounts.sort((a, b) => b.mentorCount - a.mentorCount);
+        setAdminProfiles(sortedProfiles);
 
-        if (profilesRes.ok && mentorsRes.ok) {
-          const actives = (profilesData || []).filter((p: AdminProfile) => p.is_active !== false);
+        // FIX: Auto-select profile based on role param from landing page URL
+        const roleParam = typeof params.role === 'string' ? params.role.toLowerCase() : null;
+        let selectedId: number | null = null;
 
-          const profileMentorCounts = actives.map((profile: AdminProfile) => {
-            const mentorCount = (allMentors || []).filter((m: Mentor) =>
-              Array.isArray(m.profile_ids) && m.profile_ids.includes(profile.id)
-            ).length;
-            return { ...profile, mentorCount };
-          });
-
-          const sortedProfiles = profileMentorCounts.sort((a, b) => b.mentorCount - a.mentorCount);
-          setAdminProfiles(sortedProfiles);
-          if (sortedProfiles.length > 0) setSelectedProfileId(sortedProfiles[0].id);
+        if (roleParam && ROLE_PROFILE_KEYWORDS[roleParam]) {
+          const keywords = ROLE_PROFILE_KEYWORDS[roleParam];
+          const matched = sortedProfiles.find((p: AdminProfile) =>
+            keywords.some(kw => p.name.toLowerCase().includes(kw))
+          );
+          if (matched) selectedId = matched.id;
         }
-      } catch (err) {
-        console.log("Error fetching profiles", err);
-      } finally {
-        setProfilesLoading(false);
+
+        if (!selectedId && sortedProfiles.length > 0) selectedId = sortedProfiles[0].id;
+        setSelectedProfileId(selectedId);
+      } else {
+        setFetchError(true);
       }
-    })();
-  }, []);
+    } catch (err) {
+      console.log("Error loading mentors page", err);
+      setFetchError(true);
+    } finally {
+      setProfilesLoading(false);
+    }
+  }, [params.role]);
+
+  useEffect(() => { loadData(); }, []);
 
   const fetchMentorsForProfile = useCallback(async (profileId: number | null) => {
     if (!profileId) return;
+
+    // FIX: New fetch ID — stale availability callbacks check this and bail if it changed
+    const currentFetchId = ++fetchIdRef.current;
+
     setMentorsLoading(true);
+    setMentorAvailability({});
+
     try {
-      const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/mentors?select=*,tier,profiles(full_name)&status=eq.approved`,
-        { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
-      );
-      const data = await res.json();
-
-      if (res.ok) {
-        const filtered = (data || []).filter((m: Mentor) =>
-          Array.isArray(m.profile_ids) ? m.profile_ids.includes(profileId) : false
+      let allMentors = allMentorsRef.current;
+      if (allMentors.length === 0) {
+        const res = await fetch(
+          `${SUPABASE_URL}/rest/v1/mentors?select=*,tier,profiles(full_name)&status=eq.approved`,
+          { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
         );
-
-        setMentors(filtered);
-
-        const availabilityPromises = filtered.map(async (m: Mentor) => {
-          const slot = await availabilityService.findNextAvailableSlot(m.id);
-          return { id: m.id, slot };
-        });
-
-        const availabilityResults = await Promise.all(availabilityPromises);
-        const availabilityMap: Record<string, string> = {};
-        availabilityResults.forEach(({ id, slot }) => {
-          availabilityMap[id] = slot;
-        });
-        setMentorAvailability(availabilityMap);
+        if (!res.ok) { setMentorsLoading(false); return; }
+        allMentors = await res.json();
+        allMentorsRef.current = allMentors || [];
       }
+
+      const filtered = (allMentors || []).filter((m: Mentor) =>
+        Array.isArray(m.profile_ids) ? m.profile_ids.includes(profileId) : false
+      );
+
+      // FIX: Show cards immediately — don't block on availability
+      setMentors(filtered);
+      setMentorsLoading(false);
+
+      // FIX: Load availability in background, each card updates independently
+      filtered.forEach(async (m: Mentor) => {
+        const slot = await availabilityService.findNextAvailableSlot(m.id);
+        // FIX: Discard result if user already switched to a different profile
+        if (fetchIdRef.current !== currentFetchId) return;
+        setMentorAvailability(prev => ({ ...prev, [m.id]: slot }));
+      });
+
     } catch (err) {
       console.log("Error fetching mentors", err);
-    } finally {
       setMentorsLoading(false);
     }
   }, []);
@@ -423,24 +527,17 @@ export default function PublicBrowseMentors() {
     let sorted = [...mentors];
 
     const getPrice = (m: Mentor) => {
+      if (m.id === FOUNDER_ID) return -1;
       const base = m.session_price_inr ?? m.session_price ?? 0;
       const cut = tierMap[m.tier || 'bronze'] || 50;
       return Math.round(base / (1 - cut / 100));
     };
 
     switch (sortBy) {
-      case 'price_low':
-        sorted.sort((a, b) => getPrice(a) - getPrice(b));
-        break;
-      case 'sessions':
-        sorted.sort((a, b) => (b.total_sessions || 0) - (a.total_sessions || 0));
-        break;
-      case 'rating':
-        sorted.sort((a, b) => (b.average_rating || 0) - (a.average_rating || 0));
-        break;
-      case 'experience':
-        sorted.sort((a, b) => (b.years_of_experience || 0) - (a.years_of_experience || 0));
-        break;
+      case 'price_low': sorted.sort((a, b) => getPrice(a) - getPrice(b)); break;
+      case 'sessions': sorted.sort((a, b) => (b.total_sessions || 0) - (a.total_sessions || 0)); break;
+      case 'rating': sorted.sort((a, b) => (b.average_rating || 0) - (a.average_rating || 0)); break;
+      case 'experience': sorted.sort((a, b) => (b.years_of_experience || 0) - (a.years_of_experience || 0)); break;
     }
     return sorted;
   }, [mentors, sortBy, tierMap]);
@@ -453,62 +550,72 @@ export default function PublicBrowseMentors() {
     }
   };
 
-  const ChipBtn = ({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) => (
-    <TouchableOpacity style={[styles.chip, active && styles.chipActive]} onPress={onPress}>
-      <Text style={[styles.chipText, active && styles.chipTextActive]}>{label}</Text>
-    </TouchableOpacity>
-  );
-
   return (
     <View style={styles.pageContainer}>
       <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
-        {/* Header with Navigation */}
         <Header showGetStarted={true} />
-        
-        {/* Hero Section */}
-        <View style={[styles.sectionContainer, isMobile && styles.sectionContainerMobile]}>
-          <View style={styles.heroCentered}>
-            <View style={styles.heroTextContainer}>
-              <View style={styles.pillBadge}>
-                <Text style={styles.pillBadgeText}>🎯 Find Your Perfect Mentor</Text>
-              </View>
-              <Text style={[styles.heroTitle, isMobile && styles.heroTitleMobile]}>
-                <Text style={{ color: BRAND_ORANGE }}>Choose from a list of </Text>
-                <Text style={{ color: CTA_TEAL }}>verified expert mentors and book</Text>
-              </Text>
-              <Text style={[styles.heroSubtitle, isMobile && styles.heroSubtitleMobile]}>
-                Anonymous 1:1 mock interviews. Vetted mentors from top companies for Product Management, Data / Business Analytics, Data Science and HR.
-              </Text>
-            </View>
+
+        {/* FIX: Compact header — replaces tall hero so filters are above fold */}
+        <View style={[styles.pageHeader, isMobile && styles.pageHeaderMobile]}>
+          <Text style={[styles.pageTitle, isMobile && styles.pageTitleMobile]}>
+            Find Your <Text style={{ color: CTA_TEAL }}>Interview Mentor</Text>
+          </Text>
+          <Text style={[styles.pageSubtitle, isMobile && styles.pageSubtitleMobile]}>
+            Anonymous 1:1 sessions with real hiring managers from top companies
+          </Text>
+        </View>
+
+        {/* FIX: Trust strip with live session count — social proof above fold */}
+        <View style={[styles.trustStrip, isMobile && styles.trustStripMobile]}>
+          <View style={styles.trustItem}>
+            <Text style={styles.trustEmoji}>🧑‍💻</Text>
+            <Text style={styles.trustText}>Real interviewers, not AI</Text>
+          </View>
+          <View style={styles.trustDivider} />
+          <View style={styles.trustItem}>
+            <Text style={styles.trustEmoji}>🎭</Text>
+            <Text style={styles.trustText}>100% anonymous</Text>
+          </View>
+          <View style={styles.trustDivider} />
+          <View style={styles.trustItem}>
+            <Text style={styles.trustEmoji}>✅</Text>
+            <Text style={styles.trustText}>
+              {totalSessionCount > 0 ? `${totalSessionCount}+ sessions done` : 'Pay per session'}
+            </Text>
           </View>
         </View>
 
-        {/* UNIFIED CONTROLS SECTION */}
-        <View style={styles.controlsWrapper}>
-          
-          {/* Filters Row */}
+        {/* CONTROLS */}
+        <View style={[styles.controlsWrapper, isMobile && styles.controlsWrapperMobile]}>
           <View style={styles.controlRow}>
             <Text style={styles.controlLabel}>Role</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipScroll}>
-              {adminProfiles.map((profile) => (
-                <ChipBtn 
-                  key={profile.id} 
-                  label={profile.name} 
-                  active={selectedProfileId === profile.id} 
-                  onPress={() => setSelectedProfileId(profile.id)} 
-                />
-              ))}
-            </ScrollView>
+            {profilesLoading ? (
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                {[80, 120, 90, 70].map((w, i) => (
+                  <View key={i} style={[styles.skeleton, { height: 34, width: w, borderRadius: 100 }]} />
+                ))}
+              </View>
+            ) : (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipScroll}>
+                {adminProfiles.map((profile) => (
+                  <ChipBtn
+                    key={profile.id}
+                    label={profile.name}
+                    active={selectedProfileId === profile.id}
+                    onPress={() => setSelectedProfileId(profile.id)}
+                  />
+                ))}
+              </ScrollView>
+            )}
           </View>
 
-          {/* Sort Row */}
           <View style={styles.controlRow}>
-             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Text style={styles.controlLabel}>Sort</Text>
-                <TouchableOpacity onPress={() => setShowTierInfo(true)} style={{ padding: 4 }}>
-                  <InfoIcon size={14} color="#9CA3AF" />
-                </TouchableOpacity>
-             </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Text style={styles.controlLabel}>Sort</Text>
+              <TouchableOpacity onPress={() => setShowTierInfo(true)} style={{ padding: 4 }}>
+                <InfoIcon size={14} color="#9CA3AF" />
+              </TouchableOpacity>
+            </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipScroll}>
               <ChipBtn label="Price (Low)" active={sortBy === 'price_low'} onPress={() => setSortBy('price_low')} />
               <ChipBtn label="Most Sessions" active={sortBy === 'sessions'} onPress={() => setSortBy('sessions')} />
@@ -517,38 +624,55 @@ export default function PublicBrowseMentors() {
             </ScrollView>
           </View>
 
-          <View style={styles.resultsCountWrapper}>
-             <Text style={styles.resultsCount}>
-              Showing {sortedMentors.length} {sortedMentors.length === 1 ? 'mentor' : 'mentors'}
-            </Text>
-          </View>
-
+          {!profilesLoading && !mentorsLoading && (
+            <View style={styles.resultsCountWrapper}>
+              <Text style={styles.resultsCount}>
+                Showing {sortedMentors.length} {sortedMentors.length === 1 ? 'mentor' : 'mentors'}
+              </Text>
+            </View>
+          )}
         </View>
 
         {/* MENTOR LIST */}
-        <View style={styles.listContainer}>
-          {profilesLoading || mentorsLoading ? (
-            <ActivityIndicator size="large" color={theme.colors.primary} style={{ marginTop: 40 }} />
+        <View style={[styles.listContainer, isMobile && styles.listContainerMobile]}>
+          {fetchError ? (
+            // FIX: Proper error state with retry — no more infinite spinner
+            <View style={styles.errorState}>
+              <Text style={styles.errorTitle}>Couldn't load mentors</Text>
+              <Text style={styles.errorSubtitle}>Check your connection and try again</Text>
+              <TouchableOpacity style={styles.retryBtn} onPress={loadData}>
+                <Text style={styles.retryBtnText}>Try Again</Text>
+              </TouchableOpacity>
+            </View>
+          ) : profilesLoading || mentorsLoading ? (
+            // FIX: Skeleton cards while loading
+            <>
+              <SkeletonCard />
+              <SkeletonCard />
+              <SkeletonCard />
+            </>
           ) : sortedMentors.length === 0 ? (
             <View style={styles.emptyState}>
               <SearchIcon size={48} color="#9CA3AF" />
-              <Text style={styles.emptyText}>No mentors found for this profile</Text>
+              <Text style={styles.emptyText}>No mentors found for this role</Text>
             </View>
           ) : (
             sortedMentors.map((m) => {
+              const isFounder = m.id === FOUNDER_ID;
               const basePrice = m.session_price_inr ?? m.session_price ?? 0;
               const cut = tierMap[m.tier || 'bronze'] || 50;
-              const displayPrice = basePrice ? Math.round(basePrice / (1 - cut / 100)) : 0;
-
+              const displayPrice = (!isFounder && basePrice) ? Math.round(basePrice / (1 - cut / 100)) : 0;
               const totalSessions = m.total_sessions || 0;
               const isNewMentor = totalSessions < 5;
               const averageRating = m.average_rating || 0;
               const showRating = averageRating > 0;
 
-              // Get availability slot
-              const nextSlot = mentorAvailability[m.id] || "Loading...";
-              const hasSlots = nextSlot !== "No slots available" && nextSlot !== "Loading...";
-              const displaySlot = hasSlots ? nextSlot : "No slots available";
+              const slotValue = mentorAvailability[m.id];
+              // FIX: Three distinct states — no premature red during loading
+              const availabilityState: 'loading' | 'available' | 'unavailable' =
+                slotValue === undefined ? 'loading'
+                  : slotValue === 'No slots available' ? 'unavailable'
+                  : 'available';
 
               return (
                 <MentorCard
@@ -556,11 +680,12 @@ export default function PublicBrowseMentors() {
                   m={m}
                   displayPrice={displayPrice}
                   totalSessions={totalSessions}
-                  isNewMentor={isNewMentor}
-                  averageRating={averageRating}
-                  showRating={showRating}
-                  hasSlots={hasSlots}
-                  displaySlot={displaySlot}
+                  isNewMentor={isFounder ? false : isNewMentor}
+                  averageRating={isFounder ? (averageRating || 5.0) : averageRating}
+                  showRating={isFounder ? true : showRating}
+                  availabilityState={availabilityState}
+                  displaySlot={slotValue || ''}
+                  customPriceLabel={isFounder ? "Free" : null}
                   onView={() => handleViewMentor(m.id)}
                 />
               );
@@ -568,35 +693,25 @@ export default function PublicBrowseMentors() {
           )}
         </View>
 
-        {/* SEO CONTENT */}
+        {/* FIX: SEO section — white bg with dark text, no jarring orange */}
         <View style={styles.seoSection}>
           <Heading level={2} style={styles.seoTitle}>Why Practice Mock Interviews?</Heading>
           <Text style={styles.seoText}>
             Mock interviews simulate real world interviews and help you identify weaknesses apparent to the interviewer. Our platform connects you with experienced interviewers from top companies who provide realistic interview practice and actionable feedback.
           </Text>
-          
+
           <Heading level={3} style={styles.seoSubtitle}>What You Get</Heading>
           <Text style={styles.seoText}>
-            • <Text style={{ fontWeight: '600', color: '#fff' }}>Real Interview Experience:</Text> Practice with mentors who conduct actual interviews everyday{'\n'}
-            • <Text style={{ fontWeight: '600', color: '#fff' }}>Personalized Feedback:</Text> Get detailed evaluation on your answers, communication style, and areas for improvement{'\n'}
-            • <Text style={{ fontWeight: '600', color: '#fff' }}>Anonymous & Safe:</Text> Practice without fear of judgment in a confidential environment{'\n'}
-            • <Text style={{ fontWeight: '600', color: '#fff' }}>Flexible Scheduling:</Text> Book sessions at times that work for you, with mentors across different time zones
+            • <Text style={styles.seoTextBold}>Real Interview Experience:</Text> Practice with mentors who conduct actual interviews everyday{'\n'}
+            • <Text style={styles.seoTextBold}>Personalized Feedback:</Text> Get detailed evaluation on your answers, communication style, and areas for improvement{'\n'}
+            • <Text style={styles.seoTextBold}>Anonymous & Safe:</Text> Practice without fear of judgment in a confidential environment{'\n'}
+            • <Text style={styles.seoTextBold}>Flexible Scheduling:</Text> Book sessions at times that work for you, with mentors across different time zones
           </Text>
 
           <Heading level={3} style={styles.seoSubtitle}>Interview Types We Cover</Heading>
           <Text style={styles.seoText}>
             Our mentors specialize in Product Management, Data Science, Data Analytics, and HR interviews. Whether you're preparing for FAANG companies or startups, we have experts who can help you succeed.
           </Text>
-          
-           <TouchableOpacity 
-            style={styles.ctaButton}
-            onPress={() => router.push('/auth/sign-up')}
-            activeOpacity={0.9}
-            accessibilityRole="button"
-            accessibilityLabel="Get Started"
-          >
-            <Text style={styles.ctaButtonText}>GET STARTED</Text>
-          </TouchableOpacity>
         </View>
 
         <Footer />
@@ -617,7 +732,6 @@ export default function PublicBrowseMentors() {
                 <Text style={styles.modalClose}>×</Text>
               </TouchableOpacity>
             </View>
-
             <View style={styles.tierInfoRow}>
               <MedalIcon size={18} color="#CD7F32" />
               <View style={{ flex: 1 }}>
@@ -625,7 +739,6 @@ export default function PublicBrowseMentors() {
                 <Text style={styles.tierInfoDesc}>Top performing mid level managers</Text>
               </View>
             </View>
-                
             <View style={styles.tierInfoRow}>
               <MedalIcon size={18} color="#9CA3AF" />
               <View style={{ flex: 1 }}>
@@ -633,7 +746,6 @@ export default function PublicBrowseMentors() {
                 <Text style={styles.tierInfoDesc}>Senior management from top companies</Text>
               </View>
             </View>
-
             <View style={styles.tierInfoRow}>
               <MedalIcon size={18} color="#F59E0B" />
               <View style={{ flex: 1 }}>
@@ -649,121 +761,137 @@ export default function PublicBrowseMentors() {
 }
 
 const styles = StyleSheet.create({
-  pageContainer: { flex: 1, backgroundColor: "#f8f5f0" },
+  pageContainer: { flex: 1, backgroundColor: BG_CREAM },
   container: { flex: 1 },
   scrollContent: { paddingBottom: 40 },
 
-  // Hero Section
-  sectionContainer: {
-    paddingHorizontal: 20,
-    paddingVertical: 50,
+  // FIX: Compact header
+  pageHeader: {
+    paddingHorizontal: 32,
+    paddingTop: 32,
+    paddingBottom: 16,
     maxWidth: 1200,
     width: '100%',
-    marginHorizontal: 'auto',
+    alignSelf: 'center',
+    alignItems: 'center',
   },
-  sectionContainerMobile: {
-    paddingVertical: 30,
-    paddingHorizontal: 16,
-  },
-  heroCentered: { alignItems: 'center', gap: 32 },
-  heroTextContainer: { alignItems: 'center', gap: 16, maxWidth: 800 },
-  pillBadge: { backgroundColor: '#fff', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 100, borderWidth: 1, borderColor: 'rgba(0,0,0,0.1)' },
-  pillBadgeText: { fontFamily: SYSTEM_FONT, fontSize: 14, fontWeight: '600', color: '#333' },
-  heroTitle: { fontFamily: SYSTEM_FONT, fontSize: 48, fontWeight: '700', textAlign: 'center', lineHeight: 56 },
-  heroTitleMobile: { fontSize: 32, lineHeight: 40 },
-  heroSubtitle: { fontFamily: SYSTEM_FONT, fontSize: 18, textAlign: 'center', color: '#555', lineHeight: 28, maxWidth: 700 },
-  heroSubtitleMobile: { fontSize: 16, lineHeight: 24 },
+  pageHeaderMobile: { paddingHorizontal: 16, paddingTop: 24, paddingBottom: 12 },
+  pageTitle: { fontFamily: SYSTEM_FONT, fontSize: 36, fontWeight: '700', color: BRAND_ORANGE, lineHeight: 44, textAlign: 'center' },
+  pageTitleMobile: { fontSize: 26, lineHeight: 34 },
+  pageSubtitle: { fontFamily: SYSTEM_FONT, fontSize: 16, color: '#555', marginTop: 6, lineHeight: 24, textAlign: 'center' },
+  pageSubtitleMobile: { fontSize: 14, lineHeight: 20 },
 
-  // Unified Controls Wrapper (Filters + Sort)
-  controlsWrapper: { 
-    marginHorizontal: 32, 
-    marginBottom: 24,
-    paddingVertical: 20, 
-    borderTopWidth: 1, 
-    borderBottomWidth: 1, 
-    borderColor: '#E5E7EB',
-    gap: 16 
+  // FIX: Trust strip
+  trustStrip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+    paddingVertical: 14,
   },
+  trustStripMobile: { paddingHorizontal: 16, paddingVertical: 12, flexWrap: 'wrap', gap: 8 },
+  trustItem: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 16 },
+  trustEmoji: { fontSize: 14 },
+  trustText: { fontFamily: SYSTEM_FONT, fontSize: 13, fontWeight: '600', color: '#374151' },
+  trustDivider: { width: 1, height: 16, backgroundColor: '#E5E7EB' },
+
+  // Controls
+  controlsWrapper: {
+    marginHorizontal: 32,
+    marginTop: 20,
+    marginBottom: 24,
+    paddingVertical: 20,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: '#E5E7EB',
+    gap: 16,
+  },
+  controlsWrapperMobile: { marginHorizontal: 16 },
   controlRow: { flexDirection: 'row', alignItems: 'center', gap: 16 },
   controlLabel: { fontFamily: SYSTEM_FONT, fontSize: 13, fontWeight: '700', color: '#6B7280', textTransform: 'uppercase', letterSpacing: 0.5, width: 45 },
   chipScroll: { gap: 8, paddingRight: 20 },
-  
-  // Clean Dark-Pill UI
   chip: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 100, backgroundColor: '#F3F4F6', borderWidth: 1, borderColor: 'transparent' },
   chipActive: { backgroundColor: '#111827', borderColor: '#111827' },
   chipText: { fontFamily: SYSTEM_FONT, fontSize: 14, fontWeight: '600', color: '#4B5563' },
   chipTextActive: { color: '#FFFFFF' },
-
   resultsCountWrapper: { marginTop: 4 },
   resultsCount: { fontFamily: SYSTEM_FONT, fontSize: 14, color: '#6B7280' },
 
   // List
   listContainer: { paddingHorizontal: 32, gap: 16, paddingBottom: 24 },
+  listContainerMobile: { paddingHorizontal: 16 },
+
+  // Skeleton
+  skeleton: { backgroundColor: '#E5E7EB' },
 
   // Card
   card: { backgroundColor: theme.white, borderRadius: 12, padding: 20, borderWidth: 0.5, borderColor: "#F3F4F6", ...Platform.select({ ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4 }, android: { elevation: 2, backgroundColor: '#FFF' } }) },
   cardContent: { gap: 12 },
-
-  // Card Header Layout
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   avatarImage: { width: 56, height: 56, borderRadius: 28, backgroundColor: '#F3F4F6' },
   headerInfo: { flex: 1, justifyContent: 'center' },
-
   identityGroup: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
   mentorName: { ...FONTS.heading, fontSize: 18, color: theme.colors.text.main, flexShrink: 1 },
   verifiedBadge: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   expBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.colors.gray[100], paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, gap: 4 },
   expText: { ...FONTS.captionBold, color: theme.colors.text.body },
-
-  // Bio & Styles
   bioText: { ...FONTS.body, color: '#4B5563', lineHeight: 20, marginTop: 4 },
-
-  statsRow: { flexDirection: 'row', gap: 16, alignItems: 'center', flexWrap: 'wrap', marginTop: 4 },
+  statsRow: { flexDirection: 'row', gap: 10, alignItems: 'center', flexWrap: 'wrap', marginTop: 4 },
   statItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   statText: { ...FONTS.caption, fontSize: 13, color: '#4B5563' },
   statValue: { fontWeight: '600', color: '#111827' },
   newBadge: { backgroundColor: '#DBEAFE', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 },
   newBadgeText: { ...FONTS.captionBold, color: '#1E40AF' },
-
-  // Tier Badge
   tierBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, borderWidth: 1 },
   tierText: { ...FONTS.captionBold },
-
-  // Rating
   ratingSection: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   starsContainer: { flexDirection: 'row', gap: 2 },
   starFilled: { fontFamily: SYSTEM_FONT, fontSize: 14, color: '#FBBF24' },
   starEmpty: { fontFamily: SYSTEM_FONT, fontSize: 14, color: '#D1D5DB' },
   ratingText: { ...FONTS.captionBold, fontSize: 13, color: '#111827' },
 
-  // Availability
+  // FIX: Three distinct availability badge styles
   availabilityBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#ECFDF5', borderWidth: 1, borderColor: '#D1FAE5', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 },
-  availabilityBadgeUnavailable: { backgroundColor: '#FEF2F2', borderColor: '#FECACA' },
-  availabilityIcon: { fontFamily: SYSTEM_FONT, fontSize: 12 },
   availabilityText: { ...FONTS.caption, fontWeight: '500', color: '#047857' },
-  availabilityTextUnavailable: { color: '#DC2626' },
+  availabilityBadgeUnavailable: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FECACA', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 },
+  availabilityTextUnavailable: { ...FONTS.caption, fontWeight: '500', color: '#DC2626' },
+  availabilityBadgeChecking: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#F3F4F6', borderWidth: 1, borderColor: '#E5E7EB', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 },
+  availabilityTextChecking: { ...FONTS.caption, fontWeight: '500', color: '#6B7280' },
+  availabilityIcon: { fontFamily: SYSTEM_FONT, fontSize: 12 },
 
   dividerLine: { height: 1, backgroundColor: '#F3F4F6', width: '100%', marginVertical: 4 },
-
-  // Action Row
   actionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 },
   priceContainer: { flexDirection: 'column' },
   startingAt: { ...FONTS.caption, color: '#6B7280', marginBottom: 2 },
   basePrice: { ...FONTS.bodyBold, fontSize: 16, color: '#111827' },
-  
-  // Book Button
-  bookBtn: { backgroundColor: theme.colors.primary, paddingVertical: 10, paddingHorizontal: 16, borderRadius: 8, alignItems: 'center' },
-  bookBtnText: { fontFamily: SYSTEM_FONT, color: '#FFF', fontSize: 13, fontWeight: '700', letterSpacing: 0.2 },
 
-  // Empty
+  // FIX: Larger book button
+  bookBtn: { backgroundColor: theme.colors.primary, paddingVertical: 14, paddingHorizontal: 20, borderRadius: 10, alignItems: 'center' },
+  bookBtnText: { fontFamily: SYSTEM_FONT, color: '#FFF', fontSize: 15, fontWeight: '700', letterSpacing: 0.2 },
+
   emptyState: { alignItems: 'center', padding: 40 },
   emptyText: { ...FONTS.body, marginTop: 10, color: theme.colors.text.light },
 
-  // SEO Section
-  seoSection: { paddingHorizontal: 32, paddingVertical: 40, backgroundColor: '#f58742', marginTop: 24, borderTopWidth: 1, borderTopColor: '#E5E7EB' },
-  seoTitle: { fontFamily: SYSTEM_FONT, fontSize: 24, fontWeight: '700', color: '#fff', marginBottom: 16 },
-  seoSubtitle: { fontFamily: SYSTEM_FONT, fontSize: 18, fontWeight: '600', color: '#fff', marginTop: 24, marginBottom: 12 },
-  seoText: { fontFamily: SYSTEM_FONT, fontSize: 15, color: '#fff', lineHeight: 24, marginBottom: 12 },
+  // FIX: Error state with retry
+  errorState: { alignItems: 'center', padding: 48 },
+  errorTitle: { fontFamily: SYSTEM_FONT, fontSize: 18, fontWeight: '700', color: '#111827', marginBottom: 8 },
+  errorSubtitle: { fontFamily: SYSTEM_FONT, fontSize: 14, color: '#6B7280', marginBottom: 20 },
+  retryBtn: { backgroundColor: CTA_TEAL, paddingVertical: 12, paddingHorizontal: 28, borderRadius: 8 },
+  retryBtnText: { fontFamily: SYSTEM_FONT, color: '#fff', fontSize: 15, fontWeight: '700' },
+
+  // FIX: SEO section — white bg, dark text, no jarring orange
+  seoSection: {
+    paddingHorizontal: 32,
+    paddingVertical: 40,
+    backgroundColor: '#fff',
+    marginTop: 24,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+  },
+  seoTitle: { fontFamily: SYSTEM_FONT, fontSize: 22, fontWeight: '700', color: '#111827', marginBottom: 12 },
+  seoSubtitle: { fontFamily: SYSTEM_FONT, fontSize: 16, fontWeight: '600', color: '#111827', marginTop: 20, marginBottom: 8 },
+  seoText: { fontFamily: SYSTEM_FONT, fontSize: 15, color: '#4B5563', lineHeight: 24, marginBottom: 8 },
+  seoTextBold: { fontWeight: '600', color: '#111827' },
 
   // Modal
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 },
@@ -774,20 +902,4 @@ const styles = StyleSheet.create({
   tierInfoRow: { flexDirection: 'row', gap: 12, marginBottom: 16, alignItems: 'center' },
   tierInfoTitle: { ...FONTS.bodyBold },
   tierInfoDesc: { ...FONTS.caption, color: '#4B5563' },
-
-  ctaButton: { 
-    backgroundColor: '#fff', 
-    paddingHorizontal: 24, 
-    paddingVertical: 10,   
-    borderRadius: 100, 
-    alignSelf: 'flex-start',   
-    marginTop: 24          
-  },
-  ctaButtonText: { 
-    alignItems: "center",
-    fontFamily: SYSTEM_FONT, 
-    fontWeight: '700', 
-    fontSize: 14,          
-    color: BRAND_ORANGE 
-  },
 });

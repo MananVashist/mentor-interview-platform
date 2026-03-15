@@ -141,22 +141,39 @@ export default function CampaignLanding() {
 
   const content = ROLE_CONTENT[activeRole];
 
+  // ─── Engagement tracking ────────────────────────────────────────────────────
+  const hasInteracted = useRef(false);
+  const pageLoadTime  = useRef(Date.now());
+
+  // Fire if user leaves without clicking anything at all
+  React.useEffect(() => {
+    return () => {
+      if (!hasInteracted.current) {
+        pushToDataLayer("lp_exit_no_interaction", { role_viewed: activeRole });
+      }
+    };
+  }, []);
+
   const handleBookClick = (tier: string = "general") => {
-    // 🟢 GTM: Track Hero CTA Click
-    pushToDataLayer("lp_hero_cta_click", { role_viewed: activeRole });
-    router.push("/mentors");
+    hasInteracted.current = true;
+    const secondsBeforeClick = Math.round((Date.now() - pageLoadTime.current) / 1000);
+    pushToDataLayer("lp_hero_cta_click", { role_viewed: activeRole, seconds_before_click: secondsBeforeClick });
+    router.push(activeRole !== "default" ? `/mentors?role=${activeRole}` : "/mentors");
   };
 
   const handleViewMentors = (source: string = "hero_secondary") => {
-    // 🟢 GTM: Track Specific Body CTAs
+    hasInteracted.current = true;
+    const secondsBeforeClick = Math.round((Date.now() - pageLoadTime.current) / 1000);
     if (source === "domain_mentors_cta") {
-      pushToDataLayer("lp_view_experts_click", { role_viewed: activeRole });
+      pushToDataLayer("lp_view_experts_click", { role_viewed: activeRole, seconds_before_click: secondsBeforeClick });
     } else if (source === "bundle_intro_call") {
-      pushToDataLayer("lp_diagnostic_call_click", { role_viewed: activeRole });
+      pushToDataLayer("lp_diagnostic_call_click", { role_viewed: activeRole, seconds_before_click: secondsBeforeClick });
     } else if (source === "final_cta") {
-      pushToDataLayer("lp_final_cta_click", { role_viewed: activeRole });
+      pushToDataLayer("lp_final_cta_click", { role_viewed: activeRole, seconds_before_click: secondsBeforeClick });
+    } else {
+      pushToDataLayer("lp_cta_click", { source, role_viewed: activeRole, seconds_before_click: secondsBeforeClick });
     }
-    router.push("/mentors");
+    router.push(activeRole !== "default" ? `/mentors?role=${activeRole}` : "/mentors");
   };
 
   return (
