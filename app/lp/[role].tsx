@@ -34,6 +34,14 @@ const SYSTEM_FONT = Platform.select({
   default: "System",
 }) as string;
 
+const HERO_SUB: Record<string, string> = {
+  pm: "Practice product sense, execution, and strategy questions with real PMs. Get feedback that tells you exactly why you'd get rejected — before the real interview.",
+  da: "Practice SQL, business cases, and stakeholder communication with real data analysts. Get feedback that tells you exactly where your analysis story breaks down.",
+  ds: "Practice ML theory, stats, and system design with real data scientists. Find out which round is actually costing you — before it happens again.",
+  hr: "Practice behavioral, HRBP, and strategic HR questions with real HR professionals. Get feedback that shows you exactly how you come across to a senior interviewer.",
+  default: "Book a live mock interview based on your actual job description or target specific weaknesses. Get structured feedback from real interviewers, eliminate your blind spots, and ace the real thing.",
+};
+
 // --- Valid Roles Config ---
 const VALID_ROLES = ["hr", "ds", "da", "pm"];
 
@@ -144,13 +152,34 @@ export default function CampaignLanding() {
   // ─── Engagement tracking ────────────────────────────────────────────────────
   const hasInteracted = useRef(false);
   const pageLoadTime  = useRef(Date.now());
+  const exitFired     = useRef(false);
 
-  // Fire if user leaves without clicking anything at all
   React.useEffect(() => {
-    return () => {
-      if (!hasInteracted.current) {
+    if (Platform.OS !== 'web' || typeof window === 'undefined') return;
+
+    const fireExitIfNoInteraction = () => {
+      if (!hasInteracted.current && !exitFired.current) {
+        exitFired.current = true;
         pushToDataLayer("lp_exit_no_interaction", { role_viewed: activeRole });
       }
+    };
+
+    // Fires when tab is closed, refreshed, or navigated away in browser
+    const handlePageHide = () => fireExitIfNoInteraction();
+
+    // Fires when tab is hidden (switch tabs, minimize, lock screen)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') fireExitIfNoInteraction();
+    };
+
+    window.addEventListener('pagehide', handlePageHide);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Also fires on SPA navigation (component unmount)
+    return () => {
+      fireExitIfNoInteraction();
+      window.removeEventListener('pagehide', handlePageHide);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, []);
 
@@ -213,7 +242,7 @@ export default function CampaignLanding() {
             </Text>
             
             <Text style={[styles.subheadline, isSmall && styles.subheadlineMobile]}>
-              Book a live mock interview based on your actual job description or target specific weaknesses. Get structured feedback from real human hiring managers, eliminate your blind spots, and ace the real thing.
+              {HERO_SUB[activeRole] ?? HERO_SUB.default}
             </Text>
 
             <View style={[styles.ctaRow, isSmall && { flexDirection: "column" }]}>
