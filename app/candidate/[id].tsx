@@ -10,6 +10,7 @@ import { theme } from "@/lib/theme";
 import { supabase } from "@/lib/supabase/client";
 import { useAuthStore } from "@/lib/store";
 import { availabilityService, type DayAvailability } from "@/services/availability.service";
+import { paymentService } from "@/services/payment.service";
 import { DateTime } from "luxon";
 
 const F = Platform.select({
@@ -107,7 +108,7 @@ function StepHeader({ index, label, subtitle, isOpen, isDone, hasError, onPress 
   );
 }
 
-function BookNowPanel({ sType, price, bundleSave, s1ok, s2ok, s3ok, allOk, tried, onBook, isFreeFounderIntro }: any) {
+function BookNowPanel({ sType, price, bundleSave, s1ok, s2ok, s3ok, allOk, tried, onBook, isFreeFounderIntro, paying }: any) {
   const accentColor = !sType ? MUTED : sType === "intro" ? "#7C3AED" : sType === "mock" ? TEAL : "#D97706";
   return (
     <View style={g.bnCard}>
@@ -143,12 +144,15 @@ function BookNowPanel({ sType, price, bundleSave, s1ok, s2ok, s3ok, allOk, tried
       </View>
 
       <TouchableOpacity
-        style={[g.bnBtn, { backgroundColor: allOk ? TEAL : "#9CA3AF" }]}
+        style={[g.bnBtn, { backgroundColor: paying ? "#9CA3AF" : allOk ? TEAL : "#9CA3AF" }]}
         onPress={onBook} activeOpacity={0.82}
+        disabled={paying}
       >
-        <Text style={[g.bnBtnTxt, { fontFamily: F }]}>
-          {allOk ? (isFreeFounderIntro ? "Book Free Session →" : "Review Booking →") : "Review Booking"}
-        </Text>
+        {paying
+          ? <ActivityIndicator color={WHITE} />
+          : <Text style={[g.bnBtnTxt, { fontFamily: F }]}>
+              {allOk ? (isFreeFounderIntro ? "Book Free Session →" : `Pay ₹${price.toLocaleString()} →`) : "Book Now"}
+            </Text>}
       </TouchableOpacity>
 
       {tried && !allOk && (
@@ -161,6 +165,16 @@ function BookNowPanel({ sType, price, bundleSave, s1ok, s2ok, s3ok, allOk, tried
         <View style={g.trustRow}>
           <IcoLock s={12} c="#9CA3AF" />
           <Text style={[g.trustTxt, { fontFamily: F }]}>Payments secured by Razorpay</Text>
+        </View>
+      )}
+      {allOk && (
+        <View style={{ marginTop: 12, backgroundColor: "#F0FDFA", borderRadius: 10, padding: 12, borderWidth: 1, borderColor: "#CCFBF1" }}>
+          <Text style={{ fontFamily: F, fontSize: 12, color: "#0F766E", lineHeight: 18, fontWeight: "600" }}>
+            ✅ What happens next
+          </Text>
+          <Text style={{ fontFamily: F, fontSize: 12, color: "#0F766E", lineHeight: 18, marginTop: 4 }}>
+            After payment, you'll receive a confirmation email with your session link and details. Your mentor will join at the scheduled time.
+          </Text>
         </View>
       )}
     </View>
@@ -199,8 +213,10 @@ export default function CandidateMentorDetail() {
 
   const authStore = useAuthStore();
   const [uid, setUid] = useState<string | null>(authStore.user?.id || null);
-  const [openStep, setOpenStep] = useState<number>(-1);
+  const [openStep, setOpenStep] = useState<number>(0);
   const [tried, setTried] = useState(false);
+  const [paying, setPaying] = useState(false);
+  const isProcessingRef = useRef(false);
 
   useEffect(() => { fetchMentor(); initAuth(); }, [id]);
   useEffect(() => { if (profId && (sType === "mock" || sType === "bundle")) fetchSkills(); else { setSkills([]); setSkill(null); } }, [profId, sType]);
@@ -302,6 +318,45 @@ export default function CandidateMentorDetail() {
     }
   };
 
+  const triggerPayment = async (candidateId: string) => {
+    if (isProcessingRef.current) return;
+    isProcessingRef.current = true;
+    setPaying(true);
+    try {
+      if (!sType) throw new Error("Please select a session type.");
+      const finalSlotsIso = sType === "bundle" ? selSlots.map(s => s.iso) : [selSlot!.iso];
+      const skIds = sType === "bundle"
+        ? (bundleMode === "intro" ? ["", "", ""] : bundleSkills.map(sk => sk.id))
+        : (sType === "mock" && skill?.id ? [skill.id] : []);
+
+      const { package: pkg, amount, orderId, keyId, error } = await paymentService.createPackage(
+        candidateId, id as string, effPID as number,
+        skIds, finalSlotsIso, sType,
+        isJD && jdText ? jdText.trim() : undefined,
+      );
+
+      if (error || !pkg) throw new Error(error?.message || "Failed to initialise payment.");
+
+      if (pkg.payment_status === "pending") {
+        router.replace({
+          pathname: "/candidate/pgscreen",
+          params: {
+            packageId: pkg.id, amount: amount?.toString(), orderId, keyId,
+            mentorId: id, profileId: effPID?.toString() || "",
+            skillId: skill?.id || "", skillName: skill?.name || "",
+            sessionType: sType, isNewGuest: "false",
+          },
+        });
+      } else {
+        router.replace("/candidate/bookings");
+      }
+    } catch (err: any) {
+      Alert.alert("Booking Error", err.message || "Something went wrong. Please try again.");
+      setPaying(false);
+      isProcessingRef.current = false;
+    }
+  };
+
   const handleBookNow = () => {
     setTried(true);
     if (!allOk && firstBad !== -1) {
@@ -309,37 +364,8 @@ export default function CandidateMentorDetail() {
       setTimeout(() => scrollRef.current?.scrollTo({ y: 500, animated: true }), 120);
       return;
     }
-    
-    const finalSlots = sType === 'bundle' ? selSlots : [selSlot];
-    const finalSlotsIso = sType === 'bundle' ? selSlots.map(s => s.iso) : [selSlot!.iso];
-    const mentorName = mentor.profiles?.full_name || mentor.professional_title || 'Mentor';
-    const seed = mentor.id || mentorName;
-    const fallbackAvatar = `https://api.dicebear.com/9.x/micah/png?seed=${encodeURIComponent(seed)}&backgroundColor=e5e7eb,f3f4f6`;
-
-    const skIds = sType === "bundle"
-      ? (bundleMode === "intro" ? ["", "", ""] : bundleSkills.map(sk => sk.id))
-      : (sType === "mock" && skill?.id ? [skill.id] : []);
-
-    router.push({
-      pathname: '/candidate/review',
-      params: {
-        mentorId: id,
-        profileId: effPID,
-        skillId: skill?.id || '',
-        skillName: skill?.name || '',
-        bundleMode: bundleMode,
-        bundleSkillIds: JSON.stringify(skIds),
-        sessionType: sType,
-        slotsIso: JSON.stringify(finalSlotsIso),
-        slotsDisplay: JSON.stringify(finalSlots),
-        jdText: isJD ? jdText.trim() : '',
-        price: price.toString(),
-        bundleSave: bundleSave.toString(),
-        mentorName: mentorName,
-        avatarUrl: mentor.avatar_url || fallbackAvatar,
-        mentorTitle: mentor.professional_title || ''
-      }
-    });
+    if (!uid) return;
+    triggerPayment(uid);
   };
 
   if (loading) return <View style={g.page}><ActivityIndicator size="large" color={TEAL} style={{marginTop: 50}} /></View>;
@@ -355,7 +381,7 @@ export default function CandidateMentorDetail() {
     sType === "bundle" ? (selSlots.length === 3 ? selSlots.map(sl => sl.time).join(" · ") : `${selSlots.length}/3 slots chosen`) : (selSlot ? `${selSlot.time} · ${selSlot.displayDate}` : ""),
   ];
 
-  const bnProps = { sType, price, bundleSave, s1ok, s2ok, s3ok, allOk, tried, onBook: handleBookNow, isFreeFounderIntro };
+  const bnProps = { sType, price, bundleSave, s1ok, s2ok, s3ok, allOk, tried, onBook: handleBookNow, isFreeFounderIntro, paying };
 
   return (
     <View style={g.page}>
@@ -542,6 +568,19 @@ export default function CandidateMentorDetail() {
                       </ScrollView>
                       {!selDay || selDay.isFullDayOff ? (
                         <View style={g.emptyState}><Text style={{ color: selDay?.isFullDayOff ? "#EF4444" : "#999", fontFamily: F }}>{selDay?.isFullDayOff ? "Mentor unavailable this day." : "No slots for this day."}</Text></View>
+                      ) : avail.length > 0 && avail.every(d => d.isFullDayOff || d.slots.every(sl => !sl.isAvailable)) ? (
+                        <View style={[g.emptyState, { gap: 12 }]}>
+                          <Text style={{ fontSize: 32 }}>😔</Text>
+                          <Text style={{ fontFamily: F, fontSize: 15, fontWeight: "700", color: "#374151", textAlign: "center" }}>No available slots right now</Text>
+                          <Text style={{ fontFamily: F, fontSize: 13, color: MUTED, textAlign: "center", lineHeight: 20 }}>This mentor hasn't opened any slots yet. Try another mentor — they may have immediate availability.</Text>
+                          <TouchableOpacity
+                            style={{ backgroundColor: TEAL, borderRadius: 10, paddingVertical: 12, paddingHorizontal: 24, marginTop: 4 }}
+                            onPress={() => router.back()}
+                            activeOpacity={0.8}
+                          >
+                            <Text style={{ fontFamily: F, color: "#fff", fontWeight: "700", fontSize: 14 }}>Browse Other Mentors</Text>
+                          </TouchableOpacity>
+                        </View>
                       ) : (
                         <View style={g.slotGrid}>
                           {selDay.slots.map(sl => {

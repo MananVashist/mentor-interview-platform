@@ -255,6 +255,16 @@ export default function CampaignLanding() {
               />
             </View>
 
+            <TouchableOpacity
+              onPress={() => handleViewMentors("hero_secondary")}
+              activeOpacity={0.7}
+              style={{ marginBottom: 8 }}
+            >
+              <Text style={styles.secondaryCta}>
+                See who's available →
+              </Text>
+            </TouchableOpacity>
+
             <TrustFooter isSmall={isSmall} />
           </View>
         </View>
@@ -300,4 +310,5 @@ const styles = StyleSheet.create({
   trustPillText: { fontFamily: SYSTEM_FONT, fontSize: 14, fontWeight: "700", color: "#0F766E" },
   section: { maxWidth: 900, width: "100%", alignSelf: "center", paddingHorizontal: 24, paddingVertical: 40 },
   footerText: { textAlign: "center", fontFamily: SYSTEM_FONT, color: "#9CA3AF", fontSize: 13 },
+  secondaryCta: { fontFamily: SYSTEM_FONT, fontSize: 15, fontWeight: "600", color: CTA_TEAL, textAlign: "center", textDecorationLine: "underline" },
 });

@@ -225,7 +225,34 @@ export default function PGScreen() {
 function loadRazorpayScript() {
   return new Promise((resolve) => {
     if (Platform.OS !== 'web') return resolve(true);
-    if (document.getElementById('razorpay-sdk')) return resolve(true);
+
+    // If window.Razorpay is already available, no need to do anything
+    if (typeof (window as any).Razorpay === 'function') return resolve(true);
+
+    const existingScript = document.getElementById('razorpay-sdk');
+
+    const waitForRazorpay = () => {
+      // Poll until window.Razorpay is defined (max 10s, 100ms intervals)
+      let attempts = 0;
+      const interval = setInterval(() => {
+        attempts++;
+        if (typeof (window as any).Razorpay === 'function') {
+          clearInterval(interval);
+          resolve(true);
+        } else if (attempts > 100) {
+          clearInterval(interval);
+          console.error('[PGScreen] ❌ Razorpay SDK never became available');
+          resolve(false);
+        }
+      }, 100);
+    };
+
+    if (existingScript) {
+      // Script tag exists but window.Razorpay not ready yet — poll for it
+      waitForRazorpay();
+      return;
+    }
+
     const script = document.createElement('script');
     script.id = 'razorpay-sdk';
     script.src = 'https://checkout.razorpay.com/v1/checkout.js';
