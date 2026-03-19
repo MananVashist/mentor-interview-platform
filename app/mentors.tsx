@@ -395,7 +395,7 @@ export default function PublicBrowseMentors() {
   const [mentorsLoading, setMentorsLoading] = useState(false);
   const [fetchError, setFetchError] = useState(false);
 
-  const [sortBy, setSortBy] = useState<SortOption>('price_low');
+  const [sortBy, setSortBy] = useState<SortOption>('sessions');
   const [showTierInfo, setShowTierInfo] = useState(false);
 
   const [tierMap, setTierMap] = useState<Record<string, number>>({});

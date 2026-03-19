@@ -237,6 +237,16 @@ function BookNowPanel({
           <Text style={[g.trustTxt, { fontFamily: F }]}>Payments secured by Razorpay</Text>
         </View>
       )}
+      {allOk && (
+        <View style={{ marginTop: 12, backgroundColor: "#F0FDFA", borderRadius: 10, padding: 12, borderWidth: 1, borderColor: "#CCFBF1" }}>
+          <Text style={{ fontFamily: F, fontSize: 12, color: "#0F766E", lineHeight: 18, fontWeight: "600" }}>
+            ✅ What happens next
+          </Text>
+          <Text style={{ fontFamily: F, fontSize: 12, color: "#0F766E", lineHeight: 18, marginTop: 4 }}>
+            After payment, you'll receive a confirmation email with your session link and details. Your mentor will join at the scheduled time.
+          </Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -274,7 +284,7 @@ export default function MentorDetail() {
 
   const { user, setUser, setSession } = useAuthStore();
   const [uid,       setUid]      = useState<string | null>(user?.id || null);
-  const [openStep,  setOpenStep] = useState<number>(-1);
+  const [openStep,  setOpenStep] = useState<number>(0);
   const [tried,     setTried]    = useState(false);
   const [paying,    setPaying]   = useState(false);
   const isProcessingRef          = useRef(false);
@@ -887,6 +897,23 @@ export default function MentorDetail() {
                           <Text style={{ color: selDay?.isFullDayOff ? "#EF4444" : "#999", fontFamily: F }}>
                             {selDay?.isFullDayOff ? "Mentor unavailable this day." : "No slots for this day."}
                           </Text>
+                        </View>
+                      ) : avail.length > 0 && avail.every(d => d.isFullDayOff || d.slots.every(sl => !sl.isAvailable)) ? (
+                        <View style={[g.emptyState, { gap: 12 }]}>
+                          <Text style={{ fontSize: 32 }}>😔</Text>
+                          <Text style={{ fontFamily: F, fontSize: 15, fontWeight: "700", color: "#374151", textAlign: "center" }}>
+                            No available slots right now
+                          </Text>
+                          <Text style={{ fontFamily: F, fontSize: 13, color: MUTED, textAlign: "center", lineHeight: 20 }}>
+                            This mentor hasn't opened any slots yet. Try another mentor — they may have immediate availability.
+                          </Text>
+                          <TouchableOpacity
+                            style={{ backgroundColor: TEAL, borderRadius: 10, paddingVertical: 12, paddingHorizontal: 24, marginTop: 4 }}
+                            onPress={handleBack}
+                            activeOpacity={0.8}
+                          >
+                            <Text style={{ fontFamily: F, color: "#fff", fontWeight: "700", fontSize: 14 }}>Browse Other Mentors</Text>
+                          </TouchableOpacity>
                         </View>
                       ) : (
                         <View style={g.slotGrid}>
