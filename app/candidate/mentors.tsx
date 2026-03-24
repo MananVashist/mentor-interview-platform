@@ -15,6 +15,8 @@ const SUPABASE_URL = 'https://rcbaaiiawrglvyzmawvr.supabase.co';
 const SUPABASE_ANON_KEY =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJjYmFhaWlhd3JnbHZ5em1hd3ZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjExNTA1NjAsImV4cCI6MjA3NjcyNjU2MH0.V3qRHGXBMlspRS7XFJlXdo4qIcCms60Nepp7dYMEjLA';
 
+const FOUNDER_ID = 'e251486e-c21a-49f4-8ab7-ce808785638a';
+
 type Mentor = {
   id: string;
   professional_title?: string | null;
@@ -219,13 +221,13 @@ export default function CandidateMentorsList() {
                     <View style={styles.footerRow}>
                       <View style={styles.priceSection}>
                         <AppText style={styles.priceLabel}>
-                          Per booking (2 sessions)
+                          {m.id === FOUNDER_ID ? 'Intro call' : 'Per booking (2 sessions)'}
                         </AppText>
                         <AppText style={styles.priceValue}>
-                          ₹{candidatePrice.toLocaleString('en-IN')}
+                          {m.id === FOUNDER_ID ? 'Free' : `₹${candidatePrice.toLocaleString('en-IN')}`}
                         </AppText>
                         <AppText style={styles.priceSub}>
-                          Mentor payout + {cut}% platform fee
+                          {m.id === FOUNDER_ID ? 'Complimentary discovery call' : `Mentor payout + ${cut}% platform fee`}
                         </AppText>
                       </View>
 

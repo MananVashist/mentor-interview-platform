@@ -107,8 +107,9 @@ export default function SignUpScreen() {
     try {
       const phoneToSend = role === 'mentor' ? phone.trim() : '';
 
+      const titleToSend = role === 'mentor' ? professionalTitle.trim() : candidateTitle.trim();
       const { user, error: authError } = await authService.signUp(
-        email.trim(), password.trim(), name.trim(), role, phoneToSend
+        email.trim(), password.trim(), name.trim(), role, phoneToSend, titleToSend
       );
 
       if (authError) throw new Error(authError.message);

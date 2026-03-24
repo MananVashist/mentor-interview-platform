@@ -93,7 +93,8 @@ async function signUp(
   password: string, 
   fullName: string, 
   role: string, 
-  phone: string
+  phone: string,
+  professionalTitle: string = ''
 ) {
   console.log('================ SIGN UP (service) ================');
   const { data, error } = await withTiming('supabase.auth.signUp', () =>
@@ -114,7 +115,7 @@ async function signUp(
   if (data?.user && !error) {
     // 1. Send helpdesk notification
     console.log('[AUTH] 📧 Sending helpdesk signup notification...');
-    sendHelpdeskSignupNotification(data.user.id, email, fullName, role).catch(err => {
+    sendHelpdeskSignupNotification(data.user.id, email, fullName, role, professionalTitle).catch(err => {
       console.error('[AUTH] ⚠️ Helpdesk notification failed (non-critical):', err);
     });
 
@@ -146,7 +147,8 @@ async function sendHelpdeskSignupNotification(
   userId: string,
   email: string,
   fullName: string,
-  role: string
+  role: string,
+  professionalTitle: string = ''
 ) {
   try {
     const signupTime = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
@@ -156,7 +158,7 @@ async function sendHelpdeskSignupNotification(
       .replace(/{{userRole}}/g, role)
       .replace(/{{fullName}}/g, fullName)
       .replace(/{{email}}/g, email)
-      .replace(/{{professionalTitle}}/g, 'Pending profile completion')
+      .replace(/{{professionalTitle}}/g, professionalTitle || 'Not provided')
       .replace(/{{userId}}/g, userId)
       .replace(/{{signupTime}}/g, signupTime);
     
