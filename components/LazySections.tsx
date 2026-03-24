@@ -6,7 +6,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   Platform,
-  useWindowDimensions,
+  Dimensions,
   Image as RNImage,
   Linking,
   ActivityIndicator
@@ -146,8 +146,13 @@ const SimpleImage = ({ source, style, alt }: any) => {
 };
 
 const LogoWall = memo(() => {
-  const { width } = useWindowDimensions();
-  const isSmall = width < 900;
+  const [isSmall, setIsSmall] = useState(false);
+  useEffect(() => {
+    const update = () => setIsSmall(Dimensions.get('window').width < 900);
+    update();
+    const sub = Dimensions.addEventListener('change', ({ window }) => setIsSmall(window.width < 900));
+    return () => sub.remove();
+  }, []);
   return (
     <View style={styles.logoSection} nativeID="our-mentors" accessibilityRole="region" accessibilityLabel="Companies where our mentors work">
       <Text style={styles.logoTitle} accessibilityRole="header" accessibilityLevel={2}>
@@ -213,8 +218,13 @@ const HowItWorksSection = memo(({ isSmall }: { isSmall: boolean }) => (
 ));
 
 const InterviewTracks = memo(() => {
-  const { width } = useWindowDimensions();
-  const isSmall = width < 900;
+  const [isSmall, setIsSmall] = useState(false);
+  useEffect(() => {
+    const update = () => setIsSmall(Dimensions.get('window').width < 900);
+    update();
+    const sub = Dimensions.addEventListener('change', ({ window }) => setIsSmall(window.width < 900));
+    return () => sub.remove();
+  }, []);
   const router = useRouter();
 
   return (
@@ -626,8 +636,13 @@ const FinalCTABanner = memo(({ onViewMentors, isSmall }: { onViewMentors: () => 
 ));
 
 export default function LazySections() {
-  const { width } = useWindowDimensions();
-  const isSmall = width < 900;
+  const [isSmall, setIsSmall] = useState(false);
+  useEffect(() => {
+    const update = () => setIsSmall(Dimensions.get('window').width < 900);
+    update();
+    const sub = Dimensions.addEventListener('change', ({ window }) => setIsSmall(window.width < 900));
+    return () => sub.remove();
+  }, []);
   const router = useRouter();
 
   const handleViewMentors = (source: string) => {

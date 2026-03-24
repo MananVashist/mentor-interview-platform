@@ -450,23 +450,19 @@ export default function ProductManagementInterviews() {
   return (
     <>
       <Head>
-        <title>Mock interviews with experienced PMs </title>
-        <meta name="description" content="Practice product sense, execution, technical design, analytics and strategy. Get structured feedback from expert PMs." />
-        <meta name="keywords" content="product manager interview, PM interview prep, CIRCLES framework, AARM framework, RICE scoring, product sense, execution interview, Google PM, Amazon PM, Meta PM, FAANG PM interview, product strategy, PM frameworks" />
+        <title>Product Manager Mock Interviews | PM Interview Prep | CrackJobs</title>
+        <meta name="description" content="Practice PM interviews with experienced product managers. Master Product Sense, Execution, Technical Design, and Strategy. Get structured feedback and a session recording. Book a 55-min mock interview today." />
+        <meta name="keywords" content="product manager mock interview, PM mock interview, PM interview prep India, product management interview practice, CIRCLES framework interview, AARM framework, RICE scoring, product sense interview, execution interview, PM interview framework, mock interview with PM" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="canonical" href="https://crackjobs.com/interviews/product-management" />
-        <meta property="og:title" content="Mock interviews with experienced PMs | CrackJobs" />
-        <meta property="og:description" content="Master PM interviews with expert mentors from Google, Amazon, Meta. Learn frameworks, get feedback, land offers." />
+        <meta property="og:title" content="Product Manager Mock Interviews | CrackJobs" />
+        <meta property="og:description" content="Practice PM interviews with experienced product managers. Master Product Sense, Execution, Technical Design, and Strategy. Get structured feedback and a session recording." />
         <meta property="og:type" content="website" />
-        
-        {/* EDITED: Added proper site name meta tag */}
         <meta property="og:site_name" content="CrackJobs" />
-        
         <meta property="og:url" content="https://crackjobs.com/interviews/product-management" />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Product Manager Interview Preparation | CrackJobs" />
-        <meta name="twitter:description" content="Master PM interviews with expert mentors from Google, Amazon, Meta." />
-      
+        <meta name="twitter:title" content="Product Manager Mock Interviews | CrackJobs" />
+        <meta name="twitter:description" content="Practice PM interviews with experienced product managers. Master Product Sense, Execution, Technical and Strategy. Book a 55-min mock today." />
         
         <style>{`
   body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; background-color: #f8f5f0; }

@@ -533,19 +533,18 @@ model = RandomForestClassifier(class_weight='balanced')`,
   return (
     <>
       <Head>
-        <title>Data Science Interview Prep | Master ML Algorithms, Model Debugging & Python</title>
-        <meta name="description" content="Ace Data Science interviews at Google, Amazon, Meta with expert ML engineers. Master machine learning algorithms, model debugging, feature engineering, and Python coding. Practice real DS interview questions." />
-        <meta name="keywords" content="data science interview, machine learning interview, ML algorithms, model debugging, feature engineering, Python pandas, scikit-learn, XGBoost, neural networks, overfitting, data science preparation" />
+        <title>Data Science Mock Interviews | ML & Python Interview Prep | CrackJobs</title>
+        <meta name="description" content="Practice Data Science and ML interviews with experienced data scientists. Master machine learning algorithms, model debugging, feature engineering, and Python coding. Get structured feedback and a session recording. Book a 55-min mock interview today." />
+        <meta name="keywords" content="data science mock interview, machine learning mock interview, data science interview prep India, ML interview practice, ML algorithms interview, model debugging interview, feature engineering interview, Python pandas interview, data science interview questions, ML mock interview" />
         <link rel="canonical" href="https://crackjobs.com/interviews/data-science" />
-      
-        <meta property="og:title" content="Data Science Interview Preparation | CrackJobs" />
-        <meta property="og:description" content="Master ML algorithms, model debugging, and Python coding." />
+        <meta property="og:title" content="Data Science Mock Interviews | CrackJobs" />
+        <meta property="og:description" content="Practice Data Science and ML interviews with experienced data scientists. Master ML algorithms, model debugging, feature engineering, and Python coding. Get structured feedback on every session." />
         <meta property="og:type" content="website" />
-        
-        {/* ADDED: Proper site name meta tag */}
         <meta property="og:site_name" content="CrackJobs" />
-        
         <meta property="og:url" content="https://crackjobs.com/interviews/data-science" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Data Science Mock Interviews | CrackJobs" />
+        <meta name="twitter:description" content="Practice Data Science and ML interviews with experienced data scientists. Master ML algorithms, model debugging, and Python coding. Book a 55-min mock today." />
         
         <style>{`
   body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; background-color: #f8f5f0; }

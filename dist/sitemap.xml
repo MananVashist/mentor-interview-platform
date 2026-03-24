@@ -3,11 +3,10 @@
 
 	<url>
 		<loc>https://crackjobs.com/</loc>
-		<lastmod>2026-02-16</lastmod>
+		<lastmod>2026-03-24</lastmod>
 		<changefreq>weekly</changefreq>
 		<priority>1.0</priority>
 	</url>
-
 	<url>
 		<loc>https://crackjobs.com/auth/sign-up</loc>
 		<lastmod>2026-02-16</lastmod>
@@ -20,82 +19,102 @@
 		<changefreq>monthly</changefreq>
 		<priority>0.8</priority>
 	</url>
-
 	<url>
 		<loc>https://crackjobs.com/interviews/product-management</loc>
-		<lastmod>2026-02-16</lastmod>
+		<lastmod>2026-03-24</lastmod>
 		<changefreq>weekly</changefreq>
 		<priority>0.95</priority>
 	</url>
 	<url>
 		<loc>https://crackjobs.com/interviews/data-analytics</loc>
-		<lastmod>2026-02-16</lastmod>
+		<lastmod>2026-03-24</lastmod>
 		<changefreq>weekly</changefreq>
 		<priority>0.95</priority>
 	</url>
 	<url>
 		<loc>https://crackjobs.com/interviews/data-science</loc>
-		<lastmod>2026-02-16</lastmod>
+		<lastmod>2026-03-24</lastmod>
 		<changefreq>weekly</changefreq>
 		<priority>0.95</priority>
 	</url>
 	<url>
 		<loc>https://crackjobs.com/interviews/hr</loc>
-		<lastmod>2026-02-16</lastmod>
+		<lastmod>2026-03-24</lastmod>
 		<changefreq>weekly</changefreq>
 		<priority>0.95</priority>
 	</url>
-
 	<url>
 		<loc>https://crackjobs.com/mentors</loc>
-		<lastmod>2026-02-16</lastmod>
+		<lastmod>2026-03-24</lastmod>
 		<changefreq>daily</changefreq>
 		<priority>0.9</priority>
 	</url>
 	<url>
-		<loc>https://crackjobs.com/mentors/[id]</loc>
-		<lastmod>2026-02-16</lastmod>
-		<changefreq>weekly</changefreq>
-		<priority>0.8</priority>
-	</url>
-
-	<url>
 		<loc>https://crackjobs.com/blog</loc>
-		<lastmod>2026-02-16</lastmod>
+		<lastmod>2026-03-24</lastmod>
 		<changefreq>weekly</changefreq>
 		<priority>0.8</priority>
 	</url>
 	<url>
 		<loc>https://crackjobs.com/blog/sql-interview-mistakes-data-analysts</loc>
-		<lastmod>2026-02-16</lastmod>
+		<lastmod>2025-01-10</lastmod>
 		<changefreq>monthly</changefreq>
 		<priority>0.7</priority>
 	</url>
 	<url>
 		<loc>https://crackjobs.com/blog/machine-learning-interview-mistakes-data-scientists</loc>
-		<lastmod>2026-02-16</lastmod>
+		<lastmod>2025-01-15</lastmod>
 		<changefreq>monthly</changefreq>
 		<priority>0.7</priority>
 	</url>
 	<url>
 		<loc>https://crackjobs.com/blog/hr-interview-mistakes-talent-acquisition</loc>
-		<lastmod>2026-02-16</lastmod>
+		<lastmod>2025-01-18</lastmod>
 		<changefreq>monthly</changefreq>
 		<priority>0.7</priority>
 	</url>
 	<url>
 		<loc>https://crackjobs.com/blog/product-manager-interview-execution-mistakes</loc>
-		<lastmod>2026-02-16</lastmod>
+		<lastmod>2025-01-20</lastmod>
 		<changefreq>monthly</changefreq>
 		<priority>0.7</priority>
 	</url>
 	<url>
 		<loc>https://crackjobs.com/blog/product-manager-interview-product-sense-mistakes</loc>
-		<lastmod>2026-02-16</lastmod>
+		<lastmod>2025-01-22</lastmod>
 		<changefreq>monthly</changefreq>
 		<priority>0.7</priority>
 	</url>
-
+	<url>
+		<loc>https://crackjobs.com/blog/aarm-framework-product-management-interviews</loc>
+		<lastmod>2026-02-10</lastmod>
+		<changefreq>monthly</changefreq>
+		<priority>0.7</priority>
+	</url>
+	<url>
+		<loc>https://crackjobs.com/blog/data-analyst-mock-interview-guide</loc>
+		<lastmod>2026-02-18</lastmod>
+		<changefreq>monthly</changefreq>
+		<priority>0.7</priority>
+	</url>
+	<url>
+		<loc>https://crackjobs.com/blog/how-to-prepare-for-pm-mock-interview</loc>
+		<lastmod>2026-02-25</lastmod>
+		<changefreq>monthly</changefreq>
+		<priority>0.7</priority>
+	</url>
+	<url>
+		<loc>https://crackjobs.com/blog/ml-debugging-interview-guide</loc>
+		<lastmod>2026-03-05</lastmod>
+		<changefreq>monthly</changefreq>
+		<priority>0.7</priority>
+	</url>
+	<url>
+		<loc>https://crackjobs.com/blog/sql-window-functions-interview-guide</loc>
+		<lastmod>2026-03-12</lastmod>
+		<changefreq>monthly</changefreq>
+		<priority>0.7</priority>
+	</url>
 	<url>
 		<loc>https://crackjobs.com/how-it-works</loc>
 		<lastmod>2026-02-16</lastmod>
@@ -126,7 +145,6 @@
 		<changefreq>monthly</changefreq>
 		<priority>0.5</priority>
 	</url>
-
 	<url>
 		<loc>https://crackjobs.com/privacy</loc>
 		<lastmod>2026-02-16</lastmod>
@@ -138,6 +156,84 @@
 		<lastmod>2026-02-16</lastmod>
 		<changefreq>yearly</changefreq>
 		<priority>0.4</priority>
+	</url>
+	<url>
+		<loc>https://crackjobs.com/mentors/1669214f-e7dc-4ea6-8dee-ca60150fe97a</loc>
+		<lastmod>2026-02-22</lastmod>
+		<changefreq>weekly</changefreq>
+		<priority>0.75</priority>
+	</url>
+	<url>
+		<loc>https://crackjobs.com/mentors/3362c7aa-5b4f-47bb-9c47-44204f747bfd</loc>
+		<lastmod>2026-02-22</lastmod>
+		<changefreq>weekly</changefreq>
+		<priority>0.75</priority>
+	</url>
+	<url>
+		<loc>https://crackjobs.com/mentors/50381fda-9f95-4075-bad0-d74f101ea5c9</loc>
+		<lastmod>2026-03-02</lastmod>
+		<changefreq>weekly</changefreq>
+		<priority>0.75</priority>
+	</url>
+	<url>
+		<loc>https://crackjobs.com/mentors/5337ced9-9466-4f79-b0f5-a7c552865528</loc>
+		<lastmod>2026-02-22</lastmod>
+		<changefreq>weekly</changefreq>
+		<priority>0.75</priority>
+	</url>
+	<url>
+		<loc>https://crackjobs.com/mentors/7627f54c-aa6a-4bb9-aa4a-43da3fe45397</loc>
+		<lastmod>2026-03-02</lastmod>
+		<changefreq>weekly</changefreq>
+		<priority>0.75</priority>
+	</url>
+	<url>
+		<loc>https://crackjobs.com/mentors/7e78c766-ce02-4baa-a861-d3f690584755</loc>
+		<lastmod>2026-03-02</lastmod>
+		<changefreq>weekly</changefreq>
+		<priority>0.75</priority>
+	</url>
+	<url>
+		<loc>https://crackjobs.com/mentors/891f048d-b23d-49a4-b2f7-24b8b027a71a</loc>
+		<lastmod>2026-03-02</lastmod>
+		<changefreq>weekly</changefreq>
+		<priority>0.75</priority>
+	</url>
+	<url>
+		<loc>https://crackjobs.com/mentors/939ab8b8-88d2-455b-aad5-dd908c47f705</loc>
+		<lastmod>2026-03-12</lastmod>
+		<changefreq>weekly</changefreq>
+		<priority>0.75</priority>
+	</url>
+	<url>
+		<loc>https://crackjobs.com/mentors/9de1e577-d232-4ba9-906f-bd241bbc74c1</loc>
+		<lastmod>2026-02-22</lastmod>
+		<changefreq>weekly</changefreq>
+		<priority>0.75</priority>
+	</url>
+	<url>
+		<loc>https://crackjobs.com/mentors/cd6b9265-970a-4efd-a799-9de9ec0d46db</loc>
+		<lastmod>2026-03-02</lastmod>
+		<changefreq>weekly</changefreq>
+		<priority>0.75</priority>
+	</url>
+	<url>
+		<loc>https://crackjobs.com/mentors/e251486e-c21a-49f4-8ab7-ce808785638a</loc>
+		<lastmod>2026-03-23</lastmod>
+		<changefreq>weekly</changefreq>
+		<priority>0.75</priority>
+	</url>
+	<url>
+		<loc>https://crackjobs.com/mentors/e93bbac0-b00c-4866-9b5e-00b2bd0dc474</loc>
+		<lastmod>2026-02-18</lastmod>
+		<changefreq>weekly</changefreq>
+		<priority>0.75</priority>
+	</url>
+	<url>
+		<loc>https://crackjobs.com/mentors/ee41e117-31df-4548-b8d2-5b5eaa1a869b</loc>
+		<lastmod>2026-03-02</lastmod>
+		<changefreq>weekly</changefreq>
+		<priority>0.75</priority>
 	</url>
 
 </urlset>

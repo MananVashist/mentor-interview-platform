@@ -22,6 +22,7 @@ Disallow: /blog/technical-interview-preparation-guide
 # --- SYSTEM FILES ---
 Disallow: /api/
 Disallow: /_expo/
+Disallow: /_sitemap
 
 # --- PREVENT DUPLICATE CONTENT ---
 # Good practice for search filters

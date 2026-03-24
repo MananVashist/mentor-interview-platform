@@ -41,6 +41,15 @@ const staticRoutes = [
   '/blog/hr-interview-mistakes-talent-acquisition',
   '/blog/product-manager-interview-execution-mistakes',
   '/blog/product-manager-interview-product-sense-mistakes',
+  '/blog/aarm-framework-product-management-interviews',
+  '/blog/data-analyst-mock-interview-guide',
+  '/blog/how-to-prepare-for-pm-mock-interview',
+  '/blog/ml-debugging-interview-guide',
+  '/blog/sql-window-functions-interview-guide',
+  '/lp/pm',
+  '/lp/da',
+  '/lp/ds',
+  '/lp/hr',
 ];
 
 function isRecoverablePuppeteerError(err) {
