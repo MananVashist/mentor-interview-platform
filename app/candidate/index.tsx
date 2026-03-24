@@ -84,10 +84,13 @@ const TierBadge = ({ tier }: { tier?: string | null }) => {
 // ============================================
 // MENTOR CARD
 // ============================================
+const FOUNDER_ID = 'e251486e-c21a-49f4-8ab7-ce808785638a';
+
 const MentorCard = ({
   m, displayPrice, introPrice, totalSessions, isNewMentor,
   averageRating, showRating, hasSlots, displaySlot, onView,
 }: any) => {
+  const isFree = m.id === FOUNDER_ID;
   const seed = m.id || m.profiles?.full_name || 'Mentor';
   const fallbackAvatar = `https://api.dicebear.com/9.x/micah/png?seed=${encodeURIComponent(seed)}&backgroundColor=e5e7eb,f3f4f6`;
 
@@ -134,8 +137,8 @@ const MentorCard = ({
 
         <View style={styles.actionRow}>
           <View style={styles.priceContainer}>
-             <Text style={styles.startingAt}>Intro calls from</Text>
-             <Text style={styles.basePrice}>₹{introPrice.toLocaleString()}</Text>
+             <Text style={styles.startingAt}>{isFree ? 'Intro call' : 'Intro calls from'}</Text>
+             <Text style={styles.basePrice}>{isFree ? 'Free' : `₹${introPrice.toLocaleString()}`}</Text>
           </View>
           <TouchableOpacity style={styles.bookBtn} onPress={onView} activeOpacity={0.8}>
             <Text style={styles.bookBtnText}>View Profile & Book</Text>
@@ -223,9 +226,11 @@ export default function CandidateDashboard() {
   const sortedMentors = useMemo(() => {
     let sorted = [...mentors];
     const getPrice = (m: Mentor) => {
+        if (m.id === FOUNDER_ID) return 0;
         const base = m.session_price_inr ?? m.session_price ?? 0;
-        const cut = tierMap[m.tier || 'bronze'] || 50; 
-        return Math.round(base / (1 - (cut/100)));
+        const cut = tierMap[m.tier || 'bronze'] || 50;
+        const displayPrice = Math.round(base / (1 - (cut / 100)));
+        return Math.round(displayPrice * 0.20);
     };
     switch (sortBy) {
       case 'price_low': sorted.sort((a, b) => getPrice(a) - getPrice(b)); break;
@@ -314,7 +319,7 @@ export default function CandidateDashboard() {
               const basePrice = m.session_price_inr ?? m.session_price ?? 0;
               const cut = tierMap[m.tier || 'bronze'] || 50; 
               const displayPrice = basePrice ? Math.round(basePrice / (1 - (cut/100))) : 0;
-              const introPrice = Math.round(displayPrice * 0.20);
+              const introPrice = m.id === FOUNDER_ID ? 0 : Math.round(displayPrice * 0.20);
               const totalSessions = m.total_sessions ?? 0;
               const isNewMentor = totalSessions < 5;
               const averageRating = m.average_rating ?? 0;

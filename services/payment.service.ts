@@ -20,7 +20,7 @@ export async function sendEmail(to: string, subject: string, templateHtml: strin
     // 🟢 Inject Calendar HTML directly into the email body since the Edge Function drops attachments
     // We insert it right before the closing footer so it stays cleanly inside the email container
     if (calendarHtml) {
-      compiledHtml = compiledHtml.replace(/<div class="footer">/g, `${calendarHtml}\n    </div>\n    <div class="footer">`);
+      compiledHtml = compiledHtml.replace(/<div class="footer">/g, `${calendarHtml}\n    <div class="footer">`);
     }
 
     console.log(`📧 [Email Service] Sending to: ${to}`);
@@ -53,7 +53,7 @@ const generateCalendarHtml = (sessions: any[], sessionType: SessionType, title: 
     const durationMin = sessionType === 'intro' ? 25 : 55;
     const end = new Date(start.getTime() + durationMin * 60000);
 
-    const formatDateForGoogle = (date: Date) => date.toISOString().replace(/-|:|\.\d\d\d/g, '');
+    const formatDateForGoogle = (date: Date) => date.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z');
     const gStart = formatDateForGoogle(start);
     const gEnd = formatDateForGoogle(end);
     
