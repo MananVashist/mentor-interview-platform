@@ -6,7 +6,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   Image,
-  useWindowDimensions,
+  Dimensions,
   Platform,
   ScrollView,
 } from 'react-native';
@@ -20,9 +20,21 @@ import { getAllPosts } from '@/data/blog-posts';
 
 export default function BlogListing() {
   const router = useRouter();
-  const { width } = useWindowDimensions();
-  const isSmall = width < 900;
-  const isMobile = width < 600;
+  const [isSmall, setIsSmall] = React.useState(false);
+  const [isMobile, setIsMobile] = React.useState(false);
+  React.useEffect(() => {
+    const update = () => {
+      const w = Dimensions.get('window').width;
+      setIsSmall(w < 900);
+      setIsMobile(w < 600);
+    };
+    update();
+    const sub = Dimensions.addEventListener('change', ({ window }) => {
+      setIsSmall(window.width < 900);
+      setIsMobile(window.width < 600);
+    });
+    return () => sub.remove();
+  }, []);
 
   const posts = getAllPosts();
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -53,9 +65,9 @@ export default function BlogListing() {
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
         
         {/* Primary SEO Tags */}
-        <title>Interview Preparation Blog | Tips & Insights - CrackJobs</title>
-        <meta name="description" content="Expert advice on interview preparation, mock interview tips, career guidance, and success stories from candidates who landed their dream jobs at Google, Amazon, Meta." />
-        <meta name="keywords" content="interview tips, career advice, interview preparation blog, mock interview insights, interview success stories, FAANG interview tips, product management tips, data analytics tips, SQL interview tips, machine learning interviews, behavioral interview guide, technical interview prep, mock interview benefits, Amazon interview, Google interview, Meta interview" />
+        <title>Mock Interview Tips & Guides for PM, Data & HR | CrackJobs Blog</title>
+        <meta name="description" content="Step-by-step guides for PM, Data Analyst, Data Science, and HR mock interview preparation. Learn common mistakes, frameworks, and proven strategies to ace your next interview." />
+        <meta name="keywords" content="mock interview tips India, PM mock interview guide, data analyst mock interview tips, data science mock interview guide, HR mock interview tips, SQL interview mistakes, AARM framework guide, CIRCLES framework, PM interview mistakes, interview preparation blog India" />
         
         {/* Canonical URL */}
         <link rel="canonical" href="https://crackjobs.com/blog" />
@@ -64,8 +76,8 @@ export default function BlogListing() {
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://crackjobs.com/blog" />
         <meta property="og:site_name" content="CrackJobs" />
-        <meta property="og:title" content="Interview Preparation Blog | Tips & Insights - CrackJobs" />
-        <meta property="og:description" content="Expert advice on interview preparation, mock interview tips, and career guidance. Success stories from candidates who landed FAANG jobs." />
+        <meta property="og:title" content="Mock Interview Tips & Guides for PM, Data & HR | CrackJobs Blog" />
+        <meta property="og:description" content="Step-by-step guides for PM, Data Analyst, Data Science, and HR mock interview preparation. Common mistakes, frameworks, and strategies." />
         <meta property="og:image" content="https://crackjobs.com/og-image.png" />
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
@@ -76,8 +88,8 @@ export default function BlogListing() {
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:site" content="@crackjobs" />
         <meta name="twitter:creator" content="@crackjobs" />
-        <meta name="twitter:title" content="Interview Preparation Blog - CrackJobs" />
-        <meta name="twitter:description" content="Expert interview tips, career advice, and success stories from FAANG candidates." />
+        <meta name="twitter:title" content="Mock Interview Tips & Guides for PM, Data & HR | CrackJobs Blog" />
+        <meta name="twitter:description" content="Step-by-step mock interview guides for PM, Data Analyst, Data Science, and HR roles. Common mistakes and proven preparation strategies." />
         <meta name="twitter:image" content="https://crackjobs.com/og-image.png" />
         <meta name="twitter:image:alt" content="CrackJobs Blog" />
         

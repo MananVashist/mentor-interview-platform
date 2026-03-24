@@ -503,23 +503,19 @@ JOIN monthly_purchases b
   return (
     <>
       <Head>
-        <title>Data Analyst Mock interviews | Master SQL, Business Analytics & Case studies</title>
-        <meta name="description" content="Ace Data Analyst interviews at Amazon, Flipkart, Swiggy with expert mentors. Master SQL queries, business case analysis and stakeholder communication. Practice real interview questions." />
-        <meta name="keywords" content="data analyst interview, SQL interview questions, business analytics, data analysis, dashboard design, Tableau, Power BI, SQL joins, window functions, A/B testing, data visualization, business intelligence" />
+        <title>Data Analyst Mock Interviews | SQL & Business Analytics Interview Prep | CrackJobs</title>
+        <meta name="description" content="Practice Data Analyst interviews with experienced data analysts. Master SQL queries, business case analysis, A/B testing, and stakeholder communication. Get structured feedback and a session recording. Book a 55-min mock interview today." />
+        <meta name="keywords" content="data analyst mock interview, SQL mock interview, data analyst interview prep India, business analyst mock interview, SQL interview questions, business analytics interview, A/B testing interview, data visualization interview, Tableau Power BI interview, data analyst interview practice" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="canonical" href="https://crackjobs.com/interviews/data-analytics" />
         <meta property="og:title" content="Data Analyst Mock Interviews | CrackJobs" />
-        <meta property="og:description" content="Master SQL, business analytics, and dashboard design with expert data analysts from top companies." />
+        <meta property="og:description" content="Practice Data Analyst interviews with experienced data analysts. Master SQL, business case analysis, A/B testing, and stakeholder communication. Get structured feedback on every session." />
         <meta property="og:type" content="website" />
-        
-        {/* ADDED: Proper site name meta tag */}
         <meta property="og:site_name" content="CrackJobs" />
-        
         <meta property="og:url" content="https://crackjobs.com/interviews/data-analytics" />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Data Analyst Interview Preparation | CrackJobs" />
-        <meta name="twitter:description" content="Master SQL, business analytics, and dashboard design." />
-      
+        <meta name="twitter:title" content="Data Analyst Mock Interviews | CrackJobs" />
+        <meta name="twitter:description" content="Practice Data Analyst interviews with experienced data analysts. Master SQL, business case analysis, and A/B testing. Book a 55-min mock today." />
         
         <style>{`
   body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; background-color: #f8f5f0; }

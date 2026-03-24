@@ -332,6 +332,9 @@ export default function CandidateBookingsScreen() {
     templates: [] as Array<{ title: string; examples: string[]; questions: any[] }>
   });
 
+  // Tab state
+  const [activeTab, setActiveTab] = useState<'upcoming' | 'completed'>('upcoming');
+
   // ✅ Reschedule modal states
   const [rescheduleModalVisible, setRescheduleModalVisible] = useState(false);
   const [availabilityData, setAvailabilityData] = useState<DayAvailability[]>([]);
@@ -658,27 +661,85 @@ export default function CandidateBookingsScreen() {
           <Heading level={2} style={styles.title}>My Bookings</Heading>
         </View>
 
-        {sessions.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Ionicons name="calendar-outline" size={64} color="#D1D5DB" />
-            <AppText style={styles.emptyText}>No bookings yet</AppText>
-            <AppText style={styles.emptyHint}>Book a session to get started!</AppText>
-          </View>
-        ) : (
-          sessions.map((session) => (
-            <BookingCard
-              key={session.id}
-              session={session}
-              onJoin={handleJoin}
-              onViewDetails={handleViewDetails}
-              onViewEvaluation={handleViewEvaluation}
-              onRebook={handleRebook}
-              onRateSession={handleOpenRatingModal}
-              onAcceptReschedule={handleAcceptReschedule}
-              onReschedule={handleRescheduleStart}
-            />
-          ))
-        )}
+        {/* ── Tabs ── */}
+        {(() => {
+          const UPCOMING_STATES: BookingUIState[] = ['APPROVAL', 'RESCHEDULE_PENDING', 'SCHEDULED', 'JOIN'];
+          const COMPLETED_STATES: BookingUIState[] = ['POST_PENDING', 'POST_COMPLETED', 'CANCELLED'];
+          const upcomingCount = sessions.filter(s => UPCOMING_STATES.includes(getBookingState(s))).length;
+          const completedCount = sessions.filter(s => COMPLETED_STATES.includes(getBookingState(s))).length;
+          const filtered = sessions.filter(s => {
+            const state = getBookingState(s);
+            return activeTab === 'upcoming'
+              ? UPCOMING_STATES.includes(state)
+              : COMPLETED_STATES.includes(state);
+          });
+
+          return (
+            <>
+              <View style={styles.tabRow}>
+                <TouchableOpacity
+                  style={[styles.tab, activeTab === 'upcoming' && styles.tabActive]}
+                  onPress={() => setActiveTab('upcoming')}
+                >
+                  <AppText style={[styles.tabText, activeTab === 'upcoming' && styles.tabTextActive]}>
+                    Upcoming
+                  </AppText>
+                  {upcomingCount > 0 && (
+                    <View style={[styles.tabBadge, activeTab === 'upcoming' && styles.tabBadgeActive]}>
+                      <AppText style={[styles.tabBadgeText, activeTab === 'upcoming' && styles.tabBadgeTextActive]}>
+                        {upcomingCount}
+                      </AppText>
+                    </View>
+                  )}
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.tab, activeTab === 'completed' && styles.tabActive]}
+                  onPress={() => setActiveTab('completed')}
+                >
+                  <AppText style={[styles.tabText, activeTab === 'completed' && styles.tabTextActive]}>
+                    Completed
+                  </AppText>
+                  {completedCount > 0 && (
+                    <View style={[styles.tabBadge, activeTab === 'completed' && styles.tabBadgeActive]}>
+                      <AppText style={[styles.tabBadgeText, activeTab === 'completed' && styles.tabBadgeTextActive]}>
+                        {completedCount}
+                      </AppText>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              </View>
+
+              {sessions.length === 0 ? (
+                <View style={styles.emptyState}>
+                  <Ionicons name="calendar-outline" size={64} color="#D1D5DB" />
+                  <AppText style={styles.emptyText}>No bookings yet</AppText>
+                  <AppText style={styles.emptyHint}>Book a session to get started!</AppText>
+                </View>
+              ) : filtered.length === 0 ? (
+                <View style={styles.emptyState}>
+                  <Ionicons name={activeTab === 'upcoming' ? 'calendar-outline' : 'checkmark-circle-outline'} size={64} color="#D1D5DB" />
+                  <AppText style={styles.emptyText}>
+                    {activeTab === 'upcoming' ? 'No upcoming sessions.' : 'No completed sessions yet.'}
+                  </AppText>
+                </View>
+              ) : (
+                filtered.map((session) => (
+                  <BookingCard
+                    key={session.id}
+                    session={session}
+                    onJoin={handleJoin}
+                    onViewDetails={handleViewDetails}
+                    onViewEvaluation={handleViewEvaluation}
+                    onRebook={handleRebook}
+                    onRateSession={handleOpenRatingModal}
+                    onAcceptReschedule={handleAcceptReschedule}
+                    onReschedule={handleRescheduleStart}
+                  />
+                ))
+              )}
+            </>
+          );
+        })()}
       </ScrollView>
 
       {/* Detail Modal */}
@@ -1032,4 +1093,14 @@ const styles = StyleSheet.create({
   bannerTitleWaiting: { fontSize: 14, fontWeight: '700', color: '#4B5563' },
   bannerTextWaiting: { fontSize: 13, color: '#374151', lineHeight: 20, marginBottom: 4 },
   bannerSubTextWaiting: { fontSize: 12, color: '#6B7280' },
+  // Tabs
+  tabRow: { flexDirection: 'row', backgroundColor: '#F3F4F6', borderRadius: 12, padding: 4, marginBottom: 20 },
+  tab: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 10, borderRadius: 10, gap: 6 },
+  tabActive: { backgroundColor: '#FFFFFF', shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 4, shadowOffset: { width: 0, height: 1 }, elevation: 2 },
+  tabText: { fontSize: 14, fontWeight: '600', color: '#6B7280' },
+  tabTextActive: { color: theme.colors.primary },
+  tabBadge: { backgroundColor: '#E5E7EB', borderRadius: 10, paddingHorizontal: 6, paddingVertical: 1, minWidth: 20, alignItems: 'center' },
+  tabBadgeActive: { backgroundColor: theme.colors.primary },
+  tabBadgeText: { fontSize: 11, fontWeight: '700', color: '#6B7280' },
+  tabBadgeTextActive: { color: '#FFFFFF' },
 });

@@ -7,7 +7,7 @@ import {
   ScrollView,
   Image,
   TouchableOpacity,
-  useWindowDimensions,
+  Dimensions,
   Platform,
   Linking,
 } from 'react-native';
@@ -38,11 +38,22 @@ const calculateReadingTime = (htmlContent: string) => {
 export default function BlogPost() {
   const router = useRouter();
   const { slug } = useLocalSearchParams<{ slug: string }>();
-  const dimensions = useWindowDimensions();
-  
-  // Safe width fallback for Mobile Renderer
-  const safeWidth = dimensions?.width || 800;
-  const isMobile = safeWidth < 600;
+  // Safe width — starts at 800 (SSR default) then updates after mount
+  const [safeWidth, setSafeWidth] = React.useState(800);
+  const [isMobile, setIsMobile] = React.useState(false);
+  React.useEffect(() => {
+    const update = () => {
+      const w = Dimensions.get('window').width;
+      setSafeWidth(w || 800);
+      setIsMobile(w < 600);
+    };
+    update();
+    const sub = Dimensions.addEventListener('change', ({ window }) => {
+      setSafeWidth(window.width || 800);
+      setIsMobile(window.width < 600);
+    });
+    return () => sub.remove();
+  }, []);
 
   // Handle array or string slug safely
   const slugString = Array.isArray(slug) ? slug[0] : slug;

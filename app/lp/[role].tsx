@@ -1,5 +1,5 @@
-﻿import React, { memo, useMemo, useRef, useState, lazy, Suspense } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Platform, useWindowDimensions, ScrollView } from "react-native";
+﻿import React, { memo, useMemo, useRef, useState, useEffect, lazy, Suspense } from "react";
+import { View, Text, StyleSheet, TouchableOpacity, Platform, Dimensions, ScrollView } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import Head from "expo-router/head";
 import { Header } from "@/components/Header";
@@ -33,6 +33,34 @@ const SYSTEM_FONT = Platform.select({
   android: "Roboto",
   default: "System",
 }) as string;
+
+const ROLE_META: Record<string, { title: string; description: string; canonical: string }> = {
+  pm: {
+    title: "PM Mock Interview Prep | Practice with Real Product Managers | CrackJobs",
+    description: "Practice product sense, execution, and strategy questions with real PMs. Get feedback that shows exactly why you'd get rejected — before the real interview.",
+    canonical: "https://crackjobs.com/lp/pm",
+  },
+  da: {
+    title: "Data Analyst Mock Interview Prep | Practice with Real Analysts | CrackJobs",
+    description: "Practice SQL, business cases, and stakeholder communication with experienced data analysts. Get feedback that shows exactly where your analysis story breaks down.",
+    canonical: "https://crackjobs.com/lp/da",
+  },
+  ds: {
+    title: "Data Science Mock Interview Prep | Practice with Real Data Scientists | CrackJobs",
+    description: "Practice ML theory, stats, and system design with real data scientists. Find out which round is actually costing you — before it happens again.",
+    canonical: "https://crackjobs.com/lp/ds",
+  },
+  hr: {
+    title: "HR Mock Interview Prep | Practice with Real HR Professionals | CrackJobs",
+    description: "Practice behavioral, HRBP, and strategic HR questions with real HR professionals. Get feedback that shows exactly how you come across to a senior interviewer.",
+    canonical: "https://crackjobs.com/lp/hr",
+  },
+  default: {
+    title: "CrackJobs | Mock Interview Platform for PM, Data & HR Roles",
+    description: "Book a live mock interview based on your actual job description. Get structured feedback from real interviewers, eliminate blind spots, and ace the real thing.",
+    canonical: "https://crackjobs.com/lp",
+  },
+};
 
 const HERO_SUB: Record<string, string> = {
   pm: "Practice product sense, execution, and strategy questions with real PMs. Get feedback that tells you exactly why you'd get rejected — before the real interview.",
@@ -123,8 +151,13 @@ const SectionsFallback = memo(() => (
 
 export default function CampaignLanding() {
   const router = useRouter();
-  const { width } = useWindowDimensions();
-  const isSmall = width < 900;
+  const [isSmall, setIsSmall] = useState(false);
+  useEffect(() => {
+    const update = () => setIsSmall(Dimensions.get('window').width < 900);
+    update();
+    const sub = Dimensions.addEventListener('change', ({ window }) => setIsSmall(window.width < 900));
+    return () => sub.remove();
+  }, []);
   const scrollRef = useRef<ScrollView>(null);
   const [pricingY, setPricingY] = useState<number>(0);
   const params = useLocalSearchParams();
@@ -208,11 +241,20 @@ export default function CampaignLanding() {
   return (
     <>
       <Head>
-        <title>{`CrackJobs | ${content.title}`}</title>
-        <meta name="description" content={`Practice ${content.roleName} interviews with real industry insiders and eliminate interview anxiety.`} />
+        <title>{(ROLE_META[activeRole] || ROLE_META.default).title}</title>
+        <meta name="description" content={(ROLE_META[activeRole] || ROLE_META.default).description} />
+        <link rel="canonical" href={(ROLE_META[activeRole] || ROLE_META.default).canonical} />
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="CrackJobs" />
+        <meta property="og:url" content={(ROLE_META[activeRole] || ROLE_META.default).canonical} />
+        <meta property="og:title" content={(ROLE_META[activeRole] || ROLE_META.default).title} />
+        <meta property="og:description" content={(ROLE_META[activeRole] || ROLE_META.default).description} />
+        <meta property="og:image" content="https://crackjobs.com/og-image.png" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={(ROLE_META[activeRole] || ROLE_META.default).title} />
+        <meta name="twitter:description" content={(ROLE_META[activeRole] || ROLE_META.default).description} />
+        <meta name="twitter:image" content="https://crackjobs.com/og-image.png" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
         <style>{`
           body { 
             margin: 0; 

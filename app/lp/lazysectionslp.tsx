@@ -50,9 +50,12 @@ const GUARANTEES = [
 
 const FAQS = [
   { q: "Is this a safe space to practice?", a: "Absolutely. We provide a low-pressure environment where you can make mistakes and learn from them before your real interview. You can even keep your camera off if you prefer." },
-  { q: "What will the detailed feedback be like?", a: "You don't just get a 'pass/fail'. You will get a feedback form with your strengths and areas of improvements highlighted by the interviewer." },
-  { q: "What happens when the mentor does not show up for the session?", a: "You will be refunded the full amount." },
-  { q: "Can I practice for a specific job?", a: "Yes! You can choose the topic of your interview, and paste the exact Job Description you are applying for so the mentor can tailor the questions." },
+  { q: "How long is a session?", a: "Intro calls are 25 minutes — designed to assess your current level and build a prep plan together. Full mock interviews are 55 minutes, matching the length of a real interview round so you can practice time management under actual conditions." },
+  { q: "How do I know my mentor is actually experienced?", a: "Every mentor on CrackJobs is manually verified. We check their LinkedIn profile, confirm their current role, and review their background before they can take sessions. You can see their professional title and years of experience on their profile before booking." },
+  { q: "What if I'm a fresher or just starting out?", a: "Many candidates on CrackJobs are making their first move into PM, analytics, or data science. Your mentor will calibrate the difficulty to your level. You don't need prior interview experience to benefit — in fact, starting early is exactly the right call." },
+  { q: "What will the detailed feedback be like?", a: "You don't just get a 'pass/fail'. You get a structured scorecard with your strengths and specific areas of improvement, plus a recording of the session you can review as many times as you want." },
+  { q: "What happens when the mentor does not show up for the session?", a: "You will be refunded the full amount. No questions asked." },
+  { q: "Can I practice for a specific job?", a: "Yes! You can choose the topic of your interview, and paste the exact Job Description you are applying for so the mentor can tailor the questions to match the real thing." },
 ];
 
 // --- Role-specific problems (shown in a separate section after How It Works) ---
@@ -252,7 +255,7 @@ const RoleSpecificProblemsSection = memo(({ isSmall, role }: { isSmall: boolean;
 // ============================================
 // NEW: DYNAMIC TARGETED SKILLS SECTION
 // ============================================
-const TargetedSkillsSection = memo(({ role, isSmall }: { role: string, isSmall: boolean }) => {
+const TargetedSkillsSection = memo(({ role, isSmall, onViewMentors }: { role: string, isSmall: boolean, onViewMentors: (source: string) => void }) => {
   // Mapping skills explicitly derived from user DB JSON
   const SKILLS: Record<string, string[]> = {
     pm: ["Product Sense / Product Design", "Execution & Analytics", "Strategy & Market Understanding", "Technical & Architecture Basics", "Behavioral & Leadership"],
@@ -276,6 +279,15 @@ const TargetedSkillsSection = memo(({ role, isSmall }: { role: string, isSmall: 
             <Text style={styles.skillPillText}>{skill}</Text>
           </View>
         ))}
+      </View>
+
+      <View style={{ alignItems: "center", marginTop: 32 }}>
+        <Button
+          nativeID="btn-lp-skills-cta"
+          title="Book a Targeted Mock →"
+          onPress={() => onViewMentors("targeted_skills_cta")}
+          style={{ minWidth: 240 }}
+        />
       </View>
     </View>
   );
@@ -408,14 +420,17 @@ const DynamicDomainMentors = ({ role, isSmall, onViewMentors }: { role: string, 
     (async () => {
       setLoading(true);
       try {
-        const tiersRes = await fetch(`${SUPABASE_URL}/rest/v1/mentor_tiers?select=tier,percentage_cut`, { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } });
-        const tiersData = await tiersRes.json();
+        // ── Parallel: fetch tiers, profiles, mentors simultaneously ──
+        const [tiersRes, profilesRes, mentorsRes] = await Promise.all([
+          fetch(`${SUPABASE_URL}/rest/v1/mentor_tiers?select=tier,percentage_cut`, { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }),
+          fetch(`${SUPABASE_URL}/rest/v1/interview_profiles_admin?select=*`, { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }),
+          fetch(`${SUPABASE_URL}/rest/v1/mentors?select=*,tier,profiles(full_name)&status=eq.approved`, { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }),
+        ]);
+        const [tiersData, profilesData, allMentors] = await Promise.all([tiersRes.json(), profilesRes.json(), mentorsRes.json()]);
+
         const tMap: Record<string, number> = {};
         tiersData?.forEach((t: any) => (tMap[t.tier] = t.percentage_cut));
         if (isMounted) setTierMap(tMap);
-
-        const profilesRes = await fetch(`${SUPABASE_URL}/rest/v1/interview_profiles_admin?select=*`, { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } });
-        const profilesData = await profilesRes.json();
 
         const r = role.toLowerCase();
         let matchedProfileId = null;
@@ -431,32 +446,36 @@ const DynamicDomainMentors = ({ role, isSmall, onViewMentors }: { role: string, 
            matchedProfileId = matched?.id;
         }
 
-        const mentorsRes = await fetch(`${SUPABASE_URL}/rest/v1/mentors?select=*,tier,profiles(full_name)&status=eq.approved`, { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } });
-        const allMentors = await mentorsRes.json();
-
-        // Extract Founder
         const fMentor = allMentors.find((m: any) => m.id === FOUNDER_ID);
-        if (fMentor) {
-          if (isMounted) setFounderMentor(fMentor);
-          const fSlot = await availabilityService.findNextAvailableSlot(fMentor.id);
-          if (isMounted) setFounderSlot(fSlot);
-        }
 
         let filtered = allMentors.filter((m: any) => m.id !== FOUNDER_ID) || [];
         if (matchedProfileId) {
            filtered = filtered.filter((m: any) => Array.isArray(m.profile_ids) && m.profile_ids.includes(matchedProfileId));
         }
-
         filtered = filtered.slice(0, 6);
-        if (isMounted) setMentors(filtered);
 
-        const availabilityPromises = filtered.map(async (m: any) => {
-          const slot = await availabilityService.findNextAvailableSlot(m.id);
-          return { id: m.id, slot };
-        });
-        const availabilityResults = await Promise.all(availabilityPromises);
+        // ── Parallel: founder slot + all mentor slots simultaneously ──
+        const allSlotPromises: Promise<{ id: string; slot: string }>[] = [
+          ...(fMentor ? [availabilityService.findNextAvailableSlot(fMentor.id).then(slot => ({ id: fMentor.id, slot }))] : []),
+          ...filtered.map(async (m: any) => ({ id: m.id, slot: await availabilityService.findNextAvailableSlot(m.id) })),
+        ];
+        const allSlotResults = await Promise.all(allSlotPromises);
+
         const availabilityMap: Record<string, string> = {};
-        availabilityResults.forEach(({ id, slot }) => { availabilityMap[id] = slot; });
+        allSlotResults.forEach(({ id, slot }) => { availabilityMap[id] = slot; });
+
+        // ── Sort mentors: available slots first ──
+        const sortedFiltered = [...filtered].sort((a: any, b: any) => {
+          const aHas = availabilityMap[a.id] && availabilityMap[a.id] !== "No slots available";
+          const bHas = availabilityMap[b.id] && availabilityMap[b.id] !== "No slots available";
+          return (aHas === bHas) ? 0 : aHas ? -1 : 1;
+        });
+
+        if (fMentor) {
+          if (isMounted) setFounderMentor(fMentor);
+          if (isMounted) setFounderSlot(availabilityMap[fMentor.id] || "No slots available");
+        }
+        if (isMounted) setMentors(sortedFiltered);
         if (isMounted) setMentorAvailability(availabilityMap);
 
       } catch (e) {
@@ -609,6 +628,14 @@ const TestimonialsSection = memo(({ onViewMentors, isSmall, role }: { onViewMent
       <Text style={styles.trustText}>✓ Verified testimonials</Text>
       <Text style={styles.trustText}>✓ Real candidate outcomes</Text>
       <Text style={styles.trustText}>✓ Proven results</Text>
+    </View>
+    <View style={{ alignItems: "center", marginTop: 40 }}>
+      <Button
+        nativeID="btn-lp-testimonials-cta"
+        title="Get the same results →"
+        onPress={() => onViewMentors("testimonials_cta")}
+        style={{ minWidth: 260 }}
+      />
     </View>
   </View>
   );
@@ -770,7 +797,7 @@ export default function LazySectionsLP({
       <TheProblemSection isSmall={isSmall} />
       <HowItWorksSection isSmall={isSmall} />
       <RoleSpecificProblemsSection isSmall={isSmall} role={role} />
-      <TargetedSkillsSection role={role} isSmall={isSmall} />
+      <TargetedSkillsSection role={role} isSmall={isSmall} onViewMentors={onViewMentors} />
       <DynamicDomainMentors role={role} isSmall={isSmall} onViewMentors={() => onViewMentors("domain_mentors_cta")} />
       <TestimonialsSection onViewMentors={onViewMentors} isSmall={isSmall} role={role} />
       <SystematicPrepSection onViewMentors={onViewMentors} isSmall={isSmall} role={role} />

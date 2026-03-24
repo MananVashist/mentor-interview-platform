@@ -637,14 +637,14 @@ export default function HRInterviews() {
   return (
     <>
       <Head>
-        <title>HR Interview Preparation | Master HRBP, Conflict Resolution & People Analytics</title>
-        <meta name="description" content="Ace HR interviews at Amazon, Google, Flipkart with expert HR leaders. Master HRBP scenarios, conflict resolution, STAR method, compensation strategy, and DEI initiatives. Practice real HR interview questions." />
-        <meta name="keywords" content="HR interview, HRBP interview, human resources interview, behavioral interview, STAR method, conflict resolution, compensation strategy, DEI, employee relations, HR business partner, talent acquisition" />
+        <title>HR Mock Interviews | HRBP Interview Prep | CrackJobs</title>
+        <meta name="description" content="Practice HR and HRBP interviews with experienced HR leaders. Master behavioral questions, conflict resolution, STAR method, compensation strategy, and people analytics. Get structured feedback and a session recording. Book a 55-min mock interview today." />
+        <meta name="keywords" content="HR mock interview, HRBP mock interview, HR interview prep India, human resources interview practice, behavioral interview STAR method, conflict resolution interview, compensation strategy interview, HR business partner interview, people analytics interview, talent acquisition interview" />
         <link rel="canonical" href="https://crackjobs.com/interviews/hr" />
         
         {/* ADDED: Missing Open Graph & Twitter Tags */}
-        <meta property="og:title" content="HR Interview Preparation | CrackJobs" />
-        <meta property="og:description" content="Master HRBP scenarios, conflict resolution, and behavioral interviews with expert HR leaders." />
+        <meta property="og:title" content="HR Mock Interviews | HRBP Interview Prep | CrackJobs" />
+        <meta property="og:description" content="Practice HR and HRBP interviews with experienced HR leaders. Master behavioral questions, conflict resolution, STAR method, and people analytics. Get structured feedback on every session." />
         <meta property="og:type" content="website" />
         
         {/* ADDED: Proper site name meta tag */}
@@ -652,8 +652,8 @@ export default function HRInterviews() {
         
         <meta property="og:url" content="https://crackjobs.com/interviews/hr" />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="HR Interview Preparation | CrackJobs" />
-        <meta name="twitter:description" content="Master HRBP scenarios, conflict resolution, and behavioral interviews." />
+        <meta name="twitter:title" content="HR Mock Interviews | HRBP Interview Prep | CrackJobs" />
+        <meta name="twitter:description" content="Practice HR and HRBP interviews with experienced HR leaders. Master behavioral questions, STAR method, and people analytics. Book a 55-min mock today." />
         
         <style>{`
   body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; background-color: #f8f5f0; }

@@ -8,7 +8,7 @@ import {
   Platform,
   ScrollView,
   ActivityIndicator,
-  useWindowDimensions,
+  Dimensions,
 } from 'react-native';
 import { useRouter, Redirect } from 'expo-router';
 import Head from 'expo-router/head';
@@ -76,13 +76,16 @@ const TrustFooter = memo(({ isSmall }: { isSmall: boolean }) => (
 
 export default function LandingPage() {
   const router = useRouter();
-  const { width } = useWindowDimensions();
-  const isSmall = width < 900;
+  const [isSmall, setIsSmall] = useState(false);
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
     setIsReady(true);
     pushToDataLayer("lp_visit", { role: "homepage", page_title: "CrackJobs Homepage" });
+    const update = () => setIsSmall(Dimensions.get('window').width < 900);
+    update();
+    const sub = Dimensions.addEventListener('change', ({ window }) => setIsSmall(window.width < 900));
+    return () => sub.remove();
   }, []);
 
   if (Platform.OS === 'android') return <Redirect href="/auth/sign-in" />;
@@ -179,7 +182,12 @@ export default function LandingPage() {
         <meta property="og:image" content="https://crackjobs.com/og-image.png" />
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
-        
+
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Mock Interview Platform for PM, Data & HR | CrackJobs" />
+        <meta name="twitter:description" content="Practice interviews with real industry experts. Get actionable feedback on your actual JD for PM, Data Science, Data Analytics, and HR roles." />
+        <meta name="twitter:image" content="https://crackjobs.com/og-image.png" />
+
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
         <style type="text/css">{`
           * { box-sizing: border-box; }
