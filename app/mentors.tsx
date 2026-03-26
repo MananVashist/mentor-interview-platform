@@ -24,9 +24,6 @@ import { Footer } from "@/components/Footer";
 const SUPABASE_URL = "https://rcbaaiiawrglvyzmawvr.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJjYmFhaWlhd3JnbHZ5em1hd3ZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjExNTA1NjAsImV4cCI6MjA3NjcyNjU2MH0.V3qRHGXBMlspRS7XFJlXdo4qIcCms60Nepp7dYMEjLA";
 
-// Founder mentor ID — shows "Free" intro call, matching landing page logic
-const FOUNDER_ID = 'e251486e-c21a-49f4-8ab7-ce808785638a';
-
 // Brand Colors
 const BRAND_ORANGE = '#f58742';
 const CTA_TEAL = '#18a7a7';
@@ -78,6 +75,7 @@ type Mentor = {
   tier?: string | null;
   avatar_url?: string | null;
   profiles?: { full_name?: string } | null;
+  intro_call_price?: number | null;
 };
 
 // ============================================
@@ -254,17 +252,18 @@ type MentorCardProps = {
   showRating: boolean;
   availabilityState: 'loading' | 'available' | 'unavailable';
   displaySlot: string;
-  customPriceLabel?: string | null;
   onView: () => void;
 };
 
 const MentorCard = memo(({
   m, displayPrice, totalSessions, isNewMentor, averageRating,
-  showRating, availabilityState, displaySlot, customPriceLabel, onView,
+  showRating, availabilityState, displaySlot, onView,
 }: MentorCardProps) => {
 
   const seed = m.id || m.profiles?.full_name || 'Mentor';
-  const introPrice = Math.round(displayPrice * 0.20);
+  const introCallPrice = m.intro_call_price;
+  const introIsFree = introCallPrice == null || introCallPrice === 0;
+  const introDisplay = introIsFree ? 'Free' : `₹${introCallPrice!.toLocaleString()}`;
 const fallbackAvatar = `https://api.dicebear.com/9.x/micah/png?seed=${encodeURIComponent(seed)}&backgroundColor=e5e7eb,f3f4f6`;
 
   const renderAvailabilityBadge = () => {
@@ -356,14 +355,8 @@ const fallbackAvatar = `https://api.dicebear.com/9.x/micah/png?seed=${encodeURIC
 
         <View style={styles.actionRow}>
           <View style={styles.priceContainer}>
-            <Text style={styles.startingAt}>{customPriceLabel ? 'Intro call' : 'Intro calls from'}</Text>
-            <Text style={styles.basePrice}>
-              {customPriceLabel
-                ? customPriceLabel
-                : displayPrice > 0
-                  ? `₹${introPrice.toLocaleString()}`
-                  : 'Free'}
-            </Text>
+             <Text style={styles.startingAt}>Intro calls from</Text>
+             <Text style={styles.basePrice}>{introDisplay}</Text>
           </View>
 
           {/* FIX: Larger, more prominent CTA button */}
@@ -527,7 +520,6 @@ export default function PublicBrowseMentors() {
     let sorted = [...mentors];
 
     const getPrice = (m: Mentor) => {
-      if (m.id === FOUNDER_ID) return -1;
       const base = m.session_price_inr ?? m.session_price ?? 0;
       const cut = tierMap[m.tier || 'bronze'] || 50;
       return Math.round(base / (1 - cut / 100));
@@ -658,10 +650,9 @@ export default function PublicBrowseMentors() {
             </View>
           ) : (
             sortedMentors.map((m) => {
-              const isFounder = m.id === FOUNDER_ID;
               const basePrice = m.session_price_inr ?? m.session_price ?? 0;
               const cut = tierMap[m.tier || 'bronze'] || 50;
-              const displayPrice = (!isFounder && basePrice) ? Math.round(basePrice / (1 - cut / 100)) : 0;
+              const displayPrice = basePrice ? Math.round(basePrice / (1 - cut / 100)) : 0;
               const totalSessions = m.total_sessions || 0;
               const isNewMentor = totalSessions < 5;
               const averageRating = m.average_rating || 0;
@@ -680,12 +671,11 @@ export default function PublicBrowseMentors() {
                   m={m}
                   displayPrice={displayPrice}
                   totalSessions={totalSessions}
-                  isNewMentor={isFounder ? false : isNewMentor}
-                  averageRating={isFounder ? (averageRating || 5.0) : averageRating}
-                  showRating={isFounder ? true : showRating}
+                  isNewMentor={isNewMentor}
+                  averageRating={averageRating}
+                  showRating={showRating}
                   availabilityState={availabilityState}
                   displaySlot={slotValue || ''}
-                  customPriceLabel={isFounder ? "Free" : null}
                   onView={() => handleViewMentor(m.id)}
                 />
               );

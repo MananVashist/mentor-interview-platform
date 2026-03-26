@@ -279,10 +279,11 @@ const TargetedSkillsSection = memo(({ isSmall }: { isSmall: boolean }) => {
   );
 });
 
-const MentorCard = ({ m, displayPrice, totalSessions, isNewMentor, averageRating, showRating, hasSlots, displaySlot, customPriceLabel, onView, isSmall, isFounderCard }: any) => {
+const MentorCard = ({ m, displayPrice, totalSessions, isNewMentor, averageRating, showRating, hasSlots, displaySlot, onView, isSmall, isFounderCard }: any) => {
   const seed = m.id || m.profiles?.full_name || 'Mentor';
   const fallbackAvatar = `https://api.dicebear.com/9.x/micah/png?seed=${encodeURIComponent(seed)}&backgroundColor=e5e7eb,f3f4f6`;
-  const introPrice = Math.round(displayPrice * 0.20);
+  const introIsFree = m.intro_call_price == null || m.intro_call_price === 0;
+  const introDisplay = introIsFree ? 'Free' : `₹${m.intro_call_price.toLocaleString()}`;
 
   const cardWidthStyle = isFounderCard 
     ? { width: '100%' as const } 
@@ -331,8 +332,8 @@ const MentorCard = ({ m, displayPrice, totalSessions, isNewMentor, averageRating
 
         <View style={styles.actionRow}>
           <View style={styles.priceContainer}>
-             <Text style={styles.startingAt}>{customPriceLabel ? 'Intro call' : 'Intro calls from'}</Text>
-             <Text style={styles.basePrice}>{customPriceLabel || `₹${introPrice.toLocaleString()}`}</Text>
+             <Text style={styles.startingAt}>Intro calls from</Text>
+             <Text style={styles.basePrice}>{introDisplay}</Text>
           </View>
           <TouchableOpacity style={styles.bookBtn} onPress={onView} activeOpacity={0.8}>
             <Text style={styles.bookBtnText}>View Profile & Book</Text>
@@ -346,13 +347,9 @@ const MentorCard = ({ m, displayPrice, totalSessions, isNewMentor, averageRating
 const DynamicDomainMentors = ({ isSmall, onViewMentors }: { isSmall: boolean, onViewMentors: () => void }) => {
   const router = useRouter();
   const [mentors, setMentors] = useState<any[]>([]);
-  const [founderMentor, setFounderMentor] = useState<any>(null);
-  const [founderSlot, setFounderSlot] = useState<string>("Loading...");
   const [loading, setLoading] = useState(true);
   const [tierMap, setTierMap] = useState<Record<string, number>>({});
   const [mentorAvailability, setMentorAvailability] = useState<Record<string, string>>({});
-
-  const FOUNDER_ID = 'e251486e-c21a-49f4-8ab7-ce808785638a';
 
   useEffect(() => {
     let isMounted = true;
@@ -368,22 +365,12 @@ const DynamicDomainMentors = ({ isSmall, onViewMentors }: { isSmall: boolean, on
         const mentorsRes = await fetch(`${SUPABASE_URL}/rest/v1/mentors?select=*,tier,profiles(full_name)&status=eq.approved`, { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } });
         const allMentors = await mentorsRes.json();
 
-        const fMentor = allMentors.find((m: any) => m.id === FOUNDER_ID);
-        if (fMentor) {
-          if (isMounted) setFounderMentor(fMentor);
-          const fSlot = await availabilityService.findNextAvailableSlot(fMentor.id);
-          if (isMounted) setFounderSlot(fSlot);
-        }
-
-        let filtered = allMentors.filter((m: any) => m.id !== FOUNDER_ID) || [];
-        filtered = filtered.slice(0, 6); // Just show top 6 on generic homepage
+        let filtered = (allMentors || []).slice(0, 6);
         if (isMounted) setMentors(filtered);
 
-        const availabilityPromises = filtered.map(async (m: any) => {
-          const slot = await availabilityService.findNextAvailableSlot(m.id);
-          return { id: m.id, slot };
-        });
-        const availabilityResults = await Promise.all(availabilityPromises);
+        const availabilityResults = await Promise.all(
+          filtered.map(async (m: any) => ({ id: m.id, slot: await availabilityService.findNextAvailableSlot(m.id) }))
+        );
         const availabilityMap: Record<string, string> = {};
         availabilityResults.forEach(({ id, slot }) => { availabilityMap[id] = slot; });
         if (isMounted) setMentorAvailability(availabilityMap);
@@ -405,38 +392,10 @@ const DynamicDomainMentors = ({ isSmall, onViewMentors }: { isSmall: boolean, on
     );
   }
 
-  if (mentors.length === 0 && !founderMentor) return null;
+  if (mentors.length === 0) return null;
 
   return (
     <View style={styles.listContainerWrapper}>
-      {/* FOUNDER BLOCK */}
-      {founderMentor && (
-        <View style={styles.founderSection}>
-          <Text style={styles.kicker}>START WITH STRATEGY</Text>
-          <Text style={[styles.h2, isSmall && styles.h2Mobile]}>Free prep strategy session with the founder</Text>
-          <Text style={styles.subtext}>Anxious about your upcoming interview? Book a complimentary discovery call to discuss your goals and build a prep plan.</Text>
-          <View style={styles.founderCardWrapper}>
-            <MentorCard
-              m={founderMentor}
-              displayPrice={0}
-              totalSessions={founderMentor.total_sessions || 0}
-              isNewMentor={false}
-              averageRating={founderMentor.average_rating || 5.0}
-              showRating={true}
-              hasSlots={founderSlot !== "No slots available" && founderSlot !== "Loading..."}
-              displaySlot={founderSlot}
-              customPriceLabel="Free"
-              onView={() => {
-                pushToDataLayer("lp_mentor_card_click", { mentor_id: founderMentor.id, mentor_tier: founderMentor.tier || 'founder', is_founder: true, role_viewed: 'homepage' });
-                router.push(`/mentors/${founderMentor.id}`);
-              }}
-              isSmall={isSmall}
-              isFounderCard={true}
-            />
-          </View>
-        </View>
-      )}
-
       {/* GENERAL MENTORS BLOCK */}
       {mentors.length > 0 && (
         <>

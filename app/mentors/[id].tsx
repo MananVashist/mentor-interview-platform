@@ -51,6 +51,7 @@ type MentorDetail    = {
   profile_ids?: number[]; session_price_inr?: number | null; tier?: string | null;
   years_of_experience?: number | null; average_rating?: number | null; total_sessions?: number;
   avatar_url?: string | null; profiles?: { full_name?: string } | null;
+  intro_call_price?: number | null;
 };
 type Profile = { id: number; name: string; description: string | null };
 type Skill   = { id: string;  name: string; description: string | null };
@@ -398,13 +399,13 @@ export default function MentorDetail() {
     } catch { return false; }
   };
 
-  const introPrice  = Math.round(mockPrice * 0.20);
-  const bundlePrice = Math.round(mockPrice * 2.5);
-  const bundleSave  = Math.round(mockPrice * 3 - bundlePrice);
-  
-  const FOUNDER_MENTOR_ID = "e251486e-c21a-49f4-8ab7-ce808785638a";
-  const isFreeFounderIntro = id === FOUNDER_MENTOR_ID && sType === "intro";
-  const price       = !sType ? 0 : isFreeFounderIntro ? 0 : sType === "intro" ? introPrice : sType === "mock" ? mockPrice : bundlePrice;
+  const introIsFree  = !(mentor?.intro_call_price);  // null or 0 → free
+  const introPrice   = mentor?.intro_call_price ?? 0;
+  const bundlePrice  = Math.round(mockPrice * 2.5);
+  const bundleSave   = Math.round(mockPrice * 3 - bundlePrice);
+
+  const isFreeFounderIntro = sType === "intro" && introIsFree;
+  const price        = !sType ? 0 : sType === "intro" ? introPrice : sType === "mock" ? mockPrice : bundlePrice;
 
   const isJD = sType === "mock"
     ? !!skill?.name.toLowerCase().includes("jd-based")
@@ -698,7 +699,7 @@ export default function MentorDetail() {
                     label="Intro Call" duration="25 minutes"
                     tag="One per mentor · Recommended before Prep Course"
                     description="A mini mock interview to test your strengths and weaknesses and recommend a personalised plan for improvement."
-                    price={id === "e251486e-c21a-49f4-8ab7-ce808785638a" ? "FREE" : `₹${introPrice.toLocaleString()}`} showUsed={introUsed}
+                    price={introIsFree ? "FREE" : `₹${introPrice.toLocaleString()}`} showUsed={introUsed}
                   />
                   <SessionRow
                     selected={sType === "bundle"} onPress={() => { pushToDataLayer("select_session_type", { session_type: "bundle" }); setSType("bundle"); }}
