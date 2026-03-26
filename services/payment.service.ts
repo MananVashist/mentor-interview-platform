@@ -113,10 +113,6 @@ export const paymentService = {
     try {
       console.log('🚀 Starting Booking Process...');
       
-      // 🟢 NEW: Identify Free Founder Intro Call
-      const FOUNDER_MENTOR_ID = 'e251486e-c21a-49f4-8ab7-ce808785638a';
-      const isFreeFounderIntro = mentorId === FOUNDER_MENTOR_ID && sessionType === 'intro';
-
       const parsedSkillIds = (Array.isArray(skillIds) ? skillIds : [skillIds])
         .filter(Boolean)
         .flatMap(id => String(id).split(',').map(s => s.trim()))
@@ -137,7 +133,7 @@ export const paymentService = {
 
       const { data: mentorData, error: mentorError } = await supabase
         .from('mentors')
-        .select('session_price_inr, tier')
+        .select('session_price_inr, tier, intro_call_price')
         .eq('id', mentorId)
         .single();
 
@@ -156,20 +152,22 @@ export const paymentService = {
       const percentageCut = tierData.percentage_cut || 50;
       const cutDecimal    = percentageCut / 100;
 
-      const mockPrice = Math.round(basePrice / (1 - cutDecimal));
+      const mockPrice  = Math.round(basePrice / (1 - cutDecimal));
+      const introPrice = mentorData.intro_call_price ?? 0;
+      const isFreeIntro = sessionType === 'intro' && introPrice === 0;
 
       let totalPrice: number;
       let mentorPayout: number;
       let platformFee: number;
 
-      // 🟢 Updated Price Logic to force 0 for Founder Intro
-      if (isFreeFounderIntro) {
+      // 🟢 Updated Price Logic using DB intro_call_price
+      if (isFreeIntro) {
         totalPrice   = 0;
         mentorPayout = 0;
         platformFee  = 0;
       } else if (sessionType === 'intro') {
-        totalPrice   = Math.round(mockPrice * 0.20);
-        mentorPayout = totalPrice;
+        totalPrice   = introPrice;
+        mentorPayout = introPrice;
         platformFee  = 0;
       } else if (sessionType === 'bundle') {
         const bundleMentorPayout = Math.round(basePrice * 2.5);
@@ -201,8 +199,8 @@ export const paymentService = {
       let razorpayOrderId = null;
       let razorpayKeyId   = null;
 
-      // 🟢 Bypass Razorpay if it's the free founder intro
-      if (ENABLE_RAZORPAY && !isFreeFounderIntro) {
+      // 🟢 Bypass Razorpay if it's a free intro
+      if (ENABLE_RAZORPAY && !isFreeIntro) {
         console.log('[Payment] 💳 STEP 6: Creating Razorpay order...');
         
         // PREVENT RAZORPAY IDEMPOTENCY CONFLICTS
@@ -237,7 +235,7 @@ export const paymentService = {
           mentor_payout_inr:    mentorPayout,
           platform_fee_inr:     platformFee,
           // 🟢 Immediately mark as completed if free
-          payment_status:       isFreeFounderIntro ? 'completed' : (ENABLE_RAZORPAY ? 'pending' : 'held_in_escrow'),
+          payment_status:       isFreeIntro ? 'completed' : (ENABLE_RAZORPAY ? 'pending' : 'held_in_escrow'),
           razorpay_order_id:    razorpayOrderId,
           booking_metadata: {
             session_type: sessionType,
@@ -260,7 +258,7 @@ export const paymentService = {
         skill_id:     sortedSkillIds[i] ?? null,
         scheduled_at: slot,
         // 🟢 Immediately mark as confirmed if free
-        status:       isFreeFounderIntro ? 'confirmed' : 'awaiting_payment',
+        status:       isFreeIntro ? 'confirmed' : 'awaiting_payment',
         session_type: sessionType,
         jd_id:        jdId,
       }));
@@ -288,8 +286,8 @@ export const paymentService = {
         .eq('id', pkg.id);
 
       // 🟢 NEW: Trigger meeting and emails automatically for free intro
-      if (isFreeFounderIntro) {
-        console.log('[Payment] 🆓 Free Founder Intro: Creating 100ms meeting & sending emails...');
+      if (isFreeIntro) {
+        console.log('[Payment] 🆓 Free Intro: Creating 100ms meeting & sending emails...');
         for (const session of newSessions) {
           await supabase.functions.invoke('create-meeting', { body: { sessionId: session.id } });
         }

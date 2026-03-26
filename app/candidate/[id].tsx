@@ -282,13 +282,13 @@ export default function CandidateMentorDetail() {
     } catch (e) {} finally { setAvailL(false); }
   }, [id, selDay]);
 
-  const introPrice = Math.round(mockPrice * 0.20);
+  const introIsFree = mentor?.intro_call_price == null || mentor?.intro_call_price === 0;
+  const introPrice = mentor?.intro_call_price ?? 0;
   const bundlePrice = Math.round(mockPrice * 2.5);
   const bundleSave = Math.round(mockPrice * 3 - bundlePrice);
 
-  const FOUNDER_MENTOR_ID = "e251486e-c21a-49f4-8ab7-ce808785638a";
-  const isFreeFounderIntro = id === FOUNDER_MENTOR_ID && sType === "intro";
-  const price = !sType ? 0 : isFreeFounderIntro ? 0 : sType === "intro" ? introPrice : sType === "mock" ? mockPrice : bundlePrice;
+  const isFreeFounderIntro = sType === "intro" && introIsFree;
+  const price = !sType ? 0 : sType === "intro" ? introPrice : sType === "mock" ? mockPrice : bundlePrice;
 
   const isJD = sType === "mock"
     ? !!skill?.name.toLowerCase().includes("jd-based")
@@ -431,7 +431,7 @@ export default function CandidateMentorDetail() {
               {openStep === 0 && (
                 <View style={g.stepPanel}>
                   <SessionRow selected={sType === "mock"} onPress={() => setSType("mock")} accentColor={TEAL} icon={<IcoTarget s={20} c={sType === "mock" ? TEAL : "#9CA3AF"} />} label="Mock Interview" duration="55 minutes" badge="POPULAR" description="The real deal. A full mock interview on the topic of your choice or based on a JD you're prepping for — going in-depth, guiding through solutions and giving real-time feedback." price={`₹${mockPrice.toLocaleString()}`} />
-                  <SessionRow selected={sType === "intro"} disabled={introUsed} onPress={() => !introUsed && setSType("intro")} accentColor="#7C3AED" icon={<IcoChat s={20} c={sType === "intro" ? "#7C3AED" : "#9CA3AF"} />} label="Intro Call" duration="25 minutes" tag="One per mentor · Recommended before Prep Course" description="A mini mock interview to test your strengths and weaknesses and recommend a personalised plan for improvement." price={id === FOUNDER_MENTOR_ID ? "FREE" : `₹${introPrice.toLocaleString()}`} showUsed={introUsed} />
+                  <SessionRow selected={sType === "intro"} disabled={introUsed} onPress={() => !introUsed && setSType("intro")} accentColor="#7C3AED" icon={<IcoChat s={20} c={sType === "intro" ? "#7C3AED" : "#9CA3AF"} />} label="Intro Call" duration="25 minutes" tag="One per mentor · Recommended before Prep Course" description="A mini mock interview to test your strengths and weaknesses and recommend a personalised plan for improvement." price={introIsFree ? "FREE" : `₹${introPrice.toLocaleString()}`} showUsed={introUsed} />
                   <SessionRow selected={sType === "bundle"} onPress={() => setSType("bundle")} accentColor="#D97706" icon={<IcoLayers s={20} c={sType === "bundle" ? "#D97706" : "#9CA3AF"} />} label="Prep Course" duration="3 × 55 minutes" description="A full 3-session package tailored to your strengths and weaknesses — based on your Intro Call, a JD you're targeting, or a chosen topic." price={`₹${bundlePrice.toLocaleString()}`} badge={bundleSave > 0 ? `SAVE ₹${bundleSave.toLocaleString()}` : undefined} />
                   <TouchableOpacity style={[g.nextBtn, (!sType || (sType === "intro" && introUsed)) && g.nextBtnOff]} onPress={() => sType && !(sType === "intro" && introUsed) && setOpenStep(1)}>
                     <Text style={[g.nextBtnTxt, { fontFamily: F }]}>Continue →</Text>

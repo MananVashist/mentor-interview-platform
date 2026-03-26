@@ -15,8 +15,6 @@ const SUPABASE_URL = 'https://rcbaaiiawrglvyzmawvr.supabase.co';
 const SUPABASE_ANON_KEY =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJjYmFhaWlhd3JnbHZ5em1hd3ZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjExNTA1NjAsImV4cCI6MjA3NjcyNjU2MH0.V3qRHGXBMlspRS7XFJlXdo4qIcCms60Nepp7dYMEjLA';
 
-const FOUNDER_ID = 'e251486e-c21a-49f4-8ab7-ce808785638a';
-
 type Mentor = {
   id: string;
   professional_title?: string | null;
@@ -26,10 +24,11 @@ type Mentor = {
     full_name?: string | null;
     avatar_url?: string | null;
   };
-  session_price_inr?: number | null; // mentor’s own price
-  session_price?: number | null;     // legacy fallback
+  session_price_inr?: number | null;
+  session_price?: number | null;
   mentor_level?: string | null;
   tier?: string | null;
+  intro_call_price?: number | null;
 };
 
 export default function CandidateMentorsList() {
@@ -129,11 +128,17 @@ export default function CandidateMentorsList() {
             <View style={styles.mentorList}>
               {mentors.map((m) => {
                 const basePrice = m.session_price_inr ?? m.session_price ?? 0;
-                // ✅ UPDATED: Dynamic calculation
-                const cut = tierMap[m.tier || 'bronze'] || 50; 
-                // Final = Base / (1 - Cut%)
-                const candidatePrice = basePrice ? Math.round(basePrice / (1 - (cut/100))) : 0;
-                
+                const cut = tierMap[m.tier || 'bronze'] || 50;
+                const candidatePrice = basePrice ? Math.round(basePrice / (1 - (cut / 100))) : 0;
+
+                const introPrice = m.intro_call_price;
+                const introIsFree = introPrice === 0;
+                const introDisplay = introIsFree
+                  ? 'Free'
+                  : introPrice != null
+                  ? `₹${introPrice.toLocaleString('en-IN')}`
+                  : null;
+
                 const levelCfg = getLevelBadgeStyle(m.mentor_level);
 
                 const subtitle =
@@ -220,15 +225,26 @@ export default function CandidateMentorsList() {
                     {/* Footer: price + button */}
                     <View style={styles.footerRow}>
                       <View style={styles.priceSection}>
-                        <AppText style={styles.priceLabel}>
-                          {m.id === FOUNDER_ID ? 'Intro call' : 'Per booking (2 sessions)'}
-                        </AppText>
-                        <AppText style={styles.priceValue}>
-                          {m.id === FOUNDER_ID ? 'Free' : `₹${candidatePrice.toLocaleString('en-IN')}`}
-                        </AppText>
-                        <AppText style={styles.priceSub}>
-                          {m.id === FOUNDER_ID ? 'Complimentary discovery call' : `Mentor payout + ${cut}% platform fee`}
-                        </AppText>
+                        {introDisplay != null && (
+                          <>
+                            <AppText style={styles.priceLabel}>Intro call</AppText>
+                            <AppText style={styles.priceValue}>{introDisplay}</AppText>
+                            {introIsFree && (
+                              <AppText style={styles.priceSub}>Complimentary intro call</AppText>
+                            )}
+                          </>
+                        )}
+                        {introDisplay == null && (
+                          <>
+                            <AppText style={styles.priceLabel}>Per booking (2 sessions)</AppText>
+                            <AppText style={styles.priceValue}>
+                              ₹{candidatePrice.toLocaleString('en-IN')}
+                            </AppText>
+                            <AppText style={styles.priceSub}>
+                              Mentor payout + {cut}% platform fee
+                            </AppText>
+                          </>
+                        )}
                       </View>
 
                       <Button
