@@ -505,7 +505,7 @@ export default function PublicBrowseMentors() {
       // FIX: Show cards immediately — don't block on availability
       const enriched = filtered.map((m: Mentor) => {
         if (!m.avatar_url) {
-          const firstName = m.profiles?.full_name?.trim().split(/\s+/)[0];
+          const firstName = m.profiles?.full_name?.trim().split(/\s+/)[0].toLowerCase();
           if (firstName) return { ...m, avatar_url: `/mentor-pics/${firstName}.jpeg` };
         }
         return m;

@@ -459,7 +459,7 @@ export default function MentorDetail() {
       if (d1?.length) {
         const m = d1[0];
         if (!m.avatar_url) {
-          const firstName = m.profiles?.full_name?.trim().split(/\s+/)[0];
+          const firstName = m.profiles?.full_name?.trim().split(/\s+/)[0].toLowerCase();
           if (firstName) m.avatar_url = `/mentor-pics/${firstName}.jpeg`;
         }
         setMentor(m);

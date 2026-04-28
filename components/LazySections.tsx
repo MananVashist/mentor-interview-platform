@@ -378,7 +378,7 @@ const DynamicDomainMentors = ({ isSmall, onViewMentors }: { isSmall: boolean, on
         let filtered = (allMentors || []).slice(0, 6);
         const enriched = filtered.map((m: any) => {
           if (!m.avatar_url) {
-            const firstName = m.profiles?.full_name?.trim().split(/\s+/)[0];
+            const firstName = m.profiles?.full_name?.trim().split(/\s+/)[0].toLowerCase();
             if (firstName) return { ...m, avatar_url: `/mentor-pics/${firstName}.jpeg` };
           }
           return m;
