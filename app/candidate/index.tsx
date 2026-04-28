@@ -81,6 +81,16 @@ const TierBadge = ({ tier }: { tier?: string | null }) => {
   );
 };
 
+// ============================================
+// FORMAT NAME HELPER
+// ============================================
+const formatDisplayName = (fullName?: string | null): string => {
+  if (!fullName) return "";
+  const parts = fullName.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0];
+  return `${parts[0]} ${parts[parts.length - 1][0].toUpperCase()}.`;
+};
+
 const MentorCard = ({
   m, totalSessions, isNewMentor,
   averageRating, showRating, hasSlots, displaySlot, onView,
@@ -97,9 +107,12 @@ const MentorCard = ({
           <Image source={{ uri: m.avatar_url || fallbackAvatar }} style={styles.avatarImage} />
           <View style={styles.headerInfo}>
             <View style={styles.identityGroup}>
-              <Text style={styles.mentorName} numberOfLines={1}>{m.professional_title || 'Interview Mentor'}</Text>
+              {m.profiles?.full_name ? (
+                <Text style={styles.mentorName} numberOfLines={1}>{formatDisplayName(m.profiles.full_name)}</Text>
+              ) : null}
               <View style={styles.verifiedBadge}><CheckmarkCircleIcon size={14} color="#3B82F6" /></View>
             </View>
+            <Text style={styles.mentorSubTitle} numberOfLines={1}>{m.professional_title || 'Interview Mentor'}</Text>
             {m.years_of_experience != null && (
               <View style={{ alignSelf: 'flex-start', marginTop: 4 }}>
                 <View style={styles.expBadge}>
@@ -203,9 +216,19 @@ export default function CandidateDashboard() {
       
       if (res.ok) {
         const filtered = (data || []).filter((m: Mentor) => Array.isArray(m.profile_ids) ? m.profile_ids.includes(profileId) : false);
-        setMentors(filtered);
+        
+        // Use local image based on first name if missing
+        const enriched = filtered.map((m: Mentor) => {
+          if (!m.avatar_url) {
+            const firstName = m.profiles?.full_name?.trim().split(/\s+/)[0];
+            if (firstName) return { ...m, avatar_url: `/mentor-pics/${firstName}.jpeg` };
+          }
+          return m;
+        });
+        
+        setMentors(enriched);
 
-        const availabilityPromises = filtered.map(async (m: Mentor) => {
+        const availabilityPromises = enriched.map(async (m: Mentor) => {
           const slot = await availabilityService.findNextAvailableSlot(m.id);
           return { id: m.id, slot };
         });
@@ -358,6 +381,7 @@ const styles = StyleSheet.create({
   headerInfo: { flex: 1, justifyContent: 'center' },
   identityGroup: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
   mentorName: { ...FONTS.heading, fontSize: 18, color: theme.colors.text.main, flexShrink: 1 },
+  mentorSubTitle: { fontSize: 13, fontWeight: '500' as const, color: '#6B7280', marginBottom: 4 },
   verifiedBadge: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   expBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.colors.gray[100], paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, gap: 4 },
   expText: { ...FONTS.captionBold, color: theme.colors.text.body },
