@@ -1,12 +1,13 @@
 ﻿// app/interviews/product-management.tsx
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Platform, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform, ScrollView, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import Head from 'expo-router/head';
 import Svg, { Path, Circle, Rect, Line } from 'react-native-svg';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { createBreadcrumbSchema, injectMultipleSchemas } from '@/lib/structured-data';
+import { DynamicDomainMentors } from '@/app/lp/lazysectionslp';
 
 const BRAND_ORANGE = '#f58742';
 const CTA_TEAL = '#18a7a7';
@@ -107,6 +108,8 @@ const MapIcon = ({ size = 32, color = CTA_TEAL }) => (
 
 export default function ProductManagementInterviews() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const isSmall = width < 900;
 
   // 🔥 Structured Data for SEO
   useEffect(() => {
@@ -535,6 +538,13 @@ export default function ProductManagementInterviews() {
               <Text style={styles.ctaBtnText}>Find Your PM Mentor →</Text>
             </TouchableOpacity>
           </View>
+
+          {/* ── Product Management Mentors ── */}
+          <DynamicDomainMentors
+            role="pm"
+            isSmall={isSmall}
+            onViewMentors={() => router.push('/mentors')}
+          />
 
           {/* 4 Core Skills - Detailed */}
           <View style={[styles.section, { backgroundColor: 'white' }]} accessibilityRole="region" accessibilityLabel="Core PM skills">

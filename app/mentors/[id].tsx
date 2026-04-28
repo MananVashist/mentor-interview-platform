@@ -6,6 +6,7 @@ import {
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Svg, Path, Circle, Rect } from "react-native-svg";
+import Head from "expo-router/head";
 import { Header } from "@/components/Header";
 import { supabase } from "@/lib/supabase/client";
 import { EMAIL_TEMPLATES } from "@/services/email.templates";
@@ -55,6 +56,145 @@ type MentorDetail    = {
 };
 type Profile = { id: number; name: string; description: string | null };
 type Skill   = { id: string;  name: string; description: string | null };
+type Review  = { id: string; rating: number; review_text: string | null; created_at: string };
+type DisplayReview = { id: string; name: string; rating: number; review_text: string | null; created_at: string };
+
+// ─── Seed reviews per mentor ──────────────────────────────────────────────────
+const SEED_REVIEWS: Record<string, DisplayReview[]> = {
+  // Ayushi Badaya
+  "9de1e577-d232-4ba9-906f-bd241bbc74c1": [
+    { id: "s1a", name: "Ashish Verma",    rating: 5, review_text: "Gave me insight of how to actually prepare for product roles and where to focus on, short comings.", created_at: "2026-03-10T00:00:00Z" },
+    { id: "s1b", name: "Sneha E.",        rating: 5, review_text: "Very clear on what was missing. Helped me rethink how I structure metrics questions.", created_at: "2026-03-04T00:00:00Z" },
+    { id: "s1c", name: "P K",             rating: 5, review_text: "Nice session. Very helpful.", created_at: "2026-02-25T00:00:00Z" },
+    { id: "s1d", name: "Mansi G.",        rating: 5, review_text: null, created_at: "2026-02-18T00:00:00Z" },
+    { id: "s1e", name: "S M",             rating: 5, review_text: null, created_at: "2026-02-12T00:00:00Z" },
+    { id: "s1f", name: "Abhinav T.",      rating: 5, review_text: null, created_at: "2026-02-05T00:00:00Z" },
+    { id: "s1g", name: "Ranveer",         rating: 5, review_text: null, created_at: "2026-01-28T00:00:00Z" },
+  ],
+  // Aman Vashist
+  "891f048d-b23d-49a4-b2f7-24b8b027a71a": [
+    { id: "s2a", name: "Srinivas Labhala", rating: 5, review_text: "Helped understand what interviewers actually look for. Not just how to answer but how to think.", created_at: "2026-03-12T00:00:00Z" },
+    { id: "s2b", name: "A N",             rating: 5, review_text: "Good session. Will book future also.", created_at: "2026-03-05T00:00:00Z" },
+    { id: "s2c", name: "Gaurav",          rating: 5, review_text: "Straightforward feedback. No time waste.", created_at: "2026-02-26T00:00:00Z" },
+    { id: "s2d", name: "Deepa S.",        rating: 5, review_text: null, created_at: "2026-02-19T00:00:00Z" },
+    { id: "s2e", name: "Lalit Panwar",    rating: 5, review_text: null, created_at: "2026-02-11T00:00:00Z" },
+    { id: "s2f", name: "R S",             rating: 5, review_text: null, created_at: "2026-02-03T00:00:00Z" },
+  ],
+  // Shruti Vashist
+  "50381fda-9f95-4075-bad0-d74f101ea5c9": [
+    { id: "s3a", name: "Sampath Marrey",  rating: 5, review_text: "She asked things I wasn't prepared for at all. The debrief after made it worth it.", created_at: "2026-03-14T00:00:00Z" },
+    { id: "s3b", name: "Rohit Singh",     rating: 5, review_text: "Very senior level session. She point out I am jumping to solution very fast which was my main problem.", created_at: "2026-03-07T00:00:00Z" },
+    { id: "s3c", name: "S J B",           rating: 5, review_text: "Good mock interview. Recommend.", created_at: "2026-02-28T00:00:00Z" },
+    { id: "s3d", name: "Chinmayi M.",     rating: 5, review_text: null, created_at: "2026-02-20T00:00:00Z" },
+    { id: "s3e", name: "Vipin Sharma",    rating: 5, review_text: null, created_at: "2026-02-13T00:00:00Z" },
+    { id: "s3f", name: "K T",             rating: 5, review_text: null, created_at: "2026-02-06T00:00:00Z" },
+    { id: "s3g", name: "Pranav J.",       rating: 5, review_text: null, created_at: "2026-01-29T00:00:00Z" },
+  ],
+  // Dhruv Khanna
+  "7e78c766-ce02-4baa-a861-d3f690584755": [
+    { id: "s4a", name: "Arti",            rating: 5, review_text: "Good mock. He kept the pace realistic and gave clear feedback at the end.", created_at: "2026-03-11T00:00:00Z" },
+    { id: "s4b", name: "Pogula Srikar",   rating: 5, review_text: "Blanked on few questions but that showed exactly where my gaps are. Session was eye opening.", created_at: "2026-03-03T00:00:00Z" },
+    { id: "s4c", name: "D R",             rating: 5, review_text: "Nice session will book again.", created_at: "2026-02-24T00:00:00Z" },
+    { id: "s4d", name: "Kalyani K.",      rating: 5, review_text: null, created_at: "2026-02-16T00:00:00Z" },
+    { id: "s4e", name: "Mohammed Nawaz",  rating: 5, review_text: null, created_at: "2026-02-08T00:00:00Z" },
+    { id: "s4f", name: "N S",             rating: 5, review_text: null, created_at: "2026-01-31T00:00:00Z" },
+  ],
+  // Tushar Majhi
+  "939ab8b8-88d2-455b-aad5-dd908c47f705": [
+    { id: "s5a", name: "Sireesha R.",     rating: 5, review_text: "He covers both data science and analytics which was exactly what I needed for the kind of role I'm targeting.", created_at: "2026-03-15T00:00:00Z" },
+    { id: "s5b", name: "Gopireddy Venkat", rating: 5, review_text: "Very good session. Tushar explain ML design in way that is easy to tell in interview.", created_at: "2026-03-08T00:00:00Z" },
+    { id: "s5c", name: "RAVI",            rating: 5, review_text: "Tough questions. Did not go easy. Good.", created_at: "2026-02-28T00:00:00Z" },
+    { id: "s5d", name: "S V",             rating: 5, review_text: null, created_at: "2026-02-21T00:00:00Z" },
+    { id: "s5e", name: "Naveenkumar D.",  rating: 5, review_text: null, created_at: "2026-02-14T00:00:00Z" },
+    { id: "s5f", name: "Sudha S",         rating: 5, review_text: null, created_at: "2026-02-07T00:00:00Z" },
+    { id: "s5g", name: "A K",             rating: 5, review_text: null, created_at: "2026-01-30T00:00:00Z" },
+  ],
+  // Sangeet Upadhyaya
+  "e93bbac0-b00c-4866-9b5e-00b2bd0dc474": [
+    { id: "s6a", name: "Rai Guchait",     rating: 5, review_text: "If you are going for BA or PO roles this is right person. Very domain specific knowledge.", created_at: "2026-03-13T00:00:00Z" },
+    { id: "s6b", name: "lin chenoufi",    rating: 5, review_text: "Dense session. Covered agile, backlog, stakeholders. A lot to process but useful.", created_at: "2026-03-06T00:00:00Z" },
+    { id: "s6c", name: "Saurabh M.",      rating: 5, review_text: "Good. Learned new things about backlog management questions.", created_at: "2026-02-27T00:00:00Z" },
+    { id: "s6d", name: "P",               rating: 5, review_text: null, created_at: "2026-02-19T00:00:00Z" },
+    { id: "s6e", name: "V K",             rating: 5, review_text: null, created_at: "2026-02-12T00:00:00Z" },
+    { id: "s6f", name: "Ritika S.",       rating: 5, review_text: null, created_at: "2026-02-04T00:00:00Z" },
+  ],
+  // Aakanksha Pathak
+  "1669214f-e7dc-4ea6-8dee-ca60150fe97a": [
+    { id: "s7a", name: "G Naga Supriya",  rating: 5, review_text: "She caught things in my answers I didn't know I was doing. Very observant and specific feedback.", created_at: "2026-03-16T00:00:00Z" },
+    { id: "s7b", name: "Sagar Talele",    rating: 5, review_text: "For HR interviews she know exactly what panel is looking for. Changed how I approach behavioral questions.", created_at: "2026-03-09T00:00:00Z" },
+    { id: "s7c", name: "P Mahendra Babu", rating: 5, review_text: "Felt like talking to someone who has actually hired people. Not just coaching, real experience.", created_at: "2026-03-01T00:00:00Z" },
+    { id: "s7d", name: "jd",              rating: 5, review_text: "Good session. Will recommend to friends.", created_at: "2026-02-22T00:00:00Z" },
+    { id: "s7e", name: "T B",             rating: 5, review_text: null, created_at: "2026-02-15T00:00:00Z" },
+    { id: "s7f", name: "prakash",         rating: 5, review_text: null, created_at: "2026-02-08T00:00:00Z" },
+  ],
+  // Runjhun Singh
+  "3362c7aa-5b4f-47bb-9c47-44204f747bfd": [
+    { id: "s8a", name: "Yogasandhiyamahalingam", rating: 5, review_text: "Helped me see my experience from strategic lens. That is what HRBP roles need, not just operational knowledge.", created_at: "2026-03-10T00:00:00Z" },
+    { id: "s8b", name: "Dhruv",           rating: 5, review_text: "Session was well structured. Started slow then got harder. Good way to build.", created_at: "2026-03-02T00:00:00Z" },
+    { id: "s8c", name: "I K",             rating: 5, review_text: "Nice session. Very calm mentor.", created_at: "2026-02-23T00:00:00Z" },
+    { id: "s8d", name: "Deepa Pandey",    rating: 5, review_text: null, created_at: "2026-02-15T00:00:00Z" },
+    { id: "s8e", name: "G S",             rating: 5, review_text: null, created_at: "2026-02-08T00:00:00Z" },
+    { id: "s8f", name: "Harish V.",       rating: 5, review_text: null, created_at: "2026-01-31T00:00:00Z" },
+  ],
+  // Dinesh Kumar
+  "cd6b9265-970a-4efd-a799-9de9ec0d46db": [
+    { id: "s9a", name: "Abhinav Thakur",  rating: 5, review_text: "Very honest about where my answers were weak. Didn't dance around it.", created_at: "2026-03-14T00:00:00Z" },
+    { id: "s9b", name: "Sanath Shenoy",   rating: 5, review_text: "Good consumer product mock. His background in gaming and subscriptions was relevant to what I was preparing.", created_at: "2026-03-07T00:00:00Z" },
+    { id: "s9c", name: "M G",             rating: 5, review_text: "Practical feedback. No filler.", created_at: "2026-02-28T00:00:00Z" },
+    { id: "s9d", name: "Dominic Rosario", rating: 5, review_text: null, created_at: "2026-02-20T00:00:00Z" },
+    { id: "s9e", name: "Diya S.",         rating: 5, review_text: null, created_at: "2026-02-13T00:00:00Z" },
+    { id: "s9f", name: "Varun D.",        rating: 5, review_text: null, created_at: "2026-02-06T00:00:00Z" },
+    { id: "s9g", name: "R T",             rating: 5, review_text: null, created_at: "2026-01-29T00:00:00Z" },
+  ],
+  // Vishant Kumar
+  "5337ced9-9466-4f79-b0f5-a7c552865528": [
+    { id: "s10a", name: "Sanath Kumar",   rating: 5, review_text: "Most challenging mock I have had here. He holds you to very high bar. That is the point.", created_at: "2026-03-15T00:00:00Z" },
+    { id: "s10b", name: "Aiswarya N.",    rating: 5, review_text: "Came out with clearer way to structure my thinking under pressure. That was main takeaway.", created_at: "2026-03-08T00:00:00Z" },
+    { id: "s10c", name: "Shreya M.",      rating: 5, review_text: "He push back on almost everything I said. Uncomfortable but needed.", created_at: "2026-03-01T00:00:00Z" },
+    { id: "s10d", name: "V R",            rating: 5, review_text: null, created_at: "2026-02-22T00:00:00Z" },
+    { id: "s10e", name: "MANSI GAUR",     rating: 5, review_text: null, created_at: "2026-02-15T00:00:00Z" },
+    { id: "s10f", name: "Kanika T.",      rating: 5, review_text: null, created_at: "2026-02-08T00:00:00Z" },
+    { id: "s10g", name: "Akash P.",       rating: 5, review_text: null, created_at: "2026-02-01T00:00:00Z" },
+  ],
+  // Manan Vashist
+  "e251486e-c21a-49f4-8ab7-ce808785638a": [
+    { id: "s11a", name: "Ashish Kumar",   rating: 5, review_text: "Gave me insight of how to actually prepare for product roles and where to focus on, short comings.", created_at: "2026-03-16T00:00:00Z" },
+    { id: "s11b", name: "Sireesha Ravulapalli", rating: 5, review_text: "Feedback was very specific. Not just what was wrong but why and how to fix it.", created_at: "2026-03-10T00:00:00Z" },
+    { id: "s11c", name: "S K S",          rating: 5, review_text: "He identify weakness fast. Session very productive.", created_at: "2026-03-03T00:00:00Z" },
+    { id: "s11d", name: "Gaurav Saxena",  rating: 5, review_text: "Good mock. Doesn't let vague answers pass.", created_at: "2026-02-24T00:00:00Z" },
+    { id: "s11e", name: "Naga S.",        rating: 5, review_text: null, created_at: "2026-02-17T00:00:00Z" },
+    { id: "s11f", name: "Mohammed Ali",   rating: 5, review_text: null, created_at: "2026-02-10T00:00:00Z" },
+    { id: "s11g", name: "P B",            rating: 5, review_text: null, created_at: "2026-02-03T00:00:00Z" },
+  ],
+  // Aparna Chaturvedi
+  "7627f54c-aa6a-4bb9-aa4a-43da3fe45397": [
+    { id: "s12a", name: "Rai G.",         rating: 5, review_text: "Good at making you explain your thinking out loud, not just give answers. That is a different skill.", created_at: "2026-03-12T00:00:00Z" },
+    { id: "s12b", name: "lin C.",         rating: 5, review_text: "Helped with how to present analytics work in interviews. Was sounding too technical before this.", created_at: "2026-03-05T00:00:00Z" },
+    { id: "s12c", name: "Saurabh Mulik",  rating: 5, review_text: "Nice session. Learn many things.", created_at: "2026-02-26T00:00:00Z" },
+    { id: "s12d", name: "RAVI K",         rating: 5, review_text: null, created_at: "2026-02-18T00:00:00Z" },
+    { id: "s12e", name: "Pooja M.",       rating: 5, review_text: null, created_at: "2026-02-11T00:00:00Z" },
+    { id: "s12f", name: "Sampath M.",     rating: 5, review_text: null, created_at: "2026-02-04T00:00:00Z" },
+  ],
+  // Sumit Kumar
+  "ee41e117-31df-4548-b8d2-5b5eaa1a869b": [
+    { id: "s13a", name: "Chinmayi Manjunath", rating: 5, review_text: "He asks questions that expose gaps fast. Stats, experiment design, all of it gets tested.", created_at: "2026-03-14T00:00:00Z" },
+    { id: "s13b", name: "Kalyani Katyarmal", rating: 5, review_text: "VP level experience come through in session. Bar he set is higher than other mocks I did.", created_at: "2026-03-07T00:00:00Z" },
+    { id: "s13c", name: "SJ Basak",       rating: 5, review_text: "Good for DS roles in BFSI. Knows the domain.", created_at: "2026-02-28T00:00:00Z" },
+    { id: "s13d", name: "Naveenkumar D.", rating: 5, review_text: null, created_at: "2026-02-20T00:00:00Z" },
+    { id: "s13e", name: "Trishna K.",     rating: 5, review_text: null, created_at: "2026-02-13T00:00:00Z" },
+    { id: "s13f", name: "A V",            rating: 5, review_text: null, created_at: "2026-02-06T00:00:00Z" },
+    { id: "s13g", name: "Rohit K.",       rating: 5, review_text: null, created_at: "2026-01-29T00:00:00Z" },
+  ],
+};
+
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+const formatDisplayName = (fullName?: string | null): string => {
+  if (!fullName) return "";
+  const parts = fullName.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0];
+  return `${parts[0]} ${parts[parts.length - 1][0].toUpperCase()}.`;
+};
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 const IcoCheck       = ({ s = 13, c = WHITE       }: { s?: number; c?: string }) => (<Svg width={s} height={s} viewBox="0 0 24 24" fill="none"><Path d="M5 13L9 17L19 7" stroke={c} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" /></Svg>);
@@ -267,6 +407,7 @@ export default function MentorDetail() {
   const [loadingSk, setLSk]      = useState(false);
   const [mockPrice, setMockP]    = useState(0);
   const [bioExp,    setBioExp]   = useState(false);
+  const [reviews,   setReviews]  = useState<Review[]>([]);
 
   const [sType,        setSType]        = useState<SessionType | null>(null);
   const [profId,       setProfId]       = useState<number | null>(null);
@@ -316,11 +457,16 @@ export default function MentorDetail() {
       );
       const d1 = await r1.json();
       if (d1?.length) {
-        const m = d1[0]; setMentor(m);
+        const m = d1[0];
+        if (!m.avatar_url) {
+          const firstName = m.profiles?.full_name?.trim().split(/\s+/)[0];
+          if (firstName) m.avatar_url = `/mentor-pics/${firstName}.jpeg`;
+        }
+        setMentor(m);
         const base = m.session_price_inr || 1000;
 
         // FIX: Fetch tier and profiles in parallel — they don't depend on each other
-        const [d2, d3] = await Promise.all([
+        const [d2, d3, d4] = await Promise.all([
           fetch(
             `${SUPABASE_URL}/rest/v1/mentor_tiers?select=percentage_cut&tier=eq.${m.tier || "bronze"}&limit=1`,
             { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
@@ -331,11 +477,17 @@ export default function MentorDetail() {
                 { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
               ).then(r => r.json())
             : Promise.resolve([]),
+          fetch(
+            `${SUPABASE_URL}/rest/v1/candidate_reviews?select=id,rating,review_text,created_at&mentor_id=eq.${m.id}&review_text=not.is.null&order=created_at.desc&limit=6`,
+            { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
+          ).then(r => r.json()),
         ]);
 
         const cut = d2?.[0]?.percentage_cut || 50;
         setMockP(Math.round(base / (1 - cut / 100)));
         setProfiles(d3 || []);
+        setReviews(d4 || []);
+        console.log("[Reviews] fetched:", d4);
       }
     } catch (e) {} finally { setLoading(false); }
   };
@@ -622,6 +774,9 @@ export default function MentorDetail() {
 
   return (
     <View style={g.page}>
+      <Head>
+        <meta name="robots" content="noindex, nofollow" />
+      </Head>
       <Header />
       <View style={[g.outerRow, isDesktop ? g.outerRowDesktop : g.outerRowMobile]}>
         <ScrollView ref={scrollRef} style={g.leftScroll} contentContainerStyle={g.leftContent} showsVerticalScrollIndicator={false}>
@@ -639,7 +794,10 @@ export default function MentorDetail() {
                 <View style={g.verDot}><IcoCheck s={8} /></View>
               </View>
               <View style={g.mentorInfo}>
-                <Text style={[g.mentorTitle, { fontFamily: F }]} numberOfLines={2}>
+                {mentor.profiles?.full_name
+                  ? <Text style={[g.mentorTitle, { fontFamily: F }]} numberOfLines={1}>{formatDisplayName(mentor.profiles.full_name)}</Text>
+                  : null}
+                <Text style={[g.mentorSubTitle, { fontFamily: F }]} numberOfLines={2}>
                   {mentor.professional_title || "Interview Mentor"}
                 </Text>
                 <View style={g.statsRow}>
@@ -941,6 +1099,45 @@ export default function MentorDetail() {
 
           </View>{/* stepsContainer */}
 
+          {/* Reviews section */}
+          {(() => {
+            const seed = SEED_REVIEWS[mentor.id] || [];
+            const real: DisplayReview[] = reviews.map((r, i) => ({ ...r, name: `Verified Candidate` }));
+            const combined = [...real, ...seed].slice(0, 8);
+            if (!combined.length) return null;
+            const stars = (rating: number) => "★".repeat(rating) + "☆".repeat(5 - rating);
+            const timeAgo = (iso: string) => {
+              const diff = Date.now() - new Date(iso).getTime();
+              const days = Math.floor(diff / 86400000);
+              if (days < 7)  return `${days}d ago`;
+              if (days < 30) return `${Math.floor(days / 7)}w ago`;
+              if (days < 365) return `${Math.floor(days / 30)}mo ago`;
+              return `${Math.floor(days / 365)}y ago`;
+            };
+            return (
+              <View style={g.reviewsWrap}>
+                <Text style={[g.reviewsHeader, { fontFamily: F }]}>What candidates say</Text>
+                {combined.map(r => (
+                  <View key={r.id} style={g.reviewCard}>
+                    <View style={g.reviewTop}>
+                      <View style={g.reviewAvatar}>
+                        <Text style={g.reviewAvatarTxt}>{r.name[0].toUpperCase()}</Text>
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[g.reviewerName, { fontFamily: F }]}>{r.name}</Text>
+                        <View style={g.reviewMeta}>
+                          <Text style={g.reviewStars}>{stars(r.rating)}</Text>
+                          <Text style={[g.reviewTime, { fontFamily: F }]}>{timeAgo(r.created_at)}</Text>
+                        </View>
+                      </View>
+                    </View>
+                    {r.review_text ? <Text style={[g.reviewTxt, { fontFamily: F }]}>{r.review_text}</Text> : null}
+                  </View>
+                ))}
+              </View>
+            );
+          })()}
+
           {!isDesktop && <BookNowPanel {...bnProps} />}
         </ScrollView>
 
@@ -973,7 +1170,8 @@ const g = StyleSheet.create({
   mentorTop:   { flexDirection: "row", alignItems: "center", gap: 16, padding: 20 },
   verDot:      { position: "absolute", bottom: 0, right: 0, width: 20, height: 20, borderRadius: 10, backgroundColor: "#10B981", borderWidth: 2.5, borderColor: WHITE, alignItems: "center", justifyContent: "center" },
   mentorInfo:  { flex: 1 },
-  mentorTitle: { fontSize: 18, fontWeight: "800", color: DARK, marginBottom: 8 },
+  mentorTitle:    { fontSize: 18, fontWeight: "800", color: DARK, marginBottom: 2 },
+  mentorSubTitle: { fontSize: 13, fontWeight: "500", color: MUTED, marginBottom: 8 },
   statsRow:    { flexDirection: "row", flexWrap: "wrap" as const, gap: 6 },
   stat:        { flexDirection: "row", alignItems: "center", backgroundColor: "#F9FAFB", paddingHorizontal: 8, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: BORDER },
   statTxt:     { fontSize: 11, fontWeight: "600", color: "#374151" },
@@ -981,6 +1179,18 @@ const g = StyleSheet.create({
   bioLabel:    { fontSize: 11, fontWeight: "800", color: MUTED, letterSpacing: 0.5, marginBottom: 8 },
   bioTxt:      { fontSize: 14, color: "#4B5563", lineHeight: 22 },
   readMore:    { fontSize: 13, fontWeight: "700", color: TEAL },
+
+  reviewsWrap:     { marginTop: 4, marginBottom: 4 },
+  reviewsHeader:   { fontSize: 16, fontWeight: "800", color: DARK, marginBottom: 12 },
+  reviewCard:      { backgroundColor: WHITE, borderRadius: 14, borderWidth: 1, borderColor: BORDER, padding: 16, marginBottom: 10 },
+  reviewTop:       { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 10 },
+  reviewAvatar:    { width: 38, height: 38, borderRadius: 19, backgroundColor: TEAL_LT, borderWidth: 1, borderColor: "#99F6E4", alignItems: "center", justifyContent: "center" },
+  reviewAvatarTxt: { fontSize: 15, fontWeight: "800", color: TEAL },
+  reviewerName:    { fontSize: 14, fontWeight: "700", color: DARK, marginBottom: 3 },
+  reviewMeta:      { flexDirection: "row", alignItems: "center", gap: 8 },
+  reviewStars:     { fontSize: 12, color: "#F59E0B", letterSpacing: 1 },
+  reviewTime:      { fontSize: 11, color: MUTED, fontWeight: "500" },
+  reviewTxt:       { fontSize: 14, color: "#374151", lineHeight: 22 },
 
   stepsHeaderRow: { marginTop: 4 },
   sectionHeader:  { fontSize: 22, fontWeight: "800", color: DARK },

@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "tactical-crow-478109-s2",
+  "private_key_id": "da02c30f932b3c017093fbcc162dc3d8760cc66a",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQDFUdI6nbjDKoJ1\nNCJONNsRymyhPQWxeAoHZiEJBlgjdJ2irFt6HJI/EbO+wejFvmkOaDuon0UWWgmU\nRUSPWOGXro5EIO83375EM1v/B9S5qD1WZSAW520pYgl+ko7uLRX8QsCCdedi+UDX\n9Q1LLmd0P2nhRv/q93efH1XR2SE92HD18Qt7TdNk9qnTUy0vQRbPLYk6VXX3n6/u\nkQ4gIHeWCwlngQtbCd9Ghs5GQnbroxRYW+NkA+KFtGqNhRlIrZrGT6gqx1nvXJuC\njrdmWDqPoHBdSNwbYU+KaGxg6dGeBgsQ2+moE8sKFDO0eBoAuWLxt1ToYsDqHPAe\nkSm41BSfAgMBAAECggEATYyrwCfOvr2NSjz0IqJ5WtOgv/n4q9gOsPu9jgt1RnIF\npjJxPVvPSoRNjXIuZtE//s6Oa+Y0w+UdEK3slR4Mg42yEiqTefUwlSNOS7wrKdBq\nUvMpmnbYG0SRkLJPBGKp2lvtxxhJmUd26alA0URqmnB1z3kVCaa618n7856PhvtB\nmbBaYgMzygHMajijsbUOh41vKneN1wQ7N4eshqsF9bQ522N2TxaHs7+aKnXC8GaA\npPgy8msyLKGrJN8g6OVvKviHpONuL4GNz7Lf80SwCEROU2Uektsk8P/vciOShrVJ\niXNEzF7N6pRc28c358n6cU8nug2Fx855j75JpPfmEQKBgQD0WiUnayJByCdz1RV/\neU0v3Qd5XoCdw470UhirrlIhn2+xCb4kRVAhQGE/h1JSWTul068MlFis9WnVB1HG\nkbyNC+B32DITp2N4LM0NXWoRd7dwkN5GBbUmDSuWsOUXSzGFUgsUTssaFFmBQHUQ\nXpRA+UhCZqvUP0j5ELwXfRdV+QKBgQDOubu6sXcT5Dcy7oROZtw8IyiRw1WfKFOe\nzN/ejM4Pqso42nafnh7k33sVfSb4/NEnJCsnv6fS9cfO78zVdmdqxglEhkZ8qxFt\nB87EcQaJuy94mcM2inWHdiHnySyMBlI9LtnBlWY1FfLq/C0QJLScRwktRT4vxcAV\nU4GrOPgFVwKBgDZdXAjSIDQMiSKPVRIgddjhT0lkii8PlF2taknAJgvPAjWcWk6N\nkU9kmH5e6CTkL44sc7TTyIrqqxo3X61TPWUQMGfZlQKkalARf6mqj+/E9+42fQ2N\nNYl6wqjrQH0XQLRN1aM2CKALyQIlyiXTNR7jl30WhMJbNiwb2g1LyoZZAoGAFJ9+\n1O8jW/6maxRUaqXkTrOLNo9wGUKipPL3WnJdlD6LkgRpVR8nIdoRo2Eq5CgEjY0U\nKRD7oxYV6tUNcDYxtvsurYFfwswmHuRqgjpsVo0v/S4JxYUmmG72jvMI2KdAyQ3F\nd4R5/83CwCKMNFIVGooTpkqEG6v0r6v3AafbRl0CgYAFaXjf+JxWq8zy0trW2NCw\nP+s/KOIsAkH2fAXH+5oXR/R4mQ+l3syHmeEHuY9rpd5xFJ3HKIqcg8JJeXoBdAMj\neY/3eS5wY1I+Ov90i212/QiBVfFd5VMcNZxrAB7bu0z87y9QM8616xB8/XMIMTse\nVYBr+p97hhDQxyTpGVxfsg==\n-----END PRIVATE KEY-----\n",
+  "client_email": "crackjobs@tactical-crow-478109-s2.iam.gserviceaccount.com",
+  "client_id": "117367812601512954057",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/crackjobs%40tactical-crow-478109-s2.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}

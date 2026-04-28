@@ -158,6 +158,7 @@ export default function SignInScreen() {
       <Head>
         <title>Log In | CrackJobs</title>
         <meta name="description" content="Log in to your CrackJobs account to manage your interviews and bookings." />
+        <meta name="robots" content="noindex, nofollow" />
       </Head>
 
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.container}>

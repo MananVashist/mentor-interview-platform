@@ -255,6 +255,13 @@ type MentorCardProps = {
   onView: () => void;
 };
 
+const formatDisplayName = (fullName?: string | null): string => {
+  if (!fullName) return "";
+  const parts = fullName.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0];
+  return `${parts[0]} ${parts[parts.length - 1][0].toUpperCase()}.`;
+};
+
 const MentorCard = memo(({
   m, displayPrice, totalSessions, isNewMentor, averageRating,
   showRating, availabilityState, displaySlot, onView,
@@ -302,13 +309,14 @@ const fallbackAvatar = `https://api.dicebear.com/9.x/micah/png?seed=${encodeURIC
           />
           <View style={styles.headerInfo}>
             <View style={styles.identityGroup}>
-              <Text style={styles.mentorName} numberOfLines={1}>
-                {m.professional_title || 'Interview Mentor'}
-              </Text>
+              {m.profiles?.full_name
+                ? <Text style={styles.mentorName} numberOfLines={1}>{formatDisplayName(m.profiles.full_name)}</Text>
+                : null}
               <View style={styles.verifiedBadge}>
                 <CheckmarkCircleIcon size={14} color="#3B82F6" />
               </View>
             </View>
+            <Text style={styles.mentorSubTitle} numberOfLines={1}>{m.professional_title || 'Interview Mentor'}</Text>
             {m.years_of_experience && (
               <View style={{ alignSelf: 'flex-start', marginTop: 4 }}>
                 <View style={styles.expBadge}>
@@ -495,7 +503,14 @@ export default function PublicBrowseMentors() {
       );
 
       // FIX: Show cards immediately — don't block on availability
-      setMentors(filtered);
+      const enriched = filtered.map((m: Mentor) => {
+        if (!m.avatar_url) {
+          const firstName = m.profiles?.full_name?.trim().split(/\s+/)[0];
+          if (firstName) return { ...m, avatar_url: `/mentor-pics/${firstName}.jpeg` };
+        }
+        return m;
+      });
+      setMentors(enriched);
       setMentorsLoading(false);
 
       // FIX: Load availability in background, each card updates independently
@@ -821,7 +836,8 @@ const styles = StyleSheet.create({
   avatarImage: { width: 56, height: 56, borderRadius: 28, backgroundColor: '#F3F4F6' },
   headerInfo: { flex: 1, justifyContent: 'center' },
   identityGroup: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
-  mentorName: { ...FONTS.heading, fontSize: 18, color: theme.colors.text.main, flexShrink: 1 },
+  mentorName: { ...FONTS.heading, fontSize: 18, color: theme.colors.text.main, flexShrink: 1, marginBottom: 1 },
+  mentorSubTitle: { fontSize: 13, fontWeight: '500' as const, color: '#6B7280', marginBottom: 4 },
   verifiedBadge: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   expBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.colors.gray[100], paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, gap: 4 },
   expText: { ...FONTS.captionBold, color: theme.colors.text.body },

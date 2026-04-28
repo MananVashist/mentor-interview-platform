@@ -23,6 +23,7 @@ export default function TermsAndConditions() {
           <meta name="description" content="Read the user agreement for CrackJobs. Guidelines for candidates and mentors using our mock interview platform." />
           <meta name="keywords" content="terms of service, user agreement, crackjobs terms, legal, mock interview platform rules" />
           <link rel="canonical" href="https://crackjobs.com/terms" />
+          <meta name="robots" content="noindex, nofollow" />
           <meta property="og:type" content="website" />
           <meta property="og:url" content="https://crackjobs.com/terms" />
           <meta property="og:title" content="Terms & Conditions | CrackJobs" />
@@ -437,4 +438,4 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 32,
   },
-}); 
+});

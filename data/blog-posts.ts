@@ -338,6 +338,10 @@ These issues are hard to catch practicing alone.
 <p>
 That’s why structured mock interviews help—not to teach SQL, but to expose blind spots before real interviews do.
 </p>
+
+<p>
+If you’re ready to test your SQL and business reasoning in a live setting, our <a href="/blog/data-analyst-mock-interview-guide">complete guide to data analyst mock interview preparation</a> covers exactly what to expect in each round and how to structure your approach from Week 1 through offer.
+</p>
 `,
   author: "CrackJobs Team",
   publishedAt: "2025-01-10",
@@ -640,6 +644,23 @@ Machine learning interviews reward:
 <p>
 If you keep failing despite knowing ML, it’s likely an execution gap—not a knowledge gap.
 </p>
+
+<h2>What the strongest ML candidates do differently in system design rounds</h2>
+<p>
+Beyond the 8 mistakes above, there is a consistent pattern in how top ML candidates handle the hardest question type: open-ended ML system design. “Design a recommendation system for an e-commerce platform” or “build a fraud detection model for a payments company” — these questions have no single correct answer, which is exactly why they’re so revealing.
+</p>
+<p>
+Strong candidates follow a consistent structure:
+</p>
+<ol>
+  <li><strong>Clarify the objective function first.</strong> What exactly are you optimising for? Click-through rate, purchase conversion, long-term retention? The objective defines the label, which defines the training data, which defines the entire system. Candidates who jump to model architecture before clarifying the objective always paint themselves into a corner later.</li>
+  <li><strong>Define the training data before the model.</strong> Most candidates spend 70% of their system design answer on model architecture and 10% on data. Interviewers from production ML teams care more about data than architecture — because in practice, the model is rarely the bottleneck. Where does the training data come from? How do you handle label delay (e.g., in fraud detection, you don’t know if a transaction was fraudulent for days or weeks)? How do you handle class imbalance?</li>
+  <li><strong>Separate offline from online evaluation.</strong> Your model’s offline AUC tells you nothing about production impact. Strong candidates define both: offline metrics (precision/recall, AUC, NDCG for ranking) and online metrics (A/B test design, holdback %, metric to track, and expected effect size).</li>
+  <li><strong>Name the top 3 failure modes proactively.</strong> Rather than waiting for the interviewer to poke holes, identify them yourself: “The two biggest risks I see are cold-start for new items and feedback loop bias from only training on shown items.” This demonstrates senior-level ownership.</li>
+</ol>
+<p>
+When an interviewer asks you to walk through how you’d debug a specific ML failure, the structure above is what separates a candidate who knows theory from one who has shipped models. For a complete breakdown of how to handle ML debugging scenarios — with worked examples for model degradation, cold-start, training instability, and overfitting — see our guide to <a href="/blog/ml-debugging-interview-guide">ML debugging interview questions</a>.
+</p>
 `,
   author: "CrackJobs Team",
   publishedAt: "2025-01-15",
@@ -913,6 +934,24 @@ They reward:
 <p>
 If you keep failing HR interviews despite strong experience, the issue is usually execution—not knowledge.
 </p>
+
+<h2>Key metrics every TA professional must know cold</h2>
+<p>
+One of the most consistent rejection reasons for TA candidates at mid-to-senior levels isn’t a gap in process knowledge — it’s an inability to speak fluently about hiring metrics. Modern TA is a data-driven function, and interviewers at growth-stage companies expect you to own the funnel numerically, not just operationally.
+</p>
+<p>
+These are the metrics that come up most frequently in senior TA and HRBP interviews:
+</p>
+<ul>
+  <li><strong>Time-to-fill vs. time-to-hire:</strong> These are not the same metric, and confusing them is a red flag. Time-to-fill measures from job opening to accepted offer — it includes sourcing lag, approval delays, and notice periods. Time-to-hire measures from the candidate’s first touchpoint to their accepted offer. Time-to-hire tells you about your process efficiency; time-to-fill tells you about organisational agility. Strong candidates can explain both and say which one they optimise for, and why.</li>
+  <li><strong>Offer acceptance rate:</strong> Anything consistently below 80% warrants a structured investigation — not anecdotal explanation. Root causes are almost always one of three things: compensation expectations misaligned (surfaced at offer stage rather than screening), a competing offer with better package or brand, or a poor candidate experience during the hiring loop. Strong TA professionals diagnose offer declines systematically, by stage and by role family.</li>
+  <li><strong>Quality of hire:</strong> The hardest metric to own and the most impressive to discuss fluently. Quality of hire is typically a composite of new hire performance rating at 6 months, retention at 12 months, and hiring manager satisfaction score. Candidates who can explain how they’ve tracked and improved quality of hire signal genuine ownership of the TA function — not just process management.</li>
+  <li><strong>Sourcing channel effectiveness:</strong> Not just “LinkedIn works best” but a quantified view: cost per qualified candidate by channel, conversion rate from sourced to shortlist by channel, and if you have the data, quality of hire by sourcing channel. This segmentation is what allows budget reallocation conversations with leadership to be data-led rather than intuition-led.</li>
+  <li><strong>Funnel conversion rates by stage:</strong> Application → phone screen → technical/functional screen → hiring manager round → final round → offer → accept. Each stage has an industry reference range. If your application-to-screen rate is unusually low, either your JD is attracting the wrong candidates or your screening criteria are too broad. Strong TA professionals know their numbers at each stage and have a hypothesis for every conversion rate that’s outside the expected range.</li>
+</ul>
+<p>
+Interviewers don’t expect you to have every number memorised from your last role — but they do expect you to know which metrics matter and why, and to have a clear framework for how you’d instrument them in a new organisation. If these weren’t tracked in your last role, the strongest move is to acknowledge that and describe exactly how you’d set up measurement from scratch.
+</p>
 `,
   author: "CrackJobs Team",
   publishedAt: "2025-01-18",
@@ -994,7 +1033,7 @@ Candidates fail when they:
 </ul>
 
 <p>
-Strong PMs align metrics with business outcomes—similar to expectations in <a href="/interviews/data-analytics">data analytics interviews</a>.
+Strong PMs align metrics with business outcomes — frameworks like <a href="/blog/aarm-framework-product-management-interviews">AARM</a> are often tested directly in execution rounds, and knowing it fluently is what separates strong candidates from those who just list KPIs. This metric rigour is similar to what’s expected in <a href="/interviews/data-analytics">data analytics interviews</a>.
 </p>
 
 <hr />
@@ -1543,7 +1582,7 @@ You need three frameworks so internalised that you can apply them without thinki
 </p>
 <ul>
   <li><strong>CIRCLES</strong> for product design questions (Comprehend, Identify, Report, Cut, List, Evaluate, Summarise)</li>
-  <li><strong>AARM</strong> for metrics and growth questions (Acquire, Activate, Retain, Monetize)</li>
+  <li><strong><a href="/blog/aarm-framework-product-management-interviews">AARM</a></strong> for metrics and growth questions (Acquire, Activate, Retain, Monetize)</li>
   <li><strong>RICE</strong> for prioritisation (Reach, Impact, Confidence, Effort)</li>
 </ul>
 <p>
