@@ -336,6 +336,13 @@ const SystematicPrepSection = memo(({ onViewMentors, isSmall, role }: { onViewMe
 // ============================================
 // RESPONSIVE MENTOR CARD
 // ============================================
+const formatDisplayName = (fullName?: string | null): string => {
+  if (!fullName) return "";
+  const parts = fullName.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0];
+  return `${parts[0]} ${parts[parts.length - 1][0].toUpperCase()}.`;
+};
+
 const MentorCard = ({ m, displayPrice, totalSessions, isNewMentor, averageRating, showRating, hasSlots, displaySlot, onView, isSmall, isFounderCard }: any) => {
   const seed = m.id || m.profiles?.full_name || 'Mentor';
   const fallbackAvatar = `https://api.dicebear.com/9.x/micah/png?seed=${encodeURIComponent(m.id || "Mentor")}&backgroundColor=e5e7eb,f3f4f6`;
@@ -354,9 +361,12 @@ const MentorCard = ({ m, displayPrice, totalSessions, isNewMentor, averageRating
           <Image source={{ uri: m.avatar_url || fallbackAvatar }} style={styles.avatarImage} />
           <View style={styles.headerInfo}>
             <View style={styles.identityGroup}>
-              <Text style={styles.mentorName} numberOfLines={1}>{m.professional_title || 'Industry Expert'}</Text>
+              {m.profiles?.full_name
+                ? <Text style={styles.mentorName} numberOfLines={1}>{formatDisplayName(m.profiles.full_name)}</Text>
+                : null}
               <View style={styles.verifiedBadge}><CheckmarkCircleIcon size={14} color="#3B82F6" /></View>
             </View>
+            <Text style={styles.mentorSubTitle} numberOfLines={1}>{m.professional_title || 'Industry Expert'}</Text>
             {m.years_of_experience && (
               <View style={{ alignSelf: 'flex-start', marginTop: 4 }}>
                 <View style={styles.expBadge}>
@@ -406,7 +416,7 @@ const MentorCard = ({ m, displayPrice, totalSessions, isNewMentor, averageRating
 // ============================================
 // DYNAMIC DOMAIN MENTORS COMPONENT
 // ============================================
-const DynamicDomainMentors = ({ role, isSmall, onViewMentors }: { role: string, isSmall: boolean, onViewMentors: () => void }) => {
+export const DynamicDomainMentors = ({ role, isSmall, onViewMentors }: { role: string, isSmall: boolean, onViewMentors: () => void }) => {
   const router = useRouter();
   const [mentors, setMentors] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -465,7 +475,14 @@ const DynamicDomainMentors = ({ role, isSmall, onViewMentors }: { role: string, 
           return (aHas === bHas) ? 0 : aHas ? -1 : 1;
         });
 
-        if (isMounted) setMentors(sortedFiltered);
+        const enriched = sortedFiltered.map((m: any) => {
+          if (!m.avatar_url) {
+            const firstName = m.profiles?.full_name?.trim().split(/\s+/)[0];
+            if (firstName) return { ...m, avatar_url: `/mentor-pics/${firstName}.jpeg` };
+          }
+          return m;
+        });
+        if (isMounted) setMentors(enriched);
         if (isMounted) setMentorAvailability(availabilityMap);
 
       } catch (e) {
@@ -850,7 +867,8 @@ const styles = StyleSheet.create({
   avatarImage: { width: 56, height: 56, borderRadius: 28, backgroundColor: '#F3F4F6' },
   headerInfo: { flex: 1, justifyContent: 'center' },
   identityGroup: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
-  mentorName: { fontFamily: SYSTEM_FONT, fontSize: 18, fontWeight: "700", color: "#111827", flexShrink: 1 },
+  mentorName: { fontFamily: SYSTEM_FONT, fontSize: 18, fontWeight: "700", color: "#111827", flexShrink: 1, marginBottom: 1 },
+  mentorSubTitle: { fontFamily: SYSTEM_FONT, fontSize: 13, fontWeight: "500", color: "#6B7280", marginBottom: 4 },
   verifiedBadge: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   expBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: "#F3F4F6", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, gap: 4 },
   expText: { fontFamily: SYSTEM_FONT, fontSize: 12, fontWeight: "600", color: "#374151" },

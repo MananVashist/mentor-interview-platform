@@ -9,6 +9,11 @@
 /_headers    /_headers    200
 
 # ================================================
+# BLOG POST REDIRECTS
+# ================================================
+/blog/top-10-behavioral-interview-questions  /blog/hr-interview-mistakes-talent-acquisition  301
+
+# ================================================
 # SPA FALLBACK - Must be LAST
 # ================================================
 # Catches all unmatched routes and serves index.html for client-side routing

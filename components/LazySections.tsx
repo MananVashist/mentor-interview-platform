@@ -66,9 +66,9 @@ const COMPANIES = [
 ];
 
 const INTERVIEW_TRACKS = [
-  { id: 'pm', emoji: '📊', title: 'Product Management', desc: 'Product sense, strategy, execution, technical, leadership', path: '/interviews/pm' },
-  { id: 'data-analytics', emoji: '📈', title: 'Data Analytics', desc: 'SQL, Case studies, Excel, business intelligence', path: '/interviews/da' },
-  { id: 'data-science', emoji: '🤖', title: 'Data Science', desc: 'ML theory, Practical ML, statistics, modeling, coding', path: '/interviews/ds' },
+  { id: 'pm', emoji: '📊', title: 'Product Management', desc: 'Product sense, strategy, execution, technical, leadership', path: '/interviews/product-management' },
+  { id: 'data-analytics', emoji: '📈', title: 'Data Analytics', desc: 'SQL, Case studies, Excel, business intelligence', path: '/interviews/data-analytics' },
+  { id: 'data-science', emoji: '🤖', title: 'Data Science', desc: 'ML theory, Practical ML, statistics, modeling, coding', path: '/interviews/data-science' },
   { id: 'hr', emoji: '👥', title: 'HR Interviews', desc: 'Talent acquisition, HR generalist, HRBP, COE, HR operations', path: '/interviews/hr' },
 ];
 
@@ -279,6 +279,13 @@ const TargetedSkillsSection = memo(({ isSmall }: { isSmall: boolean }) => {
   );
 });
 
+const formatDisplayName = (fullName?: string | null): string => {
+  if (!fullName) return "";
+  const parts = fullName.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0];
+  return `${parts[0]} ${parts[parts.length - 1][0].toUpperCase()}.`;
+};
+
 const MentorCard = ({ m, displayPrice, totalSessions, isNewMentor, averageRating, showRating, hasSlots, displaySlot, onView, isSmall, isFounderCard }: any) => {
   const seed = m.id || m.profiles?.full_name || 'Mentor';
   const fallbackAvatar = `https://api.dicebear.com/9.x/micah/png?seed=${encodeURIComponent(seed)}&backgroundColor=e5e7eb,f3f4f6`;
@@ -296,9 +303,12 @@ const MentorCard = ({ m, displayPrice, totalSessions, isNewMentor, averageRating
           <RNImage source={{ uri: m.avatar_url || fallbackAvatar }} style={styles.avatarImage} />
           <View style={styles.headerInfo}>
             <View style={styles.identityGroup}>
-              <Text style={styles.mentorName} numberOfLines={1}>{m.professional_title || 'Industry Expert'}</Text>
+              {m.profiles?.full_name
+                ? <Text style={styles.mentorName} numberOfLines={1}>{formatDisplayName(m.profiles.full_name)}</Text>
+                : null}
               <View style={styles.verifiedBadge}><CheckmarkCircleIcon size={14} color="#3B82F6" /></View>
             </View>
+            <Text style={styles.mentorSubTitle} numberOfLines={1}>{m.professional_title || 'Industry Expert'}</Text>
             {m.years_of_experience && (
               <View style={{ alignSelf: 'flex-start', marginTop: 4 }}>
                 <View style={styles.expBadge}>
@@ -366,7 +376,14 @@ const DynamicDomainMentors = ({ isSmall, onViewMentors }: { isSmall: boolean, on
         const allMentors = await mentorsRes.json();
 
         let filtered = (allMentors || []).slice(0, 6);
-        if (isMounted) setMentors(filtered);
+        const enriched = filtered.map((m: any) => {
+          if (!m.avatar_url) {
+            const firstName = m.profiles?.full_name?.trim().split(/\s+/)[0];
+            if (firstName) return { ...m, avatar_url: `/mentor-pics/${firstName}.jpeg` };
+          }
+          return m;
+        });
+        if (isMounted) setMentors(enriched);
 
         const availabilityResults = await Promise.all(
           filtered.map(async (m: any) => ({ id: m.id, slot: await availabilityService.findNextAvailableSlot(m.id) }))
@@ -594,6 +611,68 @@ const FinalCTABanner = memo(({ onViewMentors, isSmall }: { onViewMentors: () => 
   </View>
 ));
 
+
+// ============================================
+// BLOG HIGHLIGHTS — internal links to new posts
+// ============================================
+const BLOG_HIGHLIGHTS = [
+  {
+    tag: "Product Management",
+    tagColor: "#7C3AED",
+    tagBg: "#F5F3FF",
+    emoji: "📊",
+    title: "The AARM Framework: How to Answer Metrics Questions in PM Interviews",
+    excerpt: "AARM (Acquire, Activate, Retain, Monetize) is the most-tested metrics framework in PM interviews. Here's exactly how to use it with worked examples.",
+    path: "/blog/aarm-framework-product-management-interviews",
+  },
+  {
+    tag: "Data Science",
+    tagColor: "#0369A1",
+    tagBg: "#EFF6FF",
+    emoji: "🤖",
+    title: "ML Debugging Interview Questions: How Data Scientists Should Answer Them",
+    excerpt: "ML debugging questions test practical intuition, not just theory. Here's how to structure your answers with worked examples for the most common failure modes.",
+    path: "/blog/ml-debugging-interview-guide",
+  },
+  {
+    tag: "Data Analytics",
+    tagColor: "#047857",
+    tagBg: "#ECFDF5",
+    emoji: "📈",
+    title: "How to Prepare for a Data Analyst Mock Interview: The Complete Guide",
+    excerpt: "A step-by-step guide to the 4-week prep plan, what interviewers watch for in SQL and case rounds, and how to turn mock sessions into real offers.",
+    path: "/blog/data-analyst-mock-interview-guide",
+  },
+];
+
+const BlogHighlightsSection = memo(({ isSmall }: { isSmall: boolean }) => {
+  const router = useRouter();
+  return (
+    <View style={[styles.sectionContainer, { paddingTop: 20, paddingBottom: 60 }]}>
+      <Text style={styles.kicker}>FROM THE BLOG</Text>
+      <Text style={[styles.h2, isSmall && styles.h2Mobile]}>Interview guides written by insiders</Text>
+      <Text style={styles.subtext}>Deep-dive prep guides for the specific rounds that cost candidates offers.</Text>
+      <View style={[styles.blogGrid, isSmall && styles.blogGridMobile]}>
+        {BLOG_HIGHLIGHTS.map((post, i) => (
+          <TouchableOpacity
+            key={i}
+            style={styles.blogCard}
+            onPress={() => router.push(post.path as any)}
+            activeOpacity={0.85}
+          >
+            <View style={[styles.blogTag, { backgroundColor: post.tagBg }]}>
+              <Text style={[styles.blogTagText, { color: post.tagColor }]}>{post.emoji} {post.tag}</Text>
+            </View>
+            <Text style={styles.blogTitle}>{post.title}</Text>
+            <Text style={styles.blogExcerpt} numberOfLines={3}>{post.excerpt}</Text>
+            <Text style={[styles.blogReadMore, { color: post.tagColor }]}>Read guide →</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+    </View>
+  );
+});
+
 export default function LazySections() {
   const [isSmall, setIsSmall] = useState(false);
   useEffect(() => {
@@ -616,6 +695,7 @@ export default function LazySections() {
       <HowItWorksSection isSmall={isSmall} />
       <InterviewTracks />
       <TargetedSkillsSection isSmall={isSmall} />
+      <BlogHighlightsSection isSmall={isSmall} />
       <DynamicDomainMentors isSmall={isSmall} onViewMentors={() => handleViewMentors("domain_mentors_cta")} />
       <TestimonialsSection isSmall={isSmall} />
       <SystematicPrepSection isSmall={isSmall} onViewMentors={() => handleViewMentors("bundle_intro_call")} />
@@ -663,6 +743,16 @@ const styles = StyleSheet.create({
   stepTitle: { fontFamily: SYSTEM_FONT, fontSize: 18, fontWeight: "700", color: TEXT_DARK, marginBottom: 8, textAlign: "center" },
   stepText: { fontFamily: SYSTEM_FONT, fontSize: 14, color: TEXT_GRAY, lineHeight: 22, textAlign: "center" },
 
+  // ===== Blog Highlights =====
+  blogGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 20, justifyContent: 'center', width: '100%' },
+  blogGridMobile: { flexDirection: 'column' },
+  blogCard: { flex: 1, minWidth: 260, maxWidth: 340, backgroundColor: '#fff', padding: 28, borderRadius: 16, borderWidth: 1, borderColor: '#f0f0f0', gap: 12 },
+  blogTag: { alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8 },
+  blogTagText: { fontFamily: SYSTEM_FONT, fontSize: 12, fontWeight: '700', textTransform: 'uppercase' as const, letterSpacing: 0.5 },
+  blogTitle: { fontFamily: SYSTEM_FONT, fontSize: 17, fontWeight: '700', color: TEXT_DARK, lineHeight: 25 },
+  blogExcerpt: { fontFamily: SYSTEM_FONT, fontSize: 14, color: TEXT_GRAY, lineHeight: 22 },
+  blogReadMore: { fontFamily: SYSTEM_FONT, fontSize: 14, fontWeight: '700' },
+
   // ===== Interview Tracks =====
   tracksGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 20, justifyContent: 'center' },
   tracksGridMobile: { flexDirection: 'column', alignItems: 'stretch', width: '100%' },
@@ -691,7 +781,8 @@ const styles = StyleSheet.create({
   avatarImage: { width: 56, height: 56, borderRadius: 28, backgroundColor: '#F3F4F6' },
   headerInfo: { flex: 1, justifyContent: 'center' },
   identityGroup: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
-  mentorName: { fontFamily: SYSTEM_FONT, fontSize: 18, fontWeight: "700", color: "#111827", flexShrink: 1 },
+  mentorName: { fontFamily: SYSTEM_FONT, fontSize: 18, fontWeight: "700", color: "#111827", flexShrink: 1, marginBottom: 1 },
+  mentorSubTitle: { fontFamily: SYSTEM_FONT, fontSize: 13, fontWeight: "500", color: "#6B7280", marginBottom: 4 },
   verifiedBadge: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   expBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: "#F3F4F6", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, gap: 4 },
   expText: { fontFamily: SYSTEM_FONT, fontSize: 12, fontWeight: "600", color: "#374151" },

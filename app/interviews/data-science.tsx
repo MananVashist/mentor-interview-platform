@@ -1,12 +1,13 @@
 ﻿// app/interviews/data-science.tsx
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Platform, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform, ScrollView, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import Head from 'expo-router/head';
 import Svg, { Path, Circle } from 'react-native-svg';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { createBreadcrumbSchema, injectMultipleSchemas } from '@/lib/structured-data';
+import { DynamicDomainMentors } from '@/app/lp/lazysectionslp';
 
 const BRAND_ORANGE = '#f58742';
 const CTA_TEAL = '#18a7a7';
@@ -87,6 +88,8 @@ const NetworkIcon = ({ size = 32, color = CTA_TEAL }) => (
 
 export default function DataScienceInterviews() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const isSmall = width < 900;
 
   // 🔥 Structured Data for SEO
   useEffect(() => {
@@ -533,8 +536,8 @@ model = RandomForestClassifier(class_weight='balanced')`,
   return (
     <>
       <Head>
-        <title>Data Science Mock Interviews | ML & Python Interview Prep | CrackJobs</title>
-        <meta name="description" content="Practice Data Science and ML interviews with experienced data scientists. Master machine learning algorithms, model debugging, feature engineering, and Python coding. Get structured feedback and a session recording. Book a 55-min mock interview today." />
+        <title>Data Science Mock Interview India | Practice with ML Engineers | CrackJobs</title>
+        <meta name="description" content="Failing on ML debugging, stats, or system design? Practice 1:1 with senior data scientists from top Indian companies. Session recording + written scorecard included. Book a 55-min mock interview today." />
         <meta name="keywords" content="data science mock interview, machine learning mock interview, data science interview prep India, ML interview practice, ML algorithms interview, model debugging interview, feature engineering interview, Python pandas interview, data science interview questions, ML mock interview" />
         <link rel="canonical" href="https://crackjobs.com/interviews/data-science" />
         <meta property="og:title" content="Data Science Mock Interviews | CrackJobs" />
@@ -596,6 +599,13 @@ model = RandomForestClassifier(class_weight='balanced')`,
               <Text style={styles.ctaBtnText}>Find ML Mentors →</Text>
             </TouchableOpacity>
           </View>
+
+          {/* ── Data Science Mentors ── */}
+          <DynamicDomainMentors
+            role="ds"
+            isSmall={isSmall}
+            onViewMentors={() => router.push('/mentors')}
+          />
 
           {/* Core Skills */}
           <View style={[styles.section, { backgroundColor: 'white' }]}>

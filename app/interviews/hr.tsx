@@ -1,6 +1,6 @@
 ﻿// app/interviews/hr.tsx
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Platform, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform, ScrollView, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import Head from 'expo-router/head';
 import Svg, { Path, Circle } from 'react-native-svg';
@@ -8,6 +8,7 @@ import { Footer } from '@/components/Footer';
 import { Header } from '@/components/Header';
 
 import { createBreadcrumbSchema, injectMultipleSchemas } from '@/lib/structured-data';
+import { DynamicDomainMentors } from '@/app/lp/lazysectionslp';
 
 const BRAND_ORANGE = '#f58742';
 const CTA_TEAL = '#18a7a7';
@@ -95,6 +96,8 @@ const TargetIcon = ({ size = 32, color = CTA_TEAL }) => (
 
 export default function HRInterviews() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const isSmall = width < 900;
 
   // 🔥 Structured Data for SEO
   useEffect(() => {
@@ -691,7 +694,7 @@ export default function HRInterviews() {
               Navigate Complex People Issues With Confidence
             </Text>
             <Text style={[styles.heroSubtitle]}>
-              Master HRBP scenarios, conflict resolution, STAR method storytelling, and people analytics with HR leaders. Practice real behavioral questions with expert feedback.
+              Master HRBP scenarios, technical HR interviews, conflict resolution, STAR storytelling, and people analytics with verified HR leaders from top companies. Practice real questions — including data-driven talent decisions and strategic workforce planning — with expert feedback.
             </Text>
             <View style={styles.heroStats}>
               <View style={styles.stat}><Text style={styles.statValue}>₹15-45L</Text><Text style={styles.statLabel}>Salary Range</Text></View>
@@ -703,6 +706,13 @@ export default function HRInterviews() {
               <Text style={styles.ctaBtnText}>Find HR Mentors →</Text>
             </TouchableOpacity>
           </View>
+
+          {/* ── HR Mentors ── */}
+          <DynamicDomainMentors
+            role="hr"
+            isSmall={isSmall}
+            onViewMentors={() => router.push('/mentors')}
+          />
 
           {/* Core Skills */}
           <View style={[styles.section, { backgroundColor: 'white' }]}>

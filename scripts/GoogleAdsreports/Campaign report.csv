@@ -1,0 +1,12 @@
+Campaign report
+"January 25, 2026 - April 24, 2026"
+Campaign status,Campaign,Budget,Budget name,Budget type,Currency code,Status,Status reasons,Optimization score,Campaign type,Clicks,Impr.,CTR,Cost,Bid strategy type,Conv. rate,Conversions,Cost / conv.
+Removed,DA_Core_buyers,600.00, --,Daily,INR,Removed,unknown; campaign removed; campaign ended; account prepaid funds are low, --,Search,0,0, --,0.00,Maximize clicks,0.00%,0.00,0.00
+Removed,Competitors,300.00, --,Daily,INR,Removed,unknown; campaign removed; account prepaid funds are low, --,Search,0,0, --,0.00,Maximize clicks,0.00%,0.00,0.00
+Paused,PM Sales,700.00, --,Daily,INR,Paused,unknown; campaign paused; account prepaid funds are low, --,Search,507,"19,857",2.55%,32929.56,Maximize Conversions,0.79%,4.00,8232.39
+Removed,DS_Core_buyers,400.00, --,Daily,INR,Removed,unknown; campaign removed; campaign ended; account prepaid funds are low, --,Search,0,0, --,0.00,Maximize clicks,0.00%,0.00,0.00
+Paused,Data Analyst Sales,700.00, --,Daily,INR,Paused,unknown; campaign paused; account prepaid funds are low, --,Search,258,"13,830",1.87%,13689.53,Maximize Conversions,2.33%,6.00,2281.59
+Removed,PM_Core_buyers,700.00, --,Daily,INR,Removed,unknown; campaign removed; account prepaid funds are low, --,Search,0,0, --,0.00,Maximize clicks,0.00%,0.00,0.00
+Total: Campaigns, --, --, --, --,INR, --,, --, --,765,"33,687",2.27%,46619.09, --,1.31%,10.00,4661.91
+Total: Account,,,,,INR,,,,,765,"33,687",2.27%,46619.09,,1.31%,10.00,4661.91
+Total: Search,,,,,INR,,,,Search,765,"33,687",2.27%,46619.09,,1.31%,10.00,4661.91

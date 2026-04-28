@@ -1,12 +1,13 @@
 ﻿// app/interviews/data-analytics.tsx
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Platform, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform, ScrollView, Image, ActivityIndicator, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import Head from 'expo-router/head';
 import Svg, { Path, Circle, Rect, Line, Polyline } from 'react-native-svg';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { createBreadcrumbSchema, injectMultipleSchemas } from '@/lib/structured-data';
+import { DynamicDomainMentors } from '@/app/lp/lazysectionslp';
 
 const BRAND_ORANGE = '#f58742';
 const CTA_TEAL = '#18a7a7';
@@ -96,7 +97,8 @@ const PieChartIcon = ({ size = 32, color = CTA_TEAL }) => (
 
 export default function DataAnalyticsInterviews() {
   const router = useRouter();
-
+  const { width } = useWindowDimensions();
+  const isSmall = width < 900;
   // 🔥 Structured Data for SEO
   useEffect(() => {
     if (Platform.OS === 'web') {
@@ -106,7 +108,6 @@ export default function DataAnalyticsInterviews() {
         { name: 'Data Analytics', url: 'https://crackjobs.com/interviews/data-analytics' }
       ]);
 
-      // ADDED: Website Schema for Brand Name
       const websiteSchema = {
         "@context": "https://schema.org",
         "@type": "WebSite",
@@ -145,7 +146,6 @@ export default function DataAnalyticsInterviews() {
         ]
       };
 
-      // HowTo Schema for Rich Results
       const howtoSchema = {
         "@context": "https://schema.org",
         "@type": "HowTo",
@@ -176,7 +176,6 @@ export default function DataAnalyticsInterviews() {
         ]
       };
 
-      // Course Schema for Rich Results
       const courseSchema = {
         "@context": "https://schema.org",
         "@type": "Course",
@@ -216,13 +215,11 @@ export default function DataAnalyticsInterviews() {
         }
       };
 
-      // EDITED: Added websiteSchema to the list
       const cleanup = injectMultipleSchemas([breadcrumbSchema, faqSchema, howtoSchema, courseSchema, websiteSchema]);
       return () => cleanup && cleanup();
     }
   }, []);
 
-  // Core DA Skills from Evaluation Templates
   const coreSkills = [
     {
       name: "SQL & Data Manipulation",
@@ -278,52 +275,30 @@ export default function DataAnalyticsInterviews() {
     }
   ];
 
-  // SQL Challenge Examples
   const sqlChallenges = [
     {
       difficulty: "Medium",
       question: "Find the second highest salary from an Employees table",
       concept: "Subqueries, LIMIT/OFFSET",
-      sql: `SELECT MAX(salary) as second_highest
-FROM employees
-WHERE salary < (SELECT MAX(salary) FROM employees);`,
+      sql: `SELECT MAX(salary) as second_highest\nFROM employees\nWHERE salary < (SELECT MAX(salary) FROM employees);`,
       explanation: "Use subquery to exclude the max, then find the next max"
     },
     {
       difficulty: "Hard",
       question: "Calculate 7-day rolling average of daily active users",
       concept: "Window functions, DATE functions",
-      sql: `SELECT 
-  date,
-  COUNT(DISTINCT user_id) as dau,
-  AVG(COUNT(DISTINCT user_id)) OVER (
-    ORDER BY date 
-    ROWS BETWEEN 6 PRECEDING AND CURRENT ROW
-  ) as rolling_7day_avg
-FROM user_events
-GROUP BY date;`,
+      sql: `SELECT \n  date,\n  COUNT(DISTINCT user_id) as dau,\n  AVG(COUNT(DISTINCT user_id)) OVER (\n    ORDER BY date \n    ROWS BETWEEN 6 PRECEDING AND CURRENT ROW\n  ) as rolling_7day_avg\nFROM user_events\nGROUP BY date;`,
       explanation: "Window function with ROWS BETWEEN for rolling calculations"
     },
     {
       difficulty: "Hard",
       question: "Find users who made purchases in consecutive months",
       concept: "Self-joins, LAG/LEAD, date arithmetic",
-      sql: `WITH monthly_purchases AS (
-  SELECT DISTINCT
-    user_id,
-    DATE_TRUNC('month', purchase_date) as month
-  FROM purchases
-)
-SELECT DISTINCT a.user_id
-FROM monthly_purchases a
-JOIN monthly_purchases b 
-  ON a.user_id = b.user_id
-  AND b.month = a.month + INTERVAL '1 month';`,
+      sql: `WITH monthly_purchases AS (\n  SELECT DISTINCT\n    user_id,\n    DATE_TRUNC('month', purchase_date) as month\n  FROM purchases\n)\nSELECT DISTINCT a.user_id\nFROM monthly_purchases a\nJOIN monthly_purchases b \n  ON a.user_id = b.user_id\n  AND b.month = a.month + INTERVAL '1 month';`,
       explanation: "Self-join to compare consecutive months for each user"
     }
   ];
 
-  // Interview Question Types
   const questionTypes = [
     {
       type: "SQL Technical",
@@ -371,7 +346,6 @@ JOIN monthly_purchases b
     }
   ];
 
-  // Success Stories with Business Impact
   const successStories = [
     {
       name: "Priya D.",
@@ -405,7 +379,6 @@ JOIN monthly_purchases b
     }
   ];
 
-  // Common SQL Mistakes
   const commonMistakes = [
     {
       mistake: "Writing queries without clarifying data assumptions first",
@@ -444,7 +417,6 @@ JOIN monthly_purchases b
     }
   ];
 
-  // Tools & Technologies
   const tools = [
     { category: "SQL Databases", items: ["PostgreSQL", "MySQL", "Snowflake", "BigQuery", "Redshift"] },
     { category: "Visualization", items: ["Tableau", "Power BI", "Looker", "Metabase", "Google Data Studio"] },
@@ -452,7 +424,6 @@ JOIN monthly_purchases b
     { category: "Other Skills", items: ["Git version control", "Statistical testing", "Data modeling", "ETL concepts"] }
   ];
 
-  // Preparation Timeline
   const prepTimeline = [
     {
       week: "Week 1-2",
@@ -503,19 +474,21 @@ JOIN monthly_purchases b
   return (
     <>
       <Head>
-        <title>Data Analyst Mock Interviews | SQL & Business Analytics Interview Prep | CrackJobs</title>
-        <meta name="description" content="Practice Data Analyst interviews with experienced data analysts. Master SQL queries, business case analysis, A/B testing, and stakeholder communication. Get structured feedback and a session recording. Book a 55-min mock interview today." />
-        <meta name="keywords" content="data analyst mock interview, SQL mock interview, data analyst interview prep India, business analyst mock interview, SQL interview questions, business analytics interview, A/B testing interview, data visualization interview, Tableau Power BI interview, data analyst interview practice" />
+        <title>Anonymous Data Analytics Mock Interviews | Expert-Led Prep</title>
+        <meta name="description" content="Practice SQL, Python, and product sense safely. 100% anonymous data analytics mock interviews led by FAANG-level senior analysts. Get elite, unbiased feedback." />
+        <meta name="keywords" content="anonymous data analyst mock interview, expert data analytics prep, SQL interview practice, product sense interview, FAANG data analyst mock" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="canonical" href="https://crackjobs.com/interviews/data-analytics" />
-        <meta property="og:title" content="Data Analyst Mock Interviews | CrackJobs" />
-        <meta property="og:description" content="Practice Data Analyst interviews with experienced data analysts. Master SQL, business case analysis, A/B testing, and stakeholder communication. Get structured feedback on every session." />
+        
+        <meta property="og:title" content="Anonymous Data Analytics Mock Interviews | Expert-Led Prep" />
+        <meta property="og:description" content="100% anonymous mock interviews led by senior data analysts. Master SQL and product analytics safely." />
         <meta property="og:type" content="website" />
         <meta property="og:site_name" content="CrackJobs" />
         <meta property="og:url" content="https://crackjobs.com/interviews/data-analytics" />
+        
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Data Analyst Mock Interviews | CrackJobs" />
-        <meta name="twitter:description" content="Practice Data Analyst interviews with experienced data analysts. Master SQL, business case analysis, and A/B testing. Book a 55-min mock today." />
+        <meta name="twitter:title" content="Anonymous Data Analytics Mock Interviews | CrackJobs" />
+        <meta name="twitter:description" content="100% anonymous mock interviews led by senior data analysts. Master SQL and product analytics." />
         
         <style>{`
   body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; background-color: #f8f5f0; }
@@ -545,7 +518,7 @@ JOIN monthly_purchases b
           
           {/* Header */}
           <View>
-          <Header />
+            <Header />
           </View>
 
           {/* Hero */}
@@ -568,8 +541,15 @@ JOIN monthly_purchases b
             </TouchableOpacity>
           </View>
 
+          {/* ── Data Analytics Mentors ── */}
+          <DynamicDomainMentors
+            role="da"
+            isSmall={isSmall}
+            onViewMentors={() => router.push('/mentors')}
+          />
+
           {/* Core Skills */}
-          <View style={[styles.section, { backgroundColor: 'white' }]} accessibilityRole="region">
+          <View style={[styles.section, { backgroundColor: BG_CREAM }]} accessibilityRole="region">
             <Text style={styles.sectionLabel} accessibilityRole="header" accessibilityLevel={2}>4 CORE SKILL AREAS</Text>
             <Text style={[styles.sectionTitle]} nativeID="section-title">What Companies Test in Data Analyst Interviews</Text>
             <Text style={styles.sectionDesc}>Based on 500+ analyst interview evaluations. Master these 4 areas to pass any DA interview.</Text>
@@ -596,7 +576,7 @@ JOIN monthly_purchases b
           </View>
 
           {/* SQL Challenges */}
-          <View style={[styles.section, { backgroundColor: BG_CREAM }]} accessibilityRole="region">
+          <View style={[styles.section, { backgroundColor: 'white' }]} accessibilityRole="region">
             <Text style={styles.sectionLabel}>SQL CHALLENGE LIBRARY</Text>
             <Text style={[styles.sectionTitle]} nativeID="section-title">Common SQL Patterns in Analyst Interviews</Text>
             <Text style={styles.sectionDesc}>These SQL patterns appear in 80% of analyst interviews. Master them to ace the technical round.</Text>
@@ -627,7 +607,7 @@ JOIN monthly_purchases b
           </View>
 
           {/* Question Types */}
-          <View style={[styles.section, { backgroundColor: 'white' }]} accessibilityRole="region">
+          <View style={[styles.section, { backgroundColor: BG_CREAM }]} accessibilityRole="region">
             <Text style={styles.sectionLabel}>INTERVIEW BREAKDOWN</Text>
             <Text style={[styles.sectionTitle]} nativeID="section-title">4 Types of Questions You'll Face</Text>
             <Text style={styles.sectionDesc}>Understanding the question mix helps you prepare strategically. Each type requires different skills.</Text>
@@ -850,12 +830,22 @@ const styles = StyleSheet.create({
   statLabel: { fontFamily: SYSTEM_FONT, fontSize: 13, color: TEXT_GRAY, textAlign: 'center' },
   ctaBtn: { backgroundColor: CTA_TEAL, paddingHorizontal: 44, paddingVertical: 20, borderRadius: 100 },
   ctaBtnText: { fontFamily: SYSTEM_FONT, fontSize: 17, fontWeight: '700', color: 'white' },
+  
+  // NEW MENTOR STYLES
+  mentorsGrid: { flexDirection: 'row', gap: 20, flexWrap: 'wrap', justifyContent: 'center', maxWidth: 1100, alignSelf: 'center' },
+  mentorCard: { width: 250, backgroundColor: BG_CREAM, padding: 24, borderRadius: 16, borderWidth: 1, borderColor: '#e8e8e8', alignItems: 'center' },
+  mentorAvatar: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#e5e5e5', marginBottom: 16, borderWidth: 1, borderColor: '#d1d5db' },
+  mentorName: { fontFamily: SYSTEM_FONT, fontSize: 18, fontWeight: '700', color: TEXT_DARK, marginBottom: 6, textAlign: 'center' },
+  mentorTitle: { fontFamily: SYSTEM_FONT, fontSize: 13, color: TEXT_GRAY, textAlign: 'center', marginBottom: 16, height: 36, lineHeight: 18 },
+  mentorStats: { flexDirection: 'row', gap: 10, justifyContent: 'center', flexWrap: 'wrap' },
+  mentorStatTxt: { fontFamily: SYSTEM_FONT, fontSize: 12, fontWeight: '600', color: CTA_TEAL, backgroundColor: '#e8f5f5', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
+  
   section: { paddingVertical: 80, paddingHorizontal: 24 },
   sectionLabel: { fontFamily: SYSTEM_FONT, fontSize: 12, fontWeight: '700', color: CTA_TEAL, letterSpacing: 1.8, textAlign: 'center', marginBottom: 14, textTransform: 'uppercase' },
   sectionTitle: { fontFamily: SYSTEM_FONT, fontSize: 42, fontWeight: '800', color: TEXT_DARK, textAlign: 'center', marginBottom: 18, maxWidth: 850, alignSelf: 'center' },
   sectionTitleMobile: { fontSize: 32 },
   sectionDesc: { fontFamily: SYSTEM_FONT, fontSize: 18, color: TEXT_GRAY, textAlign: 'center', marginBottom: 52, maxWidth: 750, alignSelf: 'center', lineHeight: 29 },
-  skillCard: { maxWidth: 950, width: '100%', alignSelf: 'center', backgroundColor: BG_CREAM, borderRadius: 18, padding: 32, marginBottom: 24, borderWidth: 1, borderColor: '#e5e5e5' },
+  skillCard: { maxWidth: 950, width: '100%', alignSelf: 'center', backgroundColor: 'white', borderRadius: 18, padding: 32, marginBottom: 24, borderWidth: 1, borderColor: '#e5e5e5' },
   skillHeader: { flexDirection: 'row', gap: 20, marginBottom: 24, alignItems: 'flex-start' },
   skillHeaderText: { flex: 1 },
   skillName: { fontFamily: SYSTEM_FONT, fontSize: 24, fontWeight: '700', color: TEXT_DARK, marginBottom: 8 },
@@ -864,14 +854,14 @@ const styles = StyleSheet.create({
   skillTopics: { gap: 10 },
   topicItem: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
   topicText: { fontFamily: SYSTEM_FONT, fontSize: 15, color: TEXT_DARK, flex: 1, lineHeight: 23 },
-  sqlCard: { maxWidth: 950, width: '100%', alignSelf: 'center', backgroundColor: 'white', borderRadius: 18, padding: 32, marginBottom: 28, borderLeftWidth: 4, borderLeftColor: CTA_TEAL },
+  sqlCard: { maxWidth: 950, width: '100%', alignSelf: 'center', backgroundColor: BG_CREAM, borderRadius: 18, padding: 32, marginBottom: 28, borderLeftWidth: 4, borderLeftColor: CTA_TEAL },
   sqlHeader: { flexDirection: 'row', gap: 16, marginBottom: 16, alignItems: 'center', flexWrap: 'wrap' },
   sqlDifficulty: { fontFamily: SYSTEM_FONT, fontSize: 12, fontWeight: '700', color: 'white', backgroundColor: BRAND_ORANGE, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12 },
   sqlConcept: { fontFamily: SYSTEM_FONT, fontSize: 13, color: TEXT_GRAY, fontStyle: 'italic' },
   sqlQuestion: { fontFamily: SYSTEM_FONT, fontSize: 17, fontWeight: '600', color: TEXT_DARK, marginBottom: 20, lineHeight: 26 },
   sqlCodeBlock: { marginBottom: 16 },
   sqlCodeLabel: { fontFamily: SYSTEM_FONT, fontSize: 13, fontWeight: '700', color: CTA_TEAL, marginBottom: 10 },
-  sqlCode: { backgroundColor: SQL_BG, padding: 20, borderRadius: 12, borderWidth: 1, borderColor: '#d5e3f0' },
+  sqlCode: { backgroundColor: 'white', padding: 20, borderRadius: 12, borderWidth: 1, borderColor: '#d5e3f0' },
   sqlCodeText: { fontFamily: Platform.OS === 'web' ? 'Menlo, Monaco, monospace' : 'monospace', fontSize: 13, color: CODE_TEXT, lineHeight: 22 },
   sqlExplanation: { backgroundColor: '#e8f5f5', padding: 16, borderRadius: 12 },
   sqlExplanationLabel: { fontFamily: SYSTEM_FONT, fontSize: 13, fontWeight: '700', color: CTA_TEAL, marginBottom: 8 },
@@ -881,7 +871,7 @@ const styles = StyleSheet.create({
   bold: { fontWeight: '700' },
   questionTypesGrid: { flexDirection: 'row', gap: 24, flexWrap: 'wrap', justifyContent: 'center', maxWidth: 1100, alignSelf: 'center' },
   questionTypesGridMobile: { flexDirection: 'column' },
-  questionTypeCard: { flex: 1, minWidth: 240, maxWidth: 260, backgroundColor: BG_CREAM, padding: 28, borderRadius: 16, alignItems: 'center', borderWidth: 1, borderColor: '#e8e8e8' },
+  questionTypeCard: { flex: 1, minWidth: 240, maxWidth: 260, backgroundColor: 'white', padding: 28, borderRadius: 16, alignItems: 'center', borderWidth: 1, borderColor: '#e8e8e8' },
   questionTypeWeight: { fontFamily: SYSTEM_FONT, fontSize: 28, fontWeight: '800', color: CTA_TEAL, marginTop: 16, marginBottom: 8 },
   questionTypeName: { fontFamily: SYSTEM_FONT, fontSize: 18, fontWeight: '700', color: TEXT_DARK, marginBottom: 16, textAlign: 'center' },
   questionExamples: { gap: 8 },
@@ -931,7 +921,7 @@ const styles = StyleSheet.create({
   sqlComparison: { marginTop: 14, gap: 14 },
   sqlCompareBlock: {},
   sqlCompareLabel: { fontFamily: SYSTEM_FONT, fontSize: 13, fontWeight: '700', color: TEXT_DARK, marginBottom: 8 },
-  sqlCompareCode: { backgroundColor: SQL_BG, padding: 16, borderRadius: 12, borderWidth: 1, borderColor: '#d5e3f0' },
+  sqlCompareCode: { backgroundColor: 'white', padding: 16, borderRadius: 12, borderWidth: 1, borderColor: '#d5e3f0' },
   articlesGrid: { maxWidth: 900, alignSelf: 'center', width: '100%' },
   articlesGridMobile: { flexDirection: 'column' },
   articleCard: { backgroundColor: 'white', padding: 34, borderRadius: 18, borderWidth: 1, borderColor: '#e5e5e5' },
@@ -940,7 +930,7 @@ const styles = StyleSheet.create({
   articleCta: { fontFamily: SYSTEM_FONT, fontSize: 15, fontWeight: '600', color: CTA_TEAL },
   stepsGrid: { flexDirection: 'row', gap: 32, flexWrap: 'wrap', justifyContent: 'center', maxWidth: 1100, alignSelf: 'center' },
   stepsGridMobile: { flexDirection: 'column' },
-  stepCard: { flex: 1, minWidth: 290, maxWidth: 330, alignItems: 'center', backgroundColor: 'white', padding: 32, borderRadius: 18, borderWidth: 1, borderColor: '#e8e8e8' },
+  stepCard: { flex: 1, minWidth: 290, maxWidth: 330, alignItems: 'center', backgroundColor: BG_CREAM, padding: 32, borderRadius: 18, borderWidth: 1, borderColor: '#e8e8e8' },
   stepNum: { width: 64, height: 64, borderRadius: 32, backgroundColor: CTA_TEAL, alignItems: 'center', justifyContent: 'center', marginBottom: 22 },
   stepNumText: { fontFamily: SYSTEM_FONT, fontSize: 30, fontWeight: '800', color: 'white' },
   stepTitle: { fontFamily: SYSTEM_FONT, fontSize: 20, fontWeight: '700', color: TEXT_DARK, marginBottom: 14, textAlign: 'center' },

@@ -1,0 +1,95 @@
+Search keyword report
+"January 25, 2026 - April 24, 2026"
+Keyword status,Keyword,Match type,Campaign,Ad group,Status,Status reasons,Clicks,Final URL,Impr.,CTR,Currency code,Cost,Conv. rate,Conversions,Cost / conv.
+Enabled,"""data science interview practice""",Phrase match,DS_Core_buyers,DS Mock interviews,Not eligible,campaign ended; campaign removed,0,,0, --,INR,0.00,0.00%,0.00,0.00
+Enabled,"""mock interview for data scientist""",Phrase match,DS_Core_buyers,DS Mock interviews,Not eligible,campaign ended; campaign removed,0,,0, --,INR,0.00,0.00%,0.00,0.00
+Enabled,[data scientist mock interview],Exact match,DS_Core_buyers,DS Mock interviews,Not eligible,campaign ended; campaign removed,0,,0, --,INR,0.00,0.00%,0.00,0.00
+Enabled,"""data science interview coaching""",Phrase match,DS_Core_buyers,DS Mock interviews,Not eligible,campaign ended; campaign removed,0,,0, --,INR,0.00,0.00%,0.00,0.00
+Enabled,"""data scientist mock interview""",Phrase match,DS_Core_buyers,DS Mock interviews,Not eligible,campaign ended; campaign removed,0,,0, --,INR,0.00,0.00%,0.00,0.00
+Enabled,"""mock interview data analyst""",Phrase match,Data Analyst Sales,DA mock interview,Not eligible,campaign paused,11,,190,5.79%,INR,1200.30,9.09%,1.00,1200.30
+Enabled,[mock interview data analyst],Exact match,Data Analyst Sales,DA mock interview,Not eligible,campaign paused,7,,73,9.59%,INR,592.65,14.29%,1.00,592.65
+Enabled,"""data analyst interview preparation""",Phrase match,Data Analyst Sales,DA mock interview,Not eligible,campaign paused,4,,590,0.68%,INR,187.95,0.00%,0.00,0.00
+Enabled,[data analyst mock interview],Exact match,Data Analyst Sales,DA mock interview,Not eligible,campaign paused,10,,241,4.15%,INR,691.50,0.00%,0.00,0.00
+Enabled,"""data analytics mock interview""",Phrase match,Data Analyst Sales,DA mock interview,Not eligible,campaign paused,2,,386,0.52%,INR,22.87,0.00%,0.00,0.00
+Enabled,"""data analytics interview preparation""",Phrase match,Data Analyst Sales,DA mock interview,Not eligible,campaign paused,21,,899,2.34%,INR,1535.69,4.76%,1.00,1535.69
+Enabled,"""mock interview for data analyst""",Phrase match,Data Analyst Sales,DA mock interview,Not eligible,campaign paused,6,,88,6.82%,INR,384.42,0.00%,0.00,0.00
+Enabled,"""preparing for a data analyst interview""",Phrase match,Data Analyst Sales,DA mock interview,Not eligible,campaign paused,14,,"1,451",0.96%,INR,324.87,0.00%,0.00,0.00
+Enabled,"""data analyst interview prep""",Phrase match,Data Analyst Sales,DA mock interview,Not eligible,campaign paused,11,,"1,267",0.87%,INR,148.26,0.00%,0.00,0.00
+Enabled,"""data analytics interview prep""",Phrase match,Data Analyst Sales,DA mock interview,Not eligible,campaign paused,56,,"1,754",3.19%,INR,3674.79,3.57%,2.00,1837.39
+Enabled,"""data analyst mock interview""",Phrase match,Data Analyst Sales,DA mock interview,Not eligible,campaign paused,1,,188,0.53%,INR,12.33,0.00%,0.00,0.00
+Enabled,"""prepare for data analyst interview""",Phrase match,Data Analyst Sales,DA mock interview,Not eligible,campaign paused,12,,"1,376",0.87%,INR,397.18,0.00%,0.00,0.00
+Enabled,"""interview preparation for data analyst""",Phrase match,Data Analyst Sales,DA mock interview,Not eligible,campaign paused,27,,"2,099",1.29%,INR,1184.13,0.00%,0.00,0.00
+Enabled,"""data analyst interview preparation course""",Phrase match,Data Analyst Sales,DA mock interview,Not eligible,campaign paused,0,,1,0.00%,INR,0.00,0.00%,0.00,0.00
+Enabled,"""data analyst job preparation""",Phrase match,Data Analyst Sales,DA mock interview,Not eligible,campaign paused,20,,"2,003",1.00%,INR,1027.59,0.00%,0.00,0.00
+Enabled,[data analytics mock interview],Exact match,Data Analyst Sales,DA mock interview,Not eligible,campaign paused,12,,154,7.79%,INR,744.46,0.00%,0.00,0.00
+Enabled,[mock interview business analyst],Exact match,Data Analyst Sales,BA mock interview,Not eligible,campaign paused,2,,43,4.65%,INR,8.22,0.00%,0.00,0.00
+Enabled,[mock interview for business analyst],Exact match,Data Analyst Sales,BA mock interview,Not eligible,campaign paused,1,,160,0.63%,INR,105.75,0.00%,0.00,0.00
+Enabled,[business analyst mock interview],Exact match,Data Analyst Sales,BA mock interview,Not eligible,campaign paused,6,,364,1.65%,INR,332.37,0.00%,0.00,0.00
+Enabled,"""ml interview coaching""",Phrase match,DS_Core_buyers,DS_ML,Not eligible,rarely served; campaign ended; campaign removed,0,,0, --,INR,0.00,0.00%,0.00,0.00
+Enabled,"""machine learning mock interview""",Phrase match,DS_Core_buyers,DS_ML,Not eligible,campaign ended; campaign removed,0,,0, --,INR,0.00,0.00%,0.00,0.00
+Enabled,"""ml mock interview""",Phrase match,DS_Core_buyers,DS_ML,Not eligible,campaign ended; campaign removed,0,,0, --,INR,0.00,0.00%,0.00,0.00
+Enabled,"""machine learning interview practice""",Phrase match,DS_Core_buyers,DS_ML,Not eligible,campaign ended; campaign removed,0,,0, --,INR,0.00,0.00%,0.00,0.00
+Enabled,[ml mock interview],Exact match,DS_Core_buyers,DS_ML,Not eligible,campaign ended; campaign removed,0,,0, --,INR,0.00,0.00%,0.00,0.00
+Enabled,[pramp mock interview],Exact match,Competitors,Ad group 1,Not eligible,campaign removed,0,,0, --,INR,0.00,0.00%,0.00,0.00
+Enabled,"""exponent interview prep""",Phrase match,Competitors,Ad group 1,Not eligible,campaign removed,0,,0, --,INR,0.00,0.00%,0.00,0.00
+Enabled,"""pramp mock interview""",Phrase match,Competitors,Ad group 1,Not eligible,campaign removed,0,,0, --,INR,0.00,0.00%,0.00,0.00
+Enabled,"""pramp interview practice""",Phrase match,Competitors,Ad group 1,Not eligible,campaign removed,0,,0, --,INR,0.00,0.00%,0.00,0.00
+Enabled,"""interviewing.io""",Phrase match,Competitors,Ad group 1,Not eligible,campaign removed,0,,0, --,INR,0.00,0.00%,0.00,0.00
+Enabled,"""interviewing.io mock interview""",Phrase match,Competitors,Ad group 1,Not eligible,campaign removed,0,,0, --,INR,0.00,0.00%,0.00,0.00
+Enabled,[interviewing.io],Exact match,Competitors,Ad group 1,Not eligible,campaign removed,0,,0, --,INR,0.00,0.00%,0.00,0.00
+Enabled,"""exponent mock interview""",Phrase match,Competitors,Ad group 1,Not eligible,campaign removed,0,,0, --,INR,0.00,0.00%,0.00,0.00
+Enabled,"""mock interview for data analyst""",Phrase match,DA_Core_buyers,DA Mock interviews,Not eligible,campaign ended; campaign removed,0,,0, --,INR,0.00,0.00%,0.00,0.00
+Enabled,[data analyst mock interview],Exact match,DA_Core_buyers,DA Mock interviews,Not eligible,campaign ended; campaign removed,0,,0, --,INR,0.00,0.00%,0.00,0.00
+Enabled,"""data analyst interview coaching""",Phrase match,DA_Core_buyers,DA Mock interviews,Not eligible,campaign ended; campaign removed,0,,0, --,INR,0.00,0.00%,0.00,0.00
+Enabled,"""data analyst interview practice""",Phrase match,DA_Core_buyers,DA Mock interviews,Not eligible,campaign ended; campaign removed,0,,0, --,INR,0.00,0.00%,0.00,0.00
+Enabled,"""data analyst mock interview""",Phrase match,DA_Core_buyers,DA Mock interviews,Not eligible,campaign ended; campaign removed,0,,0, --,INR,0.00,0.00%,0.00,0.00
+Enabled,"""sql interview coaching""",Phrase match,DA_Core_buyers,DA_SQL,Not eligible,rarely served; campaign ended; campaign removed,0,,0, --,INR,0.00,0.00%,0.00,0.00
+Enabled,"""sql interview practice""",Phrase match,DA_Core_buyers,DA_SQL,Not eligible,campaign ended; campaign removed,0,,0, --,INR,0.00,0.00%,0.00,0.00
+Enabled,"""sql mock interview""",Phrase match,DA_Core_buyers,DA_SQL,Not eligible,campaign ended; campaign removed,0,,0, --,INR,0.00,0.00%,0.00,0.00
+Enabled,"""mock interview sql""",Phrase match,DA_Core_buyers,DA_SQL,Not eligible,campaign ended; campaign removed,0,,0, --,INR,0.00,0.00%,0.00,0.00
+Enabled,"""sql live interview practice""",Phrase match,DA_Core_buyers,DA_SQL,Not eligible,campaign ended; campaign removed,0,,0, --,INR,0.00,0.00%,0.00,0.00
+Enabled,[sql mock interview],Exact match,DA_Core_buyers,DA_SQL,Not eligible,campaign ended; campaign removed,0,,0, --,INR,0.00,0.00%,0.00,0.00
+Enabled,"""pm mock interview""",Phrase match,PM_Core_buyers,PM Mock interviews,Not eligible,campaign removed,0,,0, --,INR,0.00,0.00%,0.00,0.00
+Enabled,"""product manager interview coaching""",Phrase match,PM_Core_buyers,PM Mock interviews,Not eligible,campaign removed,0,,0, --,INR,0.00,0.00%,0.00,0.00
+Enabled,"""product manager mock interview""",Phrase match,PM_Core_buyers,PM Mock interviews,Not eligible,campaign removed,0,,0, --,INR,0.00,0.00%,0.00,0.00
+Enabled,"""pm interview practice""",Phrase match,PM_Core_buyers,PM Mock interviews,Not eligible,campaign removed,0,,0, --,INR,0.00,0.00%,0.00,0.00
+Enabled,"""pm interview coaching""",Phrase match,PM_Core_buyers,PM Mock interviews,Not eligible,campaign removed,0,,0, --,INR,0.00,0.00%,0.00,0.00
+Enabled,"""mock interview for product manager""",Phrase match,PM_Core_buyers,PM Mock interviews,Not eligible,campaign removed,0,,0, --,INR,0.00,0.00%,0.00,0.00
+Enabled,[pm mock interview],Exact match,PM_Core_buyers,PM Mock interviews,Not eligible,campaign removed,0,,0, --,INR,0.00,0.00%,0.00,0.00
+Enabled,[product manager mock interview],Exact match,PM_Core_buyers,PM Mock interviews,Not eligible,campaign removed,0,,0, --,INR,0.00,0.00%,0.00,0.00
+Enabled,"""product design interview pm""",Phrase match,PM_Core_buyers,PM_Product_Sense,Not eligible,campaign removed,0,,0, --,INR,0.00,0.00%,0.00,0.00
+Enabled,"""product sense interview coaching""",Phrase match,PM_Core_buyers,PM_Product_Sense,Not eligible,rarely served; campaign removed,0,,0, --,INR,0.00,0.00%,0.00,0.00
+Enabled,"""product sense mock interview""",Phrase match,PM_Core_buyers,PM_Product_Sense,Not eligible,campaign removed,0,,0, --,INR,0.00,0.00%,0.00,0.00
+Enabled,[product sense mock interview],Exact match,PM_Core_buyers,PM_Product_Sense,Not eligible,campaign removed,0,,0, --,INR,0.00,0.00%,0.00,0.00
+Enabled,"""product sense interview practice""",Phrase match,PM_Core_buyers,PM_Product_Sense,Not eligible,campaign removed,0,,0, --,INR,0.00,0.00%,0.00,0.00
+Enabled,"""product design mock interview""",Phrase match,PM_Core_buyers,PM_Product_Sense,Not eligible,campaign removed,0,,0, --,INR,0.00,0.00%,0.00,0.00
+Enabled,"""product manager interview practice""",Phrase match,PM Sales,Exact match PM,Not eligible,campaign paused,29,,"1,516",1.91%,INR,1537.71,0.00%,0.00,0.00
+Enabled,"""product manager mock interview""",Phrase match,PM Sales,Exact match PM,Not eligible,campaign paused,19,,"1,194",1.59%,INR,803.49,0.00%,0.00,0.00
+Enabled,"""pm mock interview""",Phrase match,PM Sales,Exact match PM,Not eligible,campaign paused,96,,"2,019",4.75%,INR,7377.62,1.04%,1.00,7377.62
+Enabled,"""mock product manager interview""",Phrase match,PM Sales,Exact match PM,Not eligible,campaign paused,12,,183,6.56%,INR,1363.14,0.00%,0.00,0.00
+Enabled,"""pm interview practice""",Phrase match,PM Sales,Exact match PM,Not eligible,campaign paused,143,,"6,029",2.37%,INR,8569.52,0.00%,0.00,0.00
+Enabled,"""product management mock interview""",Phrase match,PM Sales,Exact match PM,Not eligible,campaign paused,12,,"1,072",1.12%,INR,553.43,0.00%,0.00,0.00
+Enabled,[product sense mock interview],Exact match,PM Sales,Exact match PM,Not eligible,campaign paused,3,,152,1.97%,INR,607.52,0.00%,0.00,0.00
+Enabled,[product management mentorship],Exact match,PM Sales,mentorship,Not eligible,campaign paused,5,,28,17.86%,INR,489.44,0.00%,0.00,0.00
+Enabled,[product manager mentor],Exact match,PM Sales,mentorship,Not eligible,campaign paused,4,,12,33.33%,INR,541.00,0.00%,0.00,0.00
+Enabled,[pm interview coach],Exact match,PM Sales,mentorship,Not eligible,campaign paused,3,,7,42.86%,INR,406.17,0.00%,0.00,0.00
+Enabled,"""prepfully alternative""",Phrase match,PM Sales,Competitor,Not eligible,rarely served; campaign paused,0,,0, --,INR,0.00,0.00%,0.00,0.00
+Enabled,"""exponent pm interview""",Phrase match,PM Sales,Competitor,Not eligible,low quality; campaign paused,1,,170,0.59%,INR,12.29,0.00%,0.00,0.00
+Enabled,"""exponent mock interview""",Phrase match,PM Sales,Competitor,Not eligible,low quality; campaign paused,8,,235,3.40%,INR,1457.57,12.50%,1.00,1457.57
+Enabled,"""rocketblocks alternative""",Phrase match,PM Sales,Competitor,Not eligible,rarely served; campaign paused,0,,0, --,INR,0.00,0.00%,0.00,0.00
+Enabled,"""pramp pm interview""",Phrase match,PM Sales,Competitor,Not eligible,rarely served; campaign paused,0,,0, --,INR,0.00,0.00%,0.00,0.00
+Enabled,"""tryexponent alternative""",Phrase match,PM Sales,Competitor,Not eligible,rarely served; campaign paused,0,,0, --,INR,0.00,0.00%,0.00,0.00
+Enabled,"""prepfully pm interview""",Phrase match,PM Sales,Competitor,Not eligible,campaign paused,0,,0, --,INR,0.00,0.00%,0.00,0.00
+Enabled,"""igotanoffer alternative""",Phrase match,PM Sales,Competitor,Not eligible,rarely served; campaign paused,0,,0, --,INR,0.00,0.00%,0.00,0.00
+Enabled,"""interview kickstart alternative""",Phrase match,PM Sales,Competitor,Not eligible,campaign paused,0,,0, --,INR,0.00,0.00%,0.00,0.00
+Enabled,"""stellarpeers alternative""",Phrase match,PM Sales,Competitor,Not eligible,rarely served; campaign paused,0,,0, --,INR,0.00,0.00%,0.00,0.00
+Enabled,"""igotanoffer pm interview""",Phrase match,PM Sales,Competitor,Not eligible,campaign paused,0,,1,0.00%,INR,0.00,0.00%,0.00,0.00
+Enabled,"""pramp alternative""",Phrase match,PM Sales,Competitor,Not eligible,campaign paused,0,,0, --,INR,0.00,0.00%,0.00,0.00
+ --,,Total: Enabled keywords, --, --, --,,558,,"25,945",2.15%,INR,36294.22,1.25%,7.00,5184.89
+,,Total: Keywords in your account,,,,,765,,"33,687",2.27%,INR,46619.09,1.31%,10.00,4661.91
+,,Total: Your keywords,,,,,765,,"33,687",2.27%,INR,46619.09,1.31%,10.00,4661.91
+,,Total: AI Max expanded matches,,,,,0,,0, --,INR,0.00,0.00%,0.00,0.00
+,,Total: AI Max landing page matches,,,,,0,,0, --,INR,0.00,0.00%,0.00,0.00
+,,Total: URL inclusions in your account,,,,,0,,0, --,INR,0.00,0.00%,0.00,0.00
+,,Total: Account,,,,,765,,"33,687",2.27%,INR,46619.09,1.31%,10.00,4661.91
+,,Total: Search,,,,,765,,"33,687",2.27%,INR,46619.09,1.31%,10.00,4661.91
