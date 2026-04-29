@@ -1,63 +1,225 @@
-﻿// app/mentor/session/[id].tsx
+﻿// app/candidate/session/[id].tsx
+// Place this file at: app/candidate/session/[id].tsx
+
 import React, { useState, useEffect } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  TextInput,
+  View, Text, ScrollView, StyleSheet, TouchableOpacity,
+  ActivityIndicator, Platform
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/lib/supabase/client';
-import { MASTER_TEMPLATES, INTRO_CALL_TEMPLATES, INTRO_CALL_TEMPLATE_FALLBACK } from '@/lib/evaluation-templates';
-import { useNotification } from '@/lib/ui/NotificationBanner'; // Make sure path matches your project structure
+import { theme } from '@/lib/theme';
 
-export default function MentorEvaluationScreen() {
-  const params = useLocalSearchParams();
-  const { id } = params;
+const SYSTEM_FONT = Platform.select({
+  web: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif",
+  ios: 'System',
+  android: 'Roboto',
+  default: 'System',
+}) as string;
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+interface AICompetency {
+  title: string;
+  score: number;
+  severity: 'Must Fix Before Interview' | 'Important Gap to Address' | 'Good';
+  did_well: string[];
+  needs_improvement: string[];
+  what_you_said?: string;
+  suggested_answer?: string;
+}
+
+interface AIFeedback {
+  readiness_score: number;
+  readiness_label: string;
+  feedback_summary: string;
+  red_flags: string[];
+  competencies: AICompetency[];
+  next_steps: { action: string; drill: string }[];
+}
+
+interface MentorEvaluation {
+  meta: { profile_used: string; skill_used: string; submitted_at: string };
+  template: { title: string; questions: { id: string; text: string; type: string }[] }[];
+  answers: Record<string, any>;
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+const getSeverityColor = (severity: string) => {
+  if (severity === 'Must Fix Before Interview') return { bg: '#FFF1F2', text: '#BE123C', border: '#FECDD3' };
+  if (severity === 'Important Gap to Address') return { bg: '#FFFBEB', text: '#B45309', border: '#FDE68A' };
+  return { bg: '#F0FDF4', text: '#166534', border: '#BBF7D0' };
+};
+
+const getScoreColor = (score: number) => {
+  if (score < 40) return '#BE123C';
+  if (score < 60) return '#D97706';
+  if (score < 80) return '#0E9384';
+  return '#166534';
+};
+
+const getReadinessColor = (label: string) => {
+  if (label === 'Needs Improvement') return '#BE123C';
+  if (label === 'On Track') return '#D97706';
+  return '#166534';
+};
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+const ScoreRing = ({ score }: { score: number }) => {
+  const color = getScoreColor(score);
+  const size = 120;
+  const strokeWidth = 10;
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const progress = (score / 100) * circumference;
+
+  return (
+    <View style={{ alignItems: 'center', justifyContent: 'center', width: size, height: size }}>
+      {/* Simple circle representation using View */}
+      <View style={{
+        width: size, height: size, borderRadius: size / 2,
+        borderWidth: strokeWidth, borderColor: '#E5E7EB',
+        alignItems: 'center', justifyContent: 'center',
+        position: 'absolute'
+      }} />
+      <View style={{
+        width: size - strokeWidth * 2, height: size - strokeWidth * 2,
+        borderRadius: (size - strokeWidth * 2) / 2,
+        backgroundColor: '#F9FAFB',
+        alignItems: 'center', justifyContent: 'center',
+      }}>
+        <Text style={{ fontSize: 28, fontWeight: '800', color, fontFamily: SYSTEM_FONT }}>{score}%</Text>
+      </View>
+    </View>
+  );
+};
+
+const CompetencyCard = ({ item }: { item: AICompetency }) => {
+  const [expanded, setExpanded] = useState(false);
+  const colors = getSeverityColor(item.severity);
+  const scoreColor = getScoreColor(item.score);
+
+  return (
+    <View style={[feedbackStyles.compCard, { borderLeftColor: scoreColor }]}>
+      <TouchableOpacity
+        style={feedbackStyles.compHeader}
+        onPress={() => setExpanded(!expanded)}
+        activeOpacity={0.7}
+      >
+        <View style={{ flex: 1 }}>
+          <Text style={feedbackStyles.compTitle}>{item.title}</Text>
+          <View style={[feedbackStyles.severityBadge, { backgroundColor: colors.bg, borderColor: colors.border }]}>
+            <Text style={[feedbackStyles.severityText, { color: colors.text }]}>{item.severity}</Text>
+          </View>
+        </View>
+        <View style={{ alignItems: 'flex-end', gap: 4 }}>
+          <Text style={[feedbackStyles.compScore, { color: scoreColor }]}>{item.score}%</Text>
+          <Ionicons
+            name={expanded ? 'chevron-up' : 'chevron-down'}
+            size={18} color="#9CA3AF"
+          />
+        </View>
+      </TouchableOpacity>
+
+      {expanded && (
+        <View style={feedbackStyles.compBody}>
+          {item.did_well.length > 0 && (
+            <View style={feedbackStyles.compSection}>
+              <View style={feedbackStyles.compSectionHeader}>
+                <Ionicons name="checkmark-circle" size={16} color="#059669" />
+                <Text style={[feedbackStyles.compSectionTitle, { color: '#059669' }]}>What you did well</Text>
+              </View>
+              {item.did_well.map((point, i) => (
+                <View key={i} style={feedbackStyles.bullet}>
+                  <View style={[feedbackStyles.bulletDot, { backgroundColor: '#059669' }]} />
+                  <Text style={feedbackStyles.bulletText}>{point}</Text>
+                </View>
+              ))}
+            </View>
+          )}
+
+          {item.needs_improvement.length > 0 && (
+            <View style={feedbackStyles.compSection}>
+              <View style={feedbackStyles.compSectionHeader}>
+                <Ionicons name="trending-up" size={16} color="#D97706" />
+                <Text style={[feedbackStyles.compSectionTitle, { color: '#D97706' }]}>Needs improvement</Text>
+              </View>
+              {item.needs_improvement.map((point, i) => (
+                <View key={i} style={feedbackStyles.bullet}>
+                  <View style={[feedbackStyles.bulletDot, { backgroundColor: '#D97706' }]} />
+                  <Text style={feedbackStyles.bulletText}>{point}</Text>
+                </View>
+              ))}
+            </View>
+          )}
+
+          {item.what_you_said && (
+            <View style={feedbackStyles.quoteBox}>
+              <Text style={feedbackStyles.quoteLabel}>What you said:</Text>
+              <Text style={feedbackStyles.quoteText}>"{item.what_you_said}"</Text>
+            </View>
+          )}
+
+          {item.suggested_answer && (
+            <View style={feedbackStyles.suggestedBox}>
+              <Text style={feedbackStyles.suggestedLabel}>Suggested answer:</Text>
+              <Text style={feedbackStyles.suggestedText}>{item.suggested_answer}</Text>
+            </View>
+          )}
+        </View>
+      )}
+    </View>
+  );
+};
+
+const RatingDisplay = ({ value }: { value: number }) => (
+  <View style={{ flexDirection: 'row', gap: 6, marginTop: 6 }}>
+    {[1, 2, 3, 4, 5].map((v) => (
+      <View
+        key={v}
+        style={{
+          width: 32, height: 32, borderRadius: 16,
+          backgroundColor: v <= value ? '#0E9384' : '#F1F5F9',
+          borderWidth: 1, borderColor: v <= value ? '#0E9384' : '#E2E8F0',
+          alignItems: 'center', justifyContent: 'center'
+        }}
+      >
+        <Text style={{ fontSize: 13, fontWeight: '600', color: v <= value ? '#FFF' : '#94A3B8' }}>{v}</Text>
+      </View>
+    ))}
+  </View>
+);
+
+// ─── Main Screen ──────────────────────────────────────────────────────────────
+
+export default function CandidateFeedbackScreen() {
+  const { id } = useLocalSearchParams();
   const router = useRouter();
-  const { showNotification } = useNotification();
 
   const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [template, setTemplate] = useState<any[]>([]);
-  const [answers, setAnswers] = useState<Record<string, any>>({});
-  const [isViewMode, setIsViewMode] = useState(false);
-  
-  // Metadata for the session
-  const [sessionInfo, setSessionInfo] = useState({
-    profile: '',
-    skill: '',
-    candidateName: '',
-    date: '',
-  });
+  const [activeTab, setActiveTab] = useState<'ai' | 'mentor'>('ai');
+
+  const [sessionInfo, setSessionInfo] = useState({ profile: '', skill: '', date: '', mentorTitle: '' });
+  const [aiFeedback, setAiFeedback] = useState<AIFeedback | null>(null);
+  const [mentorEval, setMentorEval] = useState<MentorEvaluation | null>(null);
 
   useEffect(() => {
-    if (id && id !== 'undefined') {
-      loadSessionAndTemplate();
-    } else {
-      showNotification('Invalid session ID', 'error');
-      router.back();
-    }
+    if (id) loadFeedback();
   }, [id]);
 
-  const loadSessionAndTemplate = async () => {
+  const loadFeedback = async () => {
     try {
-      if (!id) throw new Error('Invalid ID');
-
-      // 1. FETCH SESSION DATA
       const { data: session, error } = await supabase
         .from('interview_sessions')
         .select(`
           *,
-          package:interview_packages(id, interview_profile_id),
+          package:interview_packages(id, interview_profile_id, booking_metadata),
           skill:interview_skills_admin!skill_id(name),
-          evaluation:session_evaluations(*)
+          evaluation:session_evaluations(checklist_data, ai_feedback, status),
+          mentor:mentors(professional_title)
         `)
         .eq('id', String(id))
         .maybeSingle();
@@ -65,500 +227,393 @@ export default function MentorEvaluationScreen() {
       if (error) throw error;
       if (!session) throw new Error('Session not found');
 
-      // 2. FETCH CANDIDATE PROFESSIONAL TITLE
-      let candidateName = 'Candidate';
-      if (session.candidate_id) {
-        const { data: candidateData } = await supabase
-          .from('candidates')
-          .select('professional_title')
-          .eq('id', session.candidate_id)
+      // Profile name
+      let displayProfile = 'Interview';
+      if (session.package?.interview_profile_id) {
+        const { data: profileData } = await supabase
+          .from('interview_profiles_admin')
+          .select('name')
+          .eq('id', session.package.interview_profile_id)
           .single();
-        
-        if (candidateData?.professional_title) {
-          candidateName = candidateData.professional_title;
-        }
+        if (profileData?.name) displayProfile = profileData.name;
       }
 
-      // 3. CHECK IF EVALUATION EXISTS
-      const evaluationRow = Array.isArray(session.evaluation) 
-        ? session.evaluation[0] 
+      const evalRow = Array.isArray(session.evaluation)
+        ? session.evaluation[0]
         : session.evaluation;
-      
-      const existingAnswers = evaluationRow?.checklist_data?.answers || {};
-      const existingTemplate = evaluationRow?.checklist_data?.template || null;
-      const isCompleted = evaluationRow?.status === 'completed';
-
-      setAnswers(existingAnswers);
-      setIsViewMode(isCompleted && existingTemplate !== null);
-
-      // 4. FETCH PROFILE & SKILL NAMES
-      let displayProfile = 'Interview Evaluation';
-      let displaySkill = 'General Skill';
-
-      if (session.session_type === 'intro') {
-        displayProfile = 'Intro Call';
-        displaySkill = 'Intro Call';
-      } else {
-        if (session.package?.interview_profile_id) {
-          const { data: profileData } = await supabase
-            .from('interview_profiles_admin')
-            .select('name')
-            .eq('id', session.package.interview_profile_id)
-            .single();
-          if (profileData?.name) displayProfile = profileData.name;
-        }
-
-        if (session.skill?.name) {
-          displaySkill = session.skill.name;
-        } else if (session.skill_id) {
-          const { data: skillData } = await supabase
-            .from('interview_skills_admin')
-            .select('name')
-            .eq('id', session.skill_id)
-            .single();
-          if (skillData?.name) displaySkill = skillData.name;
-        }
-      }
-
-      // 5. LOAD TEMPLATE
-      let selectedTemplate: any[] = [];
-
-      if (isCompleted && existingTemplate) {
-        // VIEW MODE: Use stored questions (works for all session types)
-        selectedTemplate = existingTemplate;
-      } else if (session.session_type === 'intro') {
-        // INTRO CALL: Use domain-specific intro template keyed by profile_id
-        const profileId = session.package?.interview_profile_id;
-        selectedTemplate = (profileId && INTRO_CALL_TEMPLATES[profileId])
-          ? INTRO_CALL_TEMPLATES[profileId]
-          : INTRO_CALL_TEMPLATE_FALLBACK;
-      } else {
-        // EDIT MODE (mock/bundle): Use current template from MASTER_TEMPLATES
-        const profileId = session.package?.interview_profile_id;
-        const skillId = session.skill_id;
-
-        if (profileId && MASTER_TEMPLATES[profileId]) {
-          const profileEntry = MASTER_TEMPLATES[profileId];
-          if (skillId && profileEntry.skills[skillId]) {
-            selectedTemplate = profileEntry.skills[skillId].templates;
-          } else {
-            const firstSkillKey = Object.keys(profileEntry.skills)[0];
-            if (firstSkillKey) {
-              selectedTemplate = profileEntry.skills[firstSkillKey].templates;
-            }
-          }
-        }
-      }
-
-      setTemplate(selectedTemplate || []);
 
       setSessionInfo({
         profile: displayProfile,
-        skill: displaySkill,
-        candidateName: candidateName,
-        date: new Date(session.scheduled_at).toLocaleDateString(),
+        skill: session.skill?.name || 'General',
+        date: new Date(session.scheduled_at).toLocaleDateString('en-IN', {
+          day: 'numeric', month: 'short', year: 'numeric'
+        }),
+        mentorTitle: session.mentor?.professional_title || 'Mentor',
       });
 
-    } catch (err: any) {
-      console.error('[Evaluation] Error loading session:', err);
-      showNotification('Failed to load session details', 'error');
-      router.back();
+      if (evalRow?.ai_feedback) setAiFeedback(evalRow.ai_feedback as AIFeedback);
+      if (evalRow?.checklist_data) setMentorEval(evalRow.checklist_data as MentorEvaluation);
+
+      // Default to mentor tab if no AI feedback yet
+      if (!evalRow?.ai_feedback && evalRow?.checklist_data) setActiveTab('mentor');
+
+    } catch (err) {
+      console.error('[CandidateFeedback] Error:', err);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleAnswerChange = (qId: string, value: any) => {
-    setAnswers((prev) => ({ ...prev, [qId]: value }));
-  };
-
-  // 🔍 VALIDATION FUNCTION
-  const validateEvaluation = () => {
-    let missingCount = 0;
-    template.forEach(section => {
-      section.questions.forEach((q: any) => {
-        const val = answers[q.id];
-        // Check for empty text, null rating, or undefined boolean
-        if (
-          val === undefined || 
-          val === null || 
-          (typeof val === 'string' && val.trim() === '')
-        ) {
-          missingCount++;
-        }
-      });
-    });
-    return missingCount;
-  };
-
-  // 💾 SAVE / SUBMIT LOGIC
-  const saveToDatabase = async (isFinalSubmission: boolean) => {
-    // 1. Validate only if submitting
-    if (isFinalSubmission) {
-      const missingCount = validateEvaluation();
-      if (missingCount > 0) {
-        showNotification(
-          `Please complete ${missingCount} missing question${missingCount > 1 ? 's' : ''} before submitting.`, 
-          'error'
-        );
-        return;
-      }
-    }
-
-    try {
-      setSubmitting(true);
-      
-      // 2. Prepare Template Structure (Questions Only)
-      const templateForStorage = template.map(section => ({
-        title: section.title,
-        questions: section.questions
-      }));
-
-      const payload = {
-        meta: {
-          profile_used: sessionInfo.profile,
-          skill_used: sessionInfo.skill,
-          submitted_at: new Date().toISOString(),
-        },
-        template: templateForStorage,
-        answers: answers
-      };
-
-      // 3. Determine Status ('completed' vs 'in_progress')
-      const status = isFinalSubmission ? 'completed' : 'in_progress';
-
-      // 4. Upsert Evaluation Data
-      const { data: existingEval, error: fetchError } = await supabase
-        .from('session_evaluations')
-        .select('id')
-        .eq('session_id', id)
-        .maybeSingle(); 
-
-      if (fetchError) throw fetchError;
-
-      let error;
-
-      if (existingEval) {
-        const { error: updateErr } = await supabase
-          .from('session_evaluations')
-          .update({
-            checklist_data: payload,
-            updated_at: new Date().toISOString(),
-            status: status 
-          })
-          .eq('session_id', id);
-        error = updateErr;
-      } else {
-        const { error: insertErr } = await supabase
-          .from('session_evaluations')
-          .insert({
-            session_id: id,
-            checklist_data: payload,
-            status: status
-          });
-        error = insertErr;
-      }
-
-      if (error) throw error;
-
-      // 5. Finalize Session (Only if Submitting)
-      if (isFinalSubmission) {
-        const { error: sessionError } = await supabase
-          .from('interview_sessions')
-          .update({ status: 'completed' })
-          .eq('id', id);
-
-        if (sessionError) throw sessionError;
-
-        showNotification("Evaluation submitted successfully!", 'success');
-        setTimeout(() => router.back(), 1500);
-      } else {
-        showNotification("Draft saved successfully", 'success');
-      }
-
-    } catch (err: any) {
-      console.error('[Evaluation] Save error:', err);
-      showNotification(err.message || "Failed to save evaluation", 'error');
-    } finally {
-      setSubmitting(false);
     }
   };
 
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#0E9384" />
+        <ActivityIndicator size="large" color={theme.colors.primary} />
       </View>
     );
   }
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
+    <View style={styles.container}>
+      {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="close" size={24} color="#1e293b" />
+        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
+          <Ionicons name="arrow-back" size={20} color="#374151" />
         </TouchableOpacity>
-        <View>
-          <Text style={styles.headerTitle}>
-            {isViewMode ? 'View Evaluation' : 'Evaluate Candidate'}
-          </Text>
-          <Text style={styles.headerSub}>{sessionInfo.candidateName}</Text>
+        <View style={{ flex: 1, marginLeft: 12 }}>
+          <Text style={styles.headerTitle}>{sessionInfo.profile} Feedback</Text>
+          <Text style={styles.headerSub}>{sessionInfo.skill} · {sessionInfo.date}</Text>
         </View>
-        <View style={{ width: 24 }} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
-        
-        <View style={styles.infoCard}>
-          <Text style={styles.infoTitle}>{sessionInfo.profile}</Text>
-          <Text style={styles.infoSub}>{sessionInfo.skill} • {sessionInfo.date}</Text>
-          {isViewMode && (
-            <View style={styles.viewModeBadge}>
-              <Ionicons name="eye-outline" size={14} color="#6366F1" />
-              <Text style={styles.viewModeText}>Read-only View</Text>
-            </View>
-          )}
-        </View>
+      {/* Tabs */}
+      <View style={styles.tabRow}>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'ai' && styles.tabActive]}
+          onPress={() => setActiveTab('ai')}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="flash" size={15} color={activeTab === 'ai' ? theme.colors.primary : '#6B7280'} />
+          <Text style={[styles.tabText, activeTab === 'ai' && styles.tabTextActive]}>AI Analysis</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'mentor' && styles.tabActive]}
+          onPress={() => setActiveTab('mentor')}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="person" size={15} color={activeTab === 'mentor' ? theme.colors.primary : '#6B7280'} />
+          <Text style={[styles.tabText, activeTab === 'mentor' && styles.tabTextActive]}>Mentor Evaluation</Text>
+        </TouchableOpacity>
+      </View>
 
-        {template.length === 0 ? (
-          <View style={{padding: 20, alignItems:'center'}}>
-             <Text style={{color:'#666'}}>No evaluation template found for this skill.</Text>
-          </View>
-        ) : (
-          template.map((section, idx) => (
-            <View key={idx} style={styles.section}>
-              <Text style={styles.sectionHeader}>{section.title}</Text>
-              
-              {!isViewMode && section.example && (
-                <View style={styles.exampleBox}>
-                  {Array.isArray(section.example) ? (
-                    <View>
-                      <Text style={styles.exampleHeader}>💡 Example Scenarios:</Text>
-                      {section.example.map((item: string, exIdx: number) => (
-                        <Text key={exIdx} style={styles.exampleItem}>
-                          {exIdx + 1}. {item}
-                        </Text>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+
+        {/* ── AI FEEDBACK TAB ── */}
+        {activeTab === 'ai' && (
+          <>
+            {!aiFeedback ? (
+              <View style={styles.emptyState}>
+                <Ionicons name="hourglass-outline" size={40} color="#D1D5DB" />
+                <Text style={styles.emptyTitle}>Analysis Coming Soon</Text>
+                <Text style={styles.emptyText}>
+                  Your AI-powered feedback report will be available shortly after your mentor submits their evaluation.
+                </Text>
+              </View>
+            ) : (
+              <>
+                {/* Score Card */}
+                <View style={feedbackStyles.scoreCard}>
+                  <View style={{ alignItems: 'center', marginBottom: 16 }}>
+                    <ScoreRing score={aiFeedback.readiness_score} />
+                    <Text style={[
+                      feedbackStyles.readinessLabel,
+                      { color: getReadinessColor(aiFeedback.readiness_label) }
+                    ]}>
+                      {aiFeedback.readiness_label}
+                    </Text>
+                  </View>
+
+                  <View style={feedbackStyles.divider} />
+
+                  <View style={feedbackStyles.summaryRow}>
+                    <Ionicons name="chatbubble-ellipses" size={18} color="#0E9384" style={{ marginTop: 2 }} />
+                    <Text style={feedbackStyles.summaryText}>{aiFeedback.feedback_summary}</Text>
+                  </View>
+
+                  {aiFeedback.red_flags.length > 0 && (
+                    <>
+                      <View style={feedbackStyles.divider} />
+                      <View style={feedbackStyles.redFlagSection}>
+                        <View style={feedbackStyles.redFlagHeader}>
+                          <Ionicons name="flag" size={16} color="#BE123C" />
+                          <Text style={feedbackStyles.redFlagTitle}>Red flags</Text>
+                        </View>
+                        {aiFeedback.red_flags.map((flag, i) => (
+                          <View key={i} style={feedbackStyles.redFlagItem}>
+                            <Text style={feedbackStyles.redFlagNum}>{i + 1}</Text>
+                            <Text style={feedbackStyles.redFlagText}>{flag}</Text>
+                          </View>
+                        ))}
+                      </View>
+                    </>
+                  )}
+                </View>
+
+                {/* Competencies */}
+                <Text style={styles.sectionTitle}>Detailed Performance Analysis</Text>
+                {aiFeedback.competencies.map((comp, i) => (
+                  <CompetencyCard key={i} item={comp} />
+                ))}
+
+                {/* Next Steps */}
+                {aiFeedback.next_steps.length > 0 && (
+                  <>
+                    <Text style={styles.sectionTitle}>Next Steps</Text>
+                    <View style={feedbackStyles.nextStepsCard}>
+                      {aiFeedback.next_steps.map((step, i) => (
+                        <View key={i} style={[feedbackStyles.nextStep, i < aiFeedback.next_steps.length - 1 && feedbackStyles.nextStepBorder]}>
+                          <View style={feedbackStyles.nextStepNum}>
+                            <Text style={feedbackStyles.nextStepNumText}>{i + 1}</Text>
+                          </View>
+                          <View style={{ flex: 1 }}>
+                            <Text style={feedbackStyles.nextStepAction}>{step.action}</Text>
+                            <Text style={feedbackStyles.nextStepDrill}>{step.drill}</Text>
+                          </View>
+                        </View>
                       ))}
                     </View>
-                  ) : (
-                    <Text style={styles.exampleText}>💡 {section.example}</Text>
-                  )}
-                </View>
-              )}
-
-              {section.questions.map((q: any) => (
-                <View key={q.id} style={styles.questionContainer}>
-                  <Text style={styles.questionText}>{q.text}</Text>
-
-                  {q.type === 'text' && (
-                    <TextInput
-                      style={[styles.textArea, isViewMode && styles.disabled]}
-                      multiline
-                      placeholder="Enter your feedback here..."
-                      value={answers[q.id] || ''}
-                      onChangeText={(text) => handleAnswerChange(q.id, text)}
-                      editable={!isViewMode}
-                    />
-                  )}
-
-                  {q.type === 'rating' && (
-                    <View style={styles.ratingContainer}>
-                      {[1, 2, 3, 4, 5].map((val) => {
-                        const isSelected = answers[q.id] === val;
-                        return (
-                          <TouchableOpacity
-                            key={val}
-                            style={[styles.ratingBtn, isSelected && styles.ratingBtnSelected]}
-                            onPress={() => !isViewMode && handleAnswerChange(q.id, val)}
-                            disabled={isViewMode}
-                          >
-                            <Text style={[styles.ratingText, isSelected && styles.ratingTextSelected]}>
-                              {val}
-                            </Text>
-                          </TouchableOpacity>
-                        );
-                      })}
-                    </View>
-                  )}
-
-                  {q.type === 'boolean' && (
-                    <View style={styles.boolContainer}>
-                      <TouchableOpacity
-                        style={[styles.boolBtn, answers[q.id] === true && styles.boolBtnYes]}
-                        onPress={() => !isViewMode && handleAnswerChange(q.id, true)}
-                        disabled={isViewMode}
-                      >
-                        <Text style={[styles.boolText, answers[q.id] === true && styles.boolTextSelected]}>Yes</Text>
-                      </TouchableOpacity>
-
-                      <TouchableOpacity
-                        style={[styles.boolBtn, answers[q.id] === false && styles.boolBtnNo]}
-                        onPress={() => !isViewMode && handleAnswerChange(q.id, false)}
-                        disabled={isViewMode}
-                      >
-                        <Text style={[styles.boolText, answers[q.id] === false && styles.boolTextSelected]}>No</Text>
-                      </TouchableOpacity>
-                    </View>
-                  )}
-                </View>
-              ))}
-            </View>
-          ))
+                  </>
+                )}
+              </>
+            )}
+          </>
         )}
 
-        {/* ACTIONS ROW: SAVE DRAFT & SUBMIT */}
-        {!isViewMode ? (
-          <View style={styles.actionRow}>
-            {/* Save Draft Button */}
-            <TouchableOpacity 
-              style={[styles.draftBtn, submitting && styles.btnDisabled]} 
-              onPress={() => saveToDatabase(false)} // false = Draft
-              disabled={submitting}
-            >
-              <Text style={styles.draftBtnText}>Save Draft</Text>
-            </TouchableOpacity>
+        {/* ── MENTOR EVALUATION TAB ── */}
+        {activeTab === 'mentor' && (
+          <>
+            {!mentorEval ? (
+              <View style={styles.emptyState}>
+                <Ionicons name="document-text-outline" size={40} color="#D1D5DB" />
+                <Text style={styles.emptyTitle}>Evaluation Pending</Text>
+                <Text style={styles.emptyText}>
+                  Your mentor hasn't submitted their evaluation yet. Check back after your session.
+                </Text>
+              </View>
+            ) : (
+              <>
+                <View style={mentorStyles.metaCard}>
+                  <Text style={mentorStyles.metaProfile}>{mentorEval.meta.profile_used}</Text>
+                  <Text style={mentorStyles.metaSkill}>{mentorEval.meta.skill_used}</Text>
+                  <Text style={mentorStyles.metaDate}>
+                    Submitted {new Date(mentorEval.meta.submitted_at).toLocaleDateString('en-IN', {
+                      day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                    })}
+                  </Text>
+                </View>
 
-            {/* Submit Button */}
-            <TouchableOpacity 
-              style={[styles.submitBtn, submitting && styles.btnDisabled]} 
-              onPress={() => saveToDatabase(true)} // true = Submit
-              disabled={submitting}
-            >
-              {submitting ? (
-                <ActivityIndicator color="#FFF" />
-              ) : (
-                <Text style={styles.submitBtnText}>Submit</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <View style={[styles.completedBanner]}>
-            <Ionicons name="checkmark-circle" size={20} color="#059669" />
-            <Text style={styles.submittedBtnText}>Evaluation Submitted</Text>
-          </View>
+                {mentorEval.template.map((section, si) => (
+                  <View key={si} style={mentorStyles.section}>
+                    <Text style={mentorStyles.sectionTitle}>{section.title}</Text>
+                    {section.questions.map((q) => {
+                      const ans = mentorEval.answers[q.id];
+                      if (ans === undefined || ans === null) return null;
+                      return (
+                        <View key={q.id} style={mentorStyles.questionRow}>
+                          <Text style={mentorStyles.questionText}>{q.text}</Text>
+                          {q.type === 'rating' && typeof ans === 'number' && (
+                            <RatingDisplay value={ans} />
+                          )}
+                          {q.type === 'text' && typeof ans === 'string' && ans.trim() !== '' && (
+                            <View style={mentorStyles.textAnswerBox}>
+                              <Text style={mentorStyles.textAnswer}>{ans}</Text>
+                            </View>
+                          )}
+                          {q.type === 'boolean' && typeof ans === 'boolean' && (
+                            <View style={[
+                              mentorStyles.boolAnswer,
+                              { backgroundColor: ans ? '#DCFCE7' : '#FEE2E2', borderColor: ans ? '#86EFAC' : '#FCA5A5' }
+                            ]}>
+                              <Ionicons
+                                name={ans ? 'checkmark-circle' : 'close-circle'}
+                                size={16}
+                                color={ans ? '#059669' : '#DC2626'}
+                              />
+                              <Text style={{ color: ans ? '#059669' : '#DC2626', fontWeight: '600', fontSize: 14, fontFamily: SYSTEM_FONT }}>
+                                {ans ? 'Yes' : 'No'}
+                              </Text>
+                            </View>
+                          )}
+                        </View>
+                      );
+                    })}
+                  </View>
+                ))}
+              </>
+            )}
+          </>
         )}
 
+        <View style={{ height: 40 }} />
       </ScrollView>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFC' },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   header: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: 20, paddingTop: 50, paddingBottom: 16, backgroundColor: '#FFF',
-    borderBottomWidth: 1, borderBottomColor: '#E2E8F0',
+    flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: 20, paddingTop: 52, paddingBottom: 16,
+    backgroundColor: '#FFF', borderBottomWidth: 1, borderBottomColor: '#E5E7EB',
   },
-  headerTitle: { fontSize: 16, fontWeight: '700', color: '#1E293B' },
-  headerSub: { fontSize: 12, color: '#64748B', textAlign: 'center' },
+  backBtn: {
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: '#F3F4F6', alignItems: 'center', justifyContent: 'center',
+  },
+  headerTitle: { fontSize: 17, fontWeight: '700', color: '#111827', fontFamily: SYSTEM_FONT },
+  headerSub: { fontSize: 12, color: '#6B7280', marginTop: 2, fontFamily: SYSTEM_FONT },
 
-  content: { padding: 20, paddingBottom: 60 },
-
-  infoCard: {
-    backgroundColor: '#FFF', padding: 16, borderRadius: 12, marginBottom: 24,
-    borderWidth: 1, borderColor: '#E2E8F0'
+  tabRow: {
+    flexDirection: 'row', backgroundColor: '#F3F4F6',
+    margin: 16, borderRadius: 12, padding: 4,
   },
-  infoTitle: { fontSize: 16, fontWeight: '700', color: '#0F172A' },
-  infoSub: { fontSize: 14, color: '#64748B', marginTop: 4 },
-  viewModeBadge: {
-    flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8,
-    paddingHorizontal: 10, paddingVertical: 4, backgroundColor: '#EEF2FF',
-    borderRadius: 6, alignSelf: 'flex-start'
+  tab: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    paddingVertical: 10, borderRadius: 9, gap: 6,
   },
-  viewModeText: { fontSize: 11, fontWeight: '600', color: '#6366F1' },
-
-  section: { marginBottom: 32 },
-  sectionHeader: { 
-    fontSize: 18, fontWeight: '800', color: '#1E293B', marginBottom: 12, 
-    borderLeftWidth: 4, borderLeftColor: '#0E9384', paddingLeft: 12 
-  },
-  exampleBox: { 
-    backgroundColor: '#F0FDFA', padding: 12, borderRadius: 8, marginBottom: 16,
-    borderWidth: 1, borderColor: '#CCFBF1'
-  },
-  exampleHeader: { 
-    fontSize: 13, color: '#0F766E', fontWeight: '700', marginBottom: 8 
-  },
-  exampleItem: { 
-    fontSize: 13, color: '#0F766E', lineHeight: 20, marginBottom: 6 
-  },
-  exampleText: { fontSize: 13, color: '#0F766E', fontStyle: 'italic' },
-
-  questionContainer: { marginBottom: 20 },
-  questionText: { fontSize: 15, fontWeight: '600', color: '#334155', marginBottom: 10 },
-
-  textArea: {
-    backgroundColor: '#FFF', borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 8,
-    padding: 12, height: 100, textAlignVertical: 'top', fontSize: 14
-  },
-  disabled: { backgroundColor: '#F9FAFB', color: '#6B7280' },
-
-  ratingContainer: { flexDirection: 'row', gap: 10 },
-  ratingBtn: {
-    width: 44, height: 44, borderRadius: 22, backgroundColor: '#F1F5F9',
-    justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#E2E8F0'
-  },
-  ratingBtnSelected: { backgroundColor: '#0E9384', borderColor: '#0E9384' },
-  ratingText: { fontSize: 16, fontWeight: '600', color: '#64748B' },
-  ratingTextSelected: { color: '#FFF' },
-
-  boolContainer: { flexDirection: 'row', gap: 12 },
-  boolBtn: {
-    flex: 1, paddingVertical: 10, borderRadius: 8, backgroundColor: '#F1F5F9',
-    alignItems: 'center', borderWidth: 1, borderColor: '#E2E8F0'
-  },
-  boolBtnYes: { backgroundColor: '#DCFCE7', borderColor: '#86EFAC' },
-  boolBtnNo: { backgroundColor: '#FEE2E2', borderColor: '#FCA5A5' },
-  boolText: { fontSize: 14, fontWeight: '600', color: '#64748B' },
-  boolTextSelected: { color: '#1E293B' },
-
-  // New & Updated Action Styles
-  actionRow: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 20,
-    marginBottom: 40,
-  },
-  draftBtn: {
-    flex: 1,
-    paddingVertical: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
+  tabActive: {
     backgroundColor: '#FFF',
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
+    shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 4,
+    shadowOffset: { width: 0, height: 1 }, elevation: 2,
   },
-  draftBtnText: {
-    color: '#475569',
-    fontSize: 16,
-    fontWeight: '700',
+  tabText: { fontSize: 13, fontWeight: '600', color: '#6B7280', fontFamily: SYSTEM_FONT },
+  tabTextActive: { color: '#0E9384' },
+
+  scrollContent: { paddingHorizontal: 16, paddingBottom: 20 },
+  sectionTitle: {
+    fontSize: 16, fontWeight: '700', color: '#111827',
+    marginTop: 24, marginBottom: 12, fontFamily: SYSTEM_FONT,
   },
-  submitBtn: {
-    flex: 1,
-    backgroundColor: '#0E9384',
-    paddingVertical: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
+
+  emptyState: { alignItems: 'center', marginTop: 80, paddingHorizontal: 32 },
+  emptyTitle: { fontSize: 18, fontWeight: '700', color: '#374151', marginTop: 16, fontFamily: SYSTEM_FONT },
+  emptyText: { fontSize: 14, color: '#6B7280', textAlign: 'center', lineHeight: 22, marginTop: 8, fontFamily: SYSTEM_FONT },
+});
+
+const feedbackStyles = StyleSheet.create({
+  scoreCard: {
+    backgroundColor: '#FFF', borderRadius: 16, padding: 24,
+    borderWidth: 1, borderColor: '#E5E7EB', marginBottom: 8,
   },
-  btnDisabled: { opacity: 0.7 },
-  submitBtnText: { color: '#FFF', fontSize: 16, fontWeight: '700' },
-  
-  completedBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#ECFDF5', 
-    borderWidth: 1, 
-    borderColor: '#059669',
-    padding: 16,
-    borderRadius: 12,
-    marginTop: 20,
-    gap: 8
+  readinessLabel: {
+    fontSize: 18, fontWeight: '800', marginTop: 12, fontFamily: SYSTEM_FONT,
   },
-  submittedBtnText: { color: '#059669', fontSize: 16, fontWeight: '700' },
+  divider: { height: 1, backgroundColor: '#F3F4F6', marginVertical: 16 },
+  summaryRow: { flexDirection: 'row', gap: 10, alignItems: 'flex-start' },
+  summaryText: { flex: 1, fontSize: 14, color: '#374151', lineHeight: 22, fontFamily: SYSTEM_FONT },
+
+  redFlagSection: {},
+  redFlagHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 },
+  redFlagTitle: { fontSize: 14, fontWeight: '700', color: '#BE123C', fontFamily: SYSTEM_FONT },
+  redFlagItem: {
+    flexDirection: 'row', gap: 10, alignItems: 'flex-start',
+    backgroundColor: '#FFF1F2', borderRadius: 8, padding: 12, marginBottom: 8,
+    borderWidth: 1, borderColor: '#FECDD3',
+  },
+  redFlagNum: {
+    width: 22, height: 22, borderRadius: 11, backgroundColor: '#FEE2E2',
+    alignItems: 'center', justifyContent: 'center',
+    fontSize: 12, fontWeight: '700', color: '#BE123C', fontFamily: SYSTEM_FONT,
+  },
+  redFlagText: { flex: 1, fontSize: 13, color: '#9F1239', lineHeight: 20, fontFamily: SYSTEM_FONT },
+
+  compCard: {
+    backgroundColor: '#FFF', borderRadius: 12, borderWidth: 1,
+    borderColor: '#E5E7EB', borderLeftWidth: 4, marginBottom: 10, overflow: 'hidden',
+  },
+  compHeader: {
+    flexDirection: 'row', alignItems: 'flex-start',
+    padding: 16, justifyContent: 'space-between',
+  },
+  compTitle: { fontSize: 15, fontWeight: '700', color: '#111827', marginBottom: 6, fontFamily: SYSTEM_FONT },
+  severityBadge: {
+    alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 3,
+    borderRadius: 6, borderWidth: 1,
+  },
+  severityText: { fontSize: 11, fontWeight: '700', fontFamily: SYSTEM_FONT },
+  compScore: { fontSize: 22, fontWeight: '800', fontFamily: SYSTEM_FONT },
+
+  compBody: { paddingHorizontal: 16, paddingBottom: 16, borderTopWidth: 1, borderTopColor: '#F3F4F6' },
+  compSection: { marginTop: 14 },
+  compSectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
+  compSectionTitle: { fontSize: 13, fontWeight: '700', fontFamily: SYSTEM_FONT },
+  bullet: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginBottom: 6 },
+  bulletDot: { width: 6, height: 6, borderRadius: 3, marginTop: 7 },
+  bulletText: { flex: 1, fontSize: 13, color: '#374151', lineHeight: 20, fontFamily: SYSTEM_FONT },
+
+  quoteBox: {
+    marginTop: 14, backgroundColor: '#F8FAFC', borderRadius: 8,
+    padding: 12, borderLeftWidth: 3, borderLeftColor: '#CBD5E1',
+  },
+  quoteLabel: { fontSize: 11, fontWeight: '700', color: '#64748B', marginBottom: 6, fontFamily: SYSTEM_FONT },
+  quoteText: { fontSize: 13, color: '#475569', fontStyle: 'italic', lineHeight: 20, fontFamily: SYSTEM_FONT },
+
+  suggestedBox: {
+    marginTop: 10, backgroundColor: '#F0FDFA', borderRadius: 8,
+    padding: 12, borderLeftWidth: 3, borderLeftColor: '#0E9384',
+  },
+  suggestedLabel: { fontSize: 11, fontWeight: '700', color: '#0E9384', marginBottom: 6, fontFamily: SYSTEM_FONT },
+  suggestedText: { fontSize: 13, color: '#134E4A', lineHeight: 20, fontFamily: SYSTEM_FONT },
+
+  nextStepsCard: {
+    backgroundColor: '#FFF', borderRadius: 16, borderWidth: 1, borderColor: '#E5E7EB',
+    overflow: 'hidden',
+  },
+  nextStep: { flexDirection: 'row', gap: 12, padding: 16, alignItems: 'flex-start' },
+  nextStepBorder: { borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
+  nextStepNum: {
+    width: 28, height: 28, borderRadius: 14,
+    backgroundColor: '#F0FDFA', borderWidth: 1, borderColor: '#0E9384',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  nextStepNumText: { fontSize: 13, fontWeight: '700', color: '#0E9384', fontFamily: SYSTEM_FONT },
+  nextStepAction: { fontSize: 14, fontWeight: '700', color: '#111827', marginBottom: 4, fontFamily: SYSTEM_FONT },
+  nextStepDrill: { fontSize: 13, color: '#6B7280', lineHeight: 20, fontFamily: SYSTEM_FONT },
+});
+
+const mentorStyles = StyleSheet.create({
+  metaCard: {
+    backgroundColor: '#FFF', borderRadius: 12, padding: 16,
+    borderWidth: 1, borderColor: '#E5E7EB', marginBottom: 16,
+  },
+  metaProfile: { fontSize: 16, fontWeight: '700', color: '#111827', fontFamily: SYSTEM_FONT },
+  metaSkill: { fontSize: 14, color: '#0E9384', fontWeight: '600', marginTop: 2, fontFamily: SYSTEM_FONT },
+  metaDate: { fontSize: 12, color: '#9CA3AF', marginTop: 6, fontFamily: SYSTEM_FONT },
+
+  section: {
+    backgroundColor: '#FFF', borderRadius: 12, padding: 16,
+    borderWidth: 1, borderColor: '#E5E7EB', marginBottom: 12,
+  },
+  sectionTitle: {
+    fontSize: 15, fontWeight: '800', color: '#1E293B',
+    borderLeftWidth: 4, borderLeftColor: '#0E9384',
+    paddingLeft: 10, marginBottom: 16, fontFamily: SYSTEM_FONT,
+  },
+  questionRow: { marginBottom: 18 },
+  questionText: { fontSize: 14, color: '#334155', fontWeight: '600', lineHeight: 20, fontFamily: SYSTEM_FONT },
+
+  textAnswerBox: {
+    marginTop: 8, backgroundColor: '#F8FAFC', borderRadius: 8,
+    padding: 12, borderWidth: 1, borderColor: '#E2E8F0',
+  },
+  textAnswer: { fontSize: 14, color: '#374151', lineHeight: 22, fontFamily: SYSTEM_FONT },
+
+  boolAnswer: {
+    marginTop: 8, flexDirection: 'row', alignItems: 'center', gap: 8,
+    paddingHorizontal: 12, paddingVertical: 8,
+    borderRadius: 8, borderWidth: 1, alignSelf: 'flex-start',
+  },
 });
