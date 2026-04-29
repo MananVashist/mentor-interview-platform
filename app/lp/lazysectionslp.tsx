@@ -774,9 +774,9 @@ export default function LazySectionsLP({
     <>
       <TheProblemSection isSmall={isSmall} />
       <HowItWorksSection isSmall={isSmall} />
+      <DynamicDomainMentors role={role} isSmall={isSmall} onViewMentors={() => onViewMentors("domain_mentors_cta")} />
       <RoleSpecificProblemsSection isSmall={isSmall} role={role} />
       <TargetedSkillsSection role={role} isSmall={isSmall} onViewMentors={onViewMentors} />
-      <DynamicDomainMentors role={role} isSmall={isSmall} onViewMentors={() => onViewMentors("domain_mentors_cta")} />
       <TestimonialsSection onViewMentors={onViewMentors} isSmall={isSmall} role={role} />
       <SystematicPrepSection onViewMentors={onViewMentors} isSmall={isSmall} role={role} />
       <GuaranteeSection isSmall={isSmall} />
