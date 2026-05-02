@@ -75,7 +75,7 @@ type Mentor = {
   tier?: string | null;
   avatar_url?: string | null;
   profiles?: { full_name?: string } | null;
-  intro_call_price?: number | null;
+ 
 };
 
 // ============================================
@@ -268,9 +268,8 @@ const MentorCard = memo(({
 }: MentorCardProps) => {
 
   const seed = m.id || m.profiles?.full_name || 'Mentor';
-  const introCallPrice = m.intro_call_price;
-  const introIsFree = introCallPrice == null || introCallPrice === 0;
-  const introDisplay = introIsFree ? 'Free' : `₹${introCallPrice!.toLocaleString()}`;
+  const mockPriceRaw = m.session_price_inr ?? (m as any).session_price ?? 0;
+  const mockDisplay = mockPriceRaw > 0 ? `₹${mockPriceRaw.toLocaleString()}` : 'View Profile';
 const fallbackAvatar = `https://api.dicebear.com/9.x/micah/png?seed=${encodeURIComponent(seed)}&backgroundColor=e5e7eb,f3f4f6`;
 
   const renderAvailabilityBadge = () => {
@@ -363,8 +362,8 @@ const fallbackAvatar = `https://api.dicebear.com/9.x/micah/png?seed=${encodeURIC
 
         <View style={styles.actionRow}>
           <View style={styles.priceContainer}>
-             <Text style={styles.startingAt}>Intro calls from</Text>
-             <Text style={styles.basePrice}>{introDisplay}</Text>
+             <Text style={styles.startingAt}>Mock interview from</Text>
+             <Text style={styles.basePrice}>{mockDisplay}</Text>
           </View>
 
           {/* FIX: Larger, more prominent CTA button */}

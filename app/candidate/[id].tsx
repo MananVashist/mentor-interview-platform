@@ -29,7 +29,7 @@ const WHITE = "#FFFFFF";
 const SUPABASE_URL = "https://rcbaaiiawrglvyzmawvr.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJjYmFhaWlhd3JnbHZ5em1hd3ZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjExNTA1NjAsImV4cCI6MjA3NjcyNjU2MH0.V3qRHGXBMlspRS7XFJlXdo4qIcCms60Nepp7dYMEjLA";
 
-type SessionType = "intro" | "mock" | "bundle";
+type SessionType = "mock" | "bundle";
 type SelectedSession = { dateStr: string; time: string; displayDate: string; iso: string };
 type Profile = { id: number; name: string; description: string | null };
 type Skill = { id: string; name: string; description: string | null };
@@ -249,24 +249,24 @@ function StepHeader({ index, label, subtitle, isOpen, isDone, hasError, onPress 
   );
 }
 
-function BookNowPanel({ sType, price, bundleSave, s1ok, s2ok, s3ok, allOk, tried, onBook, isFreeFounderIntro, paying }: any) {
-  const accentColor = !sType ? MUTED : sType === "intro" ? "#7C3AED" : sType === "mock" ? TEAL : "#D97706";
+function BookNowPanel({ sType, price, bundleSave, s1ok, s2ok, s3ok, allOk, tried, onBook, paying }: any) {
+  const accentColor = !sType ? MUTED : sType === "mock" ? TEAL : "#D97706";
   return (
     <View style={g.bnCard}>
       <View style={[g.bnTypeTag, { backgroundColor: `${accentColor}12`, borderColor: `${accentColor}30` }]}>
         <View style={[g.bnTypeDot, { backgroundColor: accentColor }]} />
         <Text style={[g.bnTypeLabel, { color: accentColor, fontFamily: F }]}>
-          {!sType ? "No Session Selected" : sType === "intro" ? "Intro Call · 25 min" : sType === "mock" ? "Mock Interview · 55 min" : "Prep Course · 3 × 55 min"}
+          {!sType ? "No Session Selected" : sType === "mock" ? "Mock Interview · 55 min" : "Prep Course · 3 × 55 min"}
         </Text>
       </View>
       <View style={g.bnPriceRow}>
-        <Text style={[g.bnPrice, { fontFamily: F }]}>{!sType ? "Rs -" : isFreeFounderIntro ? "FREE" : `₹${price.toLocaleString()}`}</Text>
+        <Text style={[g.bnPrice, { fontFamily: F }]}>{!sType ? "Rs -" : `₹${price.toLocaleString()}`}</Text>
         {sType === "bundle" && bundleSave > 0 && (
           <View style={g.bnSavePill}><Text style={[g.bnSaveTxt, { fontFamily: F }]}>Save ₹{bundleSave.toLocaleString()}</Text></View>
         )}
       </View>
       <Text style={[g.bnPriceSub, { fontFamily: F }]}>
-        {!sType ? "Select a session type to view price" : sType === "intro" ? "One-time only · per mentor" : sType === "mock" ? "Single skill session" : "3 full mock interviews"}
+        {!sType ? "Select a session type to view price" : sType === "mock" ? "Single skill session · 55 min" : "3 full mock interviews · 3 × 55 min"}
       </Text>
       <View style={g.bnDivider} />
       <View style={g.bnChecklist}>
@@ -292,7 +292,7 @@ function BookNowPanel({ sType, price, bundleSave, s1ok, s2ok, s3ok, allOk, tried
         {paying
           ? <ActivityIndicator color={WHITE} />
           : <Text style={[g.bnBtnTxt, { fontFamily: F }]}>
-              {allOk ? (isFreeFounderIntro ? "Book Free Session →" : `Pay ₹${price.toLocaleString()} →`) : "Book Now"}
+              {allOk ? `Pay ₹${price.toLocaleString()} →` : "Book Now"}
             </Text>}
       </TouchableOpacity>
 
@@ -302,7 +302,7 @@ function BookNowPanel({ sType, price, bundleSave, s1ok, s2ok, s3ok, allOk, tried
           <Text style={[g.bnWarnTxt, { fontFamily: F }]}>Complete all steps above to continue</Text>
         </View>
       )}
-      {!isFreeFounderIntro && (
+      {true && (
         <View style={g.trustRow}>
           <IcoLock s={12} c="#9CA3AF" />
           <Text style={[g.trustTxt, { fontFamily: F }]}>Payments secured by Razorpay</Text>
@@ -344,7 +344,7 @@ export default function CandidateMentorDetail() {
   const [bundleSkills, setBundleSkills] = useState<Skill[]>([]);
   const [jdText, setJdText] = useState("");
   const [jdErr, setJdErr] = useState("");
-  const [introUsed, setIUsed] = useState(false);
+  const introUsed = false; // intro call removed
 
   const [avail, setAvail] = useState<DayAvailability[]>([]);
   const [availL, setAvailL] = useState(false);
@@ -392,6 +392,7 @@ export default function CandidateMentorDetail() {
     } catch (e) {} finally { setLoading(false); }
   };
 
+  // intro call removed
   const checkIntro = useCallback(async () => {
     if (!uid || !id) return;
     try {
@@ -423,13 +424,10 @@ export default function CandidateMentorDetail() {
     } catch (e) {} finally { setAvailL(false); }
   }, [id, selDay]);
 
-  const introIsFree = mentor?.intro_call_price == null || mentor?.intro_call_price === 0;
-  const introPrice = mentor?.intro_call_price ?? 0;
   const bundlePrice = Math.round(mockPrice * 2.5);
   const bundleSave = Math.round(mockPrice * 3 - bundlePrice);
 
-  const isFreeFounderIntro = sType === "intro" && introIsFree;
-  const price = !sType ? 0 : sType === "intro" ? introPrice : sType === "mock" ? mockPrice : bundlePrice;
+  const price = !sType ? 0 : sType === "mock" ? mockPrice : bundlePrice;
 
   const isJD = sType === "mock"
     ? !!skill?.name.toLowerCase().includes("jd-based")
@@ -438,8 +436,8 @@ export default function CandidateMentorDetail() {
       : false;
 
   const effPID = profId || (profiles.length > 0 ? profiles[0].id : null);
-  const s1ok = !!sType && !(sType === "intro" && introUsed);
-  const s2ok = !sType ? false : sType === "intro" ? true : sType === "mock" ? !!(profId && skill && (!isJD || jdText.trim().length >= 50)) : sType === "bundle" ? (bundleMode === "intro" || (bundleSkills.length === 3 && (!isJD || jdText.trim().length >= 50))) : false;
+  const s1ok = !!sType;
+  const s2ok = !sType ? false : sType === "mock" ? !!(profId && skill && (!isJD || jdText.trim().length >= 50)) : sType === "bundle" ? (bundleMode === "intro" || (bundleSkills.length === 3 && (!isJD || jdText.trim().length >= 50))) : false;
   const s3ok = !sType ? false : sType === "bundle" ? selSlots.length === 3 : !!selSlot;
   const allOk = s1ok && s2ok && s3ok;
   const firstBad = !s1ok ? 0 : !s2ok ? 1 : !s3ok ? 2 : -1;
@@ -524,12 +522,12 @@ export default function CandidateMentorDetail() {
   const avatarSource = avatarUrl || fallbackAvatar;
 
   const tabSubs = [
-    !sType ? "Select session type" : sType === "intro" ? "Intro Call — 25 min" : sType === "mock" ? "Mock Interview — 55 min" : "Prep Course — 3 × 55 min",
-    !sType || sType === "intro" ? "Not required" : sType === "mock" ? (skill ? skill.name : profId ? (profiles.find(p => p.id === profId)?.name || "") : "") : (bundleMode === "intro" ? "Based on Intro Call" : `${bundleSkills.length}/3 topics selected`),
+    !sType ? "Select session type" : sType === "mock" ? "Mock Interview — 55 min" : "Prep Course — 3 × 55 min",
+    !sType ? "Not required" : sType === "mock" ? (skill ? skill.name : profId ? (profiles.find(p => p.id === profId)?.name || "") : "") : (bundleMode === "intro" ? "Select topics" : `${bundleSkills.length}/3 topics selected`),
     sType === "bundle" ? (selSlots.length === 3 ? selSlots.map(sl => sl.time).join(" · ") : `${selSlots.length}/3 slots chosen`) : (selSlot ? `${selSlot.time} · ${selSlot.displayDate}` : ""),
   ];
 
-  const bnProps = { sType, price, bundleSave, s1ok, s2ok, s3ok, allOk, tried, onBook: handleBookNow, isFreeFounderIntro, paying };
+  const bnProps = { sType, price, bundleSave, s1ok, s2ok, s3ok, allOk, tried, onBook: handleBookNow, paying };
   
   const mentorReviews = SEED_REVIEWS[id as string] || [];
 
@@ -589,9 +587,8 @@ export default function CandidateMentorDetail() {
               {openStep === 0 && (
                 <View style={g.stepPanel}>
                   <SessionRow selected={sType === "mock"} onPress={() => setSType("mock")} accentColor={TEAL} icon={<IcoTarget s={20} c={sType === "mock" ? TEAL : "#9CA3AF"} />} label="Mock Interview" duration="55 minutes" badge="POPULAR" description="The real deal. A full mock interview on the topic of your choice or based on a JD you're prepping for — going in-depth, guiding through solutions and giving real-time feedback." price={`₹${mockPrice.toLocaleString()}`} />
-                  <SessionRow selected={sType === "intro"} disabled={introUsed} onPress={() => !introUsed && setSType("intro")} accentColor="#7C3AED" icon={<IcoChat s={20} c={sType === "intro" ? "#7C3AED" : "#9CA3AF"} />} label="Intro Call" duration="25 minutes" tag="One per mentor · Recommended before Prep Course" description="A mini mock interview to test your strengths and weaknesses and recommend a personalised plan for improvement." price={introIsFree ? "FREE" : `₹${introPrice.toLocaleString()}`} showUsed={introUsed} />
-                  <SessionRow selected={sType === "bundle"} onPress={() => setSType("bundle")} accentColor="#D97706" icon={<IcoLayers s={20} c={sType === "bundle" ? "#D97706" : "#9CA3AF"} />} label="Prep Course" duration="3 × 55 minutes" description="A full 3-session package tailored to your strengths and weaknesses — based on your Intro Call, a JD you're targeting, or a chosen topic." price={`₹${bundlePrice.toLocaleString()}`} badge={bundleSave > 0 ? `SAVE ₹${bundleSave.toLocaleString()}` : undefined} />
-                  <TouchableOpacity style={[g.nextBtn, (!sType || (sType === "intro" && introUsed)) && g.nextBtnOff]} onPress={() => sType && !(sType === "intro" && introUsed) && setOpenStep(1)}>
+                  <SessionRow selected={sType === "bundle"} onPress={() => setSType("bundle")} accentColor="#D97706" icon={<IcoLayers s={20} c={sType === "bundle" ? "#D97706" : "#9CA3AF"} />} label="Prep Course" duration="3 × 55 minutes" description="A full 3-session package. 3 full mock interviews tailored to your target role — based on a JD you're prepping for or a topic you want to master." price={`₹${bundlePrice.toLocaleString()}`} badge={bundleSave > 0 ? `SAVE ₹${bundleSave.toLocaleString()}` : undefined} />
+                  <TouchableOpacity style={[g.nextBtn, !sType && g.nextBtnOff]} onPress={() => sType && setOpenStep(1)}>
                     <Text style={[g.nextBtnTxt, { fontFamily: F }]}>Continue →</Text>
                   </TouchableOpacity>
                 </View>
@@ -603,22 +600,12 @@ export default function CandidateMentorDetail() {
               <StepHeader index={1} label="Topic & Skill" subtitle={tabSubs[1]} isOpen={openStep === 1} isDone={s2ok && openStep !== 1} hasError={tried && !s2ok && (sType === "mock" || sType === "bundle")} onPress={() => setOpenStep(p => p === 1 ? -1 : 1)} />
               {openStep === 1 && (
                 <View style={g.stepPanel}>
-                  {sType === "intro" ? (
-                    <View style={g.naWrap}>
-                      <Text style={g.naEmoji}>💬</Text>
-                      <Text style={[g.naTitle, { fontFamily: F }]}>Your mentor sets the agenda</Text>
-                      <TouchableOpacity style={[g.nextBtn, { marginTop: 16 }]} onPress={() => setOpenStep(2)}><Text style={[g.nextBtnTxt, { fontFamily: F }]}>Continue →</Text></TouchableOpacity>
-                    </View>
-                  ) : (
+
                     <>
                       {sType === "bundle" && (
                         <View style={{ marginBottom: 20 }}>
                           <Text style={[g.hint, { fontFamily: F, color: DARK, fontWeight: "700", marginBottom: 12 }]}>Prep Course Curriculum</Text>
                           <View style={{ flexDirection: "row", gap: 10 }}>
-                            <TouchableOpacity style={[g.tag, bundleMode === "intro" && g.tagOn]} onPress={() => setBundleMode("intro")}>
-                              {bundleMode === "intro" && <IcoCheck s={13} />}
-                              <Text style={[g.tagTxt, bundleMode === "intro" && g.tagTxtOn, { fontFamily: F }]}>Based on Intro Call</Text>
-                            </TouchableOpacity>
                             <TouchableOpacity style={[g.tag, bundleMode === "custom" && g.tagOn]} onPress={() => setBundleMode("custom")}>
                               {bundleMode === "custom" && <IcoCheck s={13} />}
                               <Text style={[g.tagTxt, bundleMode === "custom" && g.tagTxtOn, { fontFamily: F }]}>Custom Topics</Text>
@@ -626,7 +613,7 @@ export default function CandidateMentorDetail() {
                           </View>
                           {bundleMode === "intro" && (
                             <Text style={{ fontFamily: F, color: MUTED, fontSize: 13, marginTop: 12, lineHeight: 20 }}>
-                              Your mentor will plan the curriculum for your 3 sessions based on the areas identified in your Intro Call.
+                              Your mentor will plan the curriculum for your 3 sessions based on your target topics and weak areas.
                             </Text>
                           )}
                         </View>

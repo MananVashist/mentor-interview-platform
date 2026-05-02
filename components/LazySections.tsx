@@ -289,8 +289,7 @@ const formatDisplayName = (fullName?: string | null): string => {
 const MentorCard = ({ m, displayPrice, totalSessions, isNewMentor, averageRating, showRating, hasSlots, displaySlot, onView, isSmall, isFounderCard }: any) => {
   const seed = m.id || m.profiles?.full_name || 'Mentor';
   const fallbackAvatar = `https://api.dicebear.com/9.x/micah/png?seed=${encodeURIComponent(seed)}&backgroundColor=e5e7eb,f3f4f6`;
-  const introIsFree = m.intro_call_price == null || m.intro_call_price === 0;
-  const introDisplay = introIsFree ? 'Free' : `₹${m.intro_call_price.toLocaleString()}`;
+  const mockPriceDisplay = (m.session_price_inr ?? 0) > 0 ? `₹${(m.session_price_inr ?? 0).toLocaleString()}` : 'View Profile';
 
   const cardWidthStyle = isFounderCard 
     ? { width: '100%' as const } 
@@ -342,8 +341,8 @@ const MentorCard = ({ m, displayPrice, totalSessions, isNewMentor, averageRating
 
         <View style={styles.actionRow}>
           <View style={styles.priceContainer}>
-             <Text style={styles.startingAt}>Intro calls from</Text>
-             <Text style={styles.basePrice}>{introDisplay}</Text>
+             <Text style={styles.startingAt}>Mock interview from</Text>
+             <Text style={styles.basePrice}>{mockPriceDisplay}</Text>
           </View>
           <TouchableOpacity style={styles.bookBtn} onPress={onView} activeOpacity={0.8}>
             <Text style={styles.bookBtnText}>View Profile & Book</Text>
@@ -512,12 +511,12 @@ const SystematicPrepSection = memo(({ onViewMentors, isSmall }: { onViewMentors:
         Diagnose your gaps. <Text style={{ color: BRAND_ORANGE }}>Systematically</Text> fix them.
       </Text>
       <Text style={styles.subtext}>
-        Not sure which skill round to focus on? Book an initial diagnostic call to map out your specific blind spots, then get a custom bundle of mock interviews tailored to turn those weaknesses into strengths.
+        Not sure which skill round to focus on? Start with a mock interview to identify your blind spots, then get a tailored bundle of interviews focused on turning those weaknesses into strengths.
       </Text>
 
       <View style={styles.notSurePerks}>
         {[
-          { icon: "1️⃣", text: "Book an intro call to diagnose your gaps and build a prep strategy." },
+          { icon: "1️⃣", text: "Book a mock interview to get expert feedback on exactly where you stand." },
           { icon: "2️⃣", text: "Book a tailored bundle of interviews focusing exactly on your weak areas." },
           { icon: "3️⃣", text: "Track your progress systematically until you are completely interview-ready." },
         ].map((perk, i) => (
@@ -529,13 +528,12 @@ const SystematicPrepSection = memo(({ onViewMentors, isSmall }: { onViewMentors:
       </View>
 
       <SharedButton
-        nativeID="btn-home-bundle-intro-call"
-        title="Book Your Diagnostic Call"
+        nativeID="btn-home-systematic"
+        title="Book Your Mock Interview →"
         onPress={onViewMentors}
         style={styles.notSureButton}
         textStyle={{ fontSize: 16 }}
       />
-      <Text style={styles.notSureNote}>Diagnostic calls are available directly on the expert's profile page</Text>
     </View>
   </View>
 ));
@@ -694,11 +692,11 @@ export default function LazySections() {
       <TheProblemSection isSmall={isSmall} />
       <HowItWorksSection isSmall={isSmall} />
       <InterviewTracks />
+      <SampleFeedbackSection isSmall={isSmall} onViewMentors={() => handleViewMentors('sample_feedback')} />
+      <DynamicDomainMentors isSmall={isSmall} onViewMentors={() => handleViewMentors("domain_mentors_cta")} />
+      <SystematicPrepSection isSmall={isSmall} onViewMentors={() => handleViewMentors("systematic")} />
       <TargetedSkillsSection isSmall={isSmall} />
       <BlogHighlightsSection isSmall={isSmall} />
-      <DynamicDomainMentors isSmall={isSmall} onViewMentors={() => handleViewMentors("domain_mentors_cta")} />
-      <TestimonialsSection isSmall={isSmall} />
-      <SystematicPrepSection isSmall={isSmall} onViewMentors={() => handleViewMentors("bundle_intro_call")} />
       <GuaranteeSection isSmall={isSmall} />
       <FAQSection isSmall={isSmall} />
       <FinalCTABanner isSmall={isSmall} onViewMentors={() => handleViewMentors("final_cta")} />
@@ -706,6 +704,186 @@ export default function LazySections() {
     </>
   );
 }
+
+// ── SAMPLE FEEDBACK SECTION ───────────────────────────────────────────────────
+const SAMPLE_COMPETENCIES = [
+  {
+    title: "Product Knowledge & Domain Depth",
+    score: 68,
+    severity: "Good",
+    did_well: ["Explained gamification system with genuine detail — task-based structure, fixed vs variable rewards, configurable by growth managers."],
+    needs_improvement: ["Platform comparison ran 15+ mins without a clear conclusion — interviewer had to move on."],
+    what_you_said: "It's more like Chikmagalur coffee vs arabica. You'll only understand the nuance when you taste it.",
+  },
+  {
+    title: "Market Research Methodology",
+    score: 38,
+    severity: "Must Fix Before Interview",
+    did_well: ["Did go beyond the AI report — used competing platforms as a viewer and subscriber firsthand."],
+    needs_improvement: ["Primary research method was asking ChatGPT for a feature list. No user interviews or prioritisation framework mentioned."],
+    what_you_said: "I met a prompt, ChatGPT to generate a prompt which I can use in deep research to get me all the possible feature list.",
+  },
+  {
+    title: "Metrics Fluency & Churn Definition",
+    score: 40,
+    severity: "Important Gap to Address",
+    did_well: ["Correctly introduced reactivated users without prompting."],
+    needs_improvement: ["Churn formula stated incorrectly three times before arriving at the correct definition — took over 3 minutes."],
+    what_you_said: "Maybe I'm not getting the definite formula. But churn is basically number of people at the beginning of the month minus number of people at the end.",
+  },
+];
+
+const getSeverityColor = (severity: string) => {
+  if (severity === "Must Fix Before Interview") return { bg: "#FFF1F2", text: "#BE123C", border: "#FECDD3" };
+  if (severity === "Important Gap to Address") return { bg: "#FFFBEB", text: "#B45309", border: "#FDE68A" };
+  return { bg: "#F0FDF4", text: "#166534", border: "#BBF7D0" };
+};
+
+const getScoreColor = (score: number) => {
+  if (score < 40) return "#BE123C";
+  if (score < 60) return "#D97706";
+  return "#0E9384";
+};
+
+const SampleFeedbackSection = memo(({ onViewMentors, isSmall }: { onViewMentors: (source?: string) => void, isSmall: boolean }) => {
+  const [expanded, setExpanded] = useState<number | null>(null);
+
+  return (
+    <View style={fbStyles.sectionWrap}>
+      <Text style={fbStyles.kicker}>SAMPLE FEEDBACK REPORT</Text>
+      <Text style={[fbStyles.h2, isSmall && fbStyles.h2Mobile]}>
+        See exactly what you get <Text style={{ color: BRAND_ORANGE }}>after every session</Text>
+      </Text>
+      <Text style={fbStyles.subtext}>
+        Every mock interview generates a detailed AI-powered report grounded in what you actually said — not generic tips.
+      </Text>
+
+      {/* Score Card */}
+      <View style={fbStyles.scoreCard}>
+        <View style={fbStyles.scoreLeft}>
+          <Text style={fbStyles.scoreNum}>52%</Text>
+          <Text style={[fbStyles.scoreLabel, { color: "#D97706" }]}>On Track</Text>
+          <Text style={fbStyles.scoreSub}>Interview Readiness Score</Text>
+        </View>
+        <View style={fbStyles.scoreRight}>
+          <View style={fbStyles.summaryBox}>
+            <Text style={fbStyles.summaryLabel}>💬 Mentor + AI Feedback Summary</Text>
+            <Text style={fbStyles.summaryText}>
+              You demonstrated genuine depth in areas you have built. The two critical gaps are metrics fluency and market research rigour — both explicit KPIs for the role you're targeting.
+            </Text>
+          </View>
+          <View style={fbStyles.redFlagBox}>
+            <Text style={fbStyles.redFlagLabel}>🚩 Red flag detected</Text>
+            <Text style={fbStyles.redFlagText}>Churn definition required multiple corrections — a PM expected to own this KPI should define it precisely without prompting.</Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Competency Cards */}
+      <Text style={fbStyles.compHeading}>Detailed Performance Analysis</Text>
+      {SAMPLE_COMPETENCIES.map((comp, i) => {
+        const colors = getSeverityColor(comp.severity);
+        const scoreColor = getScoreColor(comp.score);
+        const isOpen = expanded === i;
+        return (
+          <TouchableOpacity
+            key={i}
+            activeOpacity={0.85}
+            onPress={() => setExpanded(isOpen ? null : i)}
+            style={[fbStyles.compCard, { borderLeftColor: scoreColor }]}
+          >
+            <View style={fbStyles.compHeader}>
+              <View style={{ flex: 1 }}>
+                <Text style={fbStyles.compTitle}>{comp.title}</Text>
+                <View style={[fbStyles.severityBadge, { backgroundColor: colors.bg, borderColor: colors.border }]}>
+                  <Text style={[fbStyles.severityText, { color: colors.text }]}>{comp.severity}</Text>
+                </View>
+              </View>
+              <View style={{ alignItems: "flex-end", gap: 4 }}>
+                <Text style={[fbStyles.compScore, { color: scoreColor }]}>{comp.score}%</Text>
+                <Text style={{ color: "#9CA3AF", fontSize: 12 }}>{isOpen ? "▲" : "▼"}</Text>
+              </View>
+            </View>
+
+            {isOpen && (
+              <View style={fbStyles.compBody}>
+                {comp.did_well.length > 0 && (
+                  <View style={{ marginBottom: 10 }}>
+                    <Text style={[fbStyles.compSubLabel, { color: "#059669" }]}>✓ What you did well</Text>
+                    {comp.did_well.map((pt, j) => (
+                      <Text key={j} style={fbStyles.compBodyText}>• {pt}</Text>
+                    ))}
+                  </View>
+                )}
+                <View style={{ marginBottom: 10 }}>
+                  <Text style={[fbStyles.compSubLabel, { color: "#D97706" }]}>↑ Needs improvement</Text>
+                  {comp.needs_improvement.map((pt, j) => (
+                    <Text key={j} style={fbStyles.compBodyText}>• {pt}</Text>
+                  ))}
+                </View>
+                <View style={fbStyles.quoteBox}>
+                  <Text style={fbStyles.quoteLabel}>What you said:</Text>
+                  <Text style={fbStyles.quoteText}>"{comp.what_you_said}"</Text>
+                </View>
+              </View>
+            )}
+          </TouchableOpacity>
+        );
+      })}
+
+      <View style={fbStyles.ctaRow}>
+        <Text style={fbStyles.ctaNote}>+ 2 more competency sections, 3 prioritised next steps with specific drills, and a suggested answer for every gap</Text>
+        <TouchableOpacity
+          style={fbStyles.ctaBtn}
+          onPress={() => onViewMentors("sample_feedback")}
+          activeOpacity={0.85}
+        >
+          <Text style={fbStyles.ctaBtnText}>Get Your Own Report →</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+});
+
+const fbStyles = StyleSheet.create({
+  sectionWrap: { maxWidth: 900, width: "100%", alignSelf: "center", paddingHorizontal: 24, paddingVertical: 60 },
+  kicker: { fontFamily: SYSTEM_FONT, fontWeight: "800", fontSize: 13, color: CTA_TEAL, marginBottom: 12, textAlign: "center", letterSpacing: 1.5, textTransform: "uppercase" },
+  h2: { fontFamily: SYSTEM_FONT, fontWeight: "800", fontSize: 36, color: TEXT_DARK, marginBottom: 16, textAlign: "center", lineHeight: 44 },
+  h2Mobile: { fontSize: 26, lineHeight: 34, marginBottom: 12 },
+  subtext: { fontFamily: SYSTEM_FONT, fontSize: 16, color: TEXT_GRAY, textAlign: "center", lineHeight: 26, maxWidth: 600, alignSelf: "center", marginBottom: 32 },
+
+  scoreCard: { backgroundColor: "#FFF", borderRadius: 16, borderWidth: 1, borderColor: "#E5E7EB", padding: 24, marginBottom: 24, flexDirection: Platform.OS === "web" ? "row" : "column", gap: 20 },
+  scoreLeft: { alignItems: "center", justifyContent: "center", minWidth: 130 },
+  scoreNum: { fontFamily: SYSTEM_FONT, fontSize: 56, fontWeight: "800", color: "#D97706" },
+  scoreLabel: { fontFamily: SYSTEM_FONT, fontSize: 18, fontWeight: "700", marginTop: 4 },
+  scoreSub: { fontFamily: SYSTEM_FONT, fontSize: 12, color: "#9CA3AF", marginTop: 4, textAlign: "center" },
+  scoreRight: { flex: 1, gap: 12 },
+  summaryBox: { backgroundColor: "#F0FDFA", borderRadius: 10, padding: 14, borderLeftWidth: 3, borderLeftColor: CTA_TEAL },
+  summaryLabel: { fontFamily: SYSTEM_FONT, fontSize: 12, fontWeight: "700", color: CTA_TEAL, marginBottom: 6 },
+  summaryText: { fontFamily: SYSTEM_FONT, fontSize: 13, color: "#134E4A", lineHeight: 20 },
+  redFlagBox: { backgroundColor: "#FFF1F2", borderRadius: 10, padding: 14, borderLeftWidth: 3, borderLeftColor: "#BE123C" },
+  redFlagLabel: { fontFamily: SYSTEM_FONT, fontSize: 12, fontWeight: "700", color: "#BE123C", marginBottom: 6 },
+  redFlagText: { fontFamily: SYSTEM_FONT, fontSize: 13, color: "#9F1239", lineHeight: 20 },
+
+  compHeading: { fontFamily: SYSTEM_FONT, fontSize: 17, fontWeight: "700", color: TEXT_DARK, marginBottom: 12 },
+  compCard: { backgroundColor: "#FFF", borderRadius: 12, borderWidth: 1, borderColor: "#E5E7EB", borderLeftWidth: 4, marginBottom: 10, overflow: "hidden" },
+  compHeader: { flexDirection: "row", alignItems: "flex-start", padding: 16, justifyContent: "space-between" },
+  compTitle: { fontFamily: SYSTEM_FONT, fontSize: 14, fontWeight: "700", color: "#111827", marginBottom: 6 },
+  severityBadge: { alignSelf: "flex-start", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, borderWidth: 1 },
+  severityText: { fontFamily: SYSTEM_FONT, fontSize: 11, fontWeight: "700" },
+  compScore: { fontFamily: SYSTEM_FONT, fontSize: 22, fontWeight: "800" },
+  compBody: { paddingHorizontal: 16, paddingBottom: 16, borderTopWidth: 1, borderTopColor: "#F3F4F6" },
+  compSubLabel: { fontFamily: SYSTEM_FONT, fontSize: 12, fontWeight: "700", marginBottom: 6, marginTop: 10 },
+  compBodyText: { fontFamily: SYSTEM_FONT, fontSize: 13, color: "#374151", lineHeight: 20, marginBottom: 4 },
+  quoteBox: { backgroundColor: "#F8FAFC", borderRadius: 8, padding: 12, borderLeftWidth: 3, borderLeftColor: "#CBD5E1", marginTop: 10 },
+  quoteLabel: { fontFamily: SYSTEM_FONT, fontSize: 11, fontWeight: "700", color: "#64748B", marginBottom: 4 },
+  quoteText: { fontFamily: SYSTEM_FONT, fontSize: 13, color: "#475569", fontStyle: "italic", lineHeight: 20 },
+
+  ctaRow: { alignItems: "center", marginTop: 20, gap: 12 },
+  ctaNote: { fontFamily: SYSTEM_FONT, fontSize: 13, color: TEXT_GRAY, textAlign: "center", lineHeight: 20 },
+  ctaBtn: { backgroundColor: CTA_TEAL, paddingVertical: 14, paddingHorizontal: 32, borderRadius: 10, marginTop: 4 },
+  ctaBtnText: { fontFamily: SYSTEM_FONT, fontSize: 16, fontWeight: "700", color: "#FFF" },
+});
 
 // --- STYLES ---
 const styles = StyleSheet.create({
