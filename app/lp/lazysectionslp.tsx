@@ -50,7 +50,7 @@ const GUARANTEES = [
 
 const FAQS = [
   { q: "Is this a safe space to practice?", a: "Absolutely. We provide a low-pressure environment where you can make mistakes and learn from them before your real interview. You can even keep your camera off if you prefer." },
-  { q: "How long is a session?", a: "Intro calls are 25 minutes — designed to assess your current level and build a prep plan together. Full mock interviews are 55 minutes, matching the length of a real interview round so you can practice time management under actual conditions." },
+  { q: "How long is a session?", a: "Mock interviews are 55 minutes — matching the length of a real interview round so you can practice time management under actual conditions. Bundle sessions are 3 × 55 minutes tailored to your target role." },
   { q: "How do I know my mentor is actually experienced?", a: "Every mentor on CrackJobs is manually verified. We check their LinkedIn profile, confirm their current role, and review their background before they can take sessions. You can see their professional title and years of experience on their profile before booking." },
   { q: "What if I'm a fresher or just starting out?", a: "Many candidates on CrackJobs are making their first move into PM, analytics, or data science. Your mentor will calibrate the difficulty to your level. You don't need prior interview experience to benefit — in fact, starting early is exactly the right call." },
   { q: "What will the detailed feedback be like?", a: "You don't just get a 'pass/fail'. You get a structured scorecard with your strengths and specific areas of improvement, plus a recording of the session you can review as many times as you want." },
@@ -111,11 +111,11 @@ const ROLE_TESTIMONIALS: Record<string, { name: string; role: string; company: s
 
 // --- Role-specific systematic prep copy ---
 const ROLE_SYSTEMATIC: Record<string, { question: string; body: string }> = {
-  da: { question: "Not sure if you need more SQL practice or case study practice?", body: "Book a diagnostic call to map out exactly which rounds — SQL, business cases, metrics, or stakeholder communication — are costing you offers. Then get a targeted bundle of mocks to fix them." },
-  pm: { question: "Not sure whether product sense or execution questions are holding you back?", body: "Book a diagnostic call to find your exact weak spots across product sense, execution, strategy, and behavioral rounds. Then get a focused bundle of mocks built around your specific gaps." },
-  ds: { question: "Not sure if it's ML theory, stats, or system design that's costing you?", body: "Book a diagnostic call to identify which DS interview rounds you're actually weak on. Then get a bundle of targeted mocks — no time wasted on rounds you're already good at." },
-  hr: { question: "Not sure whether it's your TA skills or your HRBP framing that's getting you rejected?", body: "Book a diagnostic call to figure out exactly which HR interview areas need work. Then get a tailored bundle of mocks focused on the specific rounds that are standing between you and the offer." },
-  default: { question: "Not sure which skill round to focus on?", body: "Book an initial diagnostic call to map out your specific blind spots, then get a custom bundle of mock interviews tailored to turn those weaknesses into strengths." },
+  da: { question: "Not sure if you need more SQL practice or case study practice?", body: "Book a mock interview to identify exactly which rounds are costing you offers. Then get a targeted bundle of mocks to fix them." },
+  pm: { question: "Not sure whether product sense or execution questions are holding you back?", body: "Book a mock interview to find your exact weak spots across product sense, execution, strategy, and behavioral rounds. Then get a focused bundle of mocks built around your specific gaps." },
+  ds: { question: "Not sure if it's ML theory, stats, or system design that's costing you?", body: "Book a mock interview to identify which DS interview rounds you're actually weak on. Then get a bundle of targeted mocks — no time wasted on rounds you're already good at." },
+  hr: { question: "Not sure whether it's your TA skills or your HRBP framing that's getting you rejected?", body: "Book a mock interview to figure out exactly which HR interview areas need work. Then get a tailored bundle of mocks focused on the specific rounds that are standing between you and the offer." },
+  default: { question: "Not sure which skill round to focus on?", body: "Book a mock interview to map out your specific blind spots, then get a custom bundle of mock interviews tailored to turn those weaknesses into strengths." },
 };
 
 // --- Role-specific final CTA copy ---
@@ -131,7 +131,7 @@ const ROLE_FINAL_CTA: Record<string, { headline: string; sub: string; btn: strin
 // SVG ICONS
 // ============================================
 const CheckmarkCircleIcon = ({ size = 16, color = "#3B82F6" }) => (<Svg width={size} height={size} viewBox="0 0 24 24" fill="none"><Circle cx="12" cy="12" r="10" stroke={color} strokeWidth="2" fill="none" /><Path d="M8 12.5L10.5 15L16 9.5" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></Svg>);
-const BriefcaseIcon = ({ size = 12, color = "#111827" }) => (<Svg width={size} height={size} viewBox="0 0 24 24" fill="none"><Path d="M20 7H4C2.89543 7 2 7.89543 2 9V19C2 20.1046 21 4 21H20C21.1046 21 22 20.1046 22 19V9C22 7.89543 21.1046 7 20 7Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /><Path d="M16 7V5C16 3.89543 15.1046 3 14 3H10C8.89543 3 8 3.89543 8 5V7" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></Svg>);
+const BriefcaseIcon = ({ size = 12, color = "#111827" }) => (<Svg width={size} height={size} viewBox="0 0 24 24" fill="none"><Path d="M20 7H4C2.89543 7 2 7.89543 2 9V19C2 20.1046 2.89543 21 4 21H20C21.1046 21 22 20.1046 22 19V9C22 7.89543 21.1046 7 20 7Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /><Path d="M16 7V5C16 3.89543 15.1046 3 14 3H10C8.89543 3 8 3.89543 8 5V7" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></Svg>);
 const SparklesIcon = ({ size = 14, color = "#1E40AF" }) => (<Svg width={size} height={size} viewBox="0 0 24 24" fill="none"><Path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /><Path d="M6 3L6.5 5.5L9 6L6.5 6.5L6 9L5.5 6.5L3 6L5.5 5.5L6 3Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></Svg>);
 const CheckmarkDoneIcon = ({ size = 14, color = "#6B7280" }) => (<Svg width={size} height={size} viewBox="0 0 24 24" fill="none"><Path d="M5 12L10 17L20 7" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /><Path d="M2 12L7 17" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></Svg>);
 const MedalIcon = ({ size = 14, color = "#CD7F32" }) => (<Svg width={size} height={size} viewBox="0 0 24 24" fill="none"><Circle cx="12" cy="15" r="6" fill={color} stroke={color} strokeWidth="1.5" /><Path d="M9 9L7 3L12 6L17 3L15 9" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" /></Svg>);
@@ -309,7 +309,7 @@ const SystematicPrepSection = memo(({ onViewMentors, isSmall, role }: { onViewMe
 
       <View style={styles.notSurePerks}>
         {[
-          { icon: "1️⃣", text: "Book an intro call to diagnose your gaps and build a prep strategy." },
+          { icon: "1️⃣", text: "Book a mock interview to get expert feedback on exactly where you stand." },
           { icon: "2️⃣", text: "Book a tailored bundle of interviews focusing exactly on your weak areas." },
           { icon: "3️⃣", text: "Track your progress systematically until you are completely interview-ready." },
         ].map((perk, i) => (
@@ -321,13 +321,13 @@ const SystematicPrepSection = memo(({ onViewMentors, isSmall, role }: { onViewMe
       </View>
 
       <Button
-        nativeID="btn-lp-bundle-intro-call"
-        title="Book Your Diagnostic Call"
-        onPress={() => onViewMentors("bundle_intro_call")}
+        nativeID="btn-lp-systematic"
+        title="Book Your Mock Interview →"
+        onPress={() => onViewMentors("systematic")}
         style={styles.notSureButton}
         textStyle={{ fontSize: 16 }}
       />
-      <Text style={styles.notSureNote}>Diagnostic calls are available directly on the expert's profile page</Text>
+
     </View>
   </View>
   );
@@ -346,9 +346,7 @@ const formatDisplayName = (fullName?: string | null): string => {
 const MentorCard = ({ m, displayPrice, totalSessions, isNewMentor, averageRating, showRating, hasSlots, displaySlot, onView, isSmall, isFounderCard }: any) => {
   const seed = m.id || m.profiles?.full_name || 'Mentor';
   const fallbackAvatar = `https://api.dicebear.com/9.x/micah/png?seed=${encodeURIComponent(m.id || "Mentor")}&backgroundColor=e5e7eb,f3f4f6`;
-  const introCallPrice = m.intro_call_price;
-  const introIsFree = introCallPrice == null || introCallPrice === 0;
-  const introDisplay = introIsFree ? 'Free' : `₹${introCallPrice.toLocaleString()}`;
+  const mockPriceDisplay = (m.session_price_inr ?? 0) > 0 ? `₹${(m.session_price_inr ?? 0).toLocaleString()}` : 'View Profile';
 
   const cardWidthStyle = isFounderCard 
     ? { width: '100%' as const } 
@@ -400,8 +398,8 @@ const MentorCard = ({ m, displayPrice, totalSessions, isNewMentor, averageRating
 
         <View style={styles.actionRow}>
           <View style={styles.priceContainer}>
-             <Text style={styles.startingAt}>Intro calls from</Text>
-             <Text style={styles.basePrice}>{introDisplay}</Text>
+             <Text style={styles.startingAt}>Mock interview from</Text>
+             <Text style={styles.basePrice}>{mockPriceDisplay}</Text>
           </View>
           <TouchableOpacity style={styles.bookBtn} onPress={onView} activeOpacity={0.8}>
             <Text style={styles.bookBtnText}>View Profile & Book</Text>
@@ -774,17 +772,197 @@ export default function LazySectionsLP({
     <>
       <TheProblemSection isSmall={isSmall} />
       <HowItWorksSection isSmall={isSmall} />
-      <DynamicDomainMentors role={role} isSmall={isSmall} onViewMentors={() => onViewMentors("domain_mentors_cta")} />
       <RoleSpecificProblemsSection isSmall={isSmall} role={role} />
+      <SampleFeedbackSection isSmall={isSmall} onViewMentors={(source) => onViewMentors(source || 'sample_feedback')} />
+      <DynamicDomainMentors role={role} isSmall={isSmall} onViewMentors={() => onViewMentors("domain_mentors_cta")} />
       <TargetedSkillsSection role={role} isSmall={isSmall} onViewMentors={onViewMentors} />
       <TestimonialsSection onViewMentors={onViewMentors} isSmall={isSmall} role={role} />
-      <SystematicPrepSection onViewMentors={onViewMentors} isSmall={isSmall} role={role} />
       <GuaranteeSection isSmall={isSmall} />
       <FAQ isSmall={isSmall} />
       <FinalCTABanner onViewMentors={onViewMentors} isSmall={isSmall} role={role} />
     </>
   );
 }
+
+// ── SAMPLE FEEDBACK SECTION ───────────────────────────────────────────────────
+const SAMPLE_COMPETENCIES = [
+  {
+    title: "Product Knowledge & Domain Depth",
+    score: 68,
+    severity: "Good",
+    did_well: ["Explained gamification system with genuine detail — task-based structure, fixed vs variable rewards, configurable by growth managers."],
+    needs_improvement: ["Platform comparison ran 15+ mins without a clear conclusion — interviewer had to move on."],
+    what_you_said: "It's more like Chikmagalur coffee vs arabica. You'll only understand the nuance when you taste it.",
+  },
+  {
+    title: "Market Research Methodology",
+    score: 38,
+    severity: "Must Fix Before Interview",
+    did_well: ["Did go beyond the AI report — used competing platforms as a viewer and subscriber firsthand."],
+    needs_improvement: ["Primary research method was asking ChatGPT for a feature list. No user interviews or prioritisation framework mentioned."],
+    what_you_said: "I met a prompt, ChatGPT to generate a prompt which I can use in deep research to get me all the possible feature list.",
+  },
+  {
+    title: "Metrics Fluency & Churn Definition",
+    score: 40,
+    severity: "Important Gap to Address",
+    did_well: ["Correctly introduced reactivated users without prompting."],
+    needs_improvement: ["Churn formula stated incorrectly three times before arriving at the correct definition — took over 3 minutes."],
+    what_you_said: "Maybe I'm not getting the definite formula. But churn is basically number of people at the beginning of the month minus number of people at the end.",
+  },
+];
+
+const getSeverityColor = (severity: string) => {
+  if (severity === "Must Fix Before Interview") return { bg: "#FFF1F2", text: "#BE123C", border: "#FECDD3" };
+  if (severity === "Important Gap to Address") return { bg: "#FFFBEB", text: "#B45309", border: "#FDE68A" };
+  return { bg: "#F0FDF4", text: "#166534", border: "#BBF7D0" };
+};
+
+const getScoreColor = (score: number) => {
+  if (score < 40) return "#BE123C";
+  if (score < 60) return "#D97706";
+  return "#0E9384";
+};
+
+const SampleFeedbackSection = memo(({ onViewMentors, isSmall }: { onViewMentors: (source?: string) => void, isSmall: boolean }) => {
+  const [expanded, setExpanded] = useState<number | null>(null);
+
+  return (
+    <View style={fbStyles.sectionWrap}>
+      <Text style={fbStyles.kicker}>SAMPLE FEEDBACK REPORT</Text>
+      <Text style={[fbStyles.h2, isSmall && fbStyles.h2Mobile]}>
+        See exactly what you get <Text style={{ color: BRAND_ORANGE }}>after every session</Text>
+      </Text>
+      <Text style={fbStyles.subtext}>
+        Every mock interview generates a detailed AI-powered report grounded in what you actually said — not generic tips.
+      </Text>
+
+      {/* Score Card */}
+      <View style={fbStyles.scoreCard}>
+        <View style={fbStyles.scoreLeft}>
+          <Text style={fbStyles.scoreNum}>52%</Text>
+          <Text style={[fbStyles.scoreLabel, { color: "#D97706" }]}>On Track</Text>
+          <Text style={fbStyles.scoreSub}>Interview Readiness Score</Text>
+        </View>
+        <View style={fbStyles.scoreRight}>
+          <View style={fbStyles.summaryBox}>
+            <Text style={fbStyles.summaryLabel}>💬 Mentor + AI Feedback Summary</Text>
+            <Text style={fbStyles.summaryText}>
+              You demonstrated genuine depth in areas you have built. The two critical gaps are metrics fluency and market research rigour — both explicit KPIs for the role you're targeting.
+            </Text>
+          </View>
+          <View style={fbStyles.redFlagBox}>
+            <Text style={fbStyles.redFlagLabel}>🚩 Red flag detected</Text>
+            <Text style={fbStyles.redFlagText}>Churn definition required multiple corrections — a PM expected to own this KPI should define it precisely without prompting.</Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Competency Cards */}
+      <Text style={fbStyles.compHeading}>Detailed Performance Analysis</Text>
+      {SAMPLE_COMPETENCIES.map((comp, i) => {
+        const colors = getSeverityColor(comp.severity);
+        const scoreColor = getScoreColor(comp.score);
+        const isOpen = expanded === i;
+        return (
+          <TouchableOpacity
+            key={i}
+            activeOpacity={0.85}
+            onPress={() => setExpanded(isOpen ? null : i)}
+            style={[fbStyles.compCard, { borderLeftColor: scoreColor }]}
+          >
+            <View style={fbStyles.compHeader}>
+              <View style={{ flex: 1 }}>
+                <Text style={fbStyles.compTitle}>{comp.title}</Text>
+                <View style={[fbStyles.severityBadge, { backgroundColor: colors.bg, borderColor: colors.border }]}>
+                  <Text style={[fbStyles.severityText, { color: colors.text }]}>{comp.severity}</Text>
+                </View>
+              </View>
+              <View style={{ alignItems: "flex-end", gap: 4 }}>
+                <Text style={[fbStyles.compScore, { color: scoreColor }]}>{comp.score}%</Text>
+                <Text style={{ color: "#9CA3AF", fontSize: 12 }}>{isOpen ? "▲" : "▼"}</Text>
+              </View>
+            </View>
+
+            {isOpen && (
+              <View style={fbStyles.compBody}>
+                {comp.did_well.length > 0 && (
+                  <View style={{ marginBottom: 10 }}>
+                    <Text style={[fbStyles.compSubLabel, { color: "#059669" }]}>✓ What you did well</Text>
+                    {comp.did_well.map((pt, j) => (
+                      <Text key={j} style={fbStyles.compBodyText}>• {pt}</Text>
+                    ))}
+                  </View>
+                )}
+                <View style={{ marginBottom: 10 }}>
+                  <Text style={[fbStyles.compSubLabel, { color: "#D97706" }]}>↑ Needs improvement</Text>
+                  {comp.needs_improvement.map((pt, j) => (
+                    <Text key={j} style={fbStyles.compBodyText}>• {pt}</Text>
+                  ))}
+                </View>
+                <View style={fbStyles.quoteBox}>
+                  <Text style={fbStyles.quoteLabel}>What you said:</Text>
+                  <Text style={fbStyles.quoteText}>"{comp.what_you_said}"</Text>
+                </View>
+              </View>
+            )}
+          </TouchableOpacity>
+        );
+      })}
+
+      <View style={fbStyles.ctaRow}>
+        <Text style={fbStyles.ctaNote}>+ 2 more competency sections, 3 prioritised next steps with specific drills, and a suggested answer for every gap</Text>
+        <TouchableOpacity
+          style={fbStyles.ctaBtn}
+          onPress={() => onViewMentors("sample_feedback")}
+          activeOpacity={0.85}
+        >
+          <Text style={fbStyles.ctaBtnText}>Get Your Own Report →</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+});
+
+const fbStyles = StyleSheet.create({
+  sectionWrap: { maxWidth: 900, width: "100%", alignSelf: "center", paddingHorizontal: 24, paddingVertical: 60 },
+  kicker: { fontFamily: SYSTEM_FONT, fontWeight: "800", fontSize: 13, color: CTA_TEAL, marginBottom: 12, textAlign: "center", letterSpacing: 1.5, textTransform: "uppercase" },
+  h2: { fontFamily: SYSTEM_FONT, fontWeight: "800", fontSize: 36, color: TEXT_DARK, marginBottom: 16, textAlign: "center", lineHeight: 44 },
+  h2Mobile: { fontSize: 26, lineHeight: 34, marginBottom: 12 },
+  subtext: { fontFamily: SYSTEM_FONT, fontSize: 16, color: TEXT_GRAY, textAlign: "center", lineHeight: 26, maxWidth: 600, alignSelf: "center", marginBottom: 32 },
+
+  scoreCard: { backgroundColor: "#FFF", borderRadius: 16, borderWidth: 1, borderColor: "#E5E7EB", padding: 24, marginBottom: 24, flexDirection: Platform.OS === "web" ? "row" : "column", gap: 20 },
+  scoreLeft: { alignItems: "center", justifyContent: "center", minWidth: 130 },
+  scoreNum: { fontFamily: SYSTEM_FONT, fontSize: 56, fontWeight: "800", color: "#D97706" },
+  scoreLabel: { fontFamily: SYSTEM_FONT, fontSize: 18, fontWeight: "700", marginTop: 4 },
+  scoreSub: { fontFamily: SYSTEM_FONT, fontSize: 12, color: "#9CA3AF", marginTop: 4, textAlign: "center" },
+  scoreRight: { flex: 1, gap: 12 },
+  summaryBox: { backgroundColor: "#F0FDFA", borderRadius: 10, padding: 14, borderLeftWidth: 3, borderLeftColor: CTA_TEAL },
+  summaryLabel: { fontFamily: SYSTEM_FONT, fontSize: 12, fontWeight: "700", color: CTA_TEAL, marginBottom: 6 },
+  summaryText: { fontFamily: SYSTEM_FONT, fontSize: 13, color: "#134E4A", lineHeight: 20 },
+  redFlagBox: { backgroundColor: "#FFF1F2", borderRadius: 10, padding: 14, borderLeftWidth: 3, borderLeftColor: "#BE123C" },
+  redFlagLabel: { fontFamily: SYSTEM_FONT, fontSize: 12, fontWeight: "700", color: "#BE123C", marginBottom: 6 },
+  redFlagText: { fontFamily: SYSTEM_FONT, fontSize: 13, color: "#9F1239", lineHeight: 20 },
+
+  compHeading: { fontFamily: SYSTEM_FONT, fontSize: 17, fontWeight: "700", color: TEXT_DARK, marginBottom: 12 },
+  compCard: { backgroundColor: "#FFF", borderRadius: 12, borderWidth: 1, borderColor: "#E5E7EB", borderLeftWidth: 4, marginBottom: 10, overflow: "hidden" },
+  compHeader: { flexDirection: "row", alignItems: "flex-start", padding: 16, justifyContent: "space-between" },
+  compTitle: { fontFamily: SYSTEM_FONT, fontSize: 14, fontWeight: "700", color: "#111827", marginBottom: 6 },
+  severityBadge: { alignSelf: "flex-start", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, borderWidth: 1 },
+  severityText: { fontFamily: SYSTEM_FONT, fontSize: 11, fontWeight: "700" },
+  compScore: { fontFamily: SYSTEM_FONT, fontSize: 22, fontWeight: "800" },
+  compBody: { paddingHorizontal: 16, paddingBottom: 16, borderTopWidth: 1, borderTopColor: "#F3F4F6" },
+  compSubLabel: { fontFamily: SYSTEM_FONT, fontSize: 12, fontWeight: "700", marginBottom: 6, marginTop: 10 },
+  compBodyText: { fontFamily: SYSTEM_FONT, fontSize: 13, color: "#374151", lineHeight: 20, marginBottom: 4 },
+  quoteBox: { backgroundColor: "#F8FAFC", borderRadius: 8, padding: 12, borderLeftWidth: 3, borderLeftColor: "#CBD5E1", marginTop: 10 },
+  quoteLabel: { fontFamily: SYSTEM_FONT, fontSize: 11, fontWeight: "700", color: "#64748B", marginBottom: 4 },
+  quoteText: { fontFamily: SYSTEM_FONT, fontSize: 13, color: "#475569", fontStyle: "italic", lineHeight: 20 },
+
+  ctaRow: { alignItems: "center", marginTop: 20, gap: 12 },
+  ctaNote: { fontFamily: SYSTEM_FONT, fontSize: 13, color: TEXT_GRAY, textAlign: "center", lineHeight: 20 },
+  ctaBtn: { backgroundColor: CTA_TEAL, paddingVertical: 14, paddingHorizontal: 32, borderRadius: 10, marginTop: 4 },
+  ctaBtnText: { fontFamily: SYSTEM_FONT, fontSize: 16, fontWeight: "700", color: "#FFF" },
+});
 
 const styles = StyleSheet.create({
   // ===== Unified Section & Text Styles =====
