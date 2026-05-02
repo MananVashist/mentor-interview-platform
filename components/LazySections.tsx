@@ -289,7 +289,7 @@ const formatDisplayName = (fullName?: string | null): string => {
 const MentorCard = ({ m, displayPrice, totalSessions, isNewMentor, averageRating, showRating, hasSlots, displaySlot, onView, isSmall, isFounderCard }: any) => {
   const seed = m.id || m.profiles?.full_name || 'Mentor';
   const fallbackAvatar = `https://api.dicebear.com/9.x/micah/png?seed=${encodeURIComponent(seed)}&backgroundColor=e5e7eb,f3f4f6`;
-  const mockPriceDisplay = (m.session_price_inr ?? 0) > 0 ? `₹${(m.session_price_inr ?? 0).toLocaleString()}` : 'View Profile';
+  const mockPriceDisplay = displayPrice > 0 ? `₹${displayPrice.toLocaleString()}` : 'View Profile';
 
   const cardWidthStyle = isFounderCard 
     ? { width: '100%' as const } 
