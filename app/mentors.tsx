@@ -268,8 +268,7 @@ const MentorCard = memo(({
 }: MentorCardProps) => {
 
   const seed = m.id || m.profiles?.full_name || 'Mentor';
-  const mockPriceRaw = m.session_price_inr ?? (m as any).session_price ?? 0;
-  const mockDisplay = mockPriceRaw > 0 ? `₹${mockPriceRaw.toLocaleString()}` : 'View Profile';
+  const mockDisplay = displayPrice > 0 ? `₹${displayPrice.toLocaleString()}` : 'View Profile';
 const fallbackAvatar = `https://api.dicebear.com/9.x/micah/png?seed=${encodeURIComponent(seed)}&backgroundColor=e5e7eb,f3f4f6`;
 
   const renderAvailabilityBadge = () => {
