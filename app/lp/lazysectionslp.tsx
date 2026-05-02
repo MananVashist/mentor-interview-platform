@@ -838,8 +838,8 @@ const SampleFeedbackSection = memo(({ onViewMentors, isSmall }: { onViewMentors:
       </Text>
 
       {/* Score Card */}
-      <View style={fbStyles.scoreCard}>
-        <View style={fbStyles.scoreLeft}>
+<View style={[fbStyles.scoreCard, isSmall && { flexDirection: "column" }]}>
+<View style={fbStyles.scoreLeft}>
           <Text style={fbStyles.scoreNum}>52%</Text>
           <Text style={[fbStyles.scoreLabel, { color: "#D97706" }]}>On Track</Text>
           <Text style={fbStyles.scoreSub}>Interview Readiness Score</Text>
