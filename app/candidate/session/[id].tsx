@@ -252,10 +252,13 @@ export default function CandidateFeedbackScreen() {
       });
 
       if (evalRow?.ai_feedback) setAiFeedback(evalRow.ai_feedback as AIFeedback);
-      if (evalRow?.checklist_data) setMentorEval(evalRow.checklist_data as MentorEvaluation);
+      // The AI report is reachable before the mentor submits, so a draft
+      // evaluation must not leak through the Mentor tab.
+      const mentorSubmitted = evalRow?.status === 'completed' && !!evalRow?.checklist_data;
+      if (mentorSubmitted) setMentorEval(evalRow.checklist_data as MentorEvaluation);
 
       // Default to mentor tab if no AI feedback yet
-      if (!evalRow?.ai_feedback && evalRow?.checklist_data) setActiveTab('mentor');
+      if (!evalRow?.ai_feedback && mentorSubmitted) setActiveTab('mentor');
 
     } catch (err) {
       console.error('[CandidateFeedback] Error:', err);
@@ -315,7 +318,7 @@ export default function CandidateFeedbackScreen() {
                 <Ionicons name="hourglass-outline" size={40} color="#D1D5DB" />
                 <Text style={styles.emptyTitle}>Analysis Coming Soon</Text>
                 <Text style={styles.emptyText}>
-                  Your AI-powered feedback report will be available shortly after your mentor submits their evaluation.
+                  Your AI-powered feedback report will be available shortly after your session ends.
                 </Text>
               </View>
             ) : (

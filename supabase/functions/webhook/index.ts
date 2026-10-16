@@ -2,6 +2,29 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+import { create, getNumericDate } from "https://deno.land/x/djwt@v2.9.1/mod.ts";
+
+const HMS_API_ENDPOINT = "https://api.100ms.live/v2";
+
+async function generateManagementToken(): Promise<string> {
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(Deno.env.get("HMS_APP_SECRET") ?? ""),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign", "verify"],
+  );
+  return await create({ alg: "HS256", typ: "JWT" }, {
+    access_key: Deno.env.get("HMS_APP_ACCESS_KEY"),
+    type: "management",
+    version: 2,
+    iat: getNumericDate(0),
+    nbf: getNumericDate(0),
+    exp: getNumericDate(60 * 60),
+    jti: crypto.randomUUID(),
+  }, key);
+}
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -139,6 +162,57 @@ serve(async (req) => {
       } else {
         console.log("✅ Recording URL saved successfully");
       }
+    }
+
+    // ------------------------------------------------------------------
+    // 5. HANDLE TRANSCRIPT READY → GENERATE AI FEEDBACK
+    // ------------------------------------------------------------------
+    // Feedback used to start only when the mentor submitted their evaluation,
+    // so a mentor who never submitted, or submitted before 100ms finished
+    // transcribing, left the candidate with no report. The transcript being
+    // ready is the event the report actually depends on.
+    if (payload.type === "transcription.success") {
+      console.log(`📝 Transcript ready for room: ${room_id}`);
+      const run = fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/generate-session-feedback`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+        },
+        body: JSON.stringify({ type: payload.type, data: { room_id } }),
+      })
+        .then(async (r) => console.log(`🤖 Feedback generation: ${r.status} ${await r.text()}`))
+        .catch((e) => console.error("❌ Feedback generation call failed:", e.message));
+      // Gemini can take longer than 100ms waits for a webhook reply.
+      // @ts-ignore EdgeRuntime is provided by Supabase
+      if (typeof EdgeRuntime !== "undefined") EdgeRuntime.waitUntil(run); else await run;
+    }
+
+    // ------------------------------------------------------------------
+    // 6. RECORDING STOPPED WHILE THE CALL IS STILL GOING → START IT AGAIN
+    // ------------------------------------------------------------------
+    // Transcripts are made from recordings, so a recording that stops early
+    // (the template's max duration, a recorder crash) loses the rest of the
+    // interview. If anyone is still in the room, record again; the feedback
+    // step joins every segment in order once the room closes. A recording that
+    // died within a minute is not restarted, so a broken recorder cannot loop.
+    if (payload.type === "beam.stopped.success" || payload.type === "beam.failure") {
+      const ranSeconds = Number(payload.data?.duration ?? 0);
+      const token = await generateManagementToken();
+      const auth = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
+      const active = await fetch(`${HMS_API_ENDPOINT}/active-rooms/${room_id}`, { headers: auth });
+      const peers = active.ok ? ((await active.json()).session?.peers ?? []) : [];
+      const peerCount = Array.isArray(peers) ? peers.length : Object.keys(peers).length;
+      console.log(`⏹️ Recording stopped (${payload.type}) after ${ranSeconds}s; peers still in room: ${peerCount}`);
+
+      if (peerCount > 0 && (ranSeconds === 0 || ranSeconds >= 60)) {
+        const r = await fetch(`${HMS_API_ENDPOINT}/recordings/room/${room_id}/start`, { method: "POST", headers: auth, body: "{}" });
+        console.log(`🔁 Recording restart: ${r.status} ${(await r.text()).slice(0, 300)}`);
+      }
+    }
+
+    if (payload.type === "transcription.failure") {
+      console.error(`❌ 100ms transcription failed for room: ${room_id}`, JSON.stringify(payload.data));
     }
 
     return new Response(JSON.stringify({ success: true }), {
