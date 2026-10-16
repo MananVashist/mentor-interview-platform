@@ -244,10 +244,18 @@ const BookingCard = ({
               <AppText style={styles.textPrimary}>View Recording</AppText>
             </TouchableOpacity>
           )}
-          <View style={[styles.btnFull, styles.btnDisabled]}>
-            <Ionicons name="clipboard-outline" size={16} color="#6B7280" style={{ marginRight: 6 }} />
-            <AppText style={styles.textGray}>Awaiting Evaluation</AppText>
-          </View>
+          {/* The AI report is written from the transcript as soon as the call
+              ends, so it is shown without waiting for the mentor to submit. */}
+          {session.has_ai_feedback ? (
+            <TouchableOpacity style={[styles.btnFull, styles.btnPrimary]} onPress={() => onViewEvaluation(session.id)}>
+              <AppText style={styles.textWhite}>View AI Feedback</AppText>
+            </TouchableOpacity>
+          ) : (
+            <View style={[styles.btnFull, styles.btnDisabled]}>
+              <Ionicons name="clipboard-outline" size={16} color="#6B7280" style={{ marginRight: 6 }} />
+              <AppText style={styles.textGray}>Awaiting Evaluation</AppText>
+            </View>
+          )}
         </View>
       )}
 
@@ -361,6 +369,7 @@ export default function CandidateBookingsScreen() {
           id, scheduled_at, status, skill_id, mentor_id, package_id, session_type,
           pending_reschedule_approval, rescheduled_by,
           meetings:session_meetings ( recording_url ),
+          evaluation:session_evaluations ( ai_readiness:ai_feedback->>readiness_score ),
           package:interview_packages!package_id(*)
         `)
         .eq('candidate_id', currentUser.id)
@@ -430,6 +439,8 @@ export default function CandidateBookingsScreen() {
           skill_description: skillData?.description || null,
           mentor_professional_title: mentorsMap[s.mentor_id] || 'Mentor',
           recording_url,
+          has_ai_feedback: (Array.isArray(s.evaluation) ? s.evaluation : s.evaluation ? [s.evaluation] : [])
+            .some((e: any) => e?.ai_readiness != null),
           review_rating: reviewsMap[s.package_id] || null,
         };
       });
